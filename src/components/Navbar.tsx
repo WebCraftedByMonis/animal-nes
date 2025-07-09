@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { MenuIcon } from "lucide-react";
+import { Cat, MenuIcon,  } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signIn, signOut, useSession } from "next-auth/react";
@@ -131,6 +131,13 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
+           <div className="flex gap-4">
+      <Link href="/animalCart"  >
+        <Cat className="text-green-500" />
+      </Link>
+     
+    </div>
 
           {/* Mobile menu icon - visible on small screens */}
           <div className="md:hidden  shrink-0">

@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import SessionWrapper from "../components/sessionWrapper";
 import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +48,9 @@ export default function RootLayout({
                 <ProgressBar />
         <Navbar/>
          <Toaster position="top-center" />
-        {children}</SessionWrapper>
+        {children}
+        <Footer/>
+        </SessionWrapper>
         <ToastContainer position="top-right" />
         </ThemeProvider>
       </body>

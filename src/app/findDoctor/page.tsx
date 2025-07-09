@@ -72,8 +72,8 @@ export default function NewAppointmentPage() {
         <title>Find a Doctor - Animal Care</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4">
-        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-xl w-full">
+      <div className="min-h-screen flex items-center justify-center py-10 px-4">
+        <div className=" p-8 rounded-2xl shadow-lg max-w-xl w-full">
           <h1 className="text-3xl font-bold text-green-500 mb-6 text-center">
             Find a Doctor for Your Animal
           </h1>
@@ -81,7 +81,7 @@ export default function NewAppointmentPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               name="doctor"
-              placeholder="Doctor Name"
+              placeholder="Your Mobile Number"
               value={form.doctor}
               onChange={handleChange}
               required

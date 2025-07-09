@@ -141,7 +141,7 @@ export default function DashboardPage() {
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
 
-                            <TableHead>Doctor</TableHead>
+                            <TableHead>Mobile No.</TableHead>
                             <TableHead>City</TableHead>
                             <TableHead>Species</TableHead>
                             <TableHead>State</TableHead>
