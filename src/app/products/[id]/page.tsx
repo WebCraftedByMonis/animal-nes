@@ -35,7 +35,7 @@ interface Product {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/product/${params.id}`)
+  const res = await fetch(`$http://animal-welnes44.vercel.app/api/product/${params.id}`)
 
   if (!res.ok) return notFound()
 
