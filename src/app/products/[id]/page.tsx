@@ -35,7 +35,7 @@ interface Product {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const res = await fetch(`$https://animal-nes-lv3a.vercel.app/api/product/${params.id}`)
+  const res = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`)
 
   if (!res.ok) return notFound()
 
