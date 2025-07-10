@@ -235,7 +235,7 @@ const features = [
     title: "Community Support",
     description: "Connect with other animal lovers and get advice from professionals.",
     icon: <Quote className="h-5 w-5" />,
-    link: "/"
+    link: "https://whatsapp.com/channel/0029VaeV6OQ9mrGjhvOQkW2t"
   }
 ];
 

@@ -15,13 +15,13 @@ const ContactPage = () => {
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-12">Contact Us</h1>
 
         {/* Form */}
-        <div className="max-w-2xl mx-auto mb-16 px-4">
+        {/* <div className="max-w-2xl mx-auto mb-16 px-4">
           <h2 className="text-2xl font-semibold mb-6 text-green-500 dark:text-green-400 text-center">
             Get in touch
           </h2>
-          <form className="space-y-5">
+          <form className="space-y-5"> */}
             {/* Form fields remain the same */}
-            <div>
+            {/* <div>
               <label htmlFor="name" className="block text-sm font-medium mb-1">
                 Name (optional)
               </label>
@@ -63,7 +63,7 @@ const ContactPage = () => {
               Send Message
             </Button>
           </form>
-        </div>
+        </div> */}
 
         {/* Contact Details Below - Centered with increased width */}
         <div className="flex justify-center">

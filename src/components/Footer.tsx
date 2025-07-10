@@ -25,13 +25,15 @@ export default function Footer( ) {
             <p className="text-muted-foreground-dark mb-4">
               The complete platform for animal care, commerce, and veterinary careers.
             </p>
-           <div className="flex gap-4">
+           <div className="flex flex-wrap max-w-2xl gap-4">
   {[
     { name: 'Twitter', url: 'https://twitter.com' },
-    { name: 'Facebook', url: 'https://facebook.com' },
-    { name: 'Instagram', url: 'https://instagram.com' },
-    { name: 'LinkedIn', url: 'https://linkedin.com' },
-    { name: 'YouTube', url: 'https://youtube.com' },
+    { name: 'Facebook', url: 'https://www.facebook.com/profile.php?id=100064043800171&mibextid=ZbWKwL' },
+    { name: 'Instagram', url: 'https://www.instagram.com/animalwellnessshop/' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/muhammad-fiaz-qamar-195208a2/' },
+    { name: 'YouTube', url: 'https://www.youtube.com/@AnimalWellNessShop/shorts' },
+    { name: 'WhatsApp', url: 'https://wa.me/923354145431' },
+    // add more links if needed
   ].map(({ name, url }) => (
     <a
       key={name}
@@ -44,6 +46,7 @@ export default function Footer( ) {
     </a>
   ))}
 </div>
+
 
           </div>
           
@@ -69,7 +72,12 @@ export default function Footer( ) {
                     {s.title}
                   </a>
                 </li>
+                
               ))}
+              <li>
+                <a href="https://maps.app.goo.gl/Z5aXZi9idwzWhTJ1A">Shop map</a>
+                 
+              </li>
             </ul>
           </div>
           
@@ -81,6 +89,11 @@ export default function Footer( ) {
                   <Link href="/contact" className="text-muted-foreground-dark hover:text-background transition-colors">
                     Contact
                   </Link>
+                </li>
+
+                <li>
+                  Address : Address: 9 Zubair St, Islamia Park, Lahore, 54000
+
                 </li>
             
             </ul>

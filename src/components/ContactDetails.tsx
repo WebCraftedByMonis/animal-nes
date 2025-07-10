@@ -9,23 +9,24 @@ import {
   FaEnvelope,
   FaLinkedin,
   FaInstagram,
+  FaTiktok,
 } from "react-icons/fa";
 import { Home } from "lucide-react";
 
 const contactItems = [
   {
     icon: <Home className="text-green-500" />,
-    label: "Nairobi, Kenya",
+    label: "Address: 9 Zubair St, Islamia Park, Lahore, 54000",
   },
   {
     icon: <FaWhatsapp className="text-green-500" />,
-    label: "+254 712 345 678",
-    href: "https://wa.me/254712345678",
+    label: "+923354145431",
+    href: "https://wa.me/c/923354145431",
   },
   {
-    icon: <FaSkype className="text-blue-500" />,
-    label: "live:yourid",
-    href: "skype:live:yourid?chat",
+    icon: <FaTiktok className="text-blue-500" />,
+    label: "Tik Tok",
+    href: "https://www.tiktok.com/@animal.wellness.s",
   },
   {
     icon: <FaPhoneAlt className="text-green-500" />,
@@ -38,28 +39,28 @@ const contactItems = [
   },
   {
     icon: <FaFacebook className="text-blue-600" />,
-    label: "/yourid",
-    href: "https://facebook.com/yourid",
+    label: "Animal Wellness",
+    href: "https://www.facebook.com/profile.php?id=100064043800171&mibextid=ZbWKwL",
   },
   {
     icon: <FaYoutube className="text-red-500" />,
-    label: "/yourchannel",
-    href: "https://youtube.com/yourchannel",
+    label: "AnimalWell.Shop",
+    href: "https://www.youtube.com/@AnimalWellNessShop",
   },
   {
     icon: <FaEnvelope className="text-red-500" />,
-    label: "youremail@gmail.com",
-    href: "mailto:youremail@gmail.com",
+    label: "animalwellnessshop@gmail.com",
+    href: "mailto:monisraza444@gmail.com",
   },
   {
     icon: <FaLinkedin className="text-blue-700" />,
-    label: "/yourprofile",
-    href: "https://linkedin.com/in/yourprofile",
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/muhammad-fiaz-qamar-195208a2/",
   },
   {
     icon: <FaInstagram className="text-pink-500" />,
-    label: "@yourhandle",
-    href: "https://instagram.com/yourhandle",
+    label: "@AnimalWellness",
+    href: "https://www.instagram.com/animalwellnessshop/",
   },
 ];
 
@@ -85,6 +86,8 @@ const ContactDetails = () => {
             )}
           </li>
         ))}
+
+       
       </ul>
     </div>
   );

@@ -20,6 +20,8 @@ export function AppSidebar() {
   const [openOrders, setOpenOrders] = useState(false)
   const [openPartners, setOpenPartners] = useState(false)
   const [openUsers, setOpenUsers] = useState(false)
+  const [openNews, setOpenNews] = useState(false)
+  const [openJobApplicants, setOpenJobApplicants] = useState(false)
   const [openPendingAppointments, setOpenPendingAppointments] = useState(false)
 
   return (
@@ -109,7 +111,7 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
               
-              {/* Orders */}
+              {/* Users */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenUsers(!openUsers)}>
                   <ShoppingCart className="w-4 h-4" />
@@ -121,6 +123,36 @@ export function AppSidebar() {
                     <Link href="/dashboard/user" className="block text-sm text-muted-foreground hover:underline">Customers</Link>
                     <Link href="/dashboard/employees" className="block text-sm text-muted-foreground hover:underline">Employes</Link>
                    
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+              {/* News */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenNews(!openNews)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Wellness-News</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openNews ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openNews && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/addNews" className="block text-sm text-muted-foreground hover:underline">Add News</Link>
+                    <Link href="/dashboard/viewNews" className="block text-sm text-muted-foreground hover:underline">View News</Link>
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+
+              {/* Job Applications */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenJobApplicants(!openJobApplicants)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Applications for Jobs</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openJobApplicants ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openJobApplicants && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/jobApplications" className="block text-sm text-muted-foreground hover:underline">Job Applications News</Link>
                   </div>
                 )}
               </SidebarMenuItem>
