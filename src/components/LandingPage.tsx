@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import Footer from "./Footer";
 
 export default function LandingPage() {
   return (
@@ -26,18 +25,18 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/products">
-           
-           
-            <Button size="lg" className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-8 py-6 text-lg">
-              Get Started
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+
+
+              <Button size="lg" className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-8 py-6 text-lg">
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </Link>
-             <Link href="/about">
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-8 py-6 text-lg">
-              Learn More
-            </Button>
-             </Link>
+            <Link href="/about">
+              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-8 py-6 text-lg">
+                Learn More
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -51,7 +50,7 @@ export default function LandingPage() {
               Comprehensive solutions for pet owners, farmers, and veterinary professionals
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow duration-300 h-full">
@@ -64,10 +63,10 @@ export default function LandingPage() {
                 <CardContent>
                   <p className="text-muted-foreground mb-4">{feature.description}</p>
                   <Link href={feature.link}>
-                  <Button variant="link" className="px-0 text-emerald-600 hover:text-emerald-800">
-                    Learn more
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                    <Button variant="link" className="px-0 text-emerald-600 hover:text-emerald-800">
+                      Learn more
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -91,7 +90,7 @@ export default function LandingPage() {
               </div>
               <h2 className="text-3xl md:text-4xl font-bold">{section.title}</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">{section.description}</p>
-              
+
               <div className="space-y-3">
                 {section.bullets.map((bullet, i) => (
                   <div key={i} className="flex items-start gap-3">
@@ -102,7 +101,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="pt-4">
                 <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 font-medium">
                   <a href={section.link} className="flex items-center gap-2">
@@ -113,11 +112,12 @@ export default function LandingPage() {
               </div>
             </div>
             <div className={cn(
-              "lg:w-1/2 h-[400px] rounded-2xl shadow-lg overflow-hidden",
+              "lg:w-1/2 lg:min-h-[580px] md:min-h-[500px] min-h-[400px] rounded-2xl shadow-lg overflow-hidden",
               index % 2 === 0 ? "lg:order-1" : ""
             )}>
               <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center">
-                <div className="text-5xl font-bold text-emerald-600/30">Image</div>
+                <img alt={section.title} src={section.src} className=" object-cover object-center " />
+
               </div>
             </div>
           </section>
@@ -132,7 +132,7 @@ export default function LandingPage() {
                 Join thousands of satisfied users who trust AnimalWellness for their animal care needs
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {stats.map((stat, i) => (
                 <div key={i} className="text-center">
@@ -152,7 +152,7 @@ export default function LandingPage() {
               Hear from pet owners, veterinarians, and farmers who use AnimalWellness daily
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, i) => (
               <Card key={i} className="hover:shadow-lg transition-shadow duration-300 h-full">
@@ -179,7 +179,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-extrabold mb-6">Ready to Transform Animal Care?</h2>
             <p className="text-xl mb-8 text-emerald-100 max-w-3xl mx-auto">
-              Join thousands of animal lovers, professionals, and businesses in our growing community. 
+              Join thousands of animal lovers, professionals, and businesses in our growing community.
               Experience the future of animal wellness today.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -194,7 +194,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-   {/* <Footer/> */}
+      {/* <Footer/> */}
     </div>
   );
 }
@@ -252,7 +252,9 @@ const sections = [
       "Verified credentials and specialties",
       "Transparent pricing and reviews",
       "Video consultation options"
-    ]
+    ],
+    src : "/vet.jpg"
+    
   },
   {
     title: "Premium Veterinary Products",
@@ -266,7 +268,8 @@ const sections = [
       "Auto-refill subscriptions available",
       "Verified product reviews",
       "Fast, reliable delivery"
-    ]
+    ],
+    src : "/products.jpg"
   },
   {
     title: "Trusted Animal Marketplace",
@@ -280,7 +283,8 @@ const sections = [
       "Secure payment processing",
       "Adoption and rehoming services",
       "Breeder verification system"
-    ]
+    ],
+    src : "/pets.jpg"
   },
   {
     title: "Veterinary Career Advancement",
@@ -294,7 +298,8 @@ const sections = [
       "Resume and profile builder",
       "Continuing education resources",
       "Practice management tools"
-    ]
+    ],
+    src : "/job.jpg"
   }
 ];
 

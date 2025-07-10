@@ -25,13 +25,26 @@ export default function Footer( ) {
             <p className="text-muted-foreground-dark mb-4">
               The complete platform for animal care, commerce, and veterinary careers.
             </p>
-            <div className="flex gap-4">
-              {['Twitter', 'Facebook', 'Instagram', 'LinkedIn'].map((social) => (
-                <a key={social} href="#" className="text-muted-foreground-dark hover:text-background transition-colors">
-                  {social}
-                </a>
-              ))}
-            </div>
+           <div className="flex gap-4">
+  {[
+    { name: 'Twitter', url: 'https://twitter.com' },
+    { name: 'Facebook', url: 'https://facebook.com' },
+    { name: 'Instagram', url: 'https://instagram.com' },
+    { name: 'LinkedIn', url: 'https://linkedin.com' },
+    { name: 'YouTube', url: 'https://youtube.com' },
+  ].map(({ name, url }) => (
+    <a
+      key={name}
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted-foreground-dark hover:text-background transition-colors"
+    >
+      {name}
+    </a>
+  ))}
+</div>
+
           </div>
           
           <div>

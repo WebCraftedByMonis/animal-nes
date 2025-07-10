@@ -22,8 +22,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Animal Nexus",
-    absolute: "Animal Nexus",
+    template: "%s | Animal Wellness",
+    absolute: "Animal Wellness",
   },
   description: "A full-stack e-commerce application built with Next.js 15",
 };

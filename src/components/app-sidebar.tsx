@@ -20,6 +20,7 @@ export function AppSidebar() {
   const [openOrders, setOpenOrders] = useState(false)
   const [openPartners, setOpenPartners] = useState(false)
   const [openUsers, setOpenUsers] = useState(false)
+  const [openPendingAppointments, setOpenPendingAppointments] = useState(false)
 
   return (
     <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="h-screen border-r dark:bg-zinc-900">
@@ -119,6 +120,21 @@ export function AppSidebar() {
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/user" className="block text-sm text-muted-foreground hover:underline">Customers</Link>
                     <Link href="/dashboard/employees" className="block text-sm text-muted-foreground hover:underline">Employes</Link>
+                   
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+              {/* Appointments */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenPendingAppointments(!openPendingAppointments)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Appointments</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openPendingAppointments && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/pendingAppointments" className="block text-sm text-muted-foreground hover:underline">Pending Appointments</Link>
                    
                   </div>
                 )}
