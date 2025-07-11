@@ -16,7 +16,7 @@ import { Home } from "lucide-react";
 const contactItems = [
   {
     icon: <Home className="text-green-500" />,
-    label: "Address: 9 Zubair St, Islamia Park, Lahore, 54000",
+    label: "Address: 9 Zubair St, Islamia Park, Poonch Road, Chaburji Lahore",
   },
   {
     icon: <FaWhatsapp className="text-green-500" />,
@@ -32,8 +32,7 @@ const contactItems = [
     icon: <FaPhoneAlt className="text-green-500" />,
     label: (
       <div className="flex flex-col">
-        <a href="tel:+254712345678" className="hover:underline">+254 712 345 678</a>
-        <a href="tel:+254798765432" className="hover:underline">+254 798 765 432</a>
+        <span className="hover:underline">0333-4145431</span>
       </div>
     ),
   },
@@ -50,7 +49,7 @@ const contactItems = [
   {
     icon: <FaEnvelope className="text-red-500" />,
     label: "animalwellnessshop@gmail.com",
-    href: "mailto:monisraza444@gmail.com",
+    href: "mailto:animalwellnessshop@gmail.com",
   },
   {
     icon: <FaLinkedin className="text-blue-700" />,
@@ -81,6 +80,8 @@ const ContactDetails = () => {
               >
                 {item.label}
               </a>
+
+              
             ) : (
               <span>{item.label}</span>
             )}

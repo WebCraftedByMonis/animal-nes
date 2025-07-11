@@ -120,7 +120,10 @@ export default function Navbar() {
 
 
         <div className="flex gap-2 justingy-center items-center">
-          <ModeToggle />
+          <div className="hidden sm:block">
+            <ModeToggle />
+          </div>
+          
 
           {/* Cart Button */}
           <Link href="/cart" className="relative">
@@ -142,8 +145,6 @@ export default function Navbar() {
           {/* Mobile menu icon - visible on small screens */}
           <div className="md:hidden  shrink-0">
 
-
-
             <Drawer>
               <DrawerTrigger asChild>
                 <Button variant="ghost" className="p-0"><MenuIcon className="size-6" /></Button>
@@ -161,7 +162,7 @@ export default function Navbar() {
                     ["Nexus News", "/animal-news"],
                     ["Sell Animal", "/sell"],
                     ["Buy Animal", "/buy"],
-                    ["Find Doctor", "/doctor"],
+                    ["Find Doctor", "/findDoctor"],
                   ].map(([label, href]) => (
                     <Link
                       key={label}
@@ -171,6 +172,7 @@ export default function Navbar() {
                       {label}
                     </Link>
                   ))}
+                   <ModeToggle />
                 </div>
 
                 <DrawerFooter className="mt-6">
@@ -228,9 +230,7 @@ export default function Navbar() {
             </DropdownMenu>
           ) : (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => signIn('google')}>
-                Login
-              </Button>
+             
               <Button className="bg-green-500 hover:bg-green-600" onClick={() => signIn('google')}>Sign up</Button>
             </div>
           )}
