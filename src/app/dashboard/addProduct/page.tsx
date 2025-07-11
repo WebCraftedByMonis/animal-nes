@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import "react-toastify/dist/ReactToastify.css";
 
 const formSchema = z.object({
@@ -156,17 +156,17 @@ export default function AddProductPage() {
       if (response.status === 201) {
         toast.success("Product created successfully");
       }
-    } catch (error) {
-      
-      console.error("Submission error:", error);
-      if (error.response) {
-        toast.error(error.response.data.error || "Failed to create product");
-      } else {
-        toast.error("Network error. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+   } catch (error: unknown) {
+  console.error("Submission error:", error);
+  if (axios.isAxiosError(error)) {
+    toast.error(error.response?.data?.error || "Failed to create product");
+  } else {
+    toast.error("Network error. Please try again.");
+  }
+}finally{
+  setIsSubmitting(false)
+}
+
   };
 
   return ( 

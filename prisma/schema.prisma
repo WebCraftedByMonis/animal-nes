@@ -79,7 +79,7 @@ model ProductImage {
   alt       String
   publicId  String?
   product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId Int?     @unique  // Made optional
+  productId Int     @unique  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
