@@ -81,7 +81,7 @@ export default function Navbar() {
         {/* Logo & NavigationMenuDemo (aligned left) */}
         <div className="flex items-center gap-4 shrink-0">
           <Image
-            src="/logo.avif"
+            src="/logo.jpg"
             alt="Logo"
             width={50}
             height={50}
