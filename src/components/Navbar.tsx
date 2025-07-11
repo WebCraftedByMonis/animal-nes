@@ -113,7 +113,10 @@ export default function Navbar() {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          <NavigationMenuDemo />
+          <div className="hidden sm:block">
+             <NavigationMenuDemo />
+          </div>
+         
 
         </div>
 
@@ -172,6 +175,7 @@ export default function Navbar() {
                       {label}
                     </Link>
                   ))}
+                    <NavigationMenuDemo />
                    <ModeToggle />
                 </div>
 

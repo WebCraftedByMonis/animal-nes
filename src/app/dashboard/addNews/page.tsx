@@ -214,6 +214,7 @@ export default function AddAnimalNewsPage() {
                 }}
                 className="file:mr-4 file:py-2 file:px-4 file:border file:rounded-md file:border-green-500 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
               />
+              <span className="text-sm text-gray-500">Pdf should not be more than 10 mb</span>
               <FormMessage>{form.formState.errors.pdf?.message}</FormMessage>
             </div>
 

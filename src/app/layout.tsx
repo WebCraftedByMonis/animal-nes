@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Comfortaa } from "next/font/google";
+
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navbar from "@/components/Navbar";
@@ -10,15 +11,10 @@ import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const comfortaa = Comfortaa({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -36,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en"  suppressHydrationWarning>
       <body
-        className={`${geistSans.variable}  ${geistMono.variable} antialiased`}
+        className={`${comfortaa}  antialiased`}
         >
           <ThemeProvider
             attribute="class"

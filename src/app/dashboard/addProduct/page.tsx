@@ -514,6 +514,7 @@ export default function AddProductPage() {
                             <p className="text-xs text-gray-500">
                               Supports: PDF files
                             </p>
+                             <span className="text-sm text-gray-500">Pdf should not be more than 10 mb</span>
                           </div>
                         )}
                       </div>
@@ -525,14 +526,7 @@ export default function AddProductPage() {
             </div>
 
             <div className="mt-8 flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
