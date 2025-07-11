@@ -65,11 +65,12 @@ export default function NewsListPage() {
               <Image
                 src={item.image.url}
                 alt={item.image.alt}
-                width={600}
-                height={300}
-                className="w-full h-48 object-cover"
+                width={400}
+                height={600}
+                className="w-full h-96 object-fit" // 96 = ~384px, adjusts height for portrait view
               />
             )}
+
 
             <div className="p-4 space-y-2">
               <h2 className="text-xl font-semibold text-green-700">

@@ -88,7 +88,7 @@ export default function AnimalDetailPage() {
               src={animal.images[0].url}
               alt={animal.images[0].alt}
               fill
-              className="object-cover"
+              className="object-fit"
               loading="lazy"
             />
           </div>

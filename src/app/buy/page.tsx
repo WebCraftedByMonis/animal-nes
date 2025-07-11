@@ -116,7 +116,7 @@ export default function AnimalMarketplace() {
                       src={animal.images[0].url}
                       alt={animal.images[0].alt || animal.specie}
                       fill
-                      className="object-cover"
+                      className="object-fit"
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                     />
                   </div>

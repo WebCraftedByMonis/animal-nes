@@ -62,7 +62,7 @@ export default function NewsDetailPage() {
             src={news.image.url}
             alt={news.image.alt}
             fill
-            className="object-cover rounded-lg shadow"
+            className="object-fit rounded-lg shadow"
           />
         </div>
       )}
