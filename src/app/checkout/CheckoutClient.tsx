@@ -103,7 +103,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 <div className="mt-4">
                     <h3 className="font-semibold mb-2">Select Payment Method</h3>
                     <div className="flex flex-col gap-2">
-                        {['Credit Card', 'PayPal', 'Bank Transfer'].map(method => (
+                        {['Jazz cash 0300-8424741 Muhammad Fiaz Qamar', 'Easypaisa 03354145431 Ghazala Yasmeen', 'Bank Transfer: Account Title ZAIDIS INTERNATIONAL Account Number  01531002450497 IBAN PK82ALFH0153001002450497 Swift code ALFHPKKAXXX Branch Name Chauburji Branch, Lahore  Branch Code 0153 Bank Name Bank Alfalah'].map(method => (
                             <label key={method} className="flex items-center gap-2">
                                 <input
                                     type="radio"
