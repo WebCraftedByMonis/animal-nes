@@ -20,38 +20,63 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
+
+async function retry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delay = 1000
+): Promise<T> {
+  let attempt = 0
+  while (attempt < retries) {
+    try {
+      return await fn()
+    } catch (error) {
+      attempt++
+      if (attempt >= retries) throw error
+      console.warn(`Retry attempt ${attempt} failed. Retrying in ${delay}ms...`)
+      await new Promise(res => setTimeout(res, delay))
+    }
+  }
+  throw new Error('All retry attempts failed.')
+}
+
+
 async function uploadFileToCloudinary(
   buffer: Buffer,
   folder: string,
   resourceType: 'image' | 'raw' = 'image',
   originalFileName?: string
 ): Promise<CloudinaryUploadResult> {
-  return new Promise((resolve, reject) => {
-    const baseFileName = originalFileName
-      ? originalFileName.replace(/\.[^/.]+$/, '')
-      : `file-${Date.now()}`
+  return retry(() =>
+    new Promise((resolve, reject) => {
+      const baseFileName = originalFileName
+        ? originalFileName.replace(/\.[^/.]+$/, '')
+        : `file-${Date.now()}`
 
-    const extension = originalFileName?.split('.').pop() || 'pdf'
-    const publicId = `${baseFileName}-${Date.now()}` // unique!
+      const extension = originalFileName?.split('.').pop() || 'pdf'
+      const publicId = `${baseFileName}-${Date.now()}`
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-        publicId,
-        use_filename: true,
-        unique_filename: false,
-        format: extension,
-      },
-      (error, result) => {
-        if (error) reject(new Error(error.message))
-        else if (!result) reject(new Error('No result from Cloudinary'))
-        else resolve(result)
-      }
-    )
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: resourceType,
+          publicId,
+          use_filename: true,
+          unique_filename: false,
+          format: extension,
+        },
+        (error, result) => {
+          if (error) reject(new Error(error.message))
+          else if (!result) reject(new Error('No result from Cloudinary'))
+          else resolve(result)
+        }
+      )
 
-    uploadStream.end(buffer)
-  })
+      uploadStream.end(buffer)
+    }),
+    3, // retries
+    1500 // delay (ms)
+  )
 }
 
 // Zod schemas

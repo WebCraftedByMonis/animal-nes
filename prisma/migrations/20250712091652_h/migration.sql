@@ -64,7 +64,7 @@ CREATE TABLE `ProductImage` (
     `url` VARCHAR(191) NOT NULL,
     `alt` VARCHAR(191) NOT NULL,
     `publicId` VARCHAR(191) NULL,
-    `productId` INTEGER NULL,
+    `productId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 

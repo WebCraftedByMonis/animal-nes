@@ -35,8 +35,22 @@ const formSchema = z.object({
   dosage: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
-  image: z.instanceof(File, { message: "Product image is required" }),
-  pdf: z.instanceof(File, { message: "Product PDF is required" }),
+ image: z
+    .any()
+    .refine((file) => file instanceof File && file.size > 0, {
+      message: "Image is required",
+    }),
+  
+  pdf: z
+    .any()
+    .optional()
+    .refine(
+      (file) => {
+        // Allow empty or valid File
+        return !file || (file instanceof File && file.size > 0 && file.type === "application/pdf");
+      },
+      { message: "Invalid PDF file" }
+    ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
