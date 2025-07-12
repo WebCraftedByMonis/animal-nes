@@ -49,6 +49,8 @@ interface Product {
   } | null
 }
 
+
+
 export default function AllProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)

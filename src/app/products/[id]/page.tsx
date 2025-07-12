@@ -3,6 +3,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper'
+import { Description } from '@radix-ui/react-dialog'
 
 
 
@@ -32,6 +33,18 @@ interface Product {
   pdf: { url: string } | null
   company: { companyName: string }
   partner: { partnerName: string }
+}
+
+
+
+export async function generateMetadata({ params }: ProductPageProps){
+  const productName = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`)
+  const { data }: { data: Product } = await productName.json()
+
+  return {
+    title: `${data.productName} | Animal Wellness`,
+    description : data.description
+  }
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {

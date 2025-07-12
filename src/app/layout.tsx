@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Comfortaa } from "next/font/google";
-
+import { poppins } from "./fonts";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navbar from "@/components/Navbar";
@@ -11,9 +10,7 @@ import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
 
-const comfortaa = Comfortaa({
-  subsets: ["latin"],
-});
+
 
 
 export const metadata: Metadata = {
@@ -22,6 +19,10 @@ export const metadata: Metadata = {
     absolute: "Animal Wellness",
   },
   description: "A full-stack e-commerce application built with Next.js 15",
+  keywords: "vet doctor",
+  openGraph: {
+    images: ["/logo.jpg"]
+  }
 };
 
 export default function RootLayout({
@@ -32,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en"  suppressHydrationWarning>
       <body
-        className={`${comfortaa}  antialiased`}
+        className={poppins.className}
         >
           <ThemeProvider
             attribute="class"
