@@ -102,9 +102,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             <div className="flex items-center gap-4">
               <p className="text-2xl font-bold text-green-600">PKR {data.customerPrice.toFixed(2)}</p>
-              {data.dealerPrice && (
-                <p className="text-sm text-gray-500 line-through">Dealer: PKR {data.dealerPrice.toFixed(2)}</p>
+              {data.customerPrice && (
+                <p className="text-sm text-gray-500 ">Purchase Price: PKR {data.customerPrice.toFixed(2)}</p>
               )}
+              
+              {data.dealerPrice && (
+                <p className="text-sm text-gray-500 line-through">Market Price: PKR {data.dealerPrice.toFixed(2)}</p>
+              )}
+              
             </div>
 
             <div className="py-4 border-t border-b border-gray-200">

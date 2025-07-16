@@ -28,13 +28,16 @@ const formSchema = z.object({
   companyId: z.string().min(1, "Company is required"),
   companyPrice: z.string().refine(val => !isNaN(Number(val)), "Must be a valid number").optional(),
   dealerPrice: z.string().refine(val => !isNaN(Number(val)), "Must be a valid number").optional(),
+  inventory: z.string().refine(val => !isNaN(Number(val)), "Must be a valid number").optional(),
   customerPrice: z.string().min(1, "Customer price is required").refine(val => !isNaN(Number(val)), "Must be a valid number"),
   packingUnit: z.string().min(1, "Packing unit is required"),
   partnerId: z.string().min(1, "Partner is required"),
   description: z.string().optional(),
   dosage: z.string().optional(),
+  productLink: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
+  outofstock: z.boolean().default(true),
  image: z
     .any()
     .refine((file) => file instanceof File && file.size > 0, {
@@ -80,6 +83,7 @@ export default function AddProductPage() {
   defaultValues: {
     isFeatured: false,
     isActive: true,
+    outofstock: true,
     productName: "",
     genericName: "",
     category: "",
@@ -94,6 +98,8 @@ export default function AddProductPage() {
     partnerId: "",
     description: "",
     dosage: "",
+    productLink: "",
+    inventory: "",
   },
 });
 
@@ -282,6 +288,21 @@ export default function AddProductPage() {
                 )}
               />
 
+              {/* Product link */}
+              <FormField
+                control={form.control}
+                name="productLink"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Link </FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter product Link" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Company Select */}
               <FormField
                 control={form.control}
@@ -355,7 +376,7 @@ export default function AddProductPage() {
                 name="dealerPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Dealer Price</FormLabel>
+                    <FormLabel>Market Price</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -370,7 +391,21 @@ export default function AddProductPage() {
                 name="customerPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Customer Price *</FormLabel>
+                    <FormLabel>Purchase Price *</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Inventory */}
+              <FormField
+                control={form.control}
+                name="inventory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Inventory *</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -448,6 +483,23 @@ export default function AddProductPage() {
                   render={({ field }) => (
                     <FormItem className="flex items-center gap-2">
                       <FormLabel>Active Product</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              
+
+                <FormField
+                  control={form.control}
+                  name="outofstock"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormLabel>Out of Stock</FormLabel>
                       <FormControl>
                         <Switch
                           checked={field.value}

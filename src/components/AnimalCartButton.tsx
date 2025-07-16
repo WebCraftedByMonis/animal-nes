@@ -41,7 +41,7 @@ export default function AddAnimalToCartButton({ animalId }: AddAnimalToCartButto
   return (
     <button
       onClick={handleAddToCart}
-      className="w-full bg-gradient-to-r from-green-500 to-green-700 text-white py-4 rounded-xl font-semibold text-lg shadow-md"
+      className="w-full hover:cursor-pointer bg-gradient-to-r from-green-500 to-green-700 text-white py-4 rounded-xl font-semibold text-lg shadow-md"
     >
       Add Animal to Cart
     </button>

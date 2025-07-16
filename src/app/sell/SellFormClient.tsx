@@ -101,11 +101,11 @@ export default function SellFormClient() {
             </Select>
           </div>
 
-          <div><Label>Total Price</Label><Input name="totalPrice" type="number" step="0.01" required /></div>
-          <div><Label>Purchase Price</Label><Input name="purchasePrice" type="number" step="0.01" required /></div>
+          <div><Label>Asking Price</Label><Input name="totalPrice" type="number" step="0.01" required /></div>
+          <div><Label>Final Price</Label><Input name="purchasePrice" type="number" step="0.01" required /></div>
 
           <div className="col-span-full">
-            <Label>Referred By (optional)</Label>
+            <Label>Mobile No. (optional)</Label>
             <Input name="referredBy" type="text" />
           </div>
 

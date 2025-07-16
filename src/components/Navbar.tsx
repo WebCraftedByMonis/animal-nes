@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Cat, MenuIcon,  } from "lucide-react";
+import { Cat, MenuIcon, } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signIn, signOut, useSession } from "next-auth/react";
@@ -51,7 +51,7 @@ export default function Navbar() {
   });
 
   const cartCount = data?.count || 0;
-  
+
 
   useEffect(() => {
     const fetchCartCount = async () => {
@@ -79,14 +79,16 @@ export default function Navbar() {
       <div className="flex items-center justify-between px-4 py-3 overflow-visible flex-nowrap gap-4">
 
         {/* Logo & NavigationMenuDemo (aligned left) */}
+      
         <div className="flex items-center gap-4 shrink-0">
+        <Link href="/">
           <Image
             src="/logo.jpg"
             alt="Logo"
             width={50}
             height={50}
             className="h-12 w-12 object-contain rounded-full"
-          />
+          />  </Link>
 
 
           {/* Main nav links - visible on md+ screens */}
@@ -114,9 +116,9 @@ export default function Navbar() {
             </NavigationMenu>
           </div>
           <div className="hidden sm:block">
-             <NavigationMenuDemo />
+            <NavigationMenuDemo />
           </div>
-         
+
 
         </div>
 
@@ -126,7 +128,7 @@ export default function Navbar() {
           <div className="hidden sm:block">
             <ModeToggle />
           </div>
-          
+
 
           {/* Cart Button */}
           <Link href="/cart" className="relative">
@@ -138,12 +140,12 @@ export default function Navbar() {
             )}
           </Link>
 
-           <div className="flex gap-4">
-      <Link href="/animalCart"  >
-        <Cat className="text-green-500" />
-      </Link>
-     
-    </div>
+          <div className="flex gap-4">
+            <Link href="/animalCart"  >
+              <Cat className="text-green-500" />
+            </Link>
+
+          </div>
 
           {/* Mobile menu icon - visible on small screens */}
           <div className="md:hidden  shrink-0">
@@ -167,16 +169,18 @@ export default function Navbar() {
                     ["Buy Animal", "/buy"],
                     ["Find Doctor", "/findDoctor"],
                   ].map(([label, href]) => (
-                    <Link
-                      key={label}
-                      href={href}
-                      className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
-                    >
-                      {label}
-                    </Link>
+                    <DrawerClose asChild key={label}>
+                      <Link
+                        href={href}
+                        className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
+                      >
+                        {label}
+                      </Link>
+                    </DrawerClose>
                   ))}
-                    <NavigationMenuDemo />
-                   <ModeToggle />
+
+                  <NavigationMenuDemo />
+                  <ModeToggle />
                 </div>
 
                 <DrawerFooter className="mt-6">
@@ -234,7 +238,7 @@ export default function Navbar() {
             </DropdownMenu>
           ) : (
             <div className="flex gap-2">
-             
+
               <Button className="bg-green-500 hover:bg-green-600" onClick={() => signIn('google')}>Sign up</Button>
             </div>
           )}

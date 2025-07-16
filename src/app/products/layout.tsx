@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Properties",
+  title: "Veterinary Products",
   description: "A full-stack e-commerce application built with Next.js 15",
 };
 

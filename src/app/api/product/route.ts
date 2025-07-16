@@ -83,6 +83,7 @@ async function uploadFileToCloudinary(
 const productSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
   genericName: z.string().optional(),
+  productLink: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
   subCategory: z.string().min(1, 'Sub-category is required'),
   subsubCategory: z.string().min(1, 'Sub-sub-category is required'),
@@ -91,12 +92,14 @@ const productSchema = z.object({
   companyPrice: z.number().optional(),
   dealerPrice: z.number().optional(),
   customerPrice: z.number().min(0, 'Customer price must be positive'),
+  inventory: z.number().min(0, 'inventory must be positive'),
   packingUnit: z.string().min(1, 'Packing unit is required'),
   partnerId: z.number().min(1, 'Partner ID is required'),
   description: z.string().optional(),
   dosage: z.string().optional(),
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  outofstock: z.boolean().optional(),
 })
 
 const updateProductSchema = productSchema.partial()
@@ -125,6 +128,7 @@ export async function POST(request: NextRequest) {
     const productData = {
       productName: formData.get('productName') as string,
       genericName: formData.get('genericName') as string | null,
+      productLink: formData.get('productLink') as string | null,
       category: formData.get('category') as string,
       subCategory: formData.get('subCategory') as string,
       subsubCategory: formData.get('subsubCategory') as string,
@@ -132,6 +136,7 @@ export async function POST(request: NextRequest) {
       companyId: Number(formData.get('companyId')),
       companyPrice: formData.get('companyPrice') ? Number(formData.get('companyPrice')) : undefined,
       dealerPrice: formData.get('dealerPrice') ? Number(formData.get('dealerPrice')) : undefined,
+      inventory: formData.get('inventory') ? Number(formData.get('inventory')) : undefined,
       customerPrice: Number(formData.get('customerPrice')),
       packingUnit: formData.get('packingUnit') as string,
       partnerId: Number(formData.get('partnerId')),
@@ -139,6 +144,7 @@ export async function POST(request: NextRequest) {
       dosage: formData.get('dosage') as string | null,
       isFeatured: formData.get('isFeatured') === 'true',
       isActive: formData.get('isActive') === 'true',
+      outofstock: formData.get('isActive') === 'true',
     }
 
     const validation = productSchema.safeParse(productData)
@@ -320,6 +326,7 @@ export async function PUT(request: NextRequest) {
     const productData = {
       productName: formData.get('productName') as string | null,
       genericName: formData.get('genericName') as string | null,
+      productLink: formData.get('productLink') as string | null,
       category: formData.get('category') as string | null,
       subCategory: formData.get('subCategory') as string | null,
       subsubCategory: formData.get('subsubCategory') as string | null,
@@ -328,12 +335,14 @@ export async function PUT(request: NextRequest) {
       companyPrice: formData.get('companyPrice') ? Number(formData.get('companyPrice')) : undefined,
       dealerPrice: formData.get('dealerPrice') ? Number(formData.get('dealerPrice')) : undefined,
       customerPrice: formData.get('customerPrice') ? Number(formData.get('customerPrice')) : undefined,
+      inventory: formData.get('inventory') ? Number(formData.get('inventory')) : undefined,
       packingUnit: formData.get('packingUnit') as string | null,
       partnerId: formData.get('partnerId') ? Number(formData.get('partnerId')) : undefined,
       description: formData.get('description') as string | null,
       dosage: formData.get('dosage') as string | null,
       isFeatured: formData.get('isFeatured') ? formData.get('isFeatured') === 'true' : undefined,
       isActive: formData.get('isActive') ? formData.get('isActive') === 'true' : undefined,
+      outofstock: formData.get('isActive') ? formData.get('isActive') === 'true' : undefined,
     }
 
     // Validate input

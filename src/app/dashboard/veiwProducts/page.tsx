@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2,  Loader2 } from 'lucide-react'
+import { Pencil, Trash2,  Loader2, Link } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -31,6 +31,7 @@ interface Product {
   id: number
   productName: string
   genericName: string | null
+  productLink: string | null
   category: string
   subCategory: string
   subsubCategory: string
@@ -38,6 +39,7 @@ interface Product {
   companyId: number
   companyPrice: number | null
   dealerPrice: number | null
+  inventory: number
   customerPrice: number
   packingUnit: string
   partnerId: number
@@ -45,6 +47,7 @@ interface Product {
   dosage: string | null
   isFeatured: boolean
   isActive: boolean
+  outofstock: boolean
   createdAt: string
   company: {
     companyName: string
@@ -76,6 +79,7 @@ export default function ViewProductsPage() {
   const [editId, setEditId] = useState<number | null>(null)
   const [editProductName, setEditProductName] = useState('')
   const [editGenericName, setEditGenericName] = useState('')
+  const [editProductLink, setEditProductLink] = useState('')
   const [editCategory, setEditCategory] = useState('')
   const [editSubCategory, setEditSubCategory] = useState('')
   const [editSubsubCategory, setEditSubsubCategory] = useState('')
@@ -84,12 +88,14 @@ export default function ViewProductsPage() {
   const [editCompanyPrice, setEditCompanyPrice] = useState<number | null>(null)
   const [editDealerPrice, setEditDealerPrice] = useState<number | null>(null)
   const [editCustomerPrice, setEditCustomerPrice] = useState(0)
+  const [editInventory, setEditInventory] = useState(0)
   const [editPackingUnit, setEditPackingUnit] = useState('')
   const [editPartnerId, setEditPartnerId] = useState(0)
   const [editDescription, setEditDescription] = useState('')
   const [editDosage, setEditDosage] = useState('')
   const [editIsFeatured, setEditIsFeatured] = useState(false)
   const [editIsActive, setEditIsActive] = useState(false)
+  const [editOutofstock, setEditOutofstock] = useState(false)
   const [editProductImage, setEditProductImage] = useState<File | null>(null)
   const [editProductImagePreview, setEditProductImagePreview] = useState<string | null>(null)
   const [editProductPdf, setEditProductPdf] = useState<File | null>(null)
@@ -105,6 +111,7 @@ export default function ViewProductsPage() {
       const { data } = await axios.get('/api/product', {
         params: { search, sortBy, sortOrder, page, limit },
       })
+   
       setProducts(data.data)
       setTotal(data.total)
       setLastCreatedAt(data.lastSubmittedAt)
@@ -141,6 +148,7 @@ export default function ViewProductsPage() {
       formData.append('id', editId.toString())
       formData.append('productName', editProductName)
       if (editGenericName) formData.append('genericName', editGenericName)
+      if (editProductLink) formData.append('productlink', editProductLink)
       formData.append('category', editCategory)
       formData.append('subCategory', editSubCategory)
       formData.append('subsubCategory', editSubsubCategory)
@@ -149,12 +157,14 @@ export default function ViewProductsPage() {
       if (editCompanyPrice) formData.append('companyPrice', editCompanyPrice.toString())
       if (editDealerPrice) formData.append('dealerPrice', editDealerPrice.toString())
       formData.append('customerPrice', editCustomerPrice.toString())
+      formData.append('inventory', editInventory.toString())
       formData.append('packingUnit', editPackingUnit)
       formData.append('partnerId', editPartnerId.toString())
       if (editDescription) formData.append('description', editDescription)
       if (editDosage) formData.append('dosage', editDosage)
       formData.append('isFeatured', String(editIsFeatured))
       formData.append('isActive', String(editIsActive))
+      formData.append('outofstock', String(editOutofstock))
       if (editProductImage) formData.append('image', editProductImage)
       if (editProductPdf) formData.append('pdf', editProductPdf)
 
@@ -247,6 +257,7 @@ export default function ViewProductsPage() {
                     setEditId(product.id)
                     setEditProductName(product.productName)
                     setEditGenericName(product.genericName || '')
+                    setEditProductLink(product.productLink || '')
                     setEditCategory(product.category)
                     setEditSubCategory(product.subCategory)
                     setEditSubsubCategory(product.subsubCategory)
@@ -255,12 +266,14 @@ export default function ViewProductsPage() {
                     setEditCompanyPrice(product.companyPrice)
                     setEditDealerPrice(product.dealerPrice)
                     setEditCustomerPrice(product.customerPrice)
+                    setEditInventory(product.inventory)
                     setEditPackingUnit(product.packingUnit)
                     setEditPartnerId(product.partnerId)
                     setEditDescription(product.description || '')
                     setEditDosage(product.dosage || '')
                     setEditIsFeatured(product.isFeatured)
                     setEditIsActive(product.isActive)
+                    setEditOutofstock(product.outofstock)
                     setEditProductImagePreview(product.image?.url || null)
                     setOpen(true)
                   }}
@@ -300,6 +313,9 @@ export default function ViewProductsPage() {
               <Badge variant={product.isActive ? 'default' : 'destructive'} className={product.isActive ? 'bg-green-500' : ''}>
                 {product.isActive ? 'Active' : 'Inactive'}
               </Badge>
+              <Badge variant={product.outofstock ? 'default' : 'destructive'} className={product.outofstock ? 'bg-green-500' : ''}>
+                {product.outofstock ? 'In stock' : 'Out of stock'}
+              </Badge>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -321,7 +337,14 @@ export default function ViewProductsPage() {
               <div>
                 <span className="font-medium">Partner:</span> {product.partner?.partnerName}
               </div>
+              <div >
+                <a href={product.productLink ?? undefined} target="_blank"
+                rel="noopener noreferrer">
+               <Link/>  {product.productLink && <p className="text-sm text-blue-500 ">Check product link</p>}
+             </a>
+              </div>
             </div>
+          
 
             <div className="grid grid-cols-3 gap-2 text-sm">
               <div>
@@ -332,6 +355,9 @@ export default function ViewProductsPage() {
               </div>
               <div>
                 <span className="font-medium">Customer Price:</span> PKR {product.customerPrice}
+              </div>
+              <div>
+                <span className="font-medium">Inventory:</span>  {product.inventory}
               </div>
             </div>
 

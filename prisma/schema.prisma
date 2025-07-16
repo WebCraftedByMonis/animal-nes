@@ -52,9 +52,12 @@ model Product {
   partner        Partner        @relation(fields: [partnerId], references: [id])
   partnerId      Int
   description    String?   
+  productLink    String?
+  inventory      Int 
   dosage         String?   @db.Text
   image          ProductImage?  // Changed to direct relation
   pdf            ProductPdf?    // Changed to direct relation
+  outofstock     Boolean        @default(false)
   isFeatured     Boolean        @default(false)
   isActive       Boolean        @default(false)
   createdAt      DateTime       @default(now())

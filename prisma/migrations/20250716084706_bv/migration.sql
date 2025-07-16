@@ -1,5 +1,4 @@
 SET SQL_REQUIRE_PRIMARY_KEY = OFF;
-
 -- CreateTable
 CREATE TABLE `City` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
@@ -36,7 +35,10 @@ CREATE TABLE `Product` (
     `packingUnit` TEXT NOT NULL,
     `partnerId` INTEGER NOT NULL,
     `description` VARCHAR(191) NULL,
+    `productLink` VARCHAR(191) NULL,
+    `inventory` INTEGER NOT NULL,
     `dosage` TEXT NULL,
+    `outofstock` BOOLEAN NOT NULL DEFAULT false,
     `isFeatured` BOOLEAN NOT NULL DEFAULT false,
     `isActive` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
