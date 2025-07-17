@@ -97,7 +97,7 @@ export default function AnimalDetailPage() {
 
   if (!animal) {
   return (
-    <div className="max-w-6xl mx-auto p-10 text-center bg-white dark:bg-gray-900 dark:bg-gray-900">
+    <div className="max-w-6xl mx-auto p-10 text-center bg-white  dark:bg-gray-900">
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 inline-block">
         <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Animal not found</h2>
         <p className="text-red-500 dark:text-red-400">
@@ -109,7 +109,7 @@ export default function AnimalDetailPage() {
 }
 
   return (
-   <div className="max-w-6xl mx-auto p-6 space-y-8 bg-white dark:bg-gray-900 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ">
+   <div className="max-w-6xl mx-auto p-6 space-y-8 bg-white  dark:bg-gray-900 text-gray-900 dark:text-gray-100 ">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Gallery */}
         <div className="space-y-4">

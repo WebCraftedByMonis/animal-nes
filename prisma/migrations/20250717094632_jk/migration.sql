@@ -1,4 +1,3 @@
-SET SQL_REQUIRE_PRIMARY_KEY = OFF;
 -- CreateTable
 CREATE TABLE `City` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
@@ -426,6 +425,40 @@ CREATE TABLE `ApplicantCV` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `JobForm` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
+    `company` VARCHAR(191) NOT NULL,
+    `mobileNumber` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NULL,
+    `position` VARCHAR(191) NOT NULL,
+    `eligibility` VARCHAR(191) NOT NULL,
+    `benefits` VARCHAR(191) NOT NULL,
+    `location` VARCHAR(191) NOT NULL,
+    `companyAddress` VARCHAR(191) NOT NULL,
+    `howToApply` VARCHAR(191) NOT NULL,
+    `jobFormImageId` INTEGER NULL,
+    `noofpositions` VARCHAR(191) NOT NULL,
+    `deadline` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `JobFormImage` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `url` VARCHAR(191) NOT NULL,
+    `alt` VARCHAR(191) NOT NULL,
+    `publicId` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `_PartnerToStartTime` (
     `A` INTEGER NOT NULL,
     `B` INTEGER NOT NULL,
@@ -514,6 +547,9 @@ ALTER TABLE `JobApplicant` ADD CONSTRAINT `JobApplicant_cvId_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `JobApplicant` ADD CONSTRAINT `JobApplicant_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `JobForm` ADD CONSTRAINT `JobForm_jobFormImageId_fkey` FOREIGN KEY (`jobFormImageId`) REFERENCES `JobFormImage`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `_PartnerToStartTime` ADD CONSTRAINT `_PartnerToStartTime_A_fkey` FOREIGN KEY (`A`) REFERENCES `Partner`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

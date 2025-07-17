@@ -492,3 +492,37 @@ model ApplicantCV {
   alt         String
   applicant   JobApplicant?
 }
+model JobForm {
+  id             Int          @id @default(autoincrement())
+  name           String
+  company        String
+  mobileNumber   String
+  email          String?
+
+  position       String
+  eligibility    String
+  benefits       String
+  location       String
+  companyAddress String
+  howToApply     String
+  jobFormImage   JobFormImage? @relation(fields: [jobFormImageId], references: [id])
+  jobFormImageId Int?
+  noofpositions  String
+  deadline       String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model JobFormImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  alt       String
+  publicId  String
+
+  // Add this line to define the inverse relation
+  jobForms  JobForm[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

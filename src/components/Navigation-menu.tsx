@@ -24,7 +24,7 @@ const components: { title: string; href: string; description: string }[] = [
   },
   {
     title: "Job vaccancies post",
-    href: "/docs/primitives/hover-card",
+    href: "/jobvacancy",
     description:
       "For sighted users to preview new job listings.",
   },
