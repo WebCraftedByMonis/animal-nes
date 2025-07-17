@@ -69,15 +69,36 @@ export default function AddPartnerPage() {
     control,
     setValue,
     watch,
+    reset,
     formState: { errors }
   } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      availableDays: [],
-      startTimeIds: [],
-      productIds: [],
-    },
-  });
+  resolver: zodResolver(formSchema),
+  defaultValues: {
+    partnerName: '',
+    gender: undefined,
+    partnerEmail: '',
+    partnerMobileNumber: '',
+    shopName: '',
+    cityName: '',
+    fullAddress: '',
+    rvmpNumber: '',
+    sendToPartner: undefined,
+    qualificationDegree: '',
+    zipcode: '',
+    state: '',
+    areaTown: '',
+    password: '',
+    bloodGroup: undefined,
+    availableDays: [],
+    startTimeIds: [],
+    specialization: '',
+    species: '',
+    partnerType: undefined,
+    productIds: [],
+    image: '',
+  },
+});
+
 
   const onDrop = (acceptedFiles: File[]) => {
     const reader = new FileReader();
@@ -101,9 +122,35 @@ export default function AddPartnerPage() {
 
       if (res.ok) {
         toast.success('Partner created successfully!');
+       reset({
+    partnerName: '',
+    gender: undefined,
+    partnerEmail: '',
+    partnerMobileNumber: '',
+    shopName: '',
+    cityName: '',
+    fullAddress: '',
+    rvmpNumber: '',
+    sendToPartner: undefined,
+    qualificationDegree: '',
+    zipcode: '',
+    state: '',
+    areaTown: '',
+    password: '',
+    bloodGroup: undefined,
+    availableDays: [],
+    startTimeIds: [],
+    specialization: '',
+    species: '',
+    partnerType: undefined,
+    productIds: [],
+    image: '',
+  });
+        setUploadedImage('');
       } else {
         const result = await res.json();
         toast.error(result?.message || 'Something went wrong.');
+
       }
       setIsSubmitting(false);
     } catch (error) {

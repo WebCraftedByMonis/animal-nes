@@ -72,7 +72,7 @@ async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.log('Received data:', validation.data); // Check if specialization is present
+   
 
     const { image, availableDays, startTimeIds, productIds, ...partnerData } = validation.data;
     const imageResult = await handleImageUpload(image);

@@ -90,10 +90,10 @@ export default function JobFormsPage() {
               key={job.id}
               className="p-4 border border-gray-200 rounded-lg shadow-sm bg-white"
             >
-              <h2 className="text-xl font-semibold">position{job.position}</h2>
-              <p className="text-gray-600">company info{job.company} – {job.location}</p>
-              <p className="text-sm mt-1">posted by {job.name}</p>
-              <p className="text-sm mt-1">no of positions  {job.noofpositions}</p>
+              <h2 className="text-xl font-semibold">Position :{job.position}</h2>
+              <p className="text-gray-600">Company info :{job.company} – {job.location}</p>
+              <p className="text-sm mt-1">Posted by: {job.name}</p>
+              <p className="text-sm mt-1">No. of positions:  {job.noofpositions}</p>
               <p className="text-sm mt-1">deadline {job.deadline}</p>
               <p className="text-sm text-gray-500 mt-1">Contact: {job.mobileNumber} {job.email && `| ${job.email}`}</p>
               <p className="mt-2"><strong>Eligibility:</strong> {job.eligibility}</p>
