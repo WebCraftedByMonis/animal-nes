@@ -26,11 +26,18 @@ const formSchema = z.object({
   subsubCategory: z.string().min(1, "Sub-sub-category is required"),
   productType: z.string().min(1, "Product type is required"),
   companyId: z.string().min(1, "Company is required"),
-  companyPrice: z.string().refine(val => !isNaN(Number(val)), "Must be a valid number").optional(),
-  dealerPrice: z.string().refine(val => !isNaN(Number(val)), "Must be a valid number").optional(),
-  inventory: z.string().refine(val => !isNaN(Number(val)), "Must be a valid number").optional(),
-  customerPrice: z.string().min(1, "Customer price is required").refine(val => !isNaN(Number(val)), "Must be a valid number"),
-  packingUnit: z.string().min(1, "Packing unit is required"),
+  variants: z
+  .array(
+    z.object({
+      packingVolume: z.string().min(1, "Packing volume is required"),
+      companyPrice: z.string().optional(),
+      dealerPrice: z.string().optional(),
+      customerPrice: z.string().min(1, "Customer price is required"),
+      inventory: z.string().min(1, "Inventory is required"),
+    })
+  )
+  .min(1, "At least one variant is required"),
+
   partnerId: z.string().min(1, "Partner is required"),
   description: z.string().optional(),
   dosage: z.string().optional(),
@@ -91,15 +98,20 @@ export default function AddProductPage() {
     subsubCategory: "",
     productType: "",
     companyId: "",
-    companyPrice: "",
-    dealerPrice: "",
-    customerPrice: "",
-    packingUnit: "",
+     variants: [
+    {
+      packingVolume: "",
+      companyPrice: "",
+      dealerPrice: "",
+      customerPrice: "",
+      inventory: "",
+    },
+  ],
     partnerId: "",
     description: "",
     dosage: "",
     productLink: "",
-    inventory: "",
+   
   },
 });
 
@@ -155,17 +167,26 @@ export default function AddProductPage() {
       const formData = new FormData();
       
       // Append all form data
-      Object.entries(data).forEach(([key, value]) => {
-        if (value === undefined || value === null) return;
-        
-        if (value instanceof File) {
-          formData.append(key, value);
-        } else if (typeof value === 'boolean') {
-          formData.append(key, value ? 'true' : 'false');
-        } else {
-          formData.append(key, String(value));
-        }
-      });
+  const { variants, ...otherFields } = data;
+
+variants.forEach((variant, i) => {
+  formData.append(`variants[${i}][packingVolume]`, variant.packingVolume);
+  formData.append(`variants[${i}][companyPrice]`, variant.companyPrice ?? "");
+  formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice ?? "");
+  formData.append(`variants[${i}][customerPrice]`, variant.customerPrice);
+  formData.append(`variants[${i}][inventory]`, variant.inventory);
+});
+
+Object.entries(otherFields).forEach(([key, value]) => {
+  if (value instanceof File) {
+    formData.append(key, value);
+  } else if (typeof value === "boolean") {
+    formData.append(key, value ? "true" : "false");
+  } else if (value !== undefined && value !== null) {
+    formData.append(key, String(value));
+  }
+});
+
 
       const response = await axios.post("/api/product", formData, {
         headers: {
@@ -355,79 +376,7 @@ export default function AddProductPage() {
                 )}
               />
 
-              {/* Company Price */}
-              <FormField
-                control={form.control}
-                name="companyPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Dealer Price */}
-              <FormField
-                control={form.control}
-                name="dealerPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Market Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Customer Price */}
-              <FormField
-                control={form.control}
-                name="customerPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Purchase Price *</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Inventory */}
-              <FormField
-                control={form.control}
-                name="inventory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Inventory *</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Packing Unit */}
-              <FormField
-                control={form.control}
-                name="packingUnit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Packing Unit *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter packing unit" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            
 
               {/* Description */}
               <FormField
@@ -590,6 +539,124 @@ export default function AddProductPage() {
                 />
               </div>
             </div>
+
+            <FormLabel className="block text-lg font-semibold text-gray-800">Product Variants *</FormLabel>
+{form.watch("variants").map((variant, index) => (
+  <div key={index} className="border p-4 rounded-md space-y-2 mb-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Packing Volume */}
+      <FormField
+        control={form.control}
+        name={`variants.${index}.packingVolume`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Packing Volume</FormLabel>
+            <FormControl>
+              <Input {...field} placeholder="e.g., 500ml, 1L" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Customer Price */}
+      <FormField
+        control={form.control}
+        name={`variants.${index}.customerPrice`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Customer Price *</FormLabel>
+            <FormControl>
+              <Input type="number" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Inventory */}
+      <FormField
+        control={form.control}
+        name={`variants.${index}.inventory`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Inventory *</FormLabel>
+            <FormControl>
+              <Input type="number" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Company Price */}
+      <FormField
+        control={form.control}
+        name={`variants.${index}.companyPrice`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Company Price</FormLabel>
+            <FormControl>
+              <Input type="number" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Dealer Price */}
+      <FormField
+        control={form.control}
+        name={`variants.${index}.dealerPrice`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Dealer Price</FormLabel>
+            <FormControl>
+              <Input type="number" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+
+    {/* Remove Variant Button */}
+    {form.watch("variants").length > 1 && (
+      <Button
+        variant="destructive"
+        onClick={() => {
+          const current = [...form.getValues("variants")];
+          current.splice(index, 1);
+          form.setValue("variants", current);
+        }}
+      >
+        Remove Variant
+      </Button>
+    )}
+  </div>
+))}
+
+<Button
+  type="button"
+  className="bg-green-100 text-green-700 border border-green-500 hover:bg-green-200"
+  onClick={() => {
+    form.setValue("variants", [
+      ...form.getValues("variants"),
+      {
+        packingVolume: "",
+        companyPrice: "",
+        dealerPrice: "",
+        customerPrice: "",
+        inventory: "",
+      },
+    ]);
+  }}
+>
+  + Add Variant
+</Button>
+
 
             <div className="mt-8 flex justify-end gap-4">
               

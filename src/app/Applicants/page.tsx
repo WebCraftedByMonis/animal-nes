@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, Loader2, FileDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Applicant {
   id: number;
@@ -42,6 +43,8 @@ export default function ApplicantCardsPage() {
   const [total, setTotal] = useState(0);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
+
+  const router = useRouter(); 
   const fetchApplicants = useCallback(async () => {
     try {
       setLoading(true);
@@ -114,7 +117,9 @@ export default function ApplicantCardsPage() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {applicants.map((app) => (
-              <div key={app.id} className="bg-white dark:bg-zinc-900 rounded-lg shadow border p-4 space-y-3">
+              <div 
+               onClick={() => router.push(`/buy/${app.id}`)}
+              key={app.id} className="bg-white dark:bg-zinc-900 rounded-lg shadow border p-4 space-y-3">
                 <div className="aspect-square w-full relative rounded overflow-hidden">
                   {app.image?.url ? (
                     <Image
@@ -155,7 +160,23 @@ export default function ApplicantCardsPage() {
                     </a>
                   )}
 
-                 
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" variant="outline">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(app.id)}
+                      disabled={isDeleting === app.id}
+                    >
+                      {isDeleting === app.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

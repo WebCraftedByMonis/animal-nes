@@ -17,19 +17,16 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
+
 interface Product {
   id: number
   productName: string
   genericName: string | null
   category: string
   subCategory: string
-  subsubCategory: string
+  subsubCategory?: string
   productType: string
   companyId: number
-  companyPrice: number | null
-  dealerPrice: number | null
-  customerPrice: number
-  packingUnit: string
   partnerId: number
   description: string | null
   dosage: string | null
@@ -47,6 +44,10 @@ interface Product {
     alt: string
     publicId: string | null
   } | null
+  variants: {
+    packingVolume: string
+    customerPrice: number
+  }[]
 }
 
 
@@ -72,7 +73,8 @@ export default function AllProductsPage() {
           sortOrder, 
           page, 
           limit,
-          fields: 'id,productName,genericName,category,subCategory,productType,company,customerPrice,packingUnit,partner,image,slug'
+          fields: 'id,productName,genericName,category,subCategory,productType,company,partner,image,slug,variants'
+
         },
       })
 
@@ -180,15 +182,16 @@ export default function AllProductsPage() {
                     <p className="text-sm text-muted-foreground line-clamp-1">{product.genericName}</p>
                   )}
                   
-                  <div className="flex gap-3 items-center">
-                    <span className='text-xl font-semibold'>Price: </span>
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                   PKR {product.customerPrice} 
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {product.packingUnit}
-                    </span>
-                  </div>
+                 <div className="space-y-1">
+  {product.variants.map((variant, idx) => (
+    <div key={idx} className="flex gap-2 items-center">
+      <Badge variant="outline" className="text-green-600 border-green-600">
+        {variant.packingVolume} – PKR {variant.customerPrice}
+      </Badge>
+    </div>
+  ))}
+</div>
+
 
                   <div className="text-sm text-muted-foreground line-clamp-1">
                     <span className="font-medium">By:</span> {product.company?.companyName}

@@ -9,6 +9,16 @@ interface CloudinaryUploadResult {
   [key: string]: string | number | boolean
 }
 
+interface VariantInput {
+  packingVolume: string
+  companyPrice?: number
+  dealerPrice?: number
+  customerPrice: number
+  inventory: number
+}
+
+
+
 interface CloudinaryError {
   message: string
   [key: string]: unknown
@@ -89,10 +99,7 @@ const productSchema = z.object({
   subsubCategory: z.string().min(1, 'Sub-sub-category is required'),
   productType: z.string().min(1, 'Product type is required'),
   companyId: z.number().min(1, 'Company ID is required'),
-  companyPrice: z.number().optional(),
-  dealerPrice: z.number().optional(),
-  customerPrice: z.number().min(0, 'Customer price must be positive'),
-  inventory: z.number().min(0, 'inventory must be positive'),
+ 
   packingUnit: z.string().min(1, 'Packing unit is required'),
   partnerId: z.number().min(1, 'Partner ID is required'),
   description: z.string().optional(),
@@ -134,17 +141,13 @@ export async function POST(request: NextRequest) {
       subsubCategory: formData.get('subsubCategory') as string,
       productType: formData.get('productType') as string,
       companyId: Number(formData.get('companyId')),
-      companyPrice: formData.get('companyPrice') ? Number(formData.get('companyPrice')) : undefined,
-      dealerPrice: formData.get('dealerPrice') ? Number(formData.get('dealerPrice')) : undefined,
-      inventory: formData.get('inventory') ? Number(formData.get('inventory')) : undefined,
-      customerPrice: Number(formData.get('customerPrice')),
-      packingUnit: formData.get('packingUnit') as string,
+  
       partnerId: Number(formData.get('partnerId')),
       description: formData.get('description') as string | null,
       dosage: formData.get('dosage') as string | null,
       isFeatured: formData.get('isFeatured') === 'true',
       isActive: formData.get('isActive') === 'true',
-      outofstock: formData.get('isActive') === 'true',
+      outofstock: formData.get('outofstock') === 'true',
     }
 
     const validation = productSchema.safeParse(productData)
@@ -161,12 +164,44 @@ export async function POST(request: NextRequest) {
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
 
+const variants: VariantInput[] = []
+
+for (let i = 0; ; i++) {
+  const packingVolume = formData.get(`variants[${i}][packingVolume]`)
+  if (!packingVolume) break
+
+  variants.push({
+    packingVolume: packingVolume.toString(),
+    companyPrice: formData.get(`variants[${i}][companyPrice]`)
+      ? Number(formData.get(`variants[${i}][companyPrice]`))
+      : undefined,
+    dealerPrice: formData.get(`variants[${i}][dealerPrice]`)
+      ? Number(formData.get(`variants[${i}][dealerPrice]`))
+      : undefined,
+    customerPrice: Number(formData.get(`variants[${i}][customerPrice]`)),
+    inventory: Number(formData.get(`variants[${i}][inventory]`)),
+  })
+}
+
+
+
     // Create product with relations
     const product = await prisma.$transaction(async (tx) => {
       // 1. Create base product
       const product = await tx.product.create({
         data: validation.data
       })
+
+for (const variant of variants) {
+  await tx.productVariant.create({
+    data: {
+      ...variant,
+      productId: product.id,
+    },
+  })
+}
+
+
 
       // 2. Create image if exists
       if (imageResult) {
@@ -200,10 +235,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(product, { status: 201 })
   } catch (error) {
     console.error('Error creating product:', error)
-    return NextResponse.json(
-      { error: 'Failed to create product' },
-      { status: 500 }
-    )
+     return NextResponse.json({ error: 'Product creation failed', details: String(error) }, { status: 400 })
   }
 }
 
@@ -288,7 +320,8 @@ export async function GET(req: NextRequest) {
         company: true,
         partner: true,
         image: true,
-        pdf: true
+        pdf: true,
+         variants: true,
       }
     }),
     prisma.product.count({
@@ -372,6 +405,26 @@ export async function PUT(request: NextRequest) {
       handleFileUpload(formData.get('image') as File | null, 'image'),
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
+const variants: VariantInput[] = []
+
+for (let i = 0; ; i++) {
+  const packingVolume = formData.get(`variants[${i}][packingVolume]`)
+  if (!packingVolume) break
+
+  variants.push({
+    packingVolume: packingVolume.toString(),
+    companyPrice: formData.get(`variants[${i}][companyPrice]`)
+      ? Number(formData.get(`variants[${i}][companyPrice]`))
+      : undefined,
+    dealerPrice: formData.get(`variants[${i}][dealerPrice]`)
+      ? Number(formData.get(`variants[${i}][dealerPrice]`))
+      : undefined,
+    customerPrice: Number(formData.get(`variants[${i}][customerPrice]`)),
+    inventory: Number(formData.get(`variants[${i}][inventory]`)),
+  })
+}
+
+
 
     // Update product with transactions
     const updatedProduct = await prisma.$transaction(async (tx) => {
@@ -381,6 +434,20 @@ export async function PUT(request: NextRequest) {
         data: validation.data,
         include: { image: true, pdf: true }
       })
+
+await tx.productVariant.deleteMany({
+  where: { productId },
+})
+
+for (const variant of variants) {
+  await tx.productVariant.create({
+    data: {
+      ...variant,
+      productId,
+    },
+  })
+}
+
 
       // Handle image update
       if (imageResult) {

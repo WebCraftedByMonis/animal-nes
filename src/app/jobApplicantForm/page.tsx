@@ -58,21 +58,21 @@ export default function JobApplicantForm() {
       address: "",
       declaration: "AGREED",
 
-      
-    // optional fields get empty string or null
-    qualification: "",
-    expectedPosition: "",
-    expectedSalary: "",
-    preferredIndustry: "",
-    preferredLocation: "",
-    highestDegree: "",
-    degreeInstitution: "",
-    majorFieldOfStudy: "",
-    workExperience: "",
-    previousCompany: "",
-    dateOfBirth: "",  // or undefined if using `z.date().optional()`
-    image: undefined,
-    cv: undefined,
+
+      // optional fields get empty string or null
+      qualification: "",
+      expectedPosition: "",
+      expectedSalary: "",
+      preferredIndustry: "",
+      preferredLocation: "",
+      highestDegree: "",
+      degreeInstitution: "",
+      majorFieldOfStudy: "",
+      workExperience: "",
+      previousCompany: "",
+      dateOfBirth: "",  // or undefined if using `z.date().optional()`
+      image: undefined,
+      cv: undefined,
     },
   });
 
@@ -177,158 +177,158 @@ export default function JobApplicantForm() {
 
             {/* Optional Fields */}
             <FormField
-  control={form.control}
-  name="qualification"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Qualification (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter qualification" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+              control={form.control}
+              name="qualification"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Qualification (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter qualification" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="expectedPosition"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Expected Position (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter expected position" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="expectedPosition"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Expected Position (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter expected position" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="expectedSalary"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Expected Salary (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter expected salary" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="expectedSalary"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Expected Salary (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter expected salary" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="preferredIndustry"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Preferred Industry (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter preferred industry" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="preferredIndustry"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Industry (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter preferred industry" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="preferredLocation"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Preferred Location (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter preferred location" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="preferredLocation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Location (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter preferred location" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="highestDegree"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Highest Degree (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter highest degree" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="highestDegree"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Highest Degree (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter highest degree" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="degreeInstitution"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Degree Institution (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter degree institution" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="degreeInstitution"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Degree Institution (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter degree institution" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="majorFieldOfStudy"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Major Field of Study (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter field of study" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="majorFieldOfStudy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Major Field of Study (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter field of study" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="workExperience"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Work Experience (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter work experience" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="workExperience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Work Experience (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter work experience" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="previousCompany"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Previous Company (optional)</FormLabel>
-      <FormControl>
-        <Input {...field} placeholder="Enter previous company" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="previousCompany"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Previous Company (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter previous company" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-<FormField
-  control={form.control}
-  name="dateOfBirth"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Date of Birth (optional)</FormLabel>
-      <FormControl>
-        <Input type="date" {...field} />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date of Birth (optional)</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Gender */}
             <FormField
@@ -355,8 +355,8 @@ export default function JobApplicantForm() {
               name="declaration"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Declaration</FormLabel>
-
+                  <FormLabel>✅ Declaration
+                    I solemnly declare that all the information provided in this form is true, accurate, and complete to the best of my knowledge. I understand that this information may be stored, viewed, or published (where required) on the official website www.animalwellness.shop for employment processing purposes.</FormLabel>
                   <FormControl>
                     <select {...field} className="input w-full border px-2 py-2 rounded">
                       <option value="AGREED">Agreed</option>

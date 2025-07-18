@@ -34,37 +34,49 @@ model DeliveryCharge {
 
 
 
-
 model Product {
-  id             Int            @id @default(autoincrement())
-  productName    String    @db.Text
+  id             Int         @id @default(autoincrement())
+  productName    String      @db.Text
   genericName    String?     @db.Text
-  category       String    @db.Text
-  subCategory    String    @db.Text
-  subsubCategory String   @db.Text
-  productType    String    @db.Text
-  company        Company        @relation(fields: [companyId], references: [id])
+  category       String      @db.Text
+  subCategory    String      @db.Text
+  subsubCategory String      @db.Text
+  productType    String      @db.Text
+  company        Company     @relation(fields: [companyId], references: [id])
   companyId      Int
-  companyPrice   Float?
-  dealerPrice    Float?
-  customerPrice  Float
-  packingUnit    String  @db.Text
-  partner        Partner        @relation(fields: [partnerId], references: [id])
+  partner        Partner     @relation(fields: [partnerId], references: [id])
   partnerId      Int
   description    String?   
   productLink    String?
-  inventory      Int 
-  dosage         String?   @db.Text
-  image          ProductImage?  // Changed to direct relation
-  pdf            ProductPdf?    // Changed to direct relation
-  outofstock     Boolean        @default(false)
-  isFeatured     Boolean        @default(false)
-  isActive       Boolean        @default(false)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-   cartItems   CartItem[]
-   checkoutItems  CheckoutItem[] 
+  dosage         String?     @db.Text
+  image          ProductImage?
+  pdf            ProductPdf?
+  outofstock     Boolean     @default(false)
+  isFeatured     Boolean     @default(false)
+  isActive       Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+
+  variants       ProductVariant[]
+
+  cartItems      CartItem[]
+  checkoutItems  CheckoutItem[]
 }
+
+
+model ProductVariant {
+  id             Int      @id @default(autoincrement())
+  packingVolume  String   @db.Text // e.g., "500ml", "1L"
+  companyPrice   Float?
+  dealerPrice    Float?
+  customerPrice  Float
+  inventory      Int      // inventory per variant
+  product        Product  @relation(fields: [productId], references: [id])
+  productId      Int
+}
+
+
 
 model ProductPdf {
   id        Int      @id @default(autoincrement())
