@@ -152,9 +152,9 @@ export function AppSidebar() {
                 </SidebarMenuButton>
                 {openJobApplicants && (
                   <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/jobApplications" className="block text-sm text-muted-foreground hover:underline">Job Applications </Link>
-                    <Link href="/dashboard/addvacancyform" className="block text-sm text-muted-foreground hover:underline">Add Job Applications News</Link>
-                    <Link href="/dashboard/viewvacancyform" className="block text-sm text-muted-foreground hover:underline">View Job Applications News</Link>
+                    <Link href="/dashboard/jobApplications" className="block text-sm text-muted-foreground hover:underline">Job Applicants </Link>
+                    <Link href="/dashboard/addvacancyform" className="block text-sm text-muted-foreground hover:underline">Post a job</Link>
+                    <Link href="/dashboard/viewvacancyform" className="block text-sm text-muted-foreground hover:underline">Job listing</Link>
                   </div>
                 )}
               </SidebarMenuItem>

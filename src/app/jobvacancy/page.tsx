@@ -1,5 +1,6 @@
 'use client'
 
+import JobFormUpload from '@/components/JobFormUpload'
 import { useEffect, useState } from 'react'
 
 interface JobFormImage {
@@ -120,6 +121,8 @@ export default function JobFormsPage() {
           ))}
         </div>
       )}
+
+      <JobFormUpload/>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 mt-6">

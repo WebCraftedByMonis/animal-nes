@@ -1,6 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
+import { toast } from 'react-toastify'
+import { formatDistanceToNow } from 'date-fns'
+import { ArrowUpDown, Loader2 } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import TableSkeleton from '@/components/skeletons/TableSkeleton'
+import Image from 'next/image'
 
 interface JobFormImage {
   id: string
@@ -29,113 +44,157 @@ interface JobForm {
 
 export default function JobFormsPage() {
   const [jobForms, setJobForms] = useState<JobForm[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(5)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  const limit = 5
+
+  const fetchJobForms = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        search,
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      })
+      const res = await fetch(`/api/vacancyForm?${params.toString()}`)
+      const data = await res.json()
+
+      setJobForms(data.data)
+      setTotal(data.total)
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to fetch job forms')
+    } finally {
+      setLoading(false)
+    }
+  }, [search, page, limit])
 
   useEffect(() => {
-    async function fetchJobForms() {
-      setLoading(true)
-      try {
-        const params = new URLSearchParams({
-          search,
-          page: page.toString(),
-          limit: limit.toString(),
-          sortBy: 'createdAt',
-          sortOrder: 'desc',
-        })
-
-        const res = await fetch(`/api/vacancyForm?${params.toString()}`)
-        const data = await res.json()
-
-        setJobForms(data.data)
-        setTotal(data.total)
-      } catch (err) {
-        console.error('Failed to fetch job forms:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchJobForms()
-  }, [search, page])
+  }, [fetchJobForms])
 
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Job Listings</h1>
+    <Suspense fallback={<TableSkeleton />}>
+      <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold text-center text-green-500">Job Listings</h1>
 
-      <input
-        type="text"
-        placeholder="Search jobs..."
-        value={search}
-        onChange={(e) => {
-          setPage(1)
-          setSearch(e.target.value)
-        }}
-        className="w-full p-2 border border-gray-300 rounded"
-      />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search jobs..."
+              value={search}
+              onChange={(e) => {
+                setPage(1)
+                setSearch(e.target.value)
+              }}
+              className="focus:ring-green-500"
+            />
+          </div>
+        </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : !jobForms ? (
-        <p>No job forms found.</p>
-      ) : (
-        <div className="space-y-4">
-          {jobForms.map((job) => (
-            <div
-              key={job.id}
-              className="p-4 border border-gray-200 rounded-lg shadow-sm bg-white"
-            >
-              <h2 className="text-xl font-semibold">Position :{job.position}</h2>
-              <p className="text-gray-600">Company info :{job.company} – {job.location}</p>
-              <p className="text-sm mt-1">Posted by: {job.name}</p>
-              <p className="text-sm mt-1">No. of positions:  {job.noofpositions}</p>
-              <p className="text-sm mt-1">deadline {job.deadline}</p>
-              <p className="text-sm text-gray-500 mt-1">Contact: {job.mobileNumber} {job.email && `| ${job.email}`}</p>
-              <p className="mt-2"><strong>Eligibility:</strong> {job.eligibility}</p>
-              <p><strong>Benefits:</strong> {job.benefits}</p>
-              <p><strong>How to apply:</strong> {job.howToApply}</p>
-              
-              {job.jobFormImage?.url && (
-                <img
-                  src={job.jobFormImage.url}
-                  alt={job.jobFormImage.alt}
-                  className="mt-3 max-h-64 rounded"
-                />
+        <div className="overflow-x-auto bg-white dark:bg-zinc-900 rounded shadow border border-zinc-200 dark:border-zinc-700">
+          <Table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+            <TableHeader className="bg-gray-100 dark:bg-zinc-800">
+              <TableRow>
+                <TableHead>Position</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Eligibility</TableHead>
+                <TableHead>Deadline</TableHead>
+                <TableHead>Image</TableHead>
+                <TableHead>Posted</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-4">
+                    <Loader2 className="w-6 h-6 mx-auto animate-spin" />
+                  </TableCell>
+                </TableRow>
+              ) : jobForms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-4">
+                    No job listings found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                jobForms.map((job) => (
+                  <TableRow key={job.id}>
+                    <TableCell>
+                      <div className="font-semibold">{job.position}</div>
+                      <div className="text-sm text-gray-500">by {job.name}</div>
+                    </TableCell>
+                    <TableCell>
+                      {job.company}
+                      <div className="text-xs text-gray-400">{job.location}</div>
+                    </TableCell>
+                    <TableCell>
+                      {job.mobileNumber}
+                      {job.email && <div className="text-xs">{job.email}</div>}
+                    </TableCell>
+                    <TableCell className="text-sm">{job.eligibility}</TableCell>
+                    <TableCell className="text-sm">{job.deadline}</TableCell>
+                    <TableCell>
+                      {job.jobFormImage?.url && (
+                        <Image
+                          src={job.jobFormImage.url}
+                          alt={job.jobFormImage.alt}
+                          width={50}
+                          height={50}
+                          className="rounded"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-gray-500">
+                      {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-              <p className="text-xs text-gray-400 mt-2">
-                Posted on {new Date(job.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+            </TableBody>
+          </Table>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((prev) => prev - 1)}
-            className="px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-          >
-            Prev
-          </button>
-          <span className="text-sm text-gray-700">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((prev) => prev + 1)}
-            className="px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-          >
-            Next
-          </button>
+          {totalPages > 1 && (
+            <div className="mt-4 px-4 py-2 flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Total entries: {total}</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 1}
+                >
+                  Prev
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={p === page ? 'default' : 'outline'}
+                    className={p === page ? 'bg-green-500 text-white' : ''}
+                    onClick={() => setPage(p)}
+                  >
+                    {p}
+                  </Button>
+                ))}
+                <Button
+                  size="sm"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </Suspense>
   )
 }

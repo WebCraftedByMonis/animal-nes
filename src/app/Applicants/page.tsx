@@ -1,15 +1,13 @@
-
 'use client'
 
-import JobFormUpload from "@/components/JobFormUpload"
-
+import ViewApplicantsPage from "@/components/ViewApplicantsPage"
 
 
 
 export default function addvacancyform() {
   return (
     <div className="py-10">
-      <JobFormUpload/>
+      <ViewApplicantsPage/>
     </div>
   )
 }

@@ -28,17 +28,17 @@ const components: { title: string; href: string; description: string }[] = [
     description:
       "For sighted users to preview new job listings.",
   },
-  // {
-  //   title: "Progress",
-  //   href: "/docs/primitives/progress",
-  //   description:
-  //     "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
-  // },
-  // {
-  //   title: "Scroll-area",
-  //   href: "/docs/primitives/scroll-area",
-  //   description: "Visually or semantically separates content.",
-  // },
+  {
+    title: "Applicants",
+    href: "/Applicants",
+    description:
+      "Here are the all applicants who want jobs",
+  },
+  {
+    title: "Scroll-area",
+    href: "/docs/primitives/scroll-area",
+    description: "Visually or semantically separates content.",
+  },
   // {
   //   title: "Tabs",
   //   href: "/docs/primitives/tabs",
