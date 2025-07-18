@@ -356,6 +356,7 @@ export default function JobApplicantForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Declaration</FormLabel>
+
                   <FormControl>
                     <select {...field} className="input w-full border px-2 py-2 rounded">
                       <option value="AGREED">Agreed</option>

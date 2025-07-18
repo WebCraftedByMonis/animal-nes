@@ -161,6 +161,7 @@ export default function Navbar() {
                 </DrawerHeader>
 
                 <div className="flex flex-col px-4 gap-4">
+                    <NavigationMenuDemo />
                   {[
                     ["Home", "/"],
                     ["Products", "/products"],
@@ -179,7 +180,7 @@ export default function Navbar() {
                     </DrawerClose>
                   ))}
 
-                  <NavigationMenuDemo />
+                
                   <ModeToggle />
                 </div>
 
