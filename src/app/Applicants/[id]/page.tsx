@@ -113,7 +113,7 @@ export default function ApplicantDetailPage() {
                 src={applicant.image.url}
                 alt={applicant.image.alt || applicant.name}
                 fill
-                className="object-cover"
+                className="object-fit"
                 priority
               />
             ) : (

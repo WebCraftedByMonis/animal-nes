@@ -23,10 +23,10 @@ const components: { title: string; href: string; description: string }[] = [
       "Form for the applicants who want the job as vetinary doctor and can apply conveniently",
   },
   {
-    title: "Job vaccancies post",
-    href: "/jobvacancy",
+    title: "Job vaccancies form",
+    href: "/jobvaccancyform",
     description:
-      "For sighted users to preview new job listings.",
+      "Post job vaccancy for your company",
   },
   {
     title: "Applicants",
@@ -35,10 +35,11 @@ const components: { title: string; href: string; description: string }[] = [
       "Here are the all applicants who want jobs",
   },
   {
-    title: "Scroll-area",
-    href: "/docs/primitives/scroll-area",
-    description: "Visually or semantically separates content.",
+    title: "Job vaccancies post",
+    href: "/jobvacancy",
+    description: "For sighted users to preview new job listings.",
   },
+ 
   // {
   //   title: "Tabs",
   //   href: "/docs/primitives/tabs",
@@ -58,38 +59,37 @@ export function NavigationMenuDemo() {
     <NavigationMenu>
       <NavigationMenuList>
 
-        {/* <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Services</span></NavigationMenuTrigger>
+        <NavigationMenuItem>
+          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Join</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-              <li className="row-span-3">
+              <li className="row-span-3 hidden md:block">
                 <NavigationMenuLink
                   asChild
                   className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
                 >
                   <Link href="/">
                     <div className="mb-2 mt-4 text-lg font-medium">
-                      shadcn/ui
+                      Animal-wellness
                     </div>
                     <p className="text-sm leading-tight text-muted-foreground">
-                      Beautifully designed components built with Radix UI and
-                      Tailwind CSS.
+                      Join Animal-wellness as a partner
                     </p>
                   </Link>
                 </NavigationMenuLink>
               </li>
-              <ListItem href="/docs" title="Introduction">
-                Re-usable components built using Radix UI and Tailwind CSS.
+              <ListItem href="/addCompany" title="Add  Company">
+                Register your company let's collab.
               </ListItem>
-              <ListItem href="/docs/installation" title="Installation">
-                How to install dependencies and structure your app.
+              <ListItem href="/addPartner" title="Become Partner">
+                Join us a vendour .
               </ListItem>
-              <ListItem href="/docs/primitives/typography" title="Typography">
-                Styles for headings, paragraphs, lists...etc
+              <ListItem href="/addProduct" title="Add Product">
+                Lists your products with us.
               </ListItem>
             </ul>
           </NavigationMenuContent>
-        </NavigationMenuItem> */}
+        </NavigationMenuItem>
 
         <NavigationMenuItem>
           <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Career Options</span></NavigationMenuTrigger>

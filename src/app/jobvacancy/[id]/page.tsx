@@ -101,7 +101,7 @@ export default function JobFormDetailPage() {
                 src={jobForm.jobFormImage.url}
                 alt={jobForm.jobFormImage.alt}
                 fill
-                className="object-cover"
+                className="object-fit"
                 priority
               />
             ) : (

@@ -125,7 +125,7 @@ export default function JobFormsCardsPage() {
                       src={job.jobFormImage.url}
                       alt={job.jobFormImage.alt || job.position}
                       fill
-                      className="object-cover"
+                      className="object-fit"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
