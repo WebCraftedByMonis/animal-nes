@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     template: "%s | Animal Wellness",
     absolute: "Animal Wellness",
   },
-  description: "A full-stack e-commerce application built with Next.js 15",
+  description: "Wellness Home to Your Animals  آس",
   keywords: "darwaza" ,
   openGraph: {
     images: ["/logo.jpg"]
