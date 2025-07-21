@@ -37,15 +37,26 @@ interface Product {
 
 
 
-export async function generateMetadata({ params }: ProductPageProps){
-  const productName = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`)
-  const { data }: { data: Product } = await productName.json()
+export async function generateMetadata({ params }: ProductPageProps) {
+  const productRes = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`);
+  const { data }: { data: Product } = await productRes.json();
 
   return {
     title: `${data.productName} | Animal Wellness`,
-    description : data.description
-  }
+    description: data.description,
+    openGraph: {
+      images: data.image
+        ? [
+            {
+              url: data.image.url,
+              alt: data.image.alt ?? data.productName,
+            },
+          ]
+        : [],
+    },
+  };
 }
+
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const res = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`)
