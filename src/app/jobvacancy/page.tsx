@@ -115,7 +115,7 @@ export default function JobFormsCardsPage() {
           <div  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {jobForms.map((job) => (
               <div
-              onClick={() => router.push(`/buy/${job.id}`)}
+              onClick={() => router.push(`/jobvacancy/${job.id}`)}
                 key={job.id}
                 className="bg-white dark:bg-zinc-900 rounded-lg shadow border p-4 space-y-3"
               >

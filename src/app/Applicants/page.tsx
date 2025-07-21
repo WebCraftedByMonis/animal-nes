@@ -118,7 +118,7 @@ export default function ApplicantCardsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {applicants.map((app) => (
               <div 
-               onClick={() => router.push(`/buy/${app.id}`)}
+               onClick={() => router.push(`/Applicants/${app.id}`)}
               key={app.id} className="bg-white dark:bg-zinc-900 rounded-lg shadow border p-4 space-y-3">
                 <div className="aspect-square w-full relative rounded overflow-hidden">
                   {app.image?.url ? (
