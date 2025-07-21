@@ -9,7 +9,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `product` DROP COLUMN `companyPrice`,
+ALTER TABLE `Product` DROP COLUMN `companyPrice`,
     DROP COLUMN `customerPrice`,
     DROP COLUMN `dealerPrice`,
     DROP COLUMN `inventory`,
