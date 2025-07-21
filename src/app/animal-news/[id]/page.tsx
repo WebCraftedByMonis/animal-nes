@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const data: NewsItem = await res.json();
 
   return {
-    title: `${data.title} | Animal Wellness`,
+    title: `${data.title} `,
     description: data.description,
     openGraph: {
       images: data.image?.url

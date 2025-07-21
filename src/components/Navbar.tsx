@@ -95,6 +95,12 @@ export default function Navbar() {
           <div className="hidden lg:flex  gap-4 items-center shrink-0">
             <NavigationMenu>
               <NavigationMenuList className="gap-3">
+               <div className="flex flex-col gap-1 justify-center items-center text-center">
+  <div className="text-xl font-semibold">آس</div>
+  <div className="text-[12px]">Wellness Home to Your Animals</div>
+</div>
+
+               
                 {[
                   ["Home", "/"],
                   ["Products", "/products"],

@@ -111,7 +111,7 @@ export default function NewsDetailPage({ id }: NewsDetailPageProps) {
              
               
               {news.description.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-4 leading-relaxed">
+                <p key={index} className="mb-4 leading-relaxed  [text-align:justify]">
                   {paragraph}
                 </p>
               ))}
