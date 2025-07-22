@@ -57,7 +57,7 @@ export default function JobFormsCardsPage() {
         sortBy: 'createdAt',
         sortOrder: 'desc',
       };
-      const { data } = await axios.get('/api/vacancyForm');
+      const { data } = await axios.get('/api/vacancyForm', { params });
       setJobForms(data.data);
       setTotal(data.total);
     } catch (error) {
