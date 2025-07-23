@@ -42,7 +42,7 @@ interface Product {
 
 
 export async function generateMetadata({ params }: ProductPageProps) {
-  const productRes = await fetch(`http://localhost:3000//api/product/${params.id}`);
+  const productRes = await fetch(`https://animal-nes-lv3a.vercel.app//api/product/${params.id}`);
   const { data }: { data: Product } = await productRes.json();
 
 
