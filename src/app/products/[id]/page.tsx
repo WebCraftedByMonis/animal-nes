@@ -3,7 +3,6 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper'
-import { Description } from '@radix-ui/react-dialog'
 
 
 
@@ -21,10 +20,6 @@ interface Product {
   subCategory: string
   subsubCategory: string
   productType: string
-  companyPrice: number | null
-  dealerPrice: number | null
-  customerPrice: number
-  packingUnit: string
   description: string | null
   dosage: string | null
   isFeatured: boolean
@@ -33,13 +28,24 @@ interface Product {
   pdf: { url: string } | null
   company: { companyName: string }
   partner: { partnerName: string }
+    variants: {
+    id: number
+    packingVolume: string
+    customerPrice: number
+    dealerPrice: number | null
+    companyPrice: number | null
+    inventory: number
+  }[]
+
 }
 
 
 
 export async function generateMetadata({ params }: ProductPageProps) {
-  const productRes = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`);
+  const productRes = await fetch(`http://localhost:3000//api/product/${params.id}`);
   const { data }: { data: Product } = await productRes.json();
+
+
 
   return {
     title: `${data.productName} | Animal Wellness`,
@@ -59,12 +65,12 @@ export async function generateMetadata({ params }: ProductPageProps) {
 
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const res = await fetch(`https://animal-nes-lv3a.vercel.app/api/product/${params.id}`)
+  const res = await fetch(`http://localhost:3000//api/product/${params.id}`)
 
   if (!res.ok) return notFound()
 
   const { data }: { data: Product } = await res.json()
-
+console.log(data)
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row gap-8">
@@ -111,17 +117,35 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <p >Generic: {data.genericName}</p>
             )}
 
-            <div className="flex items-center gap-4">
-              <p className="text-2xl font-bold text-green-600">PKR {data.customerPrice.toFixed(2)}</p>
-              {data.customerPrice && (
-                <p className="text-sm text-gray-500 ">Purchase Price: PKR {data.customerPrice.toFixed(2)}</p>
-              )}
-              
-              {data.dealerPrice && (
-                <p className="text-sm text-gray-500 line-through">Market Price: PKR {data.dealerPrice.toFixed(2)}</p>
-              )}
-              
-            </div>
+           <div className="space-y-4">
+  {data.variants.map((variant) => (
+    <div
+      key={variant.id}
+      className="border rounded-md p-3 bg-gray-50"
+    >
+      <p className="text-lg font-semibold text-gray-800">
+        Packing: {variant.packingVolume}
+      </p>
+      <div className="flex gap-4 items-center">
+        <p className="text-green-600 font-bold">
+          PKR {variant.customerPrice.toFixed(2)}
+        </p>
+        {variant.dealerPrice && (
+          <p className="text-sm text-gray-500 line-through">
+            Dealer: PKR {variant.dealerPrice.toFixed(2)}
+          </p>
+        )}
+        {variant.companyPrice && (
+          <p className="text-sm text-gray-500">
+            Company: PKR {variant.companyPrice.toFixed(2)}
+          </p>
+        )}
+      </div>
+      <p className="text-xs text-gray-500">Inventory: {variant.inventory}</p>
+    </div>
+  ))}
+</div>
+
 
             <div className="py-4 border-t border-b border-gray-200">
               <p >{data.description}</p>
@@ -141,10 +165,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <p className="font-medium text-gray-500">Product Type</p>
                 <p>{data.productType}</p>
               </div>
-              <div>
-                <p className="font-medium text-gray-500">Packing Unit</p>
-                <p>{data.packingUnit}</p>
-              </div>
+             
             </div>
 
             {data.dosage && (

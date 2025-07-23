@@ -26,7 +26,7 @@ const formSchema = z.object({
   name: z.string().min(1),
   company: z.string().min(1),
   mobileNumber: z.string().min(1),
-  email: z.string().optional().or(z.literal('')).or(z.string().email()),
+  email: z.string().email().or(z.literal('')).optional(),
   position: z.string().min(1),
   eligibility: z.string().min(1),
   benefits: z.string().min(1),

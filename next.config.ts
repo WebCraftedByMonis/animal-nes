@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false, // 🔧 Disable React Strict Mode
+
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -17,7 +19,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com", // ✅ Added Google image host
+        hostname: "lh3.googleusercontent.com",
         pathname: "**",
       },
     ],

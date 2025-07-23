@@ -99,14 +99,14 @@ const productSchema = z.object({
   subsubCategory: z.string().min(1, 'Sub-sub-category is required'),
   productType: z.string().min(1, 'Product type is required'),
   companyId: z.number().min(1, 'Company ID is required'),
- 
-  packingUnit: z.string().min(1, 'Packing unit is required'),
   partnerId: z.number().min(1, 'Partner ID is required'),
   description: z.string().optional(),
   dosage: z.string().optional(),
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),
   outofstock: z.boolean().optional(),
+  // REMOVED: companyPrice, dealerPrice, customerPrice, inventory, packingUnit
+  // These belong to variants, not the main product
 })
 
 const updateProductSchema = productSchema.partial()
@@ -131,24 +131,29 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 
+    for (const [key, value] of formData.entries()) {
+  console.log(`formData field: ${key} =>`, value);
+}
+
+
     // Extract and validate product data
     const productData = {
-      productName: formData.get('productName') as string,
-      genericName: formData.get('genericName') as string | null,
-      productLink: formData.get('productLink') as string | null,
-      category: formData.get('category') as string,
-      subCategory: formData.get('subCategory') as string,
-      subsubCategory: formData.get('subsubCategory') as string,
-      productType: formData.get('productType') as string,
-      companyId: Number(formData.get('companyId')),
-  
-      partnerId: Number(formData.get('partnerId')),
-      description: formData.get('description') as string | null,
-      dosage: formData.get('dosage') as string | null,
-      isFeatured: formData.get('isFeatured') === 'true',
-      isActive: formData.get('isActive') === 'true',
-      outofstock: formData.get('outofstock') === 'true',
-    }
+  productName: formData.get('productName') as string,
+  genericName: formData.get('genericName') as string | null,
+  productLink: formData.get('productLink') as string | null,
+  category: formData.get('category') as string,
+  subCategory: formData.get('subCategory') as string,
+  subsubCategory: formData.get('subsubCategory') as string,
+  productType: formData.get('productType') as string,
+  companyId: Number(formData.get('companyId')),
+  partnerId: Number(formData.get('partnerId')),
+  description: formData.get('description') as string | null,
+  dosage: formData.get('dosage') as string | null,
+  isFeatured: formData.get('isFeatured') === 'true',
+  isActive: formData.get('isActive') === 'true',
+  outofstock: formData.get('outofstock') === 'true',
+  // REMOVED: companyPrice, dealerPrice, customerPrice, inventory, packingUnit
+}
 
     const validation = productSchema.safeParse(productData)
     if (!validation.success) {
@@ -183,6 +188,7 @@ for (let i = 0; ; i++) {
   })
 }
 
+console.log('Parsed variants:', variants)
 
 
     // Create product with relations
@@ -191,6 +197,17 @@ for (let i = 0; ; i++) {
       const product = await tx.product.create({
         data: validation.data
       })
+
+      console.log('Created product in DB:', product)
+for (const variant of variants) {
+  const createdVariant = await tx.productVariant.create({
+    data: {
+      ...variant,
+      productId: product.id,
+    },
+  })
+  console.log('Created variant in DB:', createdVariant)
+}
 
 for (const variant of variants) {
   await tx.productVariant.create({
@@ -356,7 +373,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Extract product data
-    const productData = {
+     const productData = {
       productName: formData.get('productName') as string | null,
       genericName: formData.get('genericName') as string | null,
       productLink: formData.get('productLink') as string | null,
@@ -365,17 +382,13 @@ export async function PUT(request: NextRequest) {
       subsubCategory: formData.get('subsubCategory') as string | null,
       productType: formData.get('productType') as string | null,
       companyId: formData.get('companyId') ? Number(formData.get('companyId')) : undefined,
-      companyPrice: formData.get('companyPrice') ? Number(formData.get('companyPrice')) : undefined,
-      dealerPrice: formData.get('dealerPrice') ? Number(formData.get('dealerPrice')) : undefined,
-      customerPrice: formData.get('customerPrice') ? Number(formData.get('customerPrice')) : undefined,
-      inventory: formData.get('inventory') ? Number(formData.get('inventory')) : undefined,
-      packingUnit: formData.get('packingUnit') as string | null,
       partnerId: formData.get('partnerId') ? Number(formData.get('partnerId')) : undefined,
       description: formData.get('description') as string | null,
       dosage: formData.get('dosage') as string | null,
       isFeatured: formData.get('isFeatured') ? formData.get('isFeatured') === 'true' : undefined,
       isActive: formData.get('isActive') ? formData.get('isActive') === 'true' : undefined,
-      outofstock: formData.get('isActive') ? formData.get('isActive') === 'true' : undefined,
+      outofstock: formData.get('outofstock') ? formData.get('outofstock') === 'true' : undefined,
+      // REMOVED all variant-specific fields
     }
 
     // Validate input

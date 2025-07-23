@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm,useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDropzone } from "react-dropzone";
 import { Loader2, UploadCloud, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -114,6 +115,13 @@ export default function AddProductPage() {
    
   },
 });
+
+
+const { fields, append, remove } = useFieldArray({
+  control: form.control,
+  name: "variants",
+});
+
 
   // Fetch companies and partners
   useEffect(() => {
@@ -541,8 +549,8 @@ Object.entries(otherFields).forEach(([key, value]) => {
             </div>
 
             <FormLabel className="block text-lg font-semibold text-gray-800">Product Variants *</FormLabel>
-{form.watch("variants").map((variant, index) => (
-  <div key={index} className="border p-4 rounded-md space-y-2 mb-4">
+{fields.map((field, index) => (
+  <div key={field.id} className="border p-4 rounded-md space-y-2 mb-4">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* Packing Volume */}
       <FormField
@@ -625,15 +633,12 @@ Object.entries(otherFields).forEach(([key, value]) => {
     {/* Remove Variant Button */}
     {form.watch("variants").length > 1 && (
       <Button
-        variant="destructive"
-        onClick={() => {
-          const current = [...form.getValues("variants")];
-          current.splice(index, 1);
-          form.setValue("variants", current);
-        }}
-      >
-        Remove Variant
-      </Button>
+  variant="destructive"
+  onClick={() => remove(index)}
+>
+  Remove Variant
+</Button>
+
     )}
   </div>
 ))}
@@ -641,21 +646,19 @@ Object.entries(otherFields).forEach(([key, value]) => {
 <Button
   type="button"
   className="bg-green-100 text-green-700 border border-green-500 hover:bg-green-200"
-  onClick={() => {
-    form.setValue("variants", [
-      ...form.getValues("variants"),
-      {
-        packingVolume: "",
-        companyPrice: "",
-        dealerPrice: "",
-        customerPrice: "",
-        inventory: "",
-      },
-    ]);
-  }}
+  onClick={() =>
+    append({
+      packingVolume: "",
+      companyPrice: "",
+      dealerPrice: "",
+      customerPrice: "",
+      inventory: "",
+    })
+  }
 >
   + Add Variant
 </Button>
+
 
 
             <div className="mt-8 flex justify-end gap-4">

@@ -27,6 +27,7 @@ export default function FeaturedProducts() {
     const fetchFeaturedProducts = async () => {
       try {
         const { data } = await axios.get('/api/product')
+        console.log(data)
         const featuredProducts = data.data.filter((product: Product) => 
           product.isFeatured && product.isActive
         )
