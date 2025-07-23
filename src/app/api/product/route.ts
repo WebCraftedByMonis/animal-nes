@@ -209,14 +209,7 @@ for (const variant of variants) {
   console.log('Created variant in DB:', createdVariant)
 }
 
-for (const variant of variants) {
-  await tx.productVariant.create({
-    data: {
-      ...variant,
-      productId: product.id,
-    },
-  })
-}
+
 
 
 
@@ -244,9 +237,13 @@ for (const variant of variants) {
       }
 
       return tx.product.findUnique({
-        where: { id: product.id },
-        include: { image: true, pdf: true }
-      })
+    where: { id: product.id },
+    include: { 
+      image: true, 
+      pdf: true,
+      variants: true // Include variants in the response
+    }
+  })
     })
 
     return NextResponse.json(product, { status: 201 })

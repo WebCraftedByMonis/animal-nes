@@ -175,7 +175,7 @@ variants.forEach((variant, i) => {
   formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice ?? "");
   formData.append(`variants[${i}][customerPrice]`, variant.customerPrice);
   formData.append(`variants[${i}][inventory]`, variant.inventory);
-  console.log("happen")
+  
 });
 
 Object.entries(otherFields).forEach(([key, value]) => {
@@ -188,7 +188,7 @@ Object.entries(otherFields).forEach(([key, value]) => {
   }
 });
 
-
+console.log(data)
       const response = await axios.post("/api/product", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -643,7 +643,7 @@ Object.entries(otherFields).forEach(([key, value]) => {
   type="button"
   className="bg-green-100 text-green-700 border border-green-500 hover:bg-green-200"
   onClick={() => {
-    console.log("add variant")
+    
     form.setValue("variants", [
       ...form.getValues("variants"),
       {
