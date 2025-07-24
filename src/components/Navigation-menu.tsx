@@ -18,7 +18,7 @@ import {
 const components: { title: string; href: string; description: string }[] = [
   {
     title: "Job Appication Form",
-    href: "jobApplicantForm",
+    href: "/jobApplicantForm",
     description:
       "Form for the applicants who want the job as vetinary doctor and can apply conveniently",
   },
