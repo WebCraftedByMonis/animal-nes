@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
       benefits: formData.get('benefits'),
       location: formData.get('location'),
       deadline: formData.get('deadline'),
-      noofpositions: formData.get('deadline'),
+      noofpositions: formData.get('noofpositions'),
+
       companyAddress: formData.get('companyAddress'),
       howToApply: formData.get('howToApply'),
     }
@@ -172,5 +173,139 @@ export async function GET(req: NextRequest) {
       { error: 'Failed to fetch job forms' },
       { status: 500 }
     )
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const formData = await req.formData()
+    const id = parseInt(formData.get('id') as string)
+
+    if (!id || isNaN(id)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+    }
+
+    const data = {
+      name: formData.get('name'),
+      company: formData.get('company'),
+      mobileNumber: formData.get('mobileNumber'),
+      email: formData.get('email'),
+      position: formData.get('position'),
+      eligibility: formData.get('eligibility'),
+      benefits: formData.get('benefits'),
+      location: formData.get('location'),
+      deadline: formData.get('deadline'),
+      noofpositions: formData.get('noofpositions'),
+      companyAddress: formData.get('companyAddress'),
+      howToApply: formData.get('howToApply'),
+    }
+
+    const validation = jobFormSchema.safeParse(data)
+
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 })
+    }
+
+    const imageFile = formData.get('image') as File | null
+
+    const existing = await prisma.jobForm.findUnique({
+      where: { id },
+      include: { jobFormImage: true },
+    })
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Job Form not found' }, { status: 404 })
+    }
+
+    let imageUploadResult = null
+
+    if (imageFile) {
+      // Delete old image if exists
+      if (existing.jobFormImage?.publicId) {
+        await cloudinary.uploader.destroy(existing.jobFormImage.publicId, { resource_type: 'image' })
+      }
+
+      const arrayBuffer = await imageFile.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      imageUploadResult = await uploadImageToCloudinary(buffer)
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      let jobFormImage = existing.jobFormImage
+
+      if (imageUploadResult) {
+        if (jobFormImage) {
+          jobFormImage = await tx.jobFormImage.update({
+            where: { id: jobFormImage.id },
+            data: {
+              url: imageUploadResult.secure_url,
+              publicId: imageUploadResult.public_id,
+              alt: validation.data.company,
+            },
+          })
+        } else {
+          jobFormImage = await tx.jobFormImage.create({
+            data: {
+              url: imageUploadResult.secure_url,
+              publicId: imageUploadResult.public_id,
+              alt: validation.data.company,
+            },
+          })
+        }
+      }
+
+      const jobForm = await tx.jobForm.update({
+        where: { id },
+        data: {
+          ...validation.data,
+          jobFormImageId: jobFormImage?.id || null,
+        },
+        include: { jobFormImage: true },
+      })
+
+      return jobForm
+    })
+
+    return NextResponse.json(updated)
+  } catch (err) {
+    console.error('Error updating job form:', err)
+    return NextResponse.json({ error: 'Failed to update job form' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const id = parseInt(searchParams.get('id') || '', 10)
+
+  if (!id || isNaN(id)) {
+    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+  }
+
+  try {
+    const existing = await prisma.jobForm.findUnique({
+      where: { id },
+      include: { jobFormImage: true },
+    })
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Job Form not found' }, { status: 404 })
+    }
+
+    if (existing.jobFormImage?.publicId) {
+      await cloudinary.uploader.destroy(existing.jobFormImage.publicId, { resource_type: 'image' })
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (existing.jobFormImageId) {
+        await tx.jobFormImage.delete({ where: { id: existing.jobFormImageId } })
+      }
+
+      await tx.jobForm.delete({ where: { id } })
+    })
+
+    return NextResponse.json({ message: 'Deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting job form:', error)
+    return NextResponse.json({ error: 'Failed to delete job form' }, { status: 500 })
   }
 }

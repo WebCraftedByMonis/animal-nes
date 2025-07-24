@@ -159,14 +159,14 @@ export default function JobFormsCardsPage() {
                     Posted on {new Date(job.createdAt).toLocaleDateString()}
                   </p>
 
-                  <div className="flex gap-2 pt-2">
+                  {/* <div className="flex gap-2 pt-2">
                     <Button size="sm" variant="outline">
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button size="sm" variant="destructive">
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
