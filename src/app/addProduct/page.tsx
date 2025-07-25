@@ -17,6 +17,7 @@ import Image from "next/image";
 import { toast } from "react-toastify";
 import axios, { AxiosError } from "axios";
 import "react-toastify/dist/ReactToastify.css";
+import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
 
 const formSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
@@ -250,65 +251,134 @@ console.log(data)
                 )}
               />
 
-              {/* Category */}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Sub Category */}
-              <FormField
-                control={form.control}
-                name="subCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sub-category *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter sub-category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Sub-sub Category */}
-              <FormField
-                control={form.control}
-                name="subsubCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sub-sub-category *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter sub-sub-category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Product Type */}
-              <FormField
-                control={form.control}
-                name="productType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Type *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter product type" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+       
+                     {/* Category */}
+                     <FormField
+         control={form.control}
+         name="category"
+         render={({ field }) => (
+           <FormItem>
+             <FormLabel>Category *</FormLabel>
+             <FormControl>
+               <SuggestiveInput
+                 suggestions={[
+                   "Veterinary",
+                   "Poultry",
+                   "Pets",
+                   "Equine",
+                   "Livestock Feed",
+                   "Poultry Feed",
+                   "Instruments & Equipment",
+                   "Fisheries & Aquaculture",
+                   "Vaccination Services / Kits",
+                   "Herbal / Organic Products",
+                 ]}
+                 value={field.value}
+                 onChange={field.onChange}
+                 placeholder="Enter category"
+               />
+             </FormControl>
+             <FormMessage />
+           </FormItem>
+         )}
+       />
+       
+       
+                     {/* Sub Category */}
+                    <FormField
+         control={form.control}
+         name="subCategory"
+         render={({ field }) => (
+           <FormItem>
+             <FormLabel>Sub-category *</FormLabel>
+             <FormControl>
+               <SuggestiveInput
+                 suggestions={[
+                   "Antiparasitics",
+                   "Antibiotics & Antibacterials",
+                   "Vaccines & Immunologicals",
+                   "Nutritional Supplements",
+                   "Growth Promoters",
+                   "Coccidiostats",
+                   "Pain Management / NSAIDs",
+                   "Reproductive Health / Hormones",
+                   "Liver & Kidney Tonics",
+                   "Respiratory Health / Expectorants",
+                 ]}
+                 value={field.value}
+                 onChange={field.onChange}
+                 placeholder="Enter sub-category"
+               />
+             </FormControl>
+             <FormMessage />
+           </FormItem>
+         )}
+       />
+       
+       
+                     {/* Sub-sub Category */}
+                     <FormField
+         control={form.control}
+         name="subsubCategory"
+         render={({ field }) => (
+           <FormItem>
+             <FormLabel>Sub-sub-category *</FormLabel>
+             <FormControl>
+               <SuggestiveInput
+                 suggestions={[
+                   "Endoparasiticides (e.g., dewormers)",
+                   "Ectoparasiticides (e.g., tick/flea/mite treatment)",
+                   "Broad-Spectrum Dewormers",
+                   "Multivitamins & Trace Elements",
+                   "Electrolytes & Hydration Solutions",
+                   "Mineral Mixtures / Salt Licks",
+                   "Probiotics & Enzymes",
+                   "Calcium / Phosphorus Supplements",
+                   "Immuno-Stimulants",
+                   "Hepato-Renal Protectants",
+                 ]}
+                 value={field.value}
+                 onChange={field.onChange}
+                 placeholder="Enter sub-sub-category"
+               />
+             </FormControl>
+             <FormMessage />
+           </FormItem>
+         )}
+       />
+       
+       
+                     {/* Product Type */}
+                    <FormField
+         control={form.control}
+         name="productType"
+         render={({ field }) => (
+           <FormItem>
+             <FormLabel>Product Type *</FormLabel>
+             <FormControl>
+               <SuggestiveInput
+                 suggestions={[
+                   "Injection (IV, IM, SC)",
+                   "Tablet / Bolus / Pill",
+                   "Oral Powder / Sachet",
+                   "Oral Suspension / Syrup",
+                   "Spray / Aerosol",
+                   "Oral Solution / Drops",
+                   "Topical Application / Pour-on / Spot-on",
+                   "Premix (for feed inclusion)",
+                   "Intrauterine / Intra-mammary",
+                   "Transdermal Patch / Ointment / Cream"
+                 ]}
+                 value={field.value}
+                 onChange={field.onChange}
+                 placeholder="Enter product type"
+               />
+             </FormControl>
+             <FormMessage />
+           </FormItem>
+         )}
+       />
+       
 
               {/* Product link */}
               <FormField

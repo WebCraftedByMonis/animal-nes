@@ -27,7 +27,7 @@ const dayOptions = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
   'FRIDAY', 'SATURDAY', 'SUNDAY'
 ] as const;
-const partnerTypeOptions = ['DOCTOR', 'VENDOR', 'SUPPLIER'] as const;
+const partnerTypeOptions = ['Veterinarian (Clinic, Hospital, Consultant)', 'Sales and Marketing ( dealer , distributor , sales person)'] as const;
 
 
 const formSchema = z.object({

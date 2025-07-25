@@ -116,14 +116,14 @@ export default function ProductClient({ product }: { product: Product }) {
           <p className="text-green-700 font-bold text-xl">
             PKR {variant.customerPrice.toFixed(2)}
           </p>
-          {variant.dealerPrice && (
+          {/* {variant.dealerPrice && (
             <p className="text-sm text-gray-500 line-through">
-              Dealer: PKR {variant.dealerPrice.toFixed(2)}
+              R: PKR {variant.dealerPrice.toFixed(2)}
             </p>
-          )}
+          )} */}
           {variant.companyPrice && (
             <p className="text-sm text-gray-500">
-              Company: PKR {variant.companyPrice.toFixed(2)}
+              Retail : PKR {variant.companyPrice.toFixed(2)}
             </p>
           )}
           <p className="text-sm text-gray-700">Inventory: {variant.inventory}</p>
