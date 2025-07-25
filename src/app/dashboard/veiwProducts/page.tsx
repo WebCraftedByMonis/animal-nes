@@ -620,28 +620,28 @@ export default function ViewProductsPage() {
                           />
                         </div>
                         <div>
-                          <Label>Customer Price*</Label>
+                          <Label>Our Price*</Label>
                           <Input
                             type="number"
-                            placeholder="Customer price"
+                            placeholder="Our price"
                             value={variant.customerPrice}
                             onChange={(e) => handleVariantChange(index, 'customerPrice', Number(e.target.value))}
                           />
                         </div>
                         <div>
-                          <Label>Company Price</Label>
+                          <Label>Retail Price</Label>
                           <Input
                             type="number"
-                            placeholder="Company price"
+                            placeholder="Retail Price"
                             value={variant.companyPrice || ''}
                             onChange={(e) => handleVariantChange(index, 'companyPrice', e.target.value ? Number(e.target.value) : null)}
                           />
                         </div>
                         <div>
-                          <Label>Dealer Price</Label>
+                          <Label>Purchase Price</Label>
                           <Input
                             type="number"
-                            placeholder="Dealer price"
+                            placeholder="Purchase price"
                             value={variant.dealerPrice || ''}
                             onChange={(e) => handleVariantChange(index, 'dealerPrice', e.target.value ? Number(e.target.value) : null)}
                           />

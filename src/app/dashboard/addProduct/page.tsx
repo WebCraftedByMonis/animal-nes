@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm,useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDropzone } from "react-dropzone";
@@ -18,6 +18,8 @@ import Image from "next/image";
 import { toast } from "react-toastify";
 import axios, { AxiosError } from "axios";
 import "react-toastify/dist/ReactToastify.css";
+import { ComboboxSelect } from "@/components/shared/ComboboxSelect";
+import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
 
 const formSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
@@ -28,16 +30,16 @@ const formSchema = z.object({
   productType: z.string().min(1, "Product type is required"),
   companyId: z.string().min(1, "Company is required"),
   variants: z
-  .array(
-    z.object({
-      packingVolume: z.string().min(1, "Packing volume is required"),
-      companyPrice: z.string().optional(),
-      dealerPrice: z.string().optional(),
-      customerPrice: z.string().min(1, "Customer price is required"),
-      inventory: z.string().min(1, "Inventory is required"),
-    })
-  )
-  .min(1, "At least one variant is required"),
+    .array(
+      z.object({
+        packingVolume: z.string().min(1, "Packing volume is required"),
+        companyPrice: z.string().optional(),
+        dealerPrice: z.string().optional(),
+        customerPrice: z.string().min(1, "Customer price is required"),
+        inventory: z.string().min(1, "Inventory is required"),
+      })
+    )
+    .min(1, "At least one variant is required"),
 
   partnerId: z.string().min(1, "Partner is required"),
   description: z.string().optional(),
@@ -46,12 +48,12 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
   outofstock: z.boolean().default(true),
- image: z
+  image: z
     .any()
     .refine((file) => file instanceof File && file.size > 0, {
       message: "Image is required",
     }),
-  
+
   pdf: z
     .any()
     .optional()
@@ -85,42 +87,42 @@ export default function AddProductPage() {
 
 
 
-  
- const form = useForm<FormValues>({
-  resolver: zodResolver(formSchema)  as any , // Temporary workaround
-  defaultValues: {
-    isFeatured: false,
-    isActive: true,
-    outofstock: true,
-    productName: "",
-    genericName: "",
-    category: "",
-    subCategory: "",
-    subsubCategory: "",
-    productType: "",
-    companyId: "",
-     variants: [
-    {
-      packingVolume: "",
-      companyPrice: "",
-      dealerPrice: "",
-      customerPrice: "",
-      inventory: "",
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema) as any, // Temporary workaround
+    defaultValues: {
+      isFeatured: false,
+      isActive: true,
+      outofstock: true,
+      productName: "",
+      genericName: "",
+      category: "",
+      subCategory: "",
+      subsubCategory: "",
+      productType: "",
+      companyId: "",
+      variants: [
+        {
+          packingVolume: "",
+          companyPrice: "",
+          dealerPrice: "",
+          customerPrice: "",
+          inventory: "",
+        },
+      ],
+      partnerId: "",
+      description: "",
+      dosage: "",
+      productLink: "",
+
     },
-  ],
-    partnerId: "",
-    description: "",
-    dosage: "",
-    productLink: "",
-   
-  },
-});
+  });
 
 
-const { fields, append, remove } = useFieldArray({
-  control: form.control,
-  name: "variants",
-});
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "variants",
+  });
 
 
   // Fetch companies and partners
@@ -173,27 +175,27 @@ const { fields, append, remove } = useFieldArray({
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      
+
       // Append all form data
-  const { variants, ...otherFields } = data;
+      const { variants, ...otherFields } = data;
 
-variants.forEach((variant, i) => {
-  formData.append(`variants[${i}][packingVolume]`, variant.packingVolume);
-  formData.append(`variants[${i}][companyPrice]`, variant.companyPrice ?? "");
-  formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice ?? "");
-  formData.append(`variants[${i}][customerPrice]`, variant.customerPrice);
-  formData.append(`variants[${i}][inventory]`, variant.inventory);
-});
+      variants.forEach((variant, i) => {
+        formData.append(`variants[${i}][packingVolume]`, variant.packingVolume);
+        formData.append(`variants[${i}][companyPrice]`, variant.companyPrice ?? "");
+        formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice ?? "");
+        formData.append(`variants[${i}][customerPrice]`, variant.customerPrice);
+        formData.append(`variants[${i}][inventory]`, variant.inventory);
+      });
 
-Object.entries(otherFields).forEach(([key, value]) => {
-  if (value instanceof File) {
-    formData.append(key, value);
-  } else if (typeof value === "boolean") {
-    formData.append(key, value ? "true" : "false");
-  } else if (value !== undefined && value !== null) {
-    formData.append(key, String(value));
-  }
-});
+      Object.entries(otherFields).forEach(([key, value]) => {
+        if (value instanceof File) {
+          formData.append(key, value);
+        } else if (typeof value === "boolean") {
+          formData.append(key, value ? "true" : "false");
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
 
 
       const response = await axios.post("/api/product", formData, {
@@ -205,20 +207,20 @@ Object.entries(otherFields).forEach(([key, value]) => {
       if (response.status === 201) {
         toast.success("Product created successfully");
       }
-   } catch (error: unknown) {
-  console.error("Submission error:", error);
-  if (axios.isAxiosError(error)) {
-    toast.error(error.response?.data?.error || "Failed to create product");
-  } else {
-    toast.error("Network error. Please try again.");
-  }
-}finally{
-  setIsSubmitting(false)
-}
+    } catch (error: unknown) {
+      console.error("Submission error:", error);
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.error || "Failed to create product");
+      } else {
+        toast.error("Network error. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
 
   };
 
-  return ( 
+  return (
     <div className="  min-h-screen">
       <div className="mx-auto max-w-4xl px-4 py-8 ">
         <h1 className="text-3xl font-bold text-green-500 mb-8">Add New Product</h1>
@@ -259,63 +261,131 @@ Object.entries(otherFields).forEach(([key, value]) => {
 
               {/* Category */}
               <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+  control={form.control}
+  name="category"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Category *</FormLabel>
+      <FormControl>
+        <SuggestiveInput
+          suggestions={[
+            "Veterinary",
+            "Poultry",
+            "Pets",
+            "Equine",
+            "Livestock Feed",
+            "Poultry Feed",
+            "Instruments & Equipment",
+            "Fisheries & Aquaculture",
+            "Vaccination Services / Kits",
+            "Herbal / Organic Products",
+          ]}
+          value={field.value}
+          onChange={field.onChange}
+          placeholder="Enter category"
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
 
               {/* Sub Category */}
-              <FormField
-                control={form.control}
-                name="subCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sub-category *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter sub-category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+             <FormField
+  control={form.control}
+  name="subCategory"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Sub-category *</FormLabel>
+      <FormControl>
+        <SuggestiveInput
+          suggestions={[
+            "Antiparasitics",
+            "Antibiotics & Antibacterials",
+            "Vaccines & Immunologicals",
+            "Nutritional Supplements",
+            "Growth Promoters",
+            "Coccidiostats",
+            "Pain Management / NSAIDs",
+            "Reproductive Health / Hormones",
+            "Liver & Kidney Tonics",
+            "Respiratory Health / Expectorants",
+          ]}
+          value={field.value}
+          onChange={field.onChange}
+          placeholder="Enter sub-category"
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
 
               {/* Sub-sub Category */}
               <FormField
-                control={form.control}
-                name="subsubCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sub-sub-category *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter sub-sub-category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+  control={form.control}
+  name="subsubCategory"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Sub-sub-category *</FormLabel>
+      <FormControl>
+        <SuggestiveInput
+          suggestions={[
+            "Endoparasiticides (e.g., dewormers)",
+            "Ectoparasiticides (e.g., tick/flea/mite treatment)",
+            "Broad-Spectrum Dewormers",
+            "Multivitamins & Trace Elements",
+            "Electrolytes & Hydration Solutions",
+            "Mineral Mixtures / Salt Licks",
+            "Probiotics & Enzymes",
+            "Calcium / Phosphorus Supplements",
+            "Immuno-Stimulants",
+            "Hepato-Renal Protectants",
+          ]}
+          value={field.value}
+          onChange={field.onChange}
+          placeholder="Enter sub-sub-category"
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
 
               {/* Product Type */}
-              <FormField
-                control={form.control}
-                name="productType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Type *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter product type" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+             <FormField
+  control={form.control}
+  name="productType"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Product Type *</FormLabel>
+      <FormControl>
+        <SuggestiveInput
+          suggestions={[
+            "Injection (IV, IM, SC)",
+            "Tablet / Bolus / Pill",
+            "Oral Powder / Sachet",
+            "Oral Suspension / Syrup",
+            "Spray / Aerosol",
+            "Oral Solution / Drops",
+            "Topical Application / Pour-on / Spot-on",
+            "Premix (for feed inclusion)",
+            "Intrauterine / Intra-mammary",
+            "Transdermal Patch / Ointment / Cream"
+          ]}
+          value={field.value}
+          onChange={field.onChange}
+          placeholder="Enter product type"
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
 
               {/* Product link */}
               <FormField
@@ -339,24 +409,22 @@ Object.entries(otherFields).forEach(([key, value]) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Company *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select company" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {companies.map((company) => (
-                          <SelectItem key={company.id} value={String(company.id)}>
-                            {company.companyName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ComboboxSelect
+                        options={companies.map((company) => ({
+                          id: company.id,
+                          label: company.companyName,
+                        }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select company"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
 
               {/* Partner Select */}
               <FormField
@@ -365,26 +433,24 @@ Object.entries(otherFields).forEach(([key, value]) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Partner *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select partner" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {partners.map((partner) => (
-                          <SelectItem key={partner.id} value={String(partner.id)}>
-                            {partner.partnerName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ComboboxSelect
+                        options={partners.map((partner) => ({
+                          id: partner.id,
+                          label: partner.partnerName,
+                        }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select partner"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-            
+
+
 
               {/* Description */}
               <FormField
@@ -449,7 +515,7 @@ Object.entries(otherFields).forEach(([key, value]) => {
                     </FormItem>
                   )}
                 />
-              
+
 
                 <FormField
                   control={form.control}
@@ -537,7 +603,7 @@ Object.entries(otherFields).forEach(([key, value]) => {
                             <p className="text-xs text-gray-500">
                               Supports: PDF files
                             </p>
-                             <span className="text-sm text-gray-500">Pdf should not be more than 10 mb</span>
+                            <span className="text-sm text-gray-500">Pdf should not be more than 10 mb</span>
                           </div>
                         )}
                       </div>
@@ -549,122 +615,122 @@ Object.entries(otherFields).forEach(([key, value]) => {
             </div>
 
             <FormLabel className="block text-lg font-semibold text-gray-800">Product Variants *</FormLabel>
-{fields.map((field, index) => (
-  <div key={field.id} className="border p-4 rounded-md space-y-2 mb-4">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Packing Volume */}
-      <FormField
-        control={form.control}
-        name={`variants.${index}.packingVolume`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Packing Volume</FormLabel>
-            <FormControl>
-              <Input {...field} placeholder="e.g., 500ml, 1L" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+            {fields.map((field, index) => (
+              <div key={field.id} className="border p-4 rounded-md space-y-2 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Packing Volume */}
+                  <FormField
+                    control={form.control}
+                    name={`variants.${index}.packingVolume`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Packing Volume</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., 500ml, 1L" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-      {/* Customer Price */}
-      <FormField
-        control={form.control}
-        name={`variants.${index}.customerPrice`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Customer Price *</FormLabel>
-            <FormControl>
-              <Input type="number" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+                  {/* Customer Price */}
+                  <FormField
+                    control={form.control}
+                    name={`variants.${index}.customerPrice`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Our Price *</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-      {/* Inventory */}
-      <FormField
-        control={form.control}
-        name={`variants.${index}.inventory`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Inventory *</FormLabel>
-            <FormControl>
-              <Input type="number" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
+                  {/* Inventory */}
+                  <FormField
+                    control={form.control}
+                    name={`variants.${index}.inventory`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Inventory *</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Company Price */}
-      <FormField
-        control={form.control}
-        name={`variants.${index}.companyPrice`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Company Price</FormLabel>
-            <FormControl>
-              <Input type="number" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Company Price */}
+                  <FormField
+                    control={form.control}
+                    name={`variants.${index}.companyPrice`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Retail Price</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-      {/* Dealer Price */}
-      <FormField
-        control={form.control}
-        name={`variants.${index}.dealerPrice`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Dealer Price</FormLabel>
-            <FormControl>
-              <Input type="number" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
+                  {/* Dealer Price */}
+                  <FormField
+                    control={form.control}
+                    name={`variants.${index}.dealerPrice`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Purchase Price</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-    {/* Remove Variant Button */}
-    {form.watch("variants").length > 1 && (
-      <Button
-  variant="destructive"
-  onClick={() => remove(index)}
->
-  Remove Variant
-</Button>
+                {/* Remove Variant Button */}
+                {form.watch("variants").length > 1 && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => remove(index)}
+                  >
+                    Remove Variant
+                  </Button>
 
-    )}
-  </div>
-))}
+                )}
+              </div>
+            ))}
 
-<Button
-  type="button"
-  className="bg-green-100 text-green-700 border border-green-500 hover:bg-green-200"
-  onClick={() =>
-    append({
-      packingVolume: "",
-      companyPrice: "",
-      dealerPrice: "",
-      customerPrice: "",
-      inventory: "",
-    })
-  }
->
-  + Add Variant
-</Button>
+            <Button
+              type="button"
+              className="bg-green-100 text-green-700 border border-green-500 hover:bg-green-200"
+              onClick={() =>
+                append({
+                  packingVolume: "",
+                  companyPrice: "",
+                  dealerPrice: "",
+                  customerPrice: "",
+                  inventory: "",
+                })
+              }
+            >
+              + Add Variant
+            </Button>
 
 
 
             <div className="mt-8 flex justify-end gap-4">
-              
-              <Button 
-                type="submit" 
+
+              <Button
+                type="submit"
                 disabled={isSubmitting}
                 className="bg-green-500 hover:bg-green-600"
               >
