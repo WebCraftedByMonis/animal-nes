@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'// <- new client component
 import ProductClient from './ProductClient';
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-  const res = await fetch(`http://localhost:3000///api/product/${params.id}`);
+  const res = await fetch(`https://animal-nes-lv3a.vercel.app//api/product/${params.id}`);
   const { data } = await res.json();
 
   return {
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 }
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
-  const res = await fetch(`http://localhost:3000///api/product/${params.id}`);
+  const res = await fetch(`https://animal-nes-lv3a.vercel.app//api/product/${params.id}`);
 
   if (!res.ok) return notFound();
 
