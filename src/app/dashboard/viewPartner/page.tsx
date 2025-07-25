@@ -413,7 +413,7 @@ export default function ViewPartnersPage() {
 
               {/* Area Town */}
               <div>
-                <label className="block text-sm font-medium mb-1">Area/Town</label>
+                <label className="block text-sm font-medium mb-1">Date of birth</label>
                 <Input value={editAreaTown} onChange={(e) => setEditAreaTown(e.target.value)} />
               </div>
 

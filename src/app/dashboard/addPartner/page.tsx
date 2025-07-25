@@ -20,8 +20,8 @@ import 'react-toastify/dist/ReactToastify.css';
 const genderOptions = ['MALE', 'FEMALE'] as const;
 const sendToPartnerOptions = ['YES', 'NO'] as const;
 const bloodGroupOptions = [
-  'A_POSITIVE', 'B_POSITIVE', 'A_NEGATIVE', 'B_NEGATIVE',
-  'AB_POSITIVE', 'AB_NEGATIVE', 'O_POSITIVE', 'O_NEGATIVE'
+  'A+', 'B+', 'A-', 'B-',
+  'AB+', 'AB-', 'O+', 'O-'
 ] as const;
 const dayOptions = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
@@ -259,7 +259,7 @@ export default function AddPartnerPage() {
           </div>
 
           <div>
-            <Label htmlFor="areaTown">Area/Town</Label>
+            <Label htmlFor="areaTown">Date of Birth</Label>
             <Input id="areaTown" {...register('areaTown')} className="focus:border-green-500 focus:ring-green-500" />
           </div>
 
