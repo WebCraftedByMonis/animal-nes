@@ -18,13 +18,12 @@ export default async function CheckoutPage() {
           product: {
             include: { image: true },
           },
-          
+          variant: true, // Add this line to include variant info
         },
-        
       },
       animalCart: { include: { animal: { include: { images: true } } } },
     },
   })
 
-  return <CheckoutClient cartItems={user?.cart || []}  animalCartItems={user?.animalCart || []} />
+  return <CheckoutClient cartItems={user?.cart || []} animalCartItems={user?.animalCart || []} />
 }

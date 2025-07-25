@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2,  Loader2, Link } from 'lucide-react'
+import { Pencil, Trash2, Loader2, Link, Plus, X, Eye } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -26,6 +26,16 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+
+interface ProductVariant {
+  id?: number
+  packingVolume: string
+  companyPrice: number | null
+  dealerPrice: number | null
+  customerPrice: number
+  inventory: number
+}
 
 interface Product {
   id: number
@@ -37,11 +47,6 @@ interface Product {
   subsubCategory: string
   productType: string
   companyId: number
-  companyPrice: number | null
-  dealerPrice: number | null
-  inventory: number
-  customerPrice: number
-  packingUnit: string
   partnerId: number
   description: string | null
   dosage: string | null
@@ -55,6 +60,7 @@ interface Product {
   partner: {
     partnerName: string
   }
+  variants: ProductVariant[]
   image: {
     url: string
     alt: string
@@ -85,11 +91,6 @@ export default function ViewProductsPage() {
   const [editSubsubCategory, setEditSubsubCategory] = useState('')
   const [editProductType, setEditProductType] = useState('')
   const [editCompanyId, setEditCompanyId] = useState(0)
-  const [editCompanyPrice, setEditCompanyPrice] = useState<number | null>(null)
-  const [editDealerPrice, setEditDealerPrice] = useState<number | null>(null)
-  const [editCustomerPrice, setEditCustomerPrice] = useState(0)
-  const [editInventory, setEditInventory] = useState(0)
-  const [editPackingUnit, setEditPackingUnit] = useState('')
   const [editPartnerId, setEditPartnerId] = useState(0)
   const [editDescription, setEditDescription] = useState('')
   const [editDosage, setEditDosage] = useState('')
@@ -99,6 +100,7 @@ export default function ViewProductsPage() {
   const [editProductImage, setEditProductImage] = useState<File | null>(null)
   const [editProductImagePreview, setEditProductImagePreview] = useState<string | null>(null)
   const [editProductPdf, setEditProductPdf] = useState<File | null>(null)
+  const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
   const [open, setOpen] = useState(false)
 
   const [isUpdating, setIsUpdating] = useState(false)
@@ -109,7 +111,7 @@ export default function ViewProductsPage() {
   const fetchProducts = useCallback(async () => {
     try {
       const { data } = await axios.get('/api/product', {
-        params: { search, sortBy, sortOrder, page, limit },
+        params: { search, sortBy, sortOrder, page, limit, includeVariants: true },
       })
    
       setProducts(data.data)
@@ -154,17 +156,13 @@ export default function ViewProductsPage() {
       formData.append('subsubCategory', editSubsubCategory)
       formData.append('productType', editProductType)
       formData.append('companyId', editCompanyId.toString())
-      if (editCompanyPrice) formData.append('companyPrice', editCompanyPrice.toString())
-      if (editDealerPrice) formData.append('dealerPrice', editDealerPrice.toString())
-      formData.append('customerPrice', editCustomerPrice.toString())
-      formData.append('inventory', editInventory.toString())
-      formData.append('packingUnit', editPackingUnit)
       formData.append('partnerId', editPartnerId.toString())
       if (editDescription) formData.append('description', editDescription)
       if (editDosage) formData.append('dosage', editDosage)
       formData.append('isFeatured', String(editIsFeatured))
       formData.append('isActive', String(editIsActive))
       formData.append('outofstock', String(editOutofstock))
+      formData.append('variants', JSON.stringify(editVariants))
       if (editProductImage) formData.append('image', editProductImage)
       if (editProductPdf) formData.append('pdf', editProductPdf)
 
@@ -183,7 +181,7 @@ export default function ViewProductsPage() {
     setIsDeleting(id)
     try {
       await axios.delete('/api/product', { params: { id } })
-      toast.error('Product deleted')
+      toast.success('Product deleted')
       fetchProducts()
     } catch {
       toast.error('Failed to delete product')
@@ -192,230 +190,251 @@ export default function ViewProductsPage() {
     }
   }
 
- const handleSortChange = (value: string) => {
-  const [sortBy, sortOrder] = value.split('-')
-  setSortBy(sortBy as 'id' | 'productName')
-  setSortOrder(sortOrder as 'asc' | 'desc')
-}
+  const handleSortChange = (value: string) => {
+    const [sortBy, sortOrder] = value.split('-')
+    setSortBy(sortBy as 'id' | 'productName')
+    setSortOrder(sortOrder as 'asc' | 'desc')
+  }
+
+  const handleAddVariant = () => {
+    setEditVariants([...editVariants, {
+      packingVolume: '',
+      companyPrice: null,
+      dealerPrice: null,
+      customerPrice: 0,
+      inventory: 0
+    }])
+  }
+
+  const handleRemoveVariant = (index: number) => {
+    setEditVariants(editVariants.filter((_, i) => i !== index))
+  }
+
+  const handleVariantChange = (index: number, field: keyof ProductVariant, value: string | number | null) => {
+    const newVariants = [...editVariants]
+    newVariants[index] = { ...newVariants[index], [field]: value }
+    setEditVariants(newVariants)
+  }
+
+  const totalPages = Math.ceil(total / limit)
 
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-center text-green-500">Products</h1>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div className="flex gap-2 items-center">
-  <Input
-    placeholder="Search products..."
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-    className="focus:ring-green-500"
-  />
-  <Select 
-    value={`${sortBy}-${sortOrder}`}
-    onValueChange={handleSortChange}
-  >
-    <SelectTrigger className="w-[180px]">
-      <SelectValue placeholder="Sort by" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="id-asc">ID (Ascending)</SelectItem>
-      <SelectItem value="id-desc">ID (Descending)</SelectItem>
-      <SelectItem value="productName-asc">Name (A-Z)</SelectItem>
-      <SelectItem value="productName-desc">Name (Z-A)</SelectItem>
-    </SelectContent>
-  </Select>
-  <span>Show</span>
-  <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-    <SelectTrigger className="w-[100px]">
-      <SelectValue placeholder="Show" />
-    </SelectTrigger>
-    <SelectContent>
-      {[10, 25, 50, 100].map((n) => (
-        <SelectItem key={n} value={String(n)}>
-          {n}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-  <span>entries</span>
-</div>
+        <div className="flex gap-2 items-center">
+          <Input
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="focus:ring-green-500"
+          />
+          <Select 
+            value={`${sortBy}-${sortOrder}`}
+            onValueChange={handleSortChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="id-asc">ID (Ascending)</SelectItem>
+              <SelectItem value="id-desc">ID (Descending)</SelectItem>
+              <SelectItem value="productName-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="productName-desc">Name (Z-A)</SelectItem>
+            </SelectContent>
+          </Select>
+          <span>Show</span>
+          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+            <SelectTrigger className="w-[100px]">
+              <SelectValue placeholder="Show" />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 25, 50, 100].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>entries</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((product) => (
-          <div key={product.id} className="bg-white dark:bg-zinc-900 rounded-lg shadow border border-zinc-200 dark:border-zinc-700 p-4 space-y-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-bold text-lg">{product.productName}</h3>
-                {product.genericName && <p className="text-sm text-muted-foreground">{product.genericName}</p>}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setEditId(product.id)
-                    setEditProductName(product.productName)
-                    setEditGenericName(product.genericName || '')
-                    setEditProductLink(product.productLink || '')
-                    setEditCategory(product.category)
-                    setEditSubCategory(product.subCategory)
-                    setEditSubsubCategory(product.subsubCategory)
-                    setEditProductType(product.productType)
-                    setEditCompanyId(product.companyId)
-                    setEditCompanyPrice(product.companyPrice)
-                    setEditDealerPrice(product.dealerPrice)
-                    setEditCustomerPrice(product.customerPrice)
-                    setEditInventory(product.inventory)
-                    setEditPackingUnit(product.packingUnit)
-                    setEditPartnerId(product.partnerId)
-                    setEditDescription(product.description || '')
-                    setEditDosage(product.dosage || '')
-                    setEditIsFeatured(product.isFeatured)
-                    setEditIsActive(product.isActive)
-                    setEditOutofstock(product.outofstock)
-                    setEditProductImagePreview(product.image?.url || null)
-                    setOpen(true)
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDelete(product.id)}
-                  disabled={isDeleting === product.id}
-                >
-                  {isDeleting === product.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">ID</TableHead>
+              <TableHead className="w-[80px]">Image</TableHead>
+              <TableHead>Product Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Partner</TableHead>
+              <TableHead>Variants</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {products.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell className="font-medium">{product.id}</TableCell>
+                <TableCell>
+                  {product.image ? (
+                    <div className="relative w-16 h-16">
+                      <Image
+                        src={product.image.url}
+                        alt={product.image.alt}
+                        fill
+                        className="rounded object-cover"
+                      />
+                    </div>
                   ) : (
-                    <Trash2 className="h-4 w-4" />
+                    <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                      No image
+                    </div>
                   )}
-                </Button>
-              </div>
-            </div>
-
-            {product.image && (
-              <div className="relative aspect-square w-full">
-                <Image
-                  src={product.image.url}
-                  alt={product.image.alt}
-                  fill
-                  className="rounded object-cover"
-                />
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <Badge variant={product.isFeatured ? 'default' : 'secondary'} className={product.isFeatured ? 'bg-green-500' : ''}>
-                {product.isFeatured ? 'Featured' : 'Not Featured'}
-              </Badge>
-              <Badge variant={product.isActive ? 'default' : 'destructive'} className={product.isActive ? 'bg-green-500' : ''}>
-                {product.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-              <Badge variant={product.outofstock ? 'default' : 'destructive'} className={product.outofstock ? 'bg-green-500' : ''}>
-                {product.outofstock ? 'In stock' : 'Out of stock'}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="font-medium">Category:</span> {product.category}
-              </div>
-              <div>
-                <span className="font-medium">Sub-Category:</span> {product.subCategory}
-              </div>
-              <div>
-                <span className="font-medium">Type:</span> {product.productType}
-              </div>
-              <div>
-                <span className="font-medium">Packing:</span> {product.packingUnit}
-              </div>
-              <div>
-                <span className="font-medium">Company:</span> {product.company?.companyName}
-              </div>
-              <div>
-                <span className="font-medium">Partner:</span> {product.partner?.partnerName}
-              </div>
-              <div >
-                <a href={product.productLink ?? undefined} target="_blank"
-                rel="noopener noreferrer">
-               <Link/>  {product.productLink && <p className="text-sm text-blue-500 ">Check product link</p>}
-             </a>
-              </div>
-            </div>
-          
-
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <div>
-                <span className="font-medium">Company Price:</span>PKR {product.companyPrice || '-'}
-              </div>
-              <div>
-                <span className="font-medium">Dealer Price:</span>PKR {product.dealerPrice || '-'}
-              </div>
-              <div>
-                <span className="font-medium">Customer Price:</span> PKR {product.customerPrice}
-              </div>
-              <div>
-                <span className="font-medium">Inventory:</span>  {product.inventory}
-              </div>
-            </div>
-
-            {product.description && (
-              <div className="text-sm">
-                <span className="font-medium">Description:</span> {product.description}
-              </div>
-            )}
-
-            {product.dosage && (
-              <div className="text-sm">
-                <span className="font-medium">Dosage:</span> {product.dosage}
-              </div>
-            )}
-
-            {product.pdf && (
-              <div className="pt-2">
-                <a 
-                  href={product.pdf.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-green-500 hover:underline"
-                >
-                  View Product PDF
-                </a>
-              </div>
-            )}
-
-            <div className="text-xs text-muted-foreground">
-              Created {formatDistanceToNow(new Date(product.createdAt))} ago
-            </div>
-          </div>
-        ))}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{product.productName}</p>
+                    {product.genericName && (
+                      <p className="text-sm text-muted-foreground">{product.genericName}</p>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">
+                    <p>{product.category}</p>
+                    <p className="text-muted-foreground">{product.subCategory}</p>
+                  </div>
+                </TableCell>
+                <TableCell>{product.company?.companyName}</TableCell>
+                <TableCell>{product.partner?.partnerName}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {product.variants && product.variants.length > 0 ? (
+                      product.variants.map((variant, index) => (
+                        <div key={variant.id || index} className="text-sm">
+                          <span className="font-medium">{variant.packingVolume}</span>
+                          <span className="text-muted-foreground ml-2">
+                            PKR {variant.customerPrice} | Stock: {variant.inventory}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No variants</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant={product.isActive ? 'default' : 'destructive'} className={product.isActive ? 'bg-green-500' : ''}>
+                      {product.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                    <Badge variant={!product.outofstock ? 'default' : 'destructive'} className={!product.outofstock ? 'bg-green-500' : ''}>
+                      {!product.outofstock ? 'In stock' : 'Out of stock'}
+                    </Badge>
+                    {product.isFeatured && (
+                      <Badge className="bg-blue-500">Featured</Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDistanceToNow(new Date(product.createdAt))} ago
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex gap-2 justify-end">
+                    {product.productLink && (
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={product.productLink} target="_blank" rel="noopener noreferrer">
+                          <Link className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    {product.pdf && (
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={product.pdf.url} target="_blank" rel="noopener noreferrer">
+                          <Eye className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditId(product.id)
+                        setEditProductName(product.productName)
+                        setEditGenericName(product.genericName || '')
+                        setEditProductLink(product.productLink || '')
+                        setEditCategory(product.category)
+                        setEditSubCategory(product.subCategory)
+                        setEditSubsubCategory(product.subsubCategory)
+                        setEditProductType(product.productType)
+                        setEditCompanyId(product.companyId)
+                        setEditPartnerId(product.partnerId)
+                        setEditDescription(product.description || '')
+                        setEditDosage(product.dosage || '')
+                        setEditIsFeatured(product.isFeatured)
+                        setEditIsActive(product.isActive)
+                        setEditOutofstock(product.outofstock)
+                        setEditProductImagePreview(product.image?.url || null)
+                        setEditVariants(product.variants.map(v => ({
+                          id: v.id,
+                          packingVolume: v.packingVolume,
+                          companyPrice: v.companyPrice,
+                          dealerPrice: v.dealerPrice,
+                          customerPrice: v.customerPrice,
+                          inventory: v.inventory
+                        })))
+                        setOpen(true)
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(product.id)}
+                      disabled={isDeleting === product.id}
+                    >
+                      {isDeleting === product.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
-      <div className="mt-4 px-4 py-2 flex justify-between items-center text-sm">
-        <p className="text-muted-foreground">Total entries: {total}</p>
-        <span>
-          {lastCreatedAt
-            ? `Last entry submitted ${formatDistanceToNow(new Date(lastCreatedAt))} ago`
-            : 'No entries yet'}
-        </span>
+      {/* Pagination */}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">
+          Total entries: {total} | {lastCreatedAt && `Last entry: ${formatDistanceToNow(new Date(lastCreatedAt))} ago`}
+        </p>
         <div className="flex gap-2">
-          <Button size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
-          {Array.from({ length: Math.ceil(total / limit) }, (_, i) => i + 1).map((p) => (
-            <Button
-              key={p}
-              size="sm"
-              variant={p === page ? 'default' : 'outline'}
-              onClick={() => setPage(p)}
-              className={p === page ? 'bg-green-500 text-white' : ''}
-            >
-              {p}
-            </Button>
-          ))}
           <Button
             size="sm"
-            disabled={page * limit >= total}
+            variant="outline"
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous
+          </Button>
+          <span className="flex items-center px-3 text-sm">
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
           >
             Next
@@ -447,6 +466,14 @@ export default function ViewProductsPage() {
                 />
               </div>
               <div>
+                <Label>Product Link</Label>
+                <Input 
+                  value={editProductLink} 
+                  onChange={(e) => setEditProductLink(e.target.value)} 
+                  placeholder="Enter product link"
+                />
+              </div>
+              <div>
                 <Label>Category*</Label>
                 <Input 
                   value={editCategory} 
@@ -470,6 +497,9 @@ export default function ViewProductsPage() {
                   placeholder="Enter sub-sub-category"
                 />
               </div>
+            </div>
+            
+            <div className="space-y-4">
               <div>
                 <Label>Product Type*</Label>
                 <Input 
@@ -496,9 +526,6 @@ export default function ViewProductsPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            
-            <div className="space-y-4">
               <div>
                 <Label>Partner*</Label>
                 <Select 
@@ -517,41 +544,6 @@ export default function ViewProductsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Company Price</Label>
-                <Input 
-                  type="number" 
-                  value={editCompanyPrice || ''} 
-                  onChange={(e) => setEditCompanyPrice(e.target.value ? Number(e.target.value) : null)} 
-                  placeholder="Enter company price"
-                />
-              </div>
-              <div>
-                <Label>Dealer Price</Label>
-                <Input 
-                  type="number" 
-                  value={editDealerPrice || ''} 
-                  onChange={(e) => setEditDealerPrice(e.target.value ? Number(e.target.value) : null)} 
-                  placeholder="Enter dealer price"
-                />
-              </div>
-              <div>
-                <Label>Customer Price*</Label>
-                <Input 
-                  type="number" 
-                  value={editCustomerPrice} 
-                  onChange={(e) => setEditCustomerPrice(Number(e.target.value))} 
-                  placeholder="Enter customer price"
-                />
-              </div>
-              <div>
-                <Label>Packing Unit*</Label>
-                <Input 
-                  value={editPackingUnit} 
-                  onChange={(e) => setEditPackingUnit(e.target.value)} 
-                  placeholder="Enter packing unit"
-                />
-              </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center space-x-2">
                   <Label>Featured</Label>
@@ -565,6 +557,13 @@ export default function ViewProductsPage() {
                   <Switch 
                     checked={editIsActive} 
                     onCheckedChange={setEditIsActive} 
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Label>Out of Stock</Label>
+                  <Switch 
+                    checked={editOutofstock} 
+                    onCheckedChange={setEditOutofstock} 
                   />
                 </div>
               </div>
@@ -588,6 +587,83 @@ export default function ViewProductsPage() {
                   placeholder="Enter dosage information"
                   rows={2}
                 />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Variants</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddVariant}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Variant
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  {editVariants.map((variant, index) => (
+                    <div key={index} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">Variant {index + 1}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveVariant(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Packing Volume*</Label>
+                          <Input
+                            placeholder="e.g., 500ml, 1L"
+                            value={variant.packingVolume}
+                            onChange={(e) => handleVariantChange(index, 'packingVolume', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Customer Price*</Label>
+                          <Input
+                            type="number"
+                            placeholder="Customer price"
+                            value={variant.customerPrice}
+                            onChange={(e) => handleVariantChange(index, 'customerPrice', Number(e.target.value))}
+                          />
+                        </div>
+                        <div>
+                          <Label>Company Price</Label>
+                          <Input
+                            type="number"
+                            placeholder="Company price"
+                            value={variant.companyPrice || ''}
+                            onChange={(e) => handleVariantChange(index, 'companyPrice', e.target.value ? Number(e.target.value) : null)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Dealer Price</Label>
+                          <Input
+                            type="number"
+                            placeholder="Dealer price"
+                            value={variant.dealerPrice || ''}
+                            onChange={(e) => handleVariantChange(index, 'dealerPrice', e.target.value ? Number(e.target.value) : null)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Inventory*</Label>
+                          <Input
+                            type="number"
+                            placeholder="Stock quantity"
+                            value={variant.inventory}
+                            onChange={(e) => handleVariantChange(index, 'inventory', Number(e.target.value))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {editVariants.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No variants added. Click "Add Variant" to create one.
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

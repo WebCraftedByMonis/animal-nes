@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { CartItem } from '../../../types/cart'// You should have a type for AnimalCart
+import { CartItem } from '../../../types/cart'// 
 import { AnimalCartItem } from '../../../types/animal'
 
 interface CheckoutProps {
@@ -26,7 +26,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     const [loading, setLoading] = useState(false)
 
     const total =
-        cartItems.reduce((sum, item) => sum + item.quantity * item.product.customerPrice, 0) +
+        cartItems.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0) +
         animalCartItems.reduce((sum, item) => sum + item.quantity * item.animal.totalPrice, 0)
 
     const handleSubmit = async () => {
@@ -81,8 +81,8 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                             {cartItems.map(item => (
                                 <tr key={`product-${item.id}`} className="border-b">
                                     <td className="p-2">{item.product.productName}</td>
-                                    <td className="p-2">Qty: {item.quantity}</td>
-                                    <td className="p-2 text-right">PKR {(item.product.customerPrice * item.quantity).toFixed(2)}</td>
+                                    <td className="p-2">Qty: {item.quantity} - {item.variant.packingVolume}</td>
+                                    <td className="p-2 text-right">PKR {(item.variant.customerPrice * item.quantity).toFixed(2)}</td>
                                 </tr>
                             ))}
                             {animalCartItems.map(item => (

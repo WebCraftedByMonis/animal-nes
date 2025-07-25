@@ -74,6 +74,8 @@ model ProductVariant {
   inventory      Int      // inventory per variant
   product        Product  @relation(fields: [productId], references: [id])
   productId      Int
+  cartItems      CartItem[]
+  checkoutItems  CheckoutItem[]
 }
 
 
@@ -280,10 +282,12 @@ model CartItem {
   userId    String
   product   Product  @relation(fields: [productId], references: [id])
   productId Int
+   variantId  Int
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
-
-  @@unique([userId, productId]) // Prevent duplicates
+variant   ProductVariant  @relation(fields: [variantId], references: [id])
+  
+  @@unique([userId, productId, variantId])
 }
 model Checkout {
    id        Int      @id @default(autoincrement())
@@ -293,7 +297,7 @@ model Checkout {
   province        String
   address         String
   shippingAddress String
-  paymentMethod   String
+  paymentMethod   String   @db.Text
   total           Float
   status          String
   createdAt       DateTime       @default(now())
@@ -307,6 +311,9 @@ model CheckoutItem {
   checkoutId  Int
   product     Product?   @relation(fields: [productId], references: [id])
   productId   Int?
+variantId   Int?         // Add this line
+  variant     ProductVariant? @relation(fields: [variantId], references: [id]) 
+
     animalId    Int?
   animal      SellAnimal?  @relation(fields: [animalId], references: [id])
 
@@ -461,19 +468,19 @@ model JobApplicant {
   name                  String
   gender                Gender
   mobileNumber          String
-  address               String
-  qualification         String?             
+  address               String    @db.Text
+  qualification         String?      @db.Text       
   dateOfBirth           DateTime?           
-  expectedPosition      String?             
+  expectedPosition      String?     @db.Text        
   expectedSalary        String?             
-  preferredIndustry     String?             
-  preferredLocation     String?             
-  highestDegree         String?             
-  degreeInstitution     String?             
-  majorFieldOfStudy     String?             
-  workExperience        String?             
-  previousCompany       String?             
-  declaration           DeclarationStatus
+  preferredIndustry     String?      @db.Text       
+  preferredLocation     String?      @db.Text       
+  highestDegree         String?             @db.Text
+  degreeInstitution     String?     @db.Text        
+  majorFieldOfStudy     String?          @db.Text   
+  workExperience        String?      @db.Text       
+  previousCompany       String?             @db.Text
+  declaration           DeclarationStatus  
 
   // ✅ Fix: Add @unique
   imageId               Int?                @unique
@@ -506,21 +513,21 @@ model ApplicantCV {
 }
 model JobForm {
   id             Int          @id @default(autoincrement())
-  name           String
-  company        String
+  name           String    @db.Text
+  company        String   @db.Text
   mobileNumber   String
   email          String?
 
-  position       String
-  eligibility    String
-  benefits       String
-  location       String
-  companyAddress String
-  howToApply     String
+  position       String   @db.Text
+  eligibility    String   @db.Text
+  benefits       String   @db.Text
+  location       String   @db.Text
+  companyAddress String   @db.Text
+  howToApply     String   @db.Text
   jobFormImage   JobFormImage? @relation(fields: [jobFormImageId], references: [id])
   jobFormImageId Int?
-  noofpositions  String
-  deadline       String
+  noofpositions  String   @db.Text
+  deadline       String   @db.Text
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

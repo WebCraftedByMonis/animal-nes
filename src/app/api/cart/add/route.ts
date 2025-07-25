@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
   }
 
-  const { productId } = await req.json()
+  const { productId, variantId } = await req.json()
 
   try {
     const user = await prisma.user.findUnique({
@@ -22,21 +22,23 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.cartItem.upsert({
-      where: {
-        userId_productId: {
-          userId: user.id,
-          productId,
-        },
-      },
-      update: {
-        quantity: { increment: 1 },
-      },
-      create: {
-        userId: user.id,
-        productId,
-        quantity: 1,
-      },
-    })
+  where: {
+    userId_productId_variantId: {
+      userId: user.id,
+      productId,
+      variantId,
+    },
+  },
+  update: {
+    quantity: { increment: 1 },
+  },
+  create: {
+    userId: user.id,
+    productId,
+    variantId,
+    quantity: 1,
+  },
+})
 
     return NextResponse.json({ message: 'Added to cart' }, { status: 200 })
   } catch (error) {

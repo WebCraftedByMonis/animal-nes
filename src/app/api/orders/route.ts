@@ -24,6 +24,7 @@ export async function GET(req: Request) {
           items: {
             include: {
               product: true,
+              variant: true,
               animal: true,
             }
           },

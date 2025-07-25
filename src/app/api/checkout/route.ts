@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
               if (item.product) {
                 return {
                   product: { connect: { id: item.product.id } },
+                  variant: { connect: { id: item.variant.id } },// Add this if your schema supports it
                   quantity: item.quantity,
-                  price: item.product.customerPrice,
+                  price: item.variant.customerPrice, // Changed from item.product.customerPrice
                 }
               } else {
                 throw new Error('Unknown item type in cart');
@@ -45,12 +46,12 @@ export async function POST(req: NextRequest) {
                 price: item.animal.totalPrice,
               }
             })
-            
+
           ]
         }
       }
     })
-    
+
     // Clear both product and animal cart items
     await prisma.cartItem.deleteMany({
       where: { user: { email: session.user.email } },

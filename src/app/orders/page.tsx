@@ -11,10 +11,11 @@ export default async function OrdersPage() {
   const orders = await prisma.checkout.findMany({
     where: { user: { email: session.user.email } },
     orderBy: { createdAt: 'desc' },
-    include: { 
+    include: {
       items: {
         include: {
           product: true,
+          variant: true,
           animal: {
             include: {
               images: true
@@ -35,21 +36,19 @@ export default async function OrdersPage() {
       <ul className="space-y-4">
         {orders.map(order => (
           <li key={order.id} className="border p-4 rounded-lg shadow">
-            <p className="font-semibold">Order ID: {order.id}</p> 
+            <p className="font-semibold">Order ID: {order.id}</p>
             <div className="mb-2">
               <p className="font-semibold">Items:</p>
               <ul className="list-disc list-inside ml-4">
                 {order.items.map(item => (
-                 <li key={item.id}>
-                {item.product 
-  ? `${item.product.productName} (Product)` 
-  : item.animal 
-    ? `${item.animal.specie} - ${item.animal.breed} (Animal)` 
-    : "Unknown Item"
-}
-
-               </li>
-               
+                  <li key={item.id}>
+                    {item.product
+                      ? `${item.product.productName} ${item.variant?.packingVolume ? `(${item.variant.packingVolume})` : ''} - Qty: ${item.quantity}`
+                      : item.animal
+                        ? `${item.animal.specie} - ${item.animal.breed} (Animal) - Qty: ${item.quantity}`
+                        : "Unknown Item"
+                    }
+                  </li>
                 ))}
               </ul>
             </div>

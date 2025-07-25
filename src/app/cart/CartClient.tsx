@@ -13,14 +13,21 @@ interface ProductImage {
 interface Product {
   id: number
   productName: string
-  customerPrice: number
+  // Remove customerPrice from here
   image: ProductImage | null
+}
+
+interface ProductVariant {
+  id: number
+  packingVolume: string
+  customerPrice: number
 }
 
 interface CartItem {
   id: number
   quantity: number
   product: Product
+  variant: ProductVariant
 }
 
 interface CartClientProps {
@@ -55,7 +62,7 @@ export default function CartClient({ cartItems }: CartClientProps) {
     }
   }
 
-  const subtotal = cart.reduce((sum, item) => sum + item.quantity * item.product.customerPrice, 0)
+  const subtotal = cart.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0)
 
   if (!cart.length) {
     return (
@@ -87,7 +94,8 @@ export default function CartClient({ cartItems }: CartClientProps) {
 
             <div className="flex-1 w-full">
               <h2 className="text-lg font-semibold ">{item.product.productName}</h2>
-              <p className="text-sm ">PKR {item.product.customerPrice.toFixed(2)}</p>
+              <p className="text-sm text-gray-600">{item.variant.packingVolume}</p>
+              <p className="text-sm ">PKR {item.variant.customerPrice.toFixed(2)}</p>
 
               <div className="mt-3 flex items-center gap-3">
                 <label className="text-sm">Qty:</label>

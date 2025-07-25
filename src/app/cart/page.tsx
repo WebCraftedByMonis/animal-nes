@@ -14,9 +14,11 @@ export default async function CartPage() {
       include: {
         product: {
           include: {
-            image: true, // <-- Include image here
+            image: true,
+            // Add this to fetch all variants for the product
           },
         },
+        variant: true, // Add this to fetch the specific variant for this cart item
       },
     },
   },

@@ -4,10 +4,11 @@
 import AddToCartButton from './AddToCartButton'
 
 interface Props {
-  productId: number
-  isActive: boolean
+  productId: number;
+  isActive: boolean;
+  variantId: number; 
 }
 
-export default function AddToCartClientWrapper({ productId, isActive }: Props) {
-  return <AddToCartButton productId={productId} isActive={isActive} />
+export default function AddToCartClientWrapper ({ productId, isActive, variantId }: Props) {
+  return <AddToCartButton  variantId={variantId} productId={productId} isActive={isActive}   />
 }

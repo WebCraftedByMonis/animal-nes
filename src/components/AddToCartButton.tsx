@@ -7,9 +7,10 @@ import { toast } from 'react-hot-toast'
 interface AddToCartButtonProps {
   productId: number
   isActive: boolean
+  variantId: number
 }
 
-export default function AddToCartButton({ productId, isActive }: AddToCartButtonProps) {
+export default function AddToCartButton({ productId, isActive, variantId }: AddToCartButtonProps) {
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -23,7 +24,10 @@ export default function AddToCartButton({ productId, isActive }: AddToCartButton
       const res = await fetch('/api/cart/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ 
+          productId,
+          variantId 
+        }),
       })
 
       if (res.ok) {
@@ -34,7 +38,7 @@ export default function AddToCartButton({ productId, isActive }: AddToCartButton
         toast.error(err.message || 'Error adding to cart')
       }
     } catch (error) {
-        console.error('Error adding to cart:', error)
+      console.error('Error adding to cart:', error)
       toast.error('Something went wrong.')
     }
   }
