@@ -112,13 +112,13 @@ export function NavigationMenuDemo() {
                   </Link>
                 </NavigationMenuLink>
               </li>       */}
-              <ListItem href="/addCompany" title="Companies">
+              <ListItem href="/Companies" title="Companies">
                
               </ListItem>
-              <ListItem href="/addPartner" title="Veternarian">
+              <ListItem href="/Veternarians" title="Veternarians">
                
               </ListItem>
-              <ListItem href="/addProduct" title="Sales and Marketing">
+              <ListItem href="/Sales" title="Sales and Marketing">
                
               </ListItem>
             </ul>

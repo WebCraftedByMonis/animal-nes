@@ -1,7 +1,6 @@
 // src/app/jobvacancy/[id]/page.tsx
-import { Metadata } from 'next'// ✅ correct import
+import { Metadata } from 'next'
 import JobFormDetailClient from './JobFormDetailClient'
-// DO NOT use `axios` here; use `fetch`
 
 interface JobForm {
   id: number
