@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 interface Partner {
   id: number
   partnerName: string
@@ -89,7 +90,7 @@ export default function ViewPartnersPage() {
   const [open, setOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
-
+  const [editAvailableDays, setEditAvailableDays] = useState<string[]>([])
 
 
   const fetchPartners = useCallback(async () => {
@@ -110,35 +111,56 @@ export default function ViewPartnersPage() {
   useEffect(() => {
     fetchPartners()
   }, [fetchPartners])
-
   const handleUpdate = async () => {
     if (!editId) return
 
     setIsUpdating(true)
     try {
-      const formData = new FormData()
-      formData.append('id', editId.toString())
-      formData.append('partnerName', editPartnerName)
-      if (editMobileNumber) formData.append('partnerMobileNumber', editMobileNumber)
-      if (editEmail) formData.append('partnerEmail', editEmail)
-      if (editCity) formData.append('cityName', editCity)
-      if (editAddress) formData.append('fullAddress', editAddress)
-      if (editImage) formData.append('image', editImage)
-      formData.append('specialization', editSpecialization)
-      formData.append('qualificationDegree', editQualificationDegree)
+      // Build the update data object
+      const updateData: any = {
+        partnerName: editPartnerName,
+      }
 
-      formData.append('shopName', editShopName)
-      formData.append('rvmpNumber', editRvmpNumber)
-      formData.append('state', editState)
-      formData.append('zipcode', editZipcode)
-      formData.append('areaTown', editAreaTown)
+      // Only include fields that have values
+      if (editMobileNumber) updateData.partnerMobileNumber = editMobileNumber
+      if (editEmail) updateData.partnerEmail = editEmail
+      if (editCity) updateData.cityName = editCity
+      if (editAddress) updateData.fullAddress = editAddress
+      if (editSpecialization) updateData.specialization = editSpecialization
+      if (editQualificationDegree) updateData.qualificationDegree = editQualificationDegree
+      if (editShopName) updateData.shopName = editShopName
+      if (editRvmpNumber) updateData.rvmpNumber = editRvmpNumber
+      if (editState) updateData.state = editState
+      if (editZipcode) updateData.zipcode = editZipcode
+      if (editAreaTown) updateData.areaTown = editAreaTown
+      if (editAvailableDays.length > 0) updateData.availableDays = editAvailableDays
+      // Handle image upload - convert to base64 like in your POST request
+      if (editImage) {
+        const reader = new FileReader()
+        reader.onload = async () => {
+          updateData.image = reader.result as string
+          await sendUpdate()
+        }
+        reader.readAsDataURL(editImage)
+      } else {
+        await sendUpdate()
+      }
 
+      async function sendUpdate() {
+        const response = await axios.put(`/api/partner?id=${editId}`, updateData, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
 
-      await axios.put('/api/partner', formData)
-      toast.success('Partner updated')
-      setOpen(false)
-      fetchPartners()
-    } catch {
+        if (response.status === 200) {
+          toast.success('Partner updated')
+          setOpen(false)
+          fetchPartners()
+        }
+      }
+    } catch (error) {
+      console.error('Update error:', error)
       toast.error('Failed to update partner')
     } finally {
       setIsUpdating(false)
@@ -273,7 +295,7 @@ export default function ViewPartnersPage() {
                         setEditCity(partner.cityName || '')
                         setEditSpecialization(partner.specialization || '');
                         setEditQualificationDegree(partner.qualificationDegree || '');
-
+                        setEditAvailableDays(partner.availableDaysOfWeek?.map(d => d.day) || [])
                         setEditShopName(partner.shopName || '');
                         setEditRvmpNumber(partner.rvmpNumber || '');
                         setEditState(partner.state || '');
@@ -386,6 +408,27 @@ export default function ViewPartnersPage() {
 
               {/* Species */}
 
+              {/* Available Days - Using UI Checkbox component */}
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-2">Available Days</label>
+                <div className="flex flex-wrap gap-3">
+                  {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map((day) => (
+                    <label key={day} className="flex items-center space-x-2 cursor-pointer">
+                      <Checkbox
+                        checked={editAvailableDays.includes(day)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setEditAvailableDays([...editAvailableDays, day])
+                          } else {
+                            setEditAvailableDays(editAvailableDays.filter(d => d !== day))
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{day}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               {/* Shop Name */}
               <div>

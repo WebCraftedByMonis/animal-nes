@@ -77,7 +77,7 @@ export default function AllProductsPage() {
 
         },
       })
-console.log(data)
+
  const activeProducts = data.data.filter((product: Product) => product.isActive)
     setProducts(activeProducts)
       setTotal(data.total)

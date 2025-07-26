@@ -30,7 +30,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`https://www.animalwellness.shop/api/jobApplicant/${params.id}`, {
+    const res = await fetch(`http://localhost:3000//api/jobApplicant/${params.id}`, {
       next: { revalidate: 3600 }, // optional revalidation
     })
 
@@ -47,7 +47,7 @@ export async function generateMetadata({
     const description = `${data.name} - ${data.expectedPosition || 'Job Applicant'} | ${data.qualification || data.highestDegree || 'Professional'} | ${data.preferredLocation || data.address}`
 
     return {
-      title: `${data.name} - ${data.expectedPosition || 'Applicant'} | Animal Wellness`,
+      title: `${data.name} - ${data.expectedPosition || 'Applicant'} `,
       description: description.substring(0, 160), // Keep under 160 chars for SEO
       openGraph: {
         title: `${data.name} - ${data.expectedPosition || 'Job Applicant'}`,
@@ -74,7 +74,7 @@ export async function generateMetadata({
   } catch (e) {
     console.error('Error generating metadata:', e)
     return {
-      title: 'Job Applicant | Animal Wellness',
+      title: 'Job Applicant ',
       description: 'View professional profiles of job applicants at Animal Wellness.',
     }
   }

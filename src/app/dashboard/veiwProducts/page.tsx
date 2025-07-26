@@ -142,40 +142,76 @@ export default function ViewProductsPage() {
   }, [fetchProducts])
 
   const handleUpdate = async () => {
-    if (!editId) return
+  if (!editId) return
 
-    setIsUpdating(true)
-    try {
-      const formData = new FormData()
-      formData.append('id', editId.toString())
-      formData.append('productName', editProductName)
-      if (editGenericName) formData.append('genericName', editGenericName)
-      if (editProductLink) formData.append('productlink', editProductLink)
-      formData.append('category', editCategory)
-      formData.append('subCategory', editSubCategory)
-      formData.append('subsubCategory', editSubsubCategory)
-      formData.append('productType', editProductType)
-      formData.append('companyId', editCompanyId.toString())
-      formData.append('partnerId', editPartnerId.toString())
-      if (editDescription) formData.append('description', editDescription)
-      if (editDosage) formData.append('dosage', editDosage)
-      formData.append('isFeatured', String(editIsFeatured))
-      formData.append('isActive', String(editIsActive))
-      formData.append('outofstock', String(editOutofstock))
-      formData.append('variants', JSON.stringify(editVariants))
-      if (editProductImage) formData.append('image', editProductImage)
-      if (editProductPdf) formData.append('pdf', editProductPdf)
-
-      await axios.put('/api/product', formData)
-      toast.success('Product updated')
-      setOpen(false)
-      fetchProducts()
-    } catch {
-      toast.error('Failed to update product')
-    } finally {
-      setIsUpdating(false)
+  setIsUpdating(true)
+  try {
+    const formData = new FormData()
+    
+    // Add all the regular fields
+    formData.append('productName', editProductName)
+    if (editGenericName) formData.append('genericName', editGenericName)
+    if (editProductLink) formData.append('productLink', editProductLink) // Note: might need to be 'productLink'
+    formData.append('category', editCategory)
+    formData.append('subCategory', editSubCategory)
+    formData.append('subsubCategory', editSubsubCategory)
+    formData.append('productType', editProductType)
+    formData.append('companyId', editCompanyId.toString())
+    formData.append('partnerId', editPartnerId.toString())
+    if (editDescription) formData.append('description', editDescription)
+    if (editDosage) formData.append('dosage', editDosage)
+    formData.append('isFeatured', String(editIsFeatured))
+    formData.append('isActive', String(editIsActive))
+    formData.append('outofstock', String(editOutofstock))
+    
+    // Add variants properly
+    editVariants.forEach((variant, i) => {
+      formData.append(`variants[${i}][packingVolume]`, variant.packingVolume)
+      if (variant.companyPrice !== null && variant.companyPrice !== undefined) {
+        formData.append(`variants[${i}][companyPrice]`, variant.companyPrice.toString())
+      }
+      if (variant.dealerPrice !== null && variant.dealerPrice !== undefined) {
+        formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice.toString())
+      }
+      formData.append(`variants[${i}][customerPrice]`, variant.customerPrice.toString())
+      formData.append(`variants[${i}][inventory]`, variant.inventory.toString())
+    })
+    
+    // Add files if they exist
+    if (editProductImage) {
+      formData.append('image', editProductImage)
     }
+    if (editProductPdf) {
+      formData.append('pdf', editProductPdf)
+    }
+
+    // Debug: Log what we're sending
+    console.log('Sending update for product ID:', editId)
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value)
+    }
+
+    const response = await axios.put(`/api/product?id=${editId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    toast.success('Product updated')
+    setOpen(false)
+    fetchProducts()
+  } catch (error) {
+    console.error('Update error:', error)
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Error response:', error.response.data)
+      toast.error(error.response.data.error || 'Failed to update product')
+    } else {
+      toast.error('Failed to update product')
+    }
+  } finally {
+    setIsUpdating(false)
   }
+}
 
   const handleDelete = async (id: number) => {
     setIsDeleting(id)

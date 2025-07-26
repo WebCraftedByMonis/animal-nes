@@ -198,7 +198,7 @@ console.log('Parsed variants:', variants)
         data: validation.data
       })
 
-      console.log('Created product in DB:', product)
+      
 for (const variant of variants) {
   const createdVariant = await tx.productVariant.create({
     data: {
@@ -355,13 +355,21 @@ export async function GET(req: NextRequest) {
     lastSubmittedAt: items.length > 0 ? items[items.length - 1].createdAt ?? null : null,
   })
 }
-
 export async function PUT(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const id = formData.get('id') as string
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    console.log('PUT request received with ID:', id)
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Product ID is required' },
+        { status: 400 }
+      )
+    }
+    
     const productId = parseInt(id)
-
     if (isNaN(productId)) {
       return NextResponse.json(
         { error: 'Invalid product ID' },
@@ -369,11 +377,19 @@ export async function PUT(request: NextRequest) {
       )  
     }
 
+    const formData = await request.formData()
+    
+    // Log received form data
+    console.log('Received form data entries:')
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value)
+    }
+
     // Extract product data
-     const productData = {
+    const productData = {
       productName: formData.get('productName') as string | null,
       genericName: formData.get('genericName') as string | null,
-      productLink: formData.get('productLink') as string | null,
+      productLink: formData.get('productLink') as string | null, // Fixed: capital L
       category: formData.get('category') as string | null,
       subCategory: formData.get('subCategory') as string | null,
       subsubCategory: formData.get('subsubCategory') as string | null,
@@ -385,14 +401,23 @@ export async function PUT(request: NextRequest) {
       isFeatured: formData.get('isFeatured') ? formData.get('isFeatured') === 'true' : undefined,
       isActive: formData.get('isActive') ? formData.get('isActive') === 'true' : undefined,
       outofstock: formData.get('outofstock') ? formData.get('outofstock') === 'true' : undefined,
-      // REMOVED all variant-specific fields
     }
 
+    console.log('Parsed product data:', productData)
+
+    // Filter out undefined values for validation
+    const cleanedProductData = Object.fromEntries(
+  Object.entries(productData)
+    .map(([key, value]) => [key, value === null ? undefined : value])
+    .filter(([_, value]) => value !== undefined)
+)
+
     // Validate input
-    const validation = updateProductSchema.safeParse(productData)
+    const validation = updateProductSchema.safeParse(cleanedProductData)
     if (!validation.success) {
+      console.error('Validation failed:', validation.error.errors)
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.errors[0].message, errors: validation.error.errors },
         { status: 400 }
       )
     }
@@ -400,7 +425,7 @@ export async function PUT(request: NextRequest) {
     // Get existing product
     const existingProduct = await prisma.product.findUnique({
       where: { id: productId },
-      include: { image: true, pdf: true }
+      include: { image: true, pdf: true, variants: true }
     })
 
     if (!existingProduct) {
@@ -410,83 +435,117 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    console.log('Found existing product:', existingProduct.id)
+
     // Handle file uploads
     const [imageResult, pdfResult] = await Promise.all([
       handleFileUpload(formData.get('image') as File | null, 'image'),
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
-const variants: VariantInput[] = []
 
-for (let i = 0; ; i++) {
-  const packingVolume = formData.get(`variants[${i}][packingVolume]`)
-  if (!packingVolume) break
+    console.log('File upload results:', { 
+      image: imageResult ? 'uploaded' : 'none', 
+      pdf: pdfResult ? 'uploaded' : 'none' 
+    })
 
-  variants.push({
-    packingVolume: packingVolume.toString(),
-    companyPrice: formData.get(`variants[${i}][companyPrice]`)
-      ? Number(formData.get(`variants[${i}][companyPrice]`))
-      : undefined,
-    dealerPrice: formData.get(`variants[${i}][dealerPrice]`)
-      ? Number(formData.get(`variants[${i}][dealerPrice]`))
-      : undefined,
-    customerPrice: Number(formData.get(`variants[${i}][customerPrice]`)),
-    inventory: Number(formData.get(`variants[${i}][inventory]`)),
-  })
-}
+    // Parse variants
+    const variants: VariantInput[] = []
+    for (let i = 0; ; i++) {
+      const packingVolume = formData.get(`variants[${i}][packingVolume]`)
+      if (!packingVolume) break
 
+      const variant: VariantInput = {
+        packingVolume: packingVolume.toString(),
+        customerPrice: Number(formData.get(`variants[${i}][customerPrice]`) || 0),
+        inventory: Number(formData.get(`variants[${i}][inventory]`) || 0)
+      }
 
+      // Handle optional prices
+      const companyPrice = formData.get(`variants[${i}][companyPrice]`)
+      const dealerPrice = formData.get(`variants[${i}][dealerPrice]`)
+      
+      if (companyPrice && companyPrice !== '') {
+        variant.companyPrice = Number(companyPrice)
+      }
+      if (dealerPrice && dealerPrice !== '') {
+        variant.dealerPrice = Number(dealerPrice)
+      }
+
+      variants.push(variant)
+    }
+
+    console.log('Parsed variants:', variants)
 
     // Update product with transactions
     const updatedProduct = await prisma.$transaction(async (tx) => {
       // Update product data
-       await tx.product.update({
+      const updated = await tx.product.update({
         where: { id: productId },
         data: validation.data,
-        include: { image: true, pdf: true }
       })
 
-await tx.productVariant.deleteMany({
-  where: { productId },
-})
+      console.log('Updated product base data')
 
-for (const variant of variants) {
-  await tx.productVariant.create({
-    data: {
-      ...variant,
-      productId,
-    },
-  })
-}
+      // Delete existing variants and create new ones
+      if (variants.length > 0) {
+        await tx.productVariant.deleteMany({
+          where: { productId },
+        })
 
+        console.log('Deleted old variants')
+
+        for (const variant of variants) {
+          await tx.productVariant.create({
+            data: {
+              ...variant,
+              productId,
+            },
+          })
+        }
+
+        console.log('Created new variants')
+      }
 
       // Handle image update
       if (imageResult) {
-        // Delete old image
+        // Delete old image from Cloudinary
         if (existingProduct.image?.publicId) {
-          await cloudinary.uploader.destroy(existingProduct.image.publicId)
+          try {
+            await cloudinary.uploader.destroy(existingProduct.image.publicId)
+            console.log('Deleted old image from Cloudinary')
+          } catch (error) {
+            console.error('Failed to delete old image:', error)
+          }
         }
 
         await tx.productImage.upsert({
           where: { productId },
           create: {
             url: imageResult.secure_url,
-            alt: productData.productName || existingProduct.productName,
+            alt: cleanedProductData.productName || existingProduct.productName,
             publicId: imageResult.public_id,
             productId
           },
           update: {
             url: imageResult.secure_url,
-            alt: productData.productName || existingProduct.productName,
+            alt: cleanedProductData.productName || existingProduct.productName,
             publicId: imageResult.public_id
           }
         })
+
+        console.log('Updated product image')
       }
 
       // Handle PDF update
       if (pdfResult) {
-        // Delete old PDF
+        // Delete old PDF from Cloudinary
         if (existingProduct.pdf?.publicId) {
-          await cloudinary.uploader.destroy(existingProduct.pdf.publicId, { resource_type: 'raw' })
+          try {
+            await cloudinary.uploader.destroy(existingProduct.pdf.publicId, { resource_type: 'raw' })
+            console.log('Deleted old PDF from Cloudinary')
+          } catch (error) {
+            console.error('Failed to delete old PDF:', error)
+          }
         }
 
         await tx.productPdf.upsert({
@@ -501,17 +560,41 @@ for (const variant of variants) {
             publicId: pdfResult.public_id
           }
         })
+
+        console.log('Updated product PDF')
       }
 
+      // Return the updated product with all relations
       return tx.product.findUnique({
         where: { id: productId },
-        include: { image: true, pdf: true }
+        include: { 
+          image: true, 
+          pdf: true,
+          variants: true,
+          company: true,
+          partner: true
+        }
       })
     })
+
+    console.log('Transaction completed successfully')
 
     return NextResponse.json(updatedProduct, { status: 200 })
   } catch (error) {
     console.error('Error updating product:', error)
+    
+    // More detailed error response
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { 
+          error: 'Failed to update product', 
+          message: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        },
+        { status: 500 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Failed to update product' },
       { status: 500 }

@@ -20,8 +20,8 @@ import 'react-toastify/dist/ReactToastify.css';
 const genderOptions = ['MALE', 'FEMALE'] as const;
 const sendToPartnerOptions = ['YES', 'NO'] as const;
 const bloodGroupOptions = [
-  'A+', 'B+', 'A-', 'B-',
-  'AB+', 'AB-', 'O+', 'O-'
+  'A_POSITIVE', 'B_POSITIVE', 'A_NEGATIVE', 'B_NEGATIVE',
+  'AB_POSITIVE', 'AB_NEGATIVE', 'O_POSITIVE', 'O_NEGATIVE'
 ] as const;
 const dayOptions = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',

@@ -107,7 +107,7 @@ export default function ApplicantDetailClient() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Image and Basic Info */}
         <div className="space-y-6">
-          <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800">
+          <div className="relative w-full h-[450px] rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800">
             {applicant.image?.url ? (
               <Image
                 src={applicant.image.url}
