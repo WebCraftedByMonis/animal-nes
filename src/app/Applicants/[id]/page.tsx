@@ -30,7 +30,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`http://localhost:3000//api/jobApplicant/${params.id}`, {
+    const res = await fetch(`https://www.animalwellness.shop//api/jobApplicant/${params.id}`, {
       next: { revalidate: 3600 }, // optional revalidation
     })
 
