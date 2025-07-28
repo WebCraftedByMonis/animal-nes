@@ -46,7 +46,7 @@ model Product {
   companyId      Int
   partner        Partner     @relation(fields: [partnerId], references: [id])
   partnerId      Int
-  description    String?   
+  description    String?   @db.Text
   productLink    String?
   dosage         String?     @db.Text
   image          ProductImage?

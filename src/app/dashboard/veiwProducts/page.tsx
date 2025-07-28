@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
 
 interface ProductVariant {
   id?: number
@@ -509,77 +510,90 @@ export default function ViewProductsPage() {
                   placeholder="Enter product link"
                 />
               </div>
-              <div>
-                <Label>Category*</Label>
-                <Input 
-                  value={editCategory} 
-                  onChange={(e) => setEditCategory(e.target.value)} 
-                  placeholder="Enter category"
-                />
-              </div>
-              <div>
-                <Label>Sub-Category*</Label>
-                <Input 
-                  value={editSubCategory} 
-                  onChange={(e) => setEditSubCategory(e.target.value)} 
-                  placeholder="Enter sub-category"
-                />
-              </div>
-              <div>
-                <Label>Sub-Sub-Category*</Label>
-                <Input 
-                  value={editSubsubCategory} 
-                  onChange={(e) => setEditSubsubCategory(e.target.value)} 
-                  placeholder="Enter sub-sub-category"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label>Product Type*</Label>
-                <Input 
-                  value={editProductType} 
-                  onChange={(e) => setEditProductType(e.target.value)} 
-                  placeholder="Enter product type"
-                />
-              </div>
-              <div>
-                <Label>Company*</Label>
-                <Select 
-                  value={String(editCompanyId)} 
-                  onValueChange={(v) => setEditCompanyId(Number(v))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies.map((company) => (
-                      <SelectItem key={company.id} value={String(company.id)}>
-                        {company.companyName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Partner*</Label>
-                <Select 
-                  value={String(editPartnerId)} 
-                  onValueChange={(v) => setEditPartnerId(Number(v))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select partner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {partners.map((partner) => (
-                      <SelectItem key={partner.id} value={String(partner.id)}>
-                        {partner.partnerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+             <div>
+  <Label>Category*</Label>
+  <SuggestiveInput
+    suggestions={[
+      "Veterinary",
+      "Poultry",
+      "Pets",
+      "Equine",
+      "Livestock Feed",
+      "Poultry Feed",
+      "Instruments & Equipment",
+      "Fisheries & Aquaculture",
+      "Vaccination Services / Kits",
+      "Herbal / Organic Products",
+    ]}
+    value={editCategory}
+    onChange={(v) => setEditCategory(v)}
+    placeholder="Enter category"
+  />
+</div>
+
+<div>
+  <Label>Sub-Category*</Label>
+  <SuggestiveInput
+    suggestions={[
+      "Antiparasitics",
+      "Antibiotics & Antibacterials",
+      "Vaccines & Immunologicals",
+      "Nutritional Supplements",
+      "Growth Promoters",
+      "Coccidiostats",
+      "Pain Management / NSAIDs",
+      "Reproductive Health / Hormones",
+      "Liver & Kidney Tonics",
+      "Respiratory Health / Expectorants",
+    ]}
+    value={editSubCategory}
+    onChange={(v) => setEditSubCategory(v)}
+    placeholder="Enter sub-category"
+  />
+</div>
+
+<div>
+  <Label>Sub-Sub-Category*</Label>
+  <SuggestiveInput
+    suggestions={[
+      "Endoparasiticides (e.g., dewormers)",
+      "Ectoparasiticides (e.g., tick/flea/mite treatment)",
+      "Broad-Spectrum Dewormers",
+      "Multivitamins & Trace Elements",
+      "Electrolytes & Hydration Solutions",
+      "Mineral Mixtures / Salt Licks",
+      "Probiotics & Enzymes",
+      "Calcium / Phosphorus Supplements",
+      "Immuno-Stimulants",
+      "Hepato-Renal Protectants",
+    ]}
+    value={editSubsubCategory}
+    onChange={(v) => setEditSubsubCategory(v)}
+    placeholder="Enter sub-sub-category"
+  />
+</div>
+
+<div>
+  <Label>Product Type*</Label>
+  <SuggestiveInput
+    suggestions={[
+      "Injection (IV, IM, SC)",
+      "Tablet / Bolus / Pill",
+      "Oral Powder / Sachet",
+      "Oral Suspension / Syrup",
+      "Spray / Aerosol",
+      "Oral Solution / Drops",
+      "Topical Application / Pour-on / Spot-on",
+      "Premix (for feed inclusion)",
+      "Intrauterine / Intra-mammary",
+      "Transdermal Patch / Ointment / Cream"
+    ]}
+    value={editProductType}
+    onChange={(v) => setEditProductType(v)}
+    placeholder="Enter product type"
+  />
+</div>
+
               <div className="flex items-center gap-4">
                 <div className="flex items-center space-x-2">
                   <Label>Featured</Label>
