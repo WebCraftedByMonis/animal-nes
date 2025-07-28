@@ -82,7 +82,7 @@ model ProductVariant {
 
 model ProductPdf {
   id        Int      @id @default(autoincrement())
-  url       String
+  url       String     @db.Text
   publicId  String?
   product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int?     @unique  // Made optional
@@ -92,7 +92,7 @@ model ProductPdf {
 
 model ProductImage {
   id        Int      @id @default(autoincrement())
-  url       String
+  url       String     @db.Text
   alt       String
   publicId  String?
   product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -115,7 +115,7 @@ model Company {
 
 model CompanyImage {
   id        Int      @id @default(autoincrement())
-  url       String  @unique
+  url       String  @db.Text
   alt       String  @unique
   publicId  String?  @unique
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -159,7 +159,7 @@ enum DayOfWeek {
 
 model PartnerImage {
   id        Int      @id @default(autoincrement())
-  url       String
+  url       String     @db.Text
   alt       String?
   publicId  String?
  partner   Partner? @relation(fields: [partnerId], references: [id])
@@ -184,7 +184,7 @@ model Partner {
   id                Int             @id @default(autoincrement())
   partnerName       String @db.Text
   gender            Gender?
-  partnerEmail      String?
+  partnerEmail      String?   @unique 
   shopName          String? @db.Text
   partnerMobileNumber String?
   cityName          String?
@@ -295,8 +295,8 @@ model Checkout {
   userId          String
   city            String
   province        String
-  address         String
-  shippingAddress String
+  address         String   @db.Text
+  shippingAddress String    @db.Text
   paymentMethod   String   @db.Text
   total           Float
   status          String
@@ -348,7 +348,7 @@ model AppointmentRequest {
 
 model AnimalNews {
   id          Int        @id @default(autoincrement())
-  title       String
+  title       String   @unique 
   description String @db.Text
   image       newsImage? @relation(fields: [imageId], references: [id])
   imageId     Int?        
@@ -362,7 +362,7 @@ model AnimalNews {
 model newsImage {
   id        Int         @id @default(autoincrement())
   publicId  String
-  url       String
+  url       String      @db.Text
   alt       String?
   newsPosts AnimalNews[]
 }
@@ -370,7 +370,7 @@ model newsImage {
 model newsPdf {
   id        Int         @id @default(autoincrement())
   publicId  String
-  url       String
+  url       String     @db.Text
   title     String?
   newsPosts AnimalNews[]
 }
@@ -427,7 +427,7 @@ enum WeightType {
 
 model SellAnimalImage {
     id            Int     @id @default(autoincrement())
-  url           String
+  url           String   @db.Text
   publicId      String
   alt           String
 
@@ -438,7 +438,7 @@ model SellAnimalImage {
 }
 model SellAnimalVideo {
     id            Int     @id @default(autoincrement())
-  url           String
+  url           String     @db.Text
   publicId      String
   alt           String
 
@@ -467,7 +467,7 @@ model JobApplicant {
   id                    Int                 @id @default(autoincrement())
   name                  String
   gender                Gender
-  mobileNumber          String
+  mobileNumber          String   @unique 
   address               String    @db.Text
   qualification         String?      @db.Text       
   dateOfBirth           DateTime?           
@@ -498,7 +498,7 @@ model JobApplicant {
 
 model ApplicantImage {
   id          Int           @id @default(autoincrement())
-  url         String
+  url         String    @db.Text
   publicId    String
   alt         String
   applicant   JobApplicant?
@@ -506,7 +506,7 @@ model ApplicantImage {
 
 model ApplicantCV {
   id          Int           @id @default(autoincrement())
-  url         String
+  url         String    @db.Text
   publicId    String
   alt         String
   applicant   JobApplicant?
@@ -535,7 +535,7 @@ model JobForm {
 
 model JobFormImage {
   id        Int      @id @default(autoincrement())
-  url       String
+  url       String   @db.Text
   alt       String
   publicId  String
 

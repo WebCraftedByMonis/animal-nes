@@ -160,7 +160,7 @@ export default function ApplicantCardsPage() {
                     </a>
                   )}
 
-                  <div className="flex gap-2 pt-2">
+                  {/* <div className="flex gap-2 pt-2">
                     <Button size="sm" variant="outline">
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -176,7 +176,7 @@ export default function ApplicantCardsPage() {
                         <Trash2 className="h-4 w-4" />
                       )}
                     </Button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
