@@ -33,19 +33,20 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    
     const res = await fetch(`https://www.animalwellness.shop/api/sell-animal/${params.id}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     })
 
     if (!res.ok) {
       return {
-        title: 'Animal Not Found ',
+        title: 'Animal Not Found | Animal Wellness',
         description: 'The animal you are looking for may no longer be available.',
       }
     }
 
     const data: SellAnimal = await res.json()
+
+    
 console.log(data)
     // Create a descriptive title and description
     const age = `${data.ageNumber} ${data.ageType}`

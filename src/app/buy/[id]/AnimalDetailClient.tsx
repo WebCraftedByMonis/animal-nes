@@ -1,4 +1,3 @@
-// src/app/animals/[id]/AnimalDetailClient.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
@@ -120,7 +119,7 @@ export default function AnimalDetailClient() {
                 src={animal.images[activeImage].url}
                 alt={animal.images[activeImage].alt}
                 fill
-                className="object-cover"
+                className="object-fit"
                 priority
               />
             ) : (
@@ -279,16 +278,16 @@ export default function AnimalDetailClient() {
               <h3 className="font-medium text-lg mb-3">Pricing Details</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Purchase Price:</span>
+                  <span className="text-white">Purchase Price:</span>
                   <span className="font-medium">PKR {animal.purchasePrice.toLocaleString()}</span>
                 </div>
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Selling Price:</span>
-                  <span className="font-medium text-green-600">PKR {animal.totalPrice.toLocaleString()}</span>
-                </div> */}
+                <div className="flex justify-between">
+                  <span className="text-white">Selling Price:</span>
+                  {/* <span className="font-medium text-green-600">PKR {animal.totalPrice.toLocaleString()}</span> */}
+                </div>
                 {animal.quantity > 1 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Price per animal:</span>
+                    <span className="text-gray-600">Price per animal:</span>
                     <span className="font-medium">
                       PKR {(animal.totalPrice / animal.quantity).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </span>
@@ -300,6 +299,7 @@ export default function AnimalDetailClient() {
 
           <div className="flex flex-col hover:cursor-pointer sm:flex-row gap-3 pt-4">
             <AddAnimalToCartButton animalId={animal.id} />
+            
           </div>
         </div>
       </div>
