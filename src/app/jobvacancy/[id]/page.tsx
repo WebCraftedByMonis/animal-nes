@@ -32,13 +32,13 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`https://www.animalwellness.shop///api/vacancyForm/${params.id}`, {
+    const res = await fetch(`https://www.animalwellness.shop/api/vacancyForm/${params.id}`, {
       next: { revalidate: 3600 }, // optional revalidation
     })
 
     if (!res.ok) {
       return {
-        title: 'Job Not Found | Animal Wellness',
+        title: 'Job Not Found ',
         description: 'The job you are looking for may no longer be available.',
       }
     }
@@ -46,7 +46,7 @@ export async function generateMetadata({
     const data: JobForm = await res.json()
 
     return {
-      title: `${data.position} at ${data.company} | Animal Wellness`,
+      title: `${data.position} at ${data.company} `,
       description: `Apply for ${data.position} at ${data.company} in ${data.location}. Deadline: ${data.deadline}`,
       openGraph: {
         images: data.jobFormImage
@@ -67,7 +67,7 @@ export async function generateMetadata({
     }
   } catch (e) {
     return {
-      title: 'Job Vacancy | Animal Wellness',
+      title: 'Job Vacancy ',
       description: 'Explore career opportunities at Animal Wellness.',
     }
   }
