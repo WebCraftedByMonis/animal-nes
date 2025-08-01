@@ -121,37 +121,38 @@ async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
   }
 }
 
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 
+    console.log('--- Incoming FormData Entries ---')
     for (const [key, value] of formData.entries()) {
-  
-}
-
+      console.log(`${key}:`, value)
+    }
 
     // Extract and validate product data
     const productData = {
-  productName: formData.get('productName') as string,
-  genericName: formData.get('genericName') as string | null,
-  productLink: formData.get('productLink') as string | null,
-  category: formData.get('category') as string,
-  subCategory: formData.get('subCategory') as string,
-  subsubCategory: formData.get('subsubCategory') as string,
-  productType: formData.get('productType') as string,
-  companyId: Number(formData.get('companyId')),
-  partnerId: Number(formData.get('partnerId')),
-  description: formData.get('description') as string | null,
-  dosage: formData.get('dosage') as string | null,
-  isFeatured: formData.get('isFeatured') === 'true',
-  isActive: formData.get('isActive') === 'true',
-  outofstock: formData.get('outofstock') === 'true',
-  // REMOVED: companyPrice, dealerPrice, customerPrice, inventory, packingUnit
-}
+      productName: formData.get('productName') as string,
+      genericName: formData.get('genericName') as string | null,
+      productLink: formData.get('productLink') as string | null,
+      category: formData.get('category') as string,
+      subCategory: formData.get('subCategory') as string,
+      subsubCategory: formData.get('subsubCategory') as string,
+      productType: formData.get('productType') as string,
+      companyId: Number(formData.get('companyId')),
+      partnerId: Number(formData.get('partnerId')),
+      description: formData.get('description') as string | null,
+      dosage: formData.get('dosage') as string | null,
+      isFeatured: formData.get('isFeatured') === 'true',
+      isActive: formData.get('isActive') === 'true',
+      outofstock: formData.get('outofstock') === 'true',
+    }
+
+    console.log('--- Parsed Product Data ---', productData)
 
     const validation = productSchema.safeParse(productData)
     if (!validation.success) {
+      console.error('Product data validation failed:', validation.error.errors)
       return NextResponse.json(
         { error: validation.error.errors[0].message },
         { status: 400 }
@@ -164,51 +165,47 @@ export async function POST(request: NextRequest) {
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
 
-const variants: VariantInput[] = []
+    console.log('--- Image Upload Result ---', imageResult)
+    console.log('--- PDF Upload Result ---', pdfResult)
 
-for (let i = 0; ; i++) {
-  const packingVolume = formData.get(`variants[${i}][packingVolume]`)
-  if (!packingVolume) break
+    const variants: VariantInput[] = []
 
-  variants.push({
-    packingVolume: packingVolume.toString(),
-    companyPrice: formData.get(`variants[${i}][companyPrice]`)
-      ? Number(formData.get(`variants[${i}][companyPrice]`))
-      : undefined,
-    dealerPrice: formData.get(`variants[${i}][dealerPrice]`)
-      ? Number(formData.get(`variants[${i}][dealerPrice]`))
-      : undefined,
-    customerPrice: Number(formData.get(`variants[${i}][customerPrice]`)),
-    inventory: Number(formData.get(`variants[${i}][inventory]`)),
-  })
-}
+    for (let i = 0; ; i++) {
+      const packingVolume = formData.get(`variants[${i}][packingVolume]`)
+      if (!packingVolume) break
 
+      const variant: VariantInput = {
+        packingVolume: packingVolume.toString(),
+        companyPrice: formData.get(`variants[${i}][companyPrice]`)
+          ? Number(formData.get(`variants[${i}][companyPrice]`))
+          : undefined,
+        dealerPrice: formData.get(`variants[${i}][dealerPrice]`)
+          ? Number(formData.get(`variants[${i}][dealerPrice]`))
+          : undefined,
+        customerPrice: Number(formData.get(`variants[${i}][customerPrice]`)),
+        inventory: Number(formData.get(`variants[${i}][inventory]`)),
+      }
 
+      variants.push(variant)
+    }
 
+    console.log('--- Parsed Variants ---', variants)
 
     // Create product with relations
     const product = await prisma.$transaction(async (tx) => {
-      // 1. Create base product
       const product = await tx.product.create({
         data: validation.data
       })
 
-      
-for (const variant of variants) {
-  const createdVariant = await tx.productVariant.create({
-    data: {
-      ...variant,
-      productId: product.id,
-    },
-  })
- 
-}
+      for (const variant of variants) {
+        await tx.productVariant.create({
+          data: {
+            ...variant,
+            productId: product.id,
+          },
+        })
+      }
 
-
-
-
-
-      // 2. Create image if exists
       if (imageResult) {
         await tx.productImage.create({
           data: {
@@ -220,7 +217,6 @@ for (const variant of variants) {
         })
       }
 
-      // 3. Create PDF if exists
       if (pdfResult) {
         await tx.productPdf.create({
           data: {
@@ -232,21 +228,24 @@ for (const variant of variants) {
       }
 
       return tx.product.findUnique({
-    where: { id: product.id },
-    include: { 
-      image: true, 
-      pdf: true,
-      variants: true // Include variants in the response
-    }
-  })
+        where: { id: product.id },
+        include: { 
+          image: true, 
+          pdf: true,
+          variants: true
+        }
+      })
     })
+
+    console.log('--- Final Created Product ---', product)
 
     return NextResponse.json(product, { status: 201 })
   } catch (error) {
     console.error('Error creating product:', error)
-     return NextResponse.json({ error: 'Product creation failed', details: String(error) }, { status: 400 })
+    return NextResponse.json({ error: 'Product creation failed', details: String(error) }, { status: 400 })
   }
 }
+
 
 export async function DELETE(request: NextRequest) {
   try {
