@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
+import { ComboboxSelect } from '@/components/shared/ComboboxSelect'
 
 interface ProductVariant {
   id?: number
@@ -91,8 +92,8 @@ export default function ViewProductsPage() {
   const [editSubCategory, setEditSubCategory] = useState('')
   const [editSubsubCategory, setEditSubsubCategory] = useState('')
   const [editProductType, setEditProductType] = useState('')
-  const [editCompanyId, setEditCompanyId] = useState(0)
-  const [editPartnerId, setEditPartnerId] = useState(0)
+  const [editCompanyId, setEditCompanyId] = useState('')
+  const [editPartnerId, setEditPartnerId] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editDosage, setEditDosage] = useState('')
   const [editIsFeatured, setEditIsFeatured] = useState(false)
@@ -127,11 +128,11 @@ export default function ViewProductsPage() {
   const fetchCompaniesAndPartners = async () => {
     try {
       const [companiesRes, partnersRes] = await Promise.all([
-        axios.get('/api/company'),
-        axios.get('/api/partner')
+        axios.get('/api/company?limit=all'),
+        axios.get('/api/partner?limit=all')
       ])
-      setCompanies(companiesRes.data.data)
-      setPartners(partnersRes.data.data)
+      setCompanies(companiesRes.data.data || [])
+      setPartners(partnersRes.data.data || [])
     } catch (error) {
       console.error('Failed to fetch companies or partners', error)
     }
@@ -143,76 +144,70 @@ export default function ViewProductsPage() {
   }, [fetchProducts])
 
   const handleUpdate = async () => {
-  if (!editId) return
+    if (!editId) return
 
-  setIsUpdating(true)
-  try {
-    const formData = new FormData()
-    
-    // Add all the regular fields
-    formData.append('productName', editProductName)
-    if (editGenericName) formData.append('genericName', editGenericName)
-    if (editProductLink) formData.append('productLink', editProductLink) // Note: might need to be 'productLink'
-    formData.append('category', editCategory)
-    formData.append('subCategory', editSubCategory)
-    formData.append('subsubCategory', editSubsubCategory)
-    formData.append('productType', editProductType)
-    formData.append('companyId', editCompanyId.toString())
-    formData.append('partnerId', editPartnerId.toString())
-    if (editDescription) formData.append('description', editDescription)
-    if (editDosage) formData.append('dosage', editDosage)
-    formData.append('isFeatured', String(editIsFeatured))
-    formData.append('isActive', String(editIsActive))
-    formData.append('outofstock', String(editOutofstock))
-    
-    // Add variants properly
-    editVariants.forEach((variant, i) => {
-      formData.append(`variants[${i}][packingVolume]`, variant.packingVolume)
-      if (variant.companyPrice !== null && variant.companyPrice !== undefined) {
-        formData.append(`variants[${i}][companyPrice]`, variant.companyPrice.toString())
+    setIsUpdating(true)
+    try {
+      const formData = new FormData()
+      
+      // Add all the regular fields
+      formData.append('productName', editProductName)
+      if (editGenericName) formData.append('genericName', editGenericName)
+      if (editProductLink) formData.append('productLink', editProductLink)
+      formData.append('category', editCategory)
+      formData.append('subCategory', editSubCategory)
+      formData.append('subsubCategory', editSubsubCategory)
+      formData.append('productType', editProductType)
+      formData.append('companyId', editCompanyId.toString())
+      formData.append('partnerId', editPartnerId.toString())
+      if (editDescription) formData.append('description', editDescription)
+      if (editDosage) formData.append('dosage', editDosage)
+      formData.append('isFeatured', String(editIsFeatured))
+      formData.append('isActive', String(editIsActive))
+      formData.append('outofstock', String(editOutofstock))
+      
+      // Add variants properly
+      editVariants.forEach((variant, i) => {
+        formData.append(`variants[${i}][packingVolume]`, variant.packingVolume)
+        if (variant.companyPrice !== null && variant.companyPrice !== undefined) {
+          formData.append(`variants[${i}][companyPrice]`, variant.companyPrice.toString())
+        }
+        if (variant.dealerPrice !== null && variant.dealerPrice !== undefined) {
+          formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice.toString())
+        }
+        formData.append(`variants[${i}][customerPrice]`, variant.customerPrice.toString())
+        formData.append(`variants[${i}][inventory]`, variant.inventory.toString())
+      })
+      
+      // Add files if they exist
+      if (editProductImage) {
+        formData.append('image', editProductImage)
       }
-      if (variant.dealerPrice !== null && variant.dealerPrice !== undefined) {
-        formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice.toString())
+      if (editProductPdf) {
+        formData.append('pdf', editProductPdf)
       }
-      formData.append(`variants[${i}][customerPrice]`, variant.customerPrice.toString())
-      formData.append(`variants[${i}][inventory]`, variant.inventory.toString())
-    })
-    
-    // Add files if they exist
-    if (editProductImage) {
-      formData.append('image', editProductImage)
-    }
-    if (editProductPdf) {
-      formData.append('pdf', editProductPdf)
-    }
 
-    // Debug: Log what we're sending
-    console.log('Sending update for product ID:', editId)
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value)
-    }
+      const response = await axios.put(`/api/product?id=${editId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
 
-    const response = await axios.put(`/api/product?id=${editId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+      toast.success('Product updated')
+      setOpen(false)
+      fetchProducts()
+    } catch (error) {
+      console.error('Update error:', error)
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Error response:', error.response.data)
+        toast.error(error.response.data.error || 'Failed to update product')
+      } else {
+        toast.error('Failed to update product')
       }
-    })
-
-    toast.success('Product updated')
-    setOpen(false)
-    fetchProducts()
-  } catch (error) {
-    console.error('Update error:', error)
-    if (axios.isAxiosError(error) && error.response) {
-      console.error('Error response:', error.response.data)
-      toast.error(error.response.data.error || 'Failed to update product')
-    } else {
-      toast.error('Failed to update product')
+    } finally {
+      setIsUpdating(false)
     }
-  } finally {
-    setIsUpdating(false)
   }
-}
 
   const handleDelete = async (id: number) => {
     setIsDeleting(id)
@@ -410,8 +405,8 @@ export default function ViewProductsPage() {
                         setEditSubCategory(product.subCategory)
                         setEditSubsubCategory(product.subsubCategory)
                         setEditProductType(product.productType)
-                        setEditCompanyId(product.companyId)
-                        setEditPartnerId(product.partnerId)
+                        setEditCompanyId(product.companyId.toString())
+                        setEditPartnerId(product.partnerId.toString())
                         setEditDescription(product.description || '')
                         setEditDosage(product.dosage || '')
                         setEditIsFeatured(product.isFeatured)
@@ -510,89 +505,117 @@ export default function ViewProductsPage() {
                   placeholder="Enter product link"
                 />
               </div>
-             <div>
-  <Label>Category*</Label>
-  <SuggestiveInput
-    suggestions={[
-      "Veterinary",
-      "Poultry",
-      "Pets",
-      "Equine",
-      "Livestock Feed",
-      "Poultry Feed",
-      "Instruments & Equipment",
-      "Fisheries & Aquaculture",
-      "Vaccination Services / Kits",
-      "Herbal / Organic Products",
-    ]}
-    value={editCategory}
-    onChange={(v) => setEditCategory(v)}
-    placeholder="Enter category"
-  />
-</div>
+              <div>
+                <Label>Category*</Label>
+                <SuggestiveInput
+                  suggestions={[
+                    "Veterinary",
+                    "Poultry",
+                    "Pets",
+                    "Equine",
+                    "Livestock Feed",
+                    "Poultry Feed",
+                    "Instruments & Equipment",
+                    "Fisheries & Aquaculture",
+                    "Vaccination Services / Kits",
+                    "Herbal / Organic Products",
+                  ]}
+                  value={editCategory}
+                  onChange={(v) => setEditCategory(v)}
+                  placeholder="Enter category"
+                />
+              </div>
 
-<div>
-  <Label>Sub-Category*</Label>
-  <SuggestiveInput
-    suggestions={[
-      "Antiparasitics",
-      "Antibiotics & Antibacterials",
-      "Vaccines & Immunologicals",
-      "Nutritional Supplements",
-      "Growth Promoters",
-      "Coccidiostats",
-      "Pain Management / NSAIDs",
-      "Reproductive Health / Hormones",
-      "Liver & Kidney Tonics",
-      "Respiratory Health / Expectorants",
-    ]}
-    value={editSubCategory}
-    onChange={(v) => setEditSubCategory(v)}
-    placeholder="Enter sub-category"
-  />
-</div>
+              <div>
+                <Label>Sub-Category*</Label>
+                <SuggestiveInput
+                  suggestions={[
+                    "Antiparasitics",
+                    "Antibiotics & Antibacterials",
+                    "Vaccines & Immunologicals",
+                    "Nutritional Supplements",
+                    "Growth Promoters",
+                    "Coccidiostats",
+                    "Pain Management / NSAIDs",
+                    "Reproductive Health / Hormones",
+                    "Liver & Kidney Tonics",
+                    "Respiratory Health / Expectorants",
+                  ]}
+                  value={editSubCategory}
+                  onChange={(v) => setEditSubCategory(v)}
+                  placeholder="Enter sub-category"
+                />
+              </div>
 
-<div>
-  <Label>Sub-Sub-Category*</Label>
-  <SuggestiveInput
-    suggestions={[
-      "Endoparasiticides (e.g., dewormers)",
-      "Ectoparasiticides (e.g., tick/flea/mite treatment)",
-      "Broad-Spectrum Dewormers",
-      "Multivitamins & Trace Elements",
-      "Electrolytes & Hydration Solutions",
-      "Mineral Mixtures / Salt Licks",
-      "Probiotics & Enzymes",
-      "Calcium / Phosphorus Supplements",
-      "Immuno-Stimulants",
-      "Hepato-Renal Protectants",
-    ]}
-    value={editSubsubCategory}
-    onChange={(v) => setEditSubsubCategory(v)}
-    placeholder="Enter sub-sub-category"
-  />
-</div>
+              <div>
+                <Label>Sub-Sub-Category*</Label>
+                <SuggestiveInput
+                  suggestions={[
+                    "Endoparasiticides (e.g., dewormers)",
+                    "Ectoparasiticides (e.g., tick/flea/mite treatment)",
+                    "Broad-Spectrum Dewormers",
+                    "Multivitamins & Trace Elements",
+                    "Electrolytes & Hydration Solutions",
+                    "Mineral Mixtures / Salt Licks",
+                    "Probiotics & Enzymes",
+                    "Calcium / Phosphorus Supplements",
+                    "Immuno-Stimulants",
+                    "Hepato-Renal Protectants",
+                  ]}
+                  value={editSubsubCategory}
+                  onChange={(v) => setEditSubsubCategory(v)}
+                  placeholder="Enter sub-sub-category"
+                />
+              </div>
 
-<div>
-  <Label>Product Type*</Label>
-  <SuggestiveInput
-    suggestions={[
-      "Injection (IV, IM, SC)",
-      "Tablet / Bolus / Pill",
-      "Oral Powder / Sachet",
-      "Oral Suspension / Syrup",
-      "Spray / Aerosol",
-      "Oral Solution / Drops",
-      "Topical Application / Pour-on / Spot-on",
-      "Premix (for feed inclusion)",
-      "Intrauterine / Intra-mammary",
-      "Transdermal Patch / Ointment / Cream"
-    ]}
-    value={editProductType}
-    onChange={(v) => setEditProductType(v)}
-    placeholder="Enter product type"
-  />
-</div>
+              <div>
+                <Label>Product Type*</Label>
+                <SuggestiveInput
+                  suggestions={[
+                    "Injection (IV, IM, SC)",
+                    "Tablet / Bolus / Pill",
+                    "Oral Powder / Sachet",
+                    "Oral Suspension / Syrup",
+                    "Spray / Aerosol",
+                    "Oral Solution / Drops",
+                    "Topical Application / Pour-on / Spot-on",
+                    "Premix (for feed inclusion)",
+                    "Intrauterine / Intra-mammary",
+                    "Transdermal Patch / Ointment / Cream"
+                  ]}
+                  value={editProductType}
+                  onChange={(v) => setEditProductType(v)}
+                  placeholder="Enter product type"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Company*</Label>
+                <ComboboxSelect
+                  options={companies.map((company) => ({
+                    id: company.id,
+                    label: company.companyName,
+                  }))}
+                  value={editCompanyId}
+                  onChange={setEditCompanyId}
+                  placeholder="Select company"
+                />
+              </div>
+
+              <div>
+                <Label>Partner*</Label>
+                <ComboboxSelect
+                  options={partners.map((partner) => ({
+                    id: partner.id,
+                    label: partner.partnerName,
+                  }))}
+                  value={editPartnerId}
+                  onChange={setEditPartnerId}
+                  placeholder="Select partner"
+                />
+              </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center space-x-2">
@@ -651,14 +674,16 @@ export default function ViewProductsPage() {
                     <div key={index} className="p-4 border rounded-lg space-y-3">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">Variant {index + 1}</h4>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveVariant(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        {editVariants.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveVariant(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
