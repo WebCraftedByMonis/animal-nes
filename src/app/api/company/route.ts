@@ -58,15 +58,16 @@ const updateCompanySchema = z.object({
 })
 
 
-
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const search = searchParams.get('search') || ''
-  const sortBy = searchParams.get('sortBy') || 'id'
-  const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc'
-  const page = parseInt(searchParams.get('page') || '1', 10)
-  const limit = parseInt(searchParams.get('limit') || '10', 10)
-  const skip = (page - 1) * limit
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get('search') || '';
+  const sortBy = searchParams.get('sortBy') || 'id';
+  const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc';
+  const limitParam = searchParams.get('limit') || '10';
+
+  const limit = limitParam === 'all' ? undefined : parseInt(limitParam, 10);
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const skip = limit ? (page - 1) * limit : undefined;
 
   const [items, total] = await Promise.all([
     prisma.company.findMany({
@@ -88,17 +89,13 @@ export async function GET(req: NextRequest) {
         companyName: { contains: search },
       },
     }),
-  ])
+  ]);
 
   return NextResponse.json({
     data: items,
     total,
-    page,
-    lastSubmittedAt: items.length > 0 ? items[items.length - 1].createdAt ?? null : null,
-  })
+  });
 }
-
-
 
 
 export async function POST(request: NextRequest) {

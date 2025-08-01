@@ -118,20 +118,24 @@ async function POST(request: NextRequest) {
     );
   }
 }
-
-async function GET(request: NextRequest) {
+ async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+
     const page = Number(searchParams.get('page')) || 1;
-    const limit = Math.min(Number(searchParams.get('limit')) || 10, 100);
+    const limitParam = searchParams.get('limit') || '10';
+    const limit = limitParam === 'all' ? undefined : Math.min(Number(limitParam), 100);
+
     const search = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const order = searchParams.get('order') || 'desc';
 
+    const skip = limit ? (page - 1) * limit : undefined;
+
     const [partners, total] = await Promise.all([
       prisma.partner.findMany({
-        where: { partnerName: { contains: search, } },
-        skip: (page - 1) * limit,
+        where: { partnerName: { contains: search } },
+        skip,
         take: limit,
         orderBy: { [sortBy]: order },
         include: {
@@ -142,25 +146,17 @@ async function GET(request: NextRequest) {
         },
       }),
       prisma.partner.count({
-        where: { partnerName: { contains: search, } },
+        where: { partnerName: { contains: search } },
       }),
     ]);
 
     return NextResponse.json({
       data: partners,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      total,
     });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return NextResponse.json(
-      { error: `Failed to fetch partners: ${errorMessage}` },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error('Error fetching partners:', error);
+    return NextResponse.error();
   }
 }
 

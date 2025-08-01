@@ -30,7 +30,8 @@ export function ComboboxSelect({ options, value, onChange, placeholder }: Combob
           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0">
+      <PopoverContent className="p-0 max-h-60 overflow-y-auto">
+
         <Command>
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
           <CommandEmpty>No result found.</CommandEmpty>

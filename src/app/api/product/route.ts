@@ -6,7 +6,7 @@ import { z } from 'zod'
 interface CloudinaryUploadResult {
   secure_url: string
   public_id: string
-  [key: string]: string | number | boolean
+  [key: string]: unknown
 }
 
 interface VariantInput {
@@ -51,42 +51,38 @@ async function retry<T>(
 }
 
 
-async function uploadFileToCloudinary(
-  buffer: Buffer,
-  folder: string,
-  resourceType: 'image' | 'raw' = 'image',
-  originalFileName?: string
-): Promise<CloudinaryUploadResult> {
-  return retry(() =>
-    new Promise((resolve, reject) => {
-      const baseFileName = originalFileName
-        ? originalFileName.replace(/\.[^/.]+$/, '')
-        : `file-${Date.now()}`
+async function uploadImageToCloudinary(buffer: Buffer, folder: string): Promise<CloudinaryUploadResult> {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { 
+        folder: folder,
+        resource_type: 'image',
+      },
+      (error, result) => {
+        if (error) reject(new Error(error.message))
+        else if (!result) reject(new Error('No result from Cloudinary'))
+        else resolve(result)
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
 
-      const extension = originalFileName?.split('.').pop() || 'pdf'
-      const publicId = `${baseFileName}-${Date.now()}`
-
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: resourceType,
-          publicId,
-          use_filename: true,
-          unique_filename: false,
-          format: extension,
-        },
-        (error, result) => {
-          if (error) reject(new Error(error.message))
-          else if (!result) reject(new Error('No result from Cloudinary'))
-          else resolve(result)
-        }
-      )
-
-      uploadStream.end(buffer)
-    }),
-    3, // retries
-    1500 // delay (ms)
-  )
+async function uploadPdfToCloudinary(buffer: Buffer, folder: string): Promise<CloudinaryUploadResult> {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { 
+        folder: folder,
+        resource_type: 'auto',
+      },
+      (error, result) => {
+        if (error) reject(new Error(error.message))
+        else if (!result) reject(new Error('No result from Cloudinary'))
+        else resolve(result)
+      }
+    )
+    uploadStream.end(buffer)
+  })
 }
 
 // Zod schemas
@@ -118,12 +114,11 @@ async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
 
-  return uploadFileToCloudinary(
-    buffer,
-    `products/${type}s`,
-    type === 'pdf' ? 'raw' : 'image',
-    file.name
-  )
+  if (type === 'image') {
+    return uploadImageToCloudinary(buffer, 'products/images')
+  } else {
+    return uploadPdfToCloudinary(buffer, 'products/pdfs')
+  }
 }
 
 
@@ -132,7 +127,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
 
     for (const [key, value] of formData.entries()) {
-  console.log(`formData field: ${key} =>`, value);
+  
 }
 
 
@@ -188,7 +183,7 @@ for (let i = 0; ; i++) {
   })
 }
 
-console.log('Parsed variants:', variants)
+
 
 
     // Create product with relations
@@ -206,7 +201,7 @@ for (const variant of variants) {
       productId: product.id,
     },
   })
-  console.log('Created variant in DB:', createdVariant)
+ 
 }
 
 
@@ -289,7 +284,7 @@ export async function DELETE(request: NextRequest) {
     // Delete files from Cloudinary
     await Promise.all([
       product.image?.publicId ? cloudinary.uploader.destroy(product.image.publicId) : null,
-      product.pdf?.publicId ? cloudinary.uploader.destroy(product.pdf.publicId, { resource_type: 'raw' }) : null
+      product.pdf?.publicId ? cloudinary.uploader.destroy(product.pdf.publicId, { resource_type: 'auto' }) : null
     ])
 
     // Delete product (relations will cascade)
@@ -360,7 +355,7 @@ export async function PUT(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     
-    console.log('PUT request received with ID:', id)
+    
     
     if (!id) {
       return NextResponse.json(
@@ -379,10 +374,9 @@ export async function PUT(request: NextRequest) {
 
     const formData = await request.formData()
     
-    // Log received form data
-    console.log('Received form data entries:')
+    
     for (const [key, value] of formData.entries()) {
-      console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value)
+      
     }
 
     // Extract product data
@@ -403,7 +397,7 @@ export async function PUT(request: NextRequest) {
       outofstock: formData.get('outofstock') ? formData.get('outofstock') === 'true' : undefined,
     }
 
-    console.log('Parsed product data:', productData)
+    
 
     // Filter out undefined values for validation
     const cleanedProductData = Object.fromEntries(
@@ -435,7 +429,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    console.log('Found existing product:', existingProduct.id)
+   
 
     // Handle file uploads
     const [imageResult, pdfResult] = await Promise.all([
@@ -443,10 +437,7 @@ export async function PUT(request: NextRequest) {
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
 
-    console.log('File upload results:', { 
-      image: imageResult ? 'uploaded' : 'none', 
-      pdf: pdfResult ? 'uploaded' : 'none' 
-    })
+   
 
     // Parse variants
     const variants: VariantInput[] = []
@@ -474,7 +465,7 @@ export async function PUT(request: NextRequest) {
       variants.push(variant)
     }
 
-    console.log('Parsed variants:', variants)
+    
 
     // Update product with transactions
     const updatedProduct = await prisma.$transaction(async (tx) => {
@@ -484,7 +475,7 @@ export async function PUT(request: NextRequest) {
         data: validation.data,
       })
 
-      console.log('Updated product base data')
+      
 
       // Delete existing variants and create new ones
       if (variants.length > 0) {
@@ -492,7 +483,7 @@ export async function PUT(request: NextRequest) {
           where: { productId },
         })
 
-        console.log('Deleted old variants')
+        
 
         for (const variant of variants) {
           await tx.productVariant.create({
@@ -503,7 +494,7 @@ export async function PUT(request: NextRequest) {
           })
         }
 
-        console.log('Created new variants')
+       
       }
 
       // Handle image update
@@ -512,7 +503,7 @@ export async function PUT(request: NextRequest) {
         if (existingProduct.image?.publicId) {
           try {
             await cloudinary.uploader.destroy(existingProduct.image.publicId)
-            console.log('Deleted old image from Cloudinary')
+            
           } catch (error) {
             console.error('Failed to delete old image:', error)
           }
@@ -533,7 +524,7 @@ export async function PUT(request: NextRequest) {
           }
         })
 
-        console.log('Updated product image')
+        
       }
 
       // Handle PDF update
@@ -541,8 +532,8 @@ export async function PUT(request: NextRequest) {
         // Delete old PDF from Cloudinary
         if (existingProduct.pdf?.publicId) {
           try {
-            await cloudinary.uploader.destroy(existingProduct.pdf.publicId, { resource_type: 'raw' })
-            console.log('Deleted old PDF from Cloudinary')
+            await cloudinary.uploader.destroy(existingProduct.pdf.publicId, { resource_type: 'image' })
+            
           } catch (error) {
             console.error('Failed to delete old PDF:', error)
           }
@@ -561,7 +552,7 @@ export async function PUT(request: NextRequest) {
           }
         })
 
-        console.log('Updated product PDF')
+        
       }
 
       // Return the updated product with all relations
@@ -577,7 +568,7 @@ export async function PUT(request: NextRequest) {
       })
     })
 
-    console.log('Transaction completed successfully')
+    
 
     return NextResponse.json(updatedProduct, { status: 200 })
   } catch (error) {
