@@ -349,6 +349,8 @@ export async function GET(req: NextRequest) {
     lastSubmittedAt: items.length > 0 ? items[items.length - 1].createdAt ?? null : null,
   })
 }
+
+
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

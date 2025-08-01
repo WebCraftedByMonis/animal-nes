@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+
 interface Partner {
   id: number
   partnerName: string
@@ -59,6 +60,37 @@ interface Partner {
   createdAt: string
 }
 
+// Image component with error handling
+const PartnerImage = ({ imageUrl, altText }: { imageUrl: string; altText: string }) => {
+  const [imageError, setImageError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  return (
+    <div className="relative w-[50px] h-[50px]">
+      {!imageError ? (
+        <Image
+          src={imageUrl}
+          alt={altText}
+          width={50}
+          height={50}
+          className="rounded object-cover"
+          onError={() => {
+            setImageError(true)
+            setIsLoading(false)
+          }}
+          onLoad={() => setIsLoading(false)}
+        />
+      ) : (
+        <div className="w-[50px] h-[50px] bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+          <span className="text-xs text-gray-500">No Image</span>
+        </div>
+      )}
+      {isLoading && !imageError && (
+        <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      )}
+    </div>
+  )
+}
 
 export default function ViewPartnersPage() {
   const [partners, setPartners] = useState<Partner[]>([])
@@ -69,6 +101,7 @@ export default function ViewPartnersPage() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [lastCreatedAt, setLastCreatedAt] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const [editId, setEditId] = useState<number | null>(null)
   const [editPartnerName, setEditPartnerName] = useState('')
@@ -92,29 +125,41 @@ export default function ViewPartnersPage() {
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
   const [editAvailableDays, setEditAvailableDays] = useState<string[]>([])
 
-
   const fetchPartners = useCallback(async () => {
+    setIsLoading(true)
     try {
       const { data } = await axios.get('/api/partner', {
-        params: { search, sortBy, sortOrder, page, limit }
+        params: { search, sortBy, order: sortOrder, page, limit }
       })
-      console.log(data);
-      setPartners(data.data)
-      setTotal(data.meta.total)
-      setLastCreatedAt(data.data[0]?.createdAt || null)
+      console.log('API Response:', data);
+      
+      setPartners(data.data || [])
+      setTotal(data.meta?.total || data.total || 0) // Handle both response formats
+      setLastCreatedAt(data.data?.[0]?.createdAt || null)
+      
+      // Show success message only if we have data
+      if (data.data && data.data.length > 0) {
+        // Don't show success toast for normal loading
+      }
     } catch (error) {
-      console.log(error)
+      console.error('Fetch partners error:', error)
       toast.error('Failed to fetch partners')
+      setPartners([])
+      setTotal(0)
+    } finally {
+      setIsLoading(false)
     }
   }, [search, sortBy, sortOrder, page, limit])
 
   useEffect(() => {
     fetchPartners()
   }, [fetchPartners])
+
   const handleUpdate = async () => {
     if (!editId) return
 
     setIsUpdating(true)
+    
     try {
       // Build the update data object
       const updateData: any = {
@@ -134,30 +179,48 @@ export default function ViewPartnersPage() {
       if (editZipcode) updateData.zipcode = editZipcode
       if (editAreaTown) updateData.areaTown = editAreaTown
       if (editAvailableDays.length > 0) updateData.availableDays = editAvailableDays
+
       // Handle image upload - convert to base64 like in your POST request
       if (editImage) {
         const reader = new FileReader()
         reader.onload = async () => {
-          updateData.image = reader.result as string
-          await sendUpdate()
+          try {
+            updateData.image = reader.result as string
+            await sendUpdate(updateData)
+          } catch (error) {
+            console.error('Update error:', error)
+            toast.error('Failed to update partner')
+            setIsUpdating(false)
+          }
+        }
+        reader.onerror = () => {
+          toast.error('Failed to read image file')
+          setIsUpdating(false)
         }
         reader.readAsDataURL(editImage)
       } else {
-        await sendUpdate()
+        await sendUpdate(updateData)
       }
 
-      async function sendUpdate() {
-        const response = await axios.put(`/api/partner?id=${editId}`, updateData, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
+    } catch (error) {
+      console.error('Update error:', error)
+      toast.error('Failed to update partner')
+      setIsUpdating(false)
+    }
+  }
 
-        if (response.status === 200) {
-          toast.success('Partner updated')
-          setOpen(false)
-          fetchPartners()
+  const sendUpdate = async (updateData: any) => {
+    try {
+      const response = await axios.put(`/api/partner?id=${editId}`, updateData, {
+        headers: {
+          'Content-Type': 'application/json'
         }
+      })
+
+      if (response.status === 200) {
+        toast.success('Partner updated successfully')
+        setOpen(false)
+        fetchPartners()
       }
     } catch (error) {
       console.error('Update error:', error)
@@ -171,9 +234,10 @@ export default function ViewPartnersPage() {
     setIsDeleting(id)
     try {
       await axios.delete('/api/partner', { params: { id } })
-      toast.error('Partner deleted')
+      toast.success('Partner deleted successfully')
       fetchPartners()
-    } catch {
+    } catch (error) {
+      console.error('Delete error:', error)
       toast.error('Failed to delete partner')
     } finally {
       setIsDeleting(null)
@@ -189,6 +253,9 @@ export default function ViewPartnersPage() {
     }
   }
 
+  if (isLoading) {
+    return <TableSkeleton />
+  }
 
   return (
     <Suspense fallback={<TableSkeleton />}>
@@ -242,91 +309,96 @@ export default function ViewPartnersPage() {
                 <TableHead className="px-4 py-2">Available Days</TableHead>
                 <TableHead className="px-4 py-2">Send To Partner</TableHead>
                 <TableHead className="px-4 py-2">Created</TableHead>
-
                 <TableHead className="px-4 py-2">Products</TableHead>
                 <TableHead className="px-4 py-2">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {partners.map((partner, idx) => (
-                <TableRow
-                  key={partner.id}
-                  className={idx % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-gray-50 dark:bg-zinc-800'}
-                >
-                  <TableCell className="px-4 py-2">{(page - 1) * limit + idx + 1}</TableCell>
-                  <TableCell className="px-4 py-2">
-                    {partner.partnerImage && (
-                      <Image
-                        src={partner.partnerImage.url}
-                        alt="Partner image"
-                        width={50}
-                        height={50}
-                        className="rounded"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">{partner.partnerName}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.partnerMobileNumber || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.cityName || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.partnerType || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.shopName || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.specialization || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.qualificationDegree || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.state || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">{partner.bloodGroup || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">
-                    {partner.availableDaysOfWeek?.map((d) => d.day).join(', ') || '-'}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">{partner.sendToPartner || '-'}</TableCell>
-                  <TableCell className="px-4 py-2">
-                    {formatDistanceToNow(new Date(partner.createdAt))} ago
-                  </TableCell>
-
-                  <TableCell className="px-4 py-2">{partner.products.length}</TableCell>
-                  <TableCell className="px-4 py-2 flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditId(partner.id)
-                        setEditPartnerName(partner.partnerName)
-                        setEditMobileNumber(partner.partnerMobileNumber || '')
-                        setEditEmail(partner.partnerEmail || '')
-                        setEditCity(partner.cityName || '')
-                        setEditSpecialization(partner.specialization || '');
-                        setEditQualificationDegree(partner.qualificationDegree || '');
-                        setEditAvailableDays(partner.availableDaysOfWeek?.map(d => d.day) || [])
-                        setEditShopName(partner.shopName || '');
-                        setEditRvmpNumber(partner.rvmpNumber || '');
-                        setEditState(partner.state || '');
-                        setEditZipcode(partner.zipcode || '');
-                        setEditAreaTown(partner.areaTown || '');
-
-                        setEditAddress(partner.fullAddress || '')
-                        setEditImagePreview(partner.partnerImage?.url || null)
-                        setOpen(true)
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(partner.id)}
-                      disabled={isDeleting === partner.id}
-                    >
-                      {isDeleting === partner.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+              {partners.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={16} className="text-center py-8 text-gray-500">
+                    No partners found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                partners.map((partner, idx) => (
+                  <TableRow
+                    key={partner.id}
+                    className={idx % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-gray-50 dark:bg-zinc-800'}
+                  >
+                    <TableCell className="px-4 py-2">{(page - 1) * limit + idx + 1}</TableCell>
+                    <TableCell className="px-4 py-2">
+                      {partner.partnerImage ? (
+                        <PartnerImage 
+                          imageUrl={partner.partnerImage.url} 
+                          altText={`${partner.partnerName} image`} 
+                        />
+                      ) : (
+                        <div className="w-[50px] h-[50px] bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-500">No Image</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-4 py-2">{partner.partnerName}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.partnerMobileNumber || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.cityName || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.partnerType || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.shopName || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.specialization || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.qualificationDegree || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.state || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">{partner.bloodGroup || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">
+                      {partner.availableDaysOfWeek?.map((d) => d.day).join(', ') || '-'}
+                    </TableCell>
+                    <TableCell className="px-4 py-2">{partner.sendToPartner || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">
+                      {formatDistanceToNow(new Date(partner.createdAt))} ago
+                    </TableCell>
+                    <TableCell className="px-4 py-2">{partner.products.length}</TableCell>
+                    <TableCell className="px-4 py-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditId(partner.id)
+                          setEditPartnerName(partner.partnerName)
+                          setEditMobileNumber(partner.partnerMobileNumber || '')
+                          setEditEmail(partner.partnerEmail || '')
+                          setEditCity(partner.cityName || '')
+                          setEditSpecialization(partner.specialization || '');
+                          setEditQualificationDegree(partner.qualificationDegree || '');
+                          setEditAvailableDays(partner.availableDaysOfWeek?.map(d => d.day) || [])
+                          setEditShopName(partner.shopName || '');
+                          setEditRvmpNumber(partner.rvmpNumber || '');
+                          setEditState(partner.state || '');
+                          setEditZipcode(partner.zipcode || '');
+                          setEditAreaTown(partner.areaTown || '');
+                          setEditAddress(partner.fullAddress || '')
+                          setEditImagePreview(partner.partnerImage?.url || null)
+                          setOpen(true)
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(partner.id)}
+                        disabled={isDeleting === partner.id}
+                      >
+                        {isDeleting === partner.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
-
 
           {/* Pagination */}
           <div className="mt-4 px-4 py-2 flex justify-between items-center text-sm">
@@ -362,7 +434,7 @@ export default function ViewPartnersPage() {
 
         {/* Edit Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Partner</DialogTitle>
             </DialogHeader>
@@ -405,8 +477,6 @@ export default function ViewPartnersPage() {
                 <label className="block text-sm font-medium mb-1">Qualification Degree</label>
                 <Input value={editQualificationDegree} onChange={(e) => setEditQualificationDegree(e.target.value)} />
               </div>
-
-              {/* Species */}
 
               {/* Available Days - Using UI Checkbox component */}
               <div className="col-span-2">
@@ -483,7 +553,7 @@ export default function ViewPartnersPage() {
               {/* Image Preview */}
               {editImagePreview && (
                 <div className="col-span-2">
-                  <Image src={editImagePreview} alt="Preview" width={100} height={100} className="rounded" />
+                  <PartnerImage imageUrl={editImagePreview} altText="Preview" />
                 </div>
               )}
 

@@ -61,6 +61,15 @@ async function handleImageUpload(image: string) {
   return { url: result.secure_url, publicId: result.public_id };
 }
 
+async function handleImageDelete(publicId: string) {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.error('Error deleting image from Cloudinary:', error);
+    // Don't throw error - continue with database operations
+  }
+}
+
 async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -72,9 +81,10 @@ async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-   
 
     const { image, availableDays, startTimeIds, productIds, ...partnerData } = validation.data;
+    
+    // Handle image upload OUTSIDE transaction
     const imageResult = await handleImageUpload(image);
 
     const newPartner = await prisma.$transaction(async (tx) => {
@@ -107,6 +117,8 @@ async function POST(request: NextRequest) {
         },
       });
       return partner;
+    }, {
+      timeout: 10000, // Increased timeout
     });
 
     return NextResponse.json(newPartner, { status: 201 });
@@ -118,7 +130,8 @@ async function POST(request: NextRequest) {
     );
   }
 }
- async function GET(request: NextRequest) {
+
+async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
@@ -152,7 +165,12 @@ async function POST(request: NextRequest) {
 
     return NextResponse.json({
       data: partners,
-      total,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: limit ? Math.ceil(total / limit) : 1
+      }
     });
   } catch (error) {
     console.error('Error fetching partners:', error);
@@ -162,10 +180,15 @@ async function POST(request: NextRequest) {
 
 async function PUT(request: NextRequest) {
   try {
+    console.log('Received PUT request:', request.url);
+
     const { searchParams } = new URL(request.url);
-    const id = Number(searchParams.get('id'));
-    
+    const idParam = searchParams.get('id');
+    console.log('Partner ID from query params:', idParam);
+
+    const id = Number(idParam);
     if (!id || Number.isNaN(id)) {
+      console.error('Invalid or missing Partner ID:', idParam);
       return NextResponse.json(
         { error: 'Valid partner ID is required' },
         { status: 400 }
@@ -173,9 +196,11 @@ async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validation = updatePartnerSchema.safeParse(body);
+    console.log('Request Body:', body);
 
+    const validation = updatePartnerSchema.safeParse(body);
     if (!validation.success) {
+      console.error('Validation errors:', validation.error.errors);
       return NextResponse.json(
         { errors: validation.error.errors },
         { status: 400 }
@@ -183,26 +208,51 @@ async function PUT(request: NextRequest) {
     }
 
     const { image, availableDays, startTimeIds, productIds, ...updateData } = validation.data;
+    console.log('Validated Update Data:', updateData);
+    console.log('Image Data:', image);
+    console.log('Available Days:', availableDays);
+    console.log('Start Time IDs:', startTimeIds);
+    console.log('Product IDs:', productIds);
 
+    // Step 1: Get existing partner data OUTSIDE transaction
+    console.log('Fetching existing partner with ID:', id);
+    const existing = await prisma.partner.findUnique({
+      where: { id },
+      include: { partnerImage: true },
+    });
+
+    if (!existing) {
+      console.error('Partner not found with ID:', id);
+      return NextResponse.json(
+        { error: 'Partner not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log('Existing Partner:', existing);
+
+    // Step 2: Handle image operations OUTSIDE transaction
+    let imageResult = null;
+    if (image) {
+      console.log('Processing image update...');
+      
+      // Delete old image first (if exists)
+      if (existing.partnerImage?.publicId) {
+        console.log('Deleting old image from Cloudinary:', existing.partnerImage.publicId);
+        await handleImageDelete(existing.partnerImage.publicId);
+      }
+
+      // Upload new image
+      console.log('Uploading new image...');
+      imageResult = await handleImageUpload(image);
+      console.log('Image upload result:', imageResult);
+    }
+
+    // Step 3: Update partner data in fast transaction
+    console.log('Updating Partner in DB...');
     const updatedPartner = await prisma.$transaction(async (tx) => {
-      const existing = await tx.partner.findUnique({
-        where: { id },
-        include: { partnerImage: true },
-      });
-
-      if (!existing) {
-        throw new Error('Partner not found');
-      }
-
-      let imageResult;
-      if (image) {
-        if (existing.partnerImage?.publicId) {
-          await cloudinary.uploader.destroy(existing.partnerImage.publicId);
-        }
-        imageResult = await handleImageUpload(image);
-      }
-
-      return tx.partner.update({
+      // Update basic partner data
+      const updated = await tx.partner.update({
         where: { id },
         data: {
           ...updateData,
@@ -220,24 +270,6 @@ async function PUT(request: NextRequest) {
               },
             },
           }),
-          ...(availableDays && {
-            availableDaysOfWeek: {
-              deleteMany: {},
-              createMany: {
-                data: availableDays.map(day => ({ day })),
-              },
-            },
-          }),
-          ...(startTimeIds && {
-            startTime: {
-              set: startTimeIds.map(timeId => ({ id: timeId })),
-            },
-          }),
-          ...(productIds && {
-            products: {
-              set: productIds.map(productId => ({ id: productId })),
-            },
-          }),
         },
         include: {
           partnerImage: true,
@@ -246,11 +278,70 @@ async function PUT(request: NextRequest) {
           products: true,
         },
       });
+
+      // Update available days if provided
+      if (availableDays) {
+        await tx.partner.update({
+          where: { id },
+          data: {
+            availableDaysOfWeek: {
+              deleteMany: {},
+              createMany: {
+                data: availableDays.map(day => ({ day })),
+              },
+            },
+          },
+        });
+      }
+
+      // Update start times if provided
+      if (startTimeIds) {
+        await tx.partner.update({
+          where: { id },
+          data: {
+            startTime: {
+              set: startTimeIds.map(timeId => ({ id: timeId })),
+            },
+          },
+        });
+      }
+
+      // Update products if provided
+      if (productIds) {
+        await tx.partner.update({
+          where: { id },
+          data: {
+            products: {
+              set: productIds.map(productId => ({ id: productId })),
+            },
+          },
+        });
+      }
+
+      // Return updated partner with all relations
+      const finalPartner = await tx.partner.findUnique({
+        where: { id },
+        include: {
+          partnerImage: true,
+          availableDaysOfWeek: true,
+          startTime: true,
+          products: true,
+        },
+      });
+
+      return finalPartner;
+    }, {
+      timeout: 15000, // Increased timeout as backup
     });
 
+    console.log('Updated Partner:', updatedPartner);
+    console.log('PUT request completed successfully');
     return NextResponse.json(updatedPartner);
+
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error updating partner:', errorMessage, error);
+
     return NextResponse.json(
       { error: `Failed to update partner: ${errorMessage}` },
       { status: 500 }
@@ -270,23 +361,31 @@ async function DELETE(request: NextRequest) {
       );
     }
 
+    // Step 1: Get partner data OUTSIDE transaction
+    const partner = await prisma.partner.findUnique({
+      where: { id },
+      include: { partnerImage: true },
+    });
+
+    if (!partner) {
+      return NextResponse.json(
+        { error: 'Partner not found' },
+        { status: 404 }
+      );
+    }
+
+    // Step 2: Delete image from Cloudinary OUTSIDE transaction
+    if (partner.partnerImage?.publicId) {
+      await handleImageDelete(partner.partnerImage.publicId);
+    }
+
+    // Step 3: Delete partner from database in fast transaction
     await prisma.$transaction(async (tx) => {
-      const partner = await tx.partner.findUnique({
-        where: { id },
-        include: { partnerImage: true },
-      });
-
-      if (!partner) {
-        throw new Error('Partner not found');
-      }
-
-      if (partner.partnerImage?.publicId) {
-        await cloudinary.uploader.destroy(partner.partnerImage.publicId);
-      }
-
       await tx.partner.delete({
         where: { id },
       });
+    }, {
+      timeout: 10000,
     });
 
     return NextResponse.json({ success: true });
