@@ -69,46 +69,79 @@ async function handleImageDelete(publicId: string) {
     // Don't throw error - continue with database operations
   }
 }
-
 async function POST(request: NextRequest) {
+  console.log('🚀 POST /api/partner - Request started');
+  
   try {
+    console.log('📥 Reading request body...');
     const body = await request.json();
+    console.log('✅ Request body parsed successfully');
+    console.log('📋 Body keys:', Object.keys(body));
+    console.log('🖼️ Image data length:', body.image ? body.image.length : 'No image');
+    
+    console.log('🔍 Validating request data...');
     const validation = createPartnerSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error('❌ Validation failed:', validation.error.errors);
       return NextResponse.json(
         { errors: validation.error.errors },
         { status: 400 }
       );
     }
+    console.log('✅ Validation passed');
 
     const { image, availableDays, startTimeIds, productIds, ...partnerData } = validation.data;
+    console.log('📊 Extracted data:');
+    console.log('  - Partner data keys:', Object.keys(partnerData));
+    console.log('  - Available days:', availableDays);
+    console.log('  - Start time IDs:', startTimeIds);
+    console.log('  - Product IDs:', productIds);
+    console.log('  - Has image:', !!image);
     
     // Handle image upload OUTSIDE transaction
+    console.log('🖼️ Starting image upload to Cloudinary...');
     const imageResult = await handleImageUpload(image);
+    console.log('✅ Image uploaded successfully:', {
+      url: imageResult.url,
+      publicId: imageResult.publicId
+    });
 
+    console.log('💾 Starting database transaction...');
     const newPartner = await prisma.$transaction(async (tx) => {
-      const partner = await tx.partner.create({
-        data: {
-          ...partnerData,
-          partnerImage: {
-            create: {
-              url: imageResult.url,
-              publicId: imageResult.publicId,
-            },
+      console.log('🏗️ Creating partner record...');
+      
+      const partnerCreateData = {
+        ...partnerData,
+        partnerImage: {
+          create: {
+            url: imageResult.url,
+            publicId: imageResult.publicId,
           },
-          availableDaysOfWeek: {
-            createMany: {
-              data: availableDays.map(day => ({ day })),
-            },
-          },
-          startTime: startTimeIds?.length ? {
-            connect: startTimeIds.map(id => ({ id })),
-          } : undefined,
-          products: productIds?.length ? {
-            connect: productIds.map(id => ({ id })),
-          } : undefined,
         },
+        availableDaysOfWeek: {
+          createMany: {
+            data: availableDays.map(day => ({ day })),
+          },
+        },
+        startTime: startTimeIds?.length ? {
+          connect: startTimeIds.map(id => ({ id })),
+        } : undefined,
+        products: productIds?.length ? {
+          connect: productIds.map(id => ({ id })),
+        } : undefined,
+      };
+      
+      console.log('📝 Partner create data structure:', {
+        partnerDataKeys: Object.keys(partnerData),
+        hasPartnerImage: !!partnerCreateData.partnerImage,
+        availableDaysCount: availableDays.length,
+        startTimeConnections: startTimeIds?.length || 0,
+        productConnections: productIds?.length || 0
+      });
+
+      const partner = await tx.partner.create({
+        data: partnerCreateData,
         include: {
           partnerImage: true,
           availableDaysOfWeek: true,
@@ -116,21 +149,60 @@ async function POST(request: NextRequest) {
           products: true,
         },
       });
+      
+      console.log('✅ Partner created successfully with ID:', partner.id);
+      console.log('📊 Created partner includes:', {
+        hasImage: !!partner.partnerImage,
+        availableDaysCount: partner.availableDaysOfWeek.length,
+        startTimesCount: partner.startTime.length,
+        productsCount: partner.products.length
+      });
+      
       return partner;
     }, {
       timeout: 10000, // Increased timeout
     });
 
+    console.log('🎉 Transaction completed successfully');
+    console.log('📤 Returning partner data...');
+    
     return NextResponse.json(newPartner, { status: 201 });
+    
   } catch (error: unknown) {
+    console.error('💥 POST /api/partner - Error occurred:');
+    console.error('Error type:', typeof error);
+    console.error('Error instance:', error instanceof Error);
+    
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    } else {
+      console.error('Unknown error:', error);
+    }
+    
+    // Additional Prisma-specific error logging
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('Prisma error code:', (error as any).code);
+      console.error('Prisma error meta:', (error as any).meta);
+    }
+    
+    // Additional Cloudinary error logging
+    if (error && typeof error === 'object' && 'http_code' in error) {
+      console.error('Cloudinary error:', {
+        http_code: (error as any).http_code,
+        message: (error as any).message
+      });
+    }
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('📤 Returning error response:', errorMessage);
+    
     return NextResponse.json(
       { error: `Failed to create partner: ${errorMessage}` },
       { status: 500 }
     );
   }
 }
-
 async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

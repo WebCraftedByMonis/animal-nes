@@ -508,7 +508,7 @@ export default function ViewPartnersPage() {
 
               {/* RVMP Number */}
               <div>
-                <label className="block text-sm font-medium mb-1">RVMP Number</label>
+                <label className="block text-sm font-medium mb-1">RVMP Number/ License Number</label>
                 <Input value={editRvmpNumber} onChange={(e) => setEditRvmpNumber(e.target.value)} />
               </div>
 
@@ -532,7 +532,7 @@ export default function ViewPartnersPage() {
 
               {/* Address */}
               <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
+                <label className="block text-sm font-medium mb-1">Address/ Map link</label>
                 <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
               </div>
 
