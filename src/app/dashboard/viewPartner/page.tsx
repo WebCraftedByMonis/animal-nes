@@ -432,56 +432,114 @@ export default function ViewPartnersPage() {
           </div>
         </div>
 
-        {/* Edit Dialog */}
+        {/* Edit Dialog - MOBILE RESPONSIVE */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Edit Partner</DialogTitle>
             </DialogHeader>
 
-            {/* MAIN GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* SINGLE COLUMN LAYOUT ON MOBILE, TWO COLUMNS ON LARGER SCREENS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
 
               {/* Partner Name */}
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Partner Name</label>
                 <Input value={editPartnerName} onChange={(e) => setEditPartnerName(e.target.value)} />
               </div>
 
               {/* Mobile Number */}
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Mobile Number</label>
                 <Input value={editMobileNumber} onChange={(e) => setEditMobileNumber(e.target.value)} />
               </div>
 
               {/* Email */}
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Email</label>
                 <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
               </div>
 
               {/* City */}
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">City</label>
                 <Input value={editCity} onChange={(e) => setEditCity(e.target.value)} />
               </div>
 
               {/* Specialization */}
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Specialization</label>
                 <Input value={editSpecialization} onChange={(e) => setEditSpecialization(e.target.value)} />
               </div>
 
               {/* Qualification Degree */}
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Qualification Degree</label>
                 <Input value={editQualificationDegree} onChange={(e) => setEditQualificationDegree(e.target.value)} />
               </div>
 
-              {/* Available Days - Using UI Checkbox component */}
-              <div className="col-span-2">
+              {/* Shop Name */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">Shop Name</label>
+                <Input value={editShopName} onChange={(e) => setEditShopName(e.target.value)} />
+              </div>
+
+              {/* RVMP Number */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">RVMP Number/ License Number</label>
+                <Input value={editRvmpNumber} onChange={(e) => setEditRvmpNumber(e.target.value)} />
+              </div>
+
+              {/* State */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">State</label>
+                <Input value={editState} onChange={(e) => setEditState(e.target.value)} />
+              </div>
+
+              {/* Zipcode */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">Zipcode</label>
+                <Input value={editZipcode} onChange={(e) => setEditZipcode(e.target.value)} />
+              </div>
+
+              {/* Area Town */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">Date of birth</label>
+                <Input value={editAreaTown} onChange={(e) => setEditAreaTown(e.target.value)} />
+              </div>
+
+              {/* Address */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">Address/ Map link</label>
+                <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+              </div>
+
+              {/* Partner Image */}
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block text-sm font-medium mb-1">Partner Image</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null
+                    setEditImage(file)
+                    if (file) setEditImagePreview(URL.createObjectURL(file))
+                  }}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Image Preview */}
+              {editImagePreview && (
+                <div className="col-span-1 sm:col-span-2 flex justify-center sm:justify-start">
+                  <PartnerImage imageUrl={editImagePreview} altText="Preview" />
+                </div>
+              )}
+
+              {/* Available Days - Full width on all screens */}
+              <div className="col-span-1 sm:col-span-2">
                 <label className="block text-sm font-medium mb-2">Available Days</label>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map((day) => (
                     <label key={day} className="flex items-center space-x-2 cursor-pointer">
                       <Checkbox
@@ -494,74 +552,28 @@ export default function ViewPartnersPage() {
                           }
                         }}
                       />
-                      <span className="text-sm">{day}</span>
+                      <span className="text-sm">{day.slice(0, 3)}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Shop Name */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Shop Name</label>
-                <Input value={editShopName} onChange={(e) => setEditShopName(e.target.value)} />
-              </div>
-
-              {/* RVMP Number */}
-              <div>
-                <label className="block text-sm font-medium mb-1">RVMP Number/ License Number</label>
-                <Input value={editRvmpNumber} onChange={(e) => setEditRvmpNumber(e.target.value)} />
-              </div>
-
-              {/* State */}
-              <div>
-                <label className="block text-sm font-medium mb-1">State</label>
-                <Input value={editState} onChange={(e) => setEditState(e.target.value)} />
-              </div>
-
-              {/* Zipcode */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Zipcode</label>
-                <Input value={editZipcode} onChange={(e) => setEditZipcode(e.target.value)} />
-              </div>
-
-              {/* Area Town */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Date of birth</label>
-                <Input value={editAreaTown} onChange={(e) => setEditAreaTown(e.target.value)} />
-              </div>
-
-              {/* Address */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Address/ Map link</label>
-                <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
-              </div>
-
-              {/* Partner Image */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Partner Image</label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null
-                    setEditImage(file)
-                    if (file) setEditImagePreview(URL.createObjectURL(file))
-                  }}
-                />
-              </div>
-
-              {/* Image Preview */}
-              {editImagePreview && (
-                <div className="col-span-2">
-                  <PartnerImage imageUrl={editImagePreview} altText="Preview" />
-                </div>
-              )}
-
             </div>
 
-            <DialogFooter className="mt-4">
-              <Button variant="ghost" onClick={() => setOpen(false)} disabled={isUpdating}>Cancel</Button>
-              <Button className="bg-green-500 hover:bg-green-600" onClick={handleUpdate} disabled={isUpdating}>
+            <DialogFooter className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+              <Button 
+                variant="ghost" 
+                onClick={() => setOpen(false)} 
+                disabled={isUpdating}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="bg-green-500 hover:bg-green-600 w-full sm:w-auto" 
+                onClick={handleUpdate} 
+                disabled={isUpdating}
+              >
                 {isUpdating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>) : 'Update'}
               </Button>
             </DialogFooter>
