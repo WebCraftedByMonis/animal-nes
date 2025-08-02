@@ -333,8 +333,8 @@ export default function AddProductPage() {
       <FormControl>
         <SuggestiveInput
           suggestions={[
-            "Endoparasiticides (e.g., dewormers)",
-            "Ectoparasiticides (e.g., tick/flea/mite treatment)",
+            "Medicine",
+            "Supplements",
             "Broad-Spectrum Dewormers",
             "Multivitamins & Trace Elements",
             "Electrolytes & Hydration Solutions",

@@ -203,23 +203,67 @@ async function POST(request: NextRequest) {
     );
   }
 }
+
+
+// Define partner type groups for better maintainability
+const PARTNER_TYPE_GROUPS = {
+  veterinarian: ['Veterinarian (Clinic, Hospital, Consultant)'],
+  sales: [
+    'Sales and Marketing (Dealer, Distributor, Sales Person)',
+    'Sales and Marketing ( dealer , distributor , sales person)' // Support the format from your form
+  ],
+  // Easy to add more groups in the future
+  // support: ['Support (Technical Support, Customer Service)'],
+} as const;
+
+type PartnerTypeGroup = keyof typeof PARTNER_TYPE_GROUPS;
+
 async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-
+    
+    // Parse query parameters
     const page = Number(searchParams.get('page')) || 1;
     const limitParam = searchParams.get('limit') || '10';
     const limit = limitParam === 'all' ? undefined : Math.min(Number(limitParam), 100);
-
     const search = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const order = searchParams.get('order') || 'desc';
-
+    const order = (searchParams.get('order') || 'desc') as 'asc' | 'desc';
     const skip = limit ? (page - 1) * limit : undefined;
-
+    
+    // Partner type filtering
+    const partnerTypeGroup = searchParams.get('partnerTypeGroup') as PartnerTypeGroup | null;
+    const specificPartnerType = searchParams.get('partnerType');
+    
+    // Build where clause
+    const whereClause: any = {
+      ...(search && { partnerName: { contains: search, mode: 'insensitive' } }),
+    };
+    
+    // Apply partner type filtering
+    if (partnerTypeGroup && PARTNER_TYPE_GROUPS[partnerTypeGroup]) {
+      whereClause.partnerType = {
+        in: PARTNER_TYPE_GROUPS[partnerTypeGroup]
+      };
+    } else if (specificPartnerType) {
+      whereClause.partnerType = specificPartnerType;
+    }
+    
+    // Add any additional filters (example)
+    const specialization = searchParams.get('specialization');
+    if (specialization) {
+      whereClause.specialization = { contains: specialization, mode: 'insensitive' };
+    }
+    
+    const species = searchParams.get('species');
+    if (species) {
+      whereClause.species = species;
+    }
+    
+    // Execute queries
     const [partners, total] = await Promise.all([
       prisma.partner.findMany({
-        where: { partnerName: { contains: search } },
+        where: whereClause,
         skip,
         take: limit,
         orderBy: { [sortBy]: order },
@@ -231,24 +275,47 @@ async function GET(request: NextRequest) {
         },
       }),
       prisma.partner.count({
-        where: { partnerName: { contains: search } },
+        where: whereClause,
       }),
     ]);
-
+    
     return NextResponse.json({
       data: partners,
       meta: {
         total,
         page,
-        limit,
-        totalPages: limit ? Math.ceil(total / limit) : 1
+        limit: limit || 'all',
+        totalPages: limit ? Math.ceil(total / limit) : 1,
+        filters: {
+          partnerTypeGroup,
+          partnerType: specificPartnerType,
+          search,
+          specialization,
+          species,
+        }
       }
     });
   } catch (error) {
     console.error('Error fetching partners:', error);
-    return NextResponse.error();
+    return NextResponse.json(
+      { error: 'Failed to fetch partners' },
+      { status: 500 }
+    );
   }
 }
+
+// TypeScript types for frontend
+export type PartnerFilters = {
+  page?: number;
+  limit?: number | 'all';
+  search?: string;
+  sortBy?: string;
+  order?: 'asc' | 'desc';
+  partnerTypeGroup?: 'veterinarian' | 'sales';
+  partnerType?: string;
+  specialization?: string;
+  species?: string;
+};
 
 async function PUT(request: NextRequest) {
   try {

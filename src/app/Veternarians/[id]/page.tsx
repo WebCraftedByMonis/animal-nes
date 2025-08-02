@@ -51,10 +51,10 @@ export async function generateMetadata({
     const description = `${data.partnerName} - Veterinary Partner at Animal Wellness${qualifications ? ` | ${qualifications}` : ''}${location ? ` | ${location}` : ''}${data.species ? ` | Specializes in ${data.species}` : ''}`
 
     return {
-      title: `Dr. ${data.partnerName} - Veterinary Partner | Animal Wellness`,
+      title: ` ${data.partnerName} - Veterinary Partner `,
       description: description.substring(0, 160), // Keep under 160 chars for SEO
       openGraph: {
-        title: `Dr. ${data.partnerName} - Veterinary Professional`,
+        title: ` ${data.partnerName} - Veterinary Professional`,
         description: `${qualifications || 'Veterinary Partner'} at Animal Wellness. ${data.species ? `Specializes in ${data.species}.` : ''} ${location ? `Located in ${location}.` : ''} Contact for professional veterinary services.`,
         type: 'profile',
         images: data.partnerImage

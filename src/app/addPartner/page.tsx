@@ -27,7 +27,12 @@ const dayOptions = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
   'FRIDAY', 'SATURDAY', 'SUNDAY'
 ] as const;
-const partnerTypeOptions = ['Veterinarian (Clinic, Hospital, Consultant)', 'Sales and Marketing ( dealer , distributor , sales person)'] as const;
+
+// Updated to use consistent formatting
+const partnerTypeOptions = [
+  'Veterinarian (Clinic, Hospital, Consultant)', 
+  'Sales and Marketing (Dealer, Distributor, Sales Person)'
+] as const;
 
 // Specialization options based on partner type
 const veterinarianSpecializations = [
@@ -130,7 +135,7 @@ export default function AddPartnerPage() {
   const specializationSuggestions = useMemo(() => {
     if (partnerType === 'Veterinarian (Clinic, Hospital, Consultant)') {
       return veterinarianSpecializations;
-    } else if (partnerType === 'Sales and Marketing ( dealer , distributor , sales person)') {
+    } else if (partnerType === 'Sales and Marketing (Dealer, Distributor, Sales Person)') {
       return salesMarketingSpecializations;
     }
     return [];
