@@ -1,7 +1,7 @@
 // app/admin/partners/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,13 +15,13 @@ import Image from 'next/image';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { SuggestiveInput } from '@/components/shared/SuggestiveInput';
 
 const genderOptions = ['MALE', 'FEMALE'] as const;
 const sendToPartnerOptions = ['YES', 'NO'] as const;
 const bloodGroupOptions = [
-  'A+', 'B+', 'A-', 'B-',
-  'AB+', 'AB-', 'O+', 'O-'
+  'A_POSITIVE', 'B_POSITIVE', 'A_NEGATIVE', 'B_NEGATIVE',
+  'AB_POSITIVE', 'AB_NEGATIVE', 'O_POSITIVE', 'O_NEGATIVE'
 ] as const;
 const dayOptions = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
@@ -29,6 +29,32 @@ const dayOptions = [
 ] as const;
 const partnerTypeOptions = ['Veterinarian (Clinic, Hospital, Consultant)', 'Sales and Marketing ( dealer , distributor , sales person)'] as const;
 
+// Specialization options based on partner type
+const veterinarianSpecializations = [
+  'Large Animal Veterinarian',
+  'Small Animal Veterinarian',
+  'Poultry Veterinarian',
+  'Parasitologist',
+  'Reproduction Specialist',
+  'Animal Nutritionist',
+  'Veterinary Surgeon',
+  'Veterinary Pathologist',
+  'Wildlife Veterinarian',
+  'Public Health Veterinarian'
+];
+
+const salesMarketingSpecializations = [
+  'Product Specialist',
+  'Equipment Executive',
+  'Brand Manager',
+  'Sales Officer',
+  'Marketing Specialist',
+  'Authorized Dealer',
+  'Bulk Wholesaler',
+  'Regional Distributor',
+  'Licensed Importer',
+  'Product Manufacturer'
+];
 
 const formSchema = z.object({
   partnerName: z.string().min(1),
@@ -45,7 +71,6 @@ const formSchema = z.object({
   state: z.string().optional(),
   areaTown: z.string().optional(),
   password: z.string().min(6, { message: "Password must be at least 6 characters long" }),
-
   bloodGroup: z.enum(bloodGroupOptions).optional(),
   availableDays: z.array(z.enum(dayOptions)).min(1),
   startTimeIds: z.array(z.number()).optional(),
@@ -58,11 +83,10 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-
 export default function AddPartnerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [uploadedImage, setUploadedImage] = useState<string>('');
+  
   const {
     register,
     handleSubmit,
@@ -72,33 +96,50 @@ export default function AddPartnerPage() {
     reset,
     formState: { errors }
   } = useForm<FormData>({
-  resolver: zodResolver(formSchema),
-  defaultValues: {
-    partnerName: '',
-    gender: undefined,
-    partnerEmail: '',
-    partnerMobileNumber: '',
-    shopName: '',
-    cityName: '',
-    fullAddress: '',
-    rvmpNumber: '',
-    sendToPartner: undefined,
-    qualificationDegree: '',
-    zipcode: '',
-    state: '',
-    areaTown: '',
-    password: '',
-    bloodGroup: undefined,
-    availableDays: [],
-    startTimeIds: [],
-    specialization: '',
-    species: '',
-    partnerType: undefined,
-    productIds: [],
-    image: '',
-  },
-});
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      partnerName: '',
+      gender: undefined,
+      partnerEmail: '',
+      partnerMobileNumber: '',
+      shopName: '',
+      cityName: '',
+      fullAddress: '',
+      rvmpNumber: '',
+      sendToPartner: undefined,
+      qualificationDegree: '',
+      zipcode: '',
+      state: '',
+      areaTown: '',
+      password: '',
+      bloodGroup: undefined,
+      availableDays: [],
+      startTimeIds: [],
+      specialization: '',
+      species: '',
+      partnerType: undefined,
+      productIds: [],
+      image: '',
+    },
+  });
 
+  // Watch partner type to determine specialization options
+  const partnerType = watch('partnerType');
+  
+  // Get specialization suggestions based on partner type
+  const specializationSuggestions = useMemo(() => {
+    if (partnerType === 'Veterinarian (Clinic, Hospital, Consultant)') {
+      return veterinarianSpecializations;
+    } else if (partnerType === 'Sales and Marketing ( dealer , distributor , sales person)') {
+      return salesMarketingSpecializations;
+    }
+    return [];
+  }, [partnerType]);
+
+  // Clear specialization when partner type changes
+  React.useEffect(() => {
+    setValue('specialization', '');
+  }, [partnerType, setValue]);
 
   const onDrop = (acceptedFiles: File[]) => {
     const reader = new FileReader();
@@ -122,35 +163,34 @@ export default function AddPartnerPage() {
 
       if (res.ok) {
         toast.success('Partner created successfully!');
-       reset({
-    partnerName: '',
-    gender: undefined,
-    partnerEmail: '',
-    partnerMobileNumber: '',
-    shopName: '',
-    cityName: '',
-    fullAddress: '',
-    rvmpNumber: '',
-    sendToPartner: undefined,
-    qualificationDegree: '',
-    zipcode: '',
-    state: '',
-    areaTown: '',
-    password: '',
-    bloodGroup: undefined,
-    availableDays: [],
-    startTimeIds: [],
-    specialization: '',
-    species: '',
-    partnerType: undefined,
-    productIds: [],
-    image: '',
-  });
+        reset({
+          partnerName: '',
+          gender: undefined,
+          partnerEmail: '',
+          partnerMobileNumber: '',
+          shopName: '',
+          cityName: '',
+          fullAddress: '',
+          rvmpNumber: '',
+          sendToPartner: undefined,
+          qualificationDegree: '',
+          zipcode: '',
+          state: '',
+          areaTown: '',
+          password: '',
+          bloodGroup: undefined,
+          availableDays: [],
+          startTimeIds: [],
+          specialization: '',
+          species: '',
+          partnerType: undefined,
+          productIds: [],
+          image: '',
+        });
         setUploadedImage('');
       } else {
         const result = await res.json();
         toast.error(result?.message || 'Something went wrong.');
-
       }
       setIsSubmitting(false);
     } catch (error) {
@@ -159,14 +199,13 @@ export default function AddPartnerPage() {
     }
   };
 
-
   return (
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6 text-green-500">Add Partner</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="partnerName">Partner Name</Label>
+            <Label htmlFor="partnerName">Partner Name*</Label>
             <Input id="partnerName" {...register('partnerName')} className="focus:border-green-500 focus:ring-green-500" />
           </div>
 
@@ -181,7 +220,7 @@ export default function AddPartnerPage() {
           </div>
 
           <div>
-            <Label htmlFor="gender">Gender</Label>
+            <Label htmlFor="gender">Gender </Label>
             <Controller
               control={control}
               name="gender"
@@ -201,11 +240,10 @@ export default function AddPartnerPage() {
           </div>
 
           <div>
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Password*</Label>
             <Input id="password" type="password" {...register('password')} className="focus:border-green-500 focus:ring-green-500" />
             {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
           </div>
-
 
           <div>
             <Label htmlFor="partnerType">Partner Type</Label>
@@ -227,21 +265,35 @@ export default function AddPartnerPage() {
             />
           </div>
 
-
           <div>
             <Label htmlFor="shopName">Shop Name</Label>
             <Input id="shopName" {...register('shopName')} className="focus:border-green-500 focus:ring-green-500" />
           </div>
 
+          {/* Specialization field with conditional autocomplete */}
           <div>
             <Label htmlFor="specialization">Specialization</Label>
-            <Input
-              id="specialization"
-              {...register('specialization')}
-              className="focus:border-green-500 focus:ring-green-500"
-            />
+            {partnerType ? (
+              <SuggestiveInput
+                suggestions={specializationSuggestions}
+                value={watch('specialization') || ''}
+                onChange={(v) => setValue('specialization', v)}
+                placeholder={
+                  partnerType === 'Veterinarian (Clinic, Hospital, Consultant)' 
+                    ? "Select veterinary specialization" 
+                    : "Select sales/marketing specialization"
+                }
+              />
+            ) : (
+              <Input
+                id="specialization"
+                {...register('specialization')}
+                className="focus:border-green-500 focus:ring-green-500"
+                placeholder="Select partner type first"
+                disabled
+              />
+            )}
           </div>
-
 
           <div>
             <Label htmlFor="cityName">City</Label>
@@ -253,10 +305,20 @@ export default function AddPartnerPage() {
             <Input id="zipcode" {...register('zipcode')} className="focus:border-green-500 focus:ring-green-500" />
           </div>
 
-          <div>
-            <Label htmlFor="state">State</Label>
-            <Input id="state" {...register('state')} className="focus:border-green-500 focus:ring-green-500" />
-          </div>
+          <SuggestiveInput
+            suggestions={[
+              "Punjab",
+              "Sindh",
+              "Balochistan",
+              "Khyber Pakhtunkhwa",
+              "Gilgit Baltistan",
+              "Kashmir",
+              "Islamabad",
+            ]}
+            value={watch('state') || ""}
+            onChange={(v) => setValue('state', v)}
+            placeholder="Enter state"
+          />
 
           <div>
             <Label htmlFor="areaTown">Date of Birth</Label>
@@ -264,12 +326,12 @@ export default function AddPartnerPage() {
           </div>
 
           <div>
-            <Label htmlFor="fullAddress">Full Address</Label>
+            <Label htmlFor="fullAddress">Full Address/ Map Link</Label>
             <Textarea id="fullAddress" {...register('fullAddress')} className="focus:border-green-500 focus:ring-green-500" />
           </div>
 
           <div>
-            <Label htmlFor="rvmpNumber">RVMP Number</Label>
+            <Label htmlFor="rvmpNumber">RVMP Number/ License Number</Label>
             <Input id="rvmpNumber" {...register('rvmpNumber')} className="focus:border-green-500 focus:ring-green-500" />
           </div>
 
@@ -320,7 +382,7 @@ export default function AddPartnerPage() {
         </div>
 
         <div>
-          <Label>Available Days</Label>
+          <Label>Available Days*</Label>
           <div className="flex flex-wrap gap-2">
             {dayOptions.map((day) => (
               <label key={day} className="flex items-center space-x-2">
@@ -341,7 +403,7 @@ export default function AddPartnerPage() {
         </div>
 
         <div>
-          <Label>Image Upload</Label>
+          <Label>Image Upload*</Label>
           <Dropzone onDrop={onDrop} accept={{ 'image/*': [] }} multiple={false}>
             {({ getRootProps, getInputProps }) => (
               <div {...getRootProps()} className="border border-dashed border-green-500 p-4 text-center cursor-pointer">
@@ -365,7 +427,6 @@ export default function AddPartnerPage() {
         >
           {isSubmitting ? 'Submitting...' : 'Submit'}
         </Button>
-
       </form>
     </div>
   );

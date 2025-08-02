@@ -13,7 +13,6 @@ interface ProductImage {
 interface Product {
   id: number
   productName: string
-  // Remove customerPrice from here
   image: ProductImage | null
 }
 
@@ -36,29 +35,91 @@ interface CartClientProps {
 
 export default function CartClient({ cartItems }: CartClientProps) {
   const [cart, setCart] = useState<CartItem[]>(cartItems)
+  const [isUpdating, setIsUpdating] = useState<number | null>(null)
 
-  const updateQuantity = async (id: number, quantity: number) => {
-    if (quantity < 1) return
-    const res = await fetch('/api/cart/update', {
-      method: 'POST',
-      body: JSON.stringify({ id, quantity }),
-      headers: { 'Content-Type': 'application/json' },
-    })
-    if (res.ok) {
-      setCart(prev =>
-        prev.map(item => item.id === id ? { ...item, quantity } : item)
-      )
+  const updateQuantity = async (id: number, newQuantity: string) => {
+    // Parse the quantity and validate
+    const quantity = parseInt(newQuantity)
+    
+    // If invalid or less than 1, don't update
+    if (isNaN(quantity) || quantity < 1) {
+      // Optionally, reset to previous value
+      return
+    }
+
+    setIsUpdating(id)
+    
+    try {
+      const res = await fetch('/api/cart/update', {
+        method: 'POST',
+        body: JSON.stringify({ id, quantity }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (res.ok) {
+        setCart(prev =>
+          prev.map(item => item.id === id ? { ...item, quantity } : item)
+        )
+      } else {
+        console.error('Failed to update quantity')
+        // Optionally show an error toast
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error)
+    } finally {
+      setIsUpdating(null)
     }
   }
 
   const removeItem = async (id: number) => {
-    const res = await fetch('/api/cart/remove', {
-      method: 'POST',
-      body: JSON.stringify({ id }),
-      headers: { 'Content-Type': 'application/json' },
-    })
-    if (res.ok) {
-      setCart(prev => prev.filter(item => item.id !== id))
+    try {
+      const res = await fetch('/api/cart/remove', {
+        method: 'POST',
+        body: JSON.stringify({ id }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (res.ok) {
+        setCart(prev => prev.filter(item => item.id !== id))
+      }
+    } catch (error) {
+      console.error('Error removing item:', error)
+    }
+  }
+
+  const handleQuantityChange = (itemId: number, value: string) => {
+    // Allow empty string temporarily while typing
+    if (value === '') {
+      // Update local state only (don't call API)
+      setCart(prev =>
+        prev.map(item => item.id === itemId ? { ...item, quantity: 0 } : item)
+      )
+      return
+    }
+
+    // Only allow digits
+    if (!/^\d+$/.test(value)) {
+      return
+    }
+
+    const numValue = parseInt(value)
+    
+    // Update local state immediately for better UX
+    setCart(prev =>
+      prev.map(item => item.id === itemId ? { ...item, quantity: numValue } : item)
+    )
+
+    // Debounce API call (optional but recommended)
+    updateQuantity(itemId, value)
+  }
+
+  const handleQuantityBlur = (item: CartItem) => {
+    // On blur, if quantity is 0 or invalid, reset to 1
+    if (item.quantity === 0 || isNaN(item.quantity)) {
+      setCart(prev =>
+        prev.map(cartItem => cartItem.id === item.id ? { ...cartItem, quantity: 1 } : cartItem)
+      )
+      updateQuantity(item.id, '1')
     }
   }
 
@@ -93,19 +154,24 @@ export default function CartClient({ cartItems }: CartClientProps) {
             />
 
             <div className="flex-1 w-full">
-              <h2 className="text-lg font-semibold ">{item.product.productName}</h2>
+              <h2 className="text-lg font-semibold">{item.product.productName}</h2>
               <p className="text-sm text-gray-600">{item.variant.packingVolume}</p>
-              <p className="text-sm ">PKR {item.variant.customerPrice.toFixed(2)}</p>
+              <p className="text-sm">PKR {item.variant.customerPrice.toFixed(2)}</p>
 
               <div className="mt-3 flex items-center gap-3">
                 <label className="text-sm">Qty:</label>
                 <input
                   type="number"
                   min={1}
-                  value={item.quantity}
+                  value={item.quantity || ''}
                   className="w-16 p-1 border rounded"
-                  onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
+                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                  onBlur={() => handleQuantityBlur(item)}
+                  disabled={isUpdating === item.id}
                 />
+                {isUpdating === item.id && (
+                  <span className="text-sm text-gray-500">Updating...</span>
+                )}
               </div>
 
               <div className="mt-4">
