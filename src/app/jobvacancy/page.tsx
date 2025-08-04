@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'react-toastify';
-import { FileDown, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface JobFormImage {
@@ -41,11 +41,11 @@ export default function JobFormsCardsPage() {
   const [jobForms, setJobForms] = useState<JobForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [limit, setLimit] = useState(8);
+  const [limit, setLimit] = useState(12);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const router = useRouter(); 
+  const router = useRouter();
 
   const fetchJobForms = useCallback(async () => {
     try {
@@ -74,111 +74,138 @@ export default function JobFormsCardsPage() {
 
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-center text-green-600">Job Listings</h1>
+      <h1 className="text-3xl font-bold text-center text-green-500">Job Openings</h1>
 
+      {/* Search and Filter Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Search jobs..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="focus:ring-green-500 max-w-md"
-          />
-          <span>Show</span>
+        <Input
+          placeholder="Search positions or companies..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-md"
+        />
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Show</span>
           <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Show" />
+            <SelectTrigger className="w-[80px]">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[8, 16, 24, 48].map((n) => (
+              {[12, 24, 36, 48].map((n) => (
                 <SelectItem key={n} value={String(n)}>
                   {n}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <span>entries</span>
         </div>
       </div>
 
+      {/* Job Cards Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: limit }).map((_, i) => (
             <JobCardSkeleton key={i} />
           ))}
         </div>
+      ) : jobForms.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No job openings found</p>
+        </div>
       ) : (
         <>
-          <div  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {jobForms.map((job) => (
               <div
-              onClick={() => router.push(`/jobvacancy/${job.id}`)}
+                onClick={() => router.push(`/jobvacancy/${job.id}`)}
                 key={job.id}
-                className="bg-white dark:bg-zinc-900 rounded-lg shadow border p-4 space-y-3"
+                className="group bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 hover:border-green-500 dark:hover:border-green-500 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden"
               >
-                <div className="aspect-square w-full relative rounded overflow-hidden">
+                {/* Image Section */}
+                <div className="aspect-[16/9] w-full relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-800 dark:to-zinc-900">
                   {job.jobFormImage?.url ? (
                     <Image
                       src={job.jobFormImage.url}
-                      alt={job.jobFormImage.alt || job.position}
+                      alt={job.position}
                       fill
-                      className="object-fit"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
-                      No Image
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {job.company.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold line-clamp-2">{job.position}</h3>
-                  <p className="text-sm text-muted-foreground">{job.company}</p>
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    {job.location}
-                  </Badge>
-
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    <p>By: {job.name}</p>
-                    <p>{job.mobileNumber}</p>
-                    {job.email && <p>{job.email}</p>}
-                    <p>Positions: {job.noofpositions}</p>
-                    <p>Deadline: {job.deadline}</p>
+                {/* Content Section */}
+                <div className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                      {job.position}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {job.company}
+                    </p>
                   </div>
 
-                  <div className="text-xs space-y-1 text-gray-600 dark:text-gray-400 mt-2">
-                    <p><strong>Eligibility:</strong> {job.eligibility}</p>
-                    <p><strong>Benefits:</strong> {job.benefits}</p>
-                    <p><strong>How to Apply:</strong> {job.howToApply}</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                      <MapPin className="w-4 h-4" />
+                      <span className="line-clamp-1">{job.location}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                        <Users className="w-4 h-4" />
+                        <span>{job.noofpositions} positions</span>
+                      </div>
+                      
+                     
+                    </div>
                   </div>
 
-                  <p className="text-xs text-gray-400 mt-2">
-                    Posted on {new Date(job.createdAt).toLocaleDateString()}
-                  </p>
-
-                  {/* <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="outline">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div> */}
+                  <div className="pt-2 border-t border-gray-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <Calendar className="w-3 h-3" />
+                      <span>Apply by {new Date(job.deadline).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Pagination */}
           {total > limit && (
-            <div className="mt-6 flex justify-center gap-2">
-              <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>
-                Previous
-              </Button>
+            <div className="flex justify-center items-center gap-2 mt-8">
               <Button
                 variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  Page {page} of {Math.ceil(total / limit)}
+                </span>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page * limit >= total}
                 onClick={() => setPage(page + 1)}
               >
@@ -194,12 +221,18 @@ export default function JobFormsCardsPage() {
 
 function JobCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg shadow border p-4 space-y-3">
-      <Skeleton className="aspect-square w-full rounded-md" />
-      <div className="space-y-2">
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-6 w-20" />
+    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+      <Skeleton className="aspect-[16/9] w-full" />
+      <div className="p-4 space-y-3">
+        <div>
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2 mt-1" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <Skeleton className="h-8 w-full" />
       </div>
     </div>
   );

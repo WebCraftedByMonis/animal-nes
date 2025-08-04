@@ -49,25 +49,18 @@ interface ApiResponse {
     page: number
     limit: number | 'all'
     totalPages: number
-    filters?: {
-      partnerTypeGroup?: string
-      partnerType?: string
-      search?: string
-      specialization?: string
-      species?: string
-    }
   }
 }
 
 export default function SalesPartnersPage() {
-  const [partners, setPartners] = useState<Partner[]>([])
+  const [allPartners, setAllPartners] = useState<Partner[]>([])
+  const [filteredPartners, setFilteredPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<string>('createdAt')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
   const [limit, setLimit] = useState(8)
   const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const router = useRouter()
 
@@ -75,46 +68,72 @@ export default function SalesPartnersPage() {
     try {
       setLoading(true)
       const { data } = await axios.get<ApiResponse>('/api/partner', {
-        params: { 
-          search, 
-          sortBy, 
-          order, 
-          page, 
-          limit,
-          partnerTypeGroup: 'sales' 
+        params: {
+          sortBy,
+          order,
+          partnerTypeGroup: 'sales',
+          _t: Date.now()
         },
       })
-      
-      setPartners(data.data)
-      setTotal(data.meta.total)
-      setTotalPages(data.meta.totalPages)
+      setAllPartners(data.data)
     } catch (error) {
       console.error('Error fetching partners:', error)
       toast.error('Failed to fetch sales partners')
     } finally {
       setLoading(false)
     }
-  }, [search, sortBy, order, page, limit])
+  }, [sortBy, order])
 
+  // Initial Fetch (only once)
   useEffect(() => {
     fetchPartners()
   }, [fetchPartners])
 
-  // Reset to page 1 when search changes
+  // Local Search Filter
   useEffect(() => {
-    setPage(1)
-  }, [search])
+    let filtered = allPartners
 
-  // Reset to page 1 when limit changes
-  useEffect(() => {
-    setPage(1)
-  }, [limit])
+    if (search.trim() !== '') {
+      filtered = filtered.filter((partner) => {
+        const searchLower = search.toLowerCase()
+        return (
+          partner.partnerName.toLowerCase().includes(searchLower) ||
+          (partner.shopName && partner.shopName.toLowerCase().includes(searchLower)) ||
+          (partner.cityName && partner.cityName.toLowerCase().includes(searchLower)) ||
+          (partner.state && partner.state.toLowerCase().includes(searchLower))
+        )
+      })
+    }
+
+    // Apply Sorting
+    filtered = filtered.sort((a, b) => {
+      const aValue = a[sortBy as keyof Partner]
+      const bValue = b[sortBy as keyof Partner]
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        if (order === 'asc') return aValue.localeCompare(bValue)
+        else return bValue.localeCompare(aValue)
+      }
+
+      if (aValue instanceof Date && bValue instanceof Date) {
+        if (order === 'asc') return aValue.getTime() - bValue.getTime()
+        else return bValue.getTime() - aValue.getTime()
+      }
+
+      return 0
+    })
+
+    setFilteredPartners(filtered)
+
+    const pages = Math.ceil(filtered.length / limit)
+    setTotalPages(pages)
+    setPage(1) // reset to page 1 on every search/filter change
+  }, [search, allPartners, sortBy, order, limit])
 
   const handleSortChange = (value: string) => {
     const [newSortBy, newOrder] = value.split('-')
     setSortBy(newSortBy)
     setOrder(newOrder as 'asc' | 'desc')
-    setPage(1) // Reset to first page when sorting changes
   }
 
   const navigateToPartner = (partner: Partner) => {
@@ -130,7 +149,6 @@ export default function SalesPartnersPage() {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage)
-      // Scroll to top when page changes
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
@@ -138,30 +156,25 @@ export default function SalesPartnersPage() {
   const renderPaginationButtons = () => {
     const buttons = []
     const maxButtons = 5
-    
+
     if (totalPages <= maxButtons) {
-      // Show all pages if total is less than max
       for (let i = 1; i <= totalPages; i++) {
         buttons.push(i)
       }
     } else {
-      // Complex pagination logic
       if (page <= 3) {
-        // Near the beginning
         for (let i = 1; i <= 4; i++) {
           buttons.push(i)
         }
         buttons.push('...')
         buttons.push(totalPages)
       } else if (page >= totalPages - 2) {
-        // Near the end
         buttons.push(1)
         buttons.push('...')
         for (let i = totalPages - 3; i <= totalPages; i++) {
           buttons.push(i)
         }
       } else {
-        // In the middle
         buttons.push(1)
         buttons.push('...')
         for (let i = page - 1; i <= page + 1; i++) {
@@ -171,21 +184,21 @@ export default function SalesPartnersPage() {
         buttons.push(totalPages)
       }
     }
-    
+
     return buttons
   }
 
-  // Extract the subcategory from partnerType for display
   const getPartnerSubcategory = (partnerType?: string) => {
     if (!partnerType) return null
     const match = partnerType.match(/\((.*?)\)/)
     if (match && match[1]) {
       const subcategories = match[1].split(',').map(s => s.trim())
-      // Return the first subcategory, or you can return all
       return subcategories[0]
     }
     return null
   }
+
+  const paginatedPartners = filteredPartners.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
@@ -202,7 +215,7 @@ export default function SalesPartnersPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="focus:ring-green-500 max-w-md"
           />
-          <Select 
+          <Select
             value={`${sortBy}-${order}`}
             onValueChange={handleSortChange}
           >
@@ -233,11 +246,10 @@ export default function SalesPartnersPage() {
             <span className="text-sm">entries</span>
           </div>
         </div>
-        
-        {/* Show current page info */}
-        {!loading && total > 0 && (
+
+        {!loading && filteredPartners.length > 0 && (
           <div className="text-sm text-muted-foreground">
-            Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} entries
+            Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, filteredPartners.length)} of {filteredPartners.length} entries
           </div>
         )}
       </div>
@@ -251,12 +263,12 @@ export default function SalesPartnersPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {partners.map((partner) => {
+            {paginatedPartners.map((partner) => {
               const subcategory = getPartnerSubcategory(partner.partnerType)
-              
+
               return (
-                <div 
-                  key={partner.id} 
+                <div
+                  key={partner.id}
                   className="bg-white dark:bg-zinc-900 rounded-lg shadow-md border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => navigateToPartner(partner)}
                 >
@@ -278,27 +290,27 @@ export default function SalesPartnersPage() {
 
                   <div className="space-y-2">
                     <h3 className="font-bold text-lg line-clamp-1">{partner.partnerName}</h3>
-                    
+
                     {subcategory && (
                       <Badge variant="secondary" className="text-xs">
                         {subcategory}
                       </Badge>
                     )}
-                    
+
                     {partner.shopName && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Store className="h-3 w-3 flex-shrink-0" />
                         <span className="line-clamp-1">{partner.shopName}</span>
                       </div>
                     )}
-                    
+
                     {partner.cityName && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span className="line-clamp-1">{partner.cityName}{partner.state ? `, ${partner.state}` : ''}</span>
                       </div>
                     )}
-                    
+
                     {partner.partnerMobileNumber && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-3 w-3 flex-shrink-0" />
@@ -324,23 +336,22 @@ export default function SalesPartnersPage() {
             })}
           </div>
 
-          {partners.length === 0 && (
+          {filteredPartners.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No sales partners found</p>
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-6 flex flex-wrap justify-center items-center gap-2">
-              <Button 
-                variant="outline" 
-                disabled={page === 1} 
+              <Button
+                variant="outline"
+                disabled={page === 1}
                 onClick={() => handlePageChange(page - 1)}
               >
                 Previous
               </Button>
-              
+
               {renderPaginationButtons().map((pageNum, index) => (
                 pageNum === '...' ? (
                   <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">...</span>
@@ -355,7 +366,7 @@ export default function SalesPartnersPage() {
                   </Button>
                 )
               ))}
-              
+
               <Button
                 variant="outline"
                 disabled={page === totalPages}

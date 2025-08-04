@@ -158,7 +158,7 @@ export default function CompanyDetailClient() {
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
                     <a 
-                      href={`tel:${company.mobileNumber}`}
+                      href={`https://wa.me/${company.mobileNumber}`}
                       className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors"
                     >
                       {company.mobileNumber}

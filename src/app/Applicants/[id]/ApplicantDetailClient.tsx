@@ -125,7 +125,7 @@ export default function ApplicantDetailClient() {
 
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4">
             <h2 className="text-xl font-bold">Contact Information</h2>
-            
+
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Badge className={genderBadgeColor[applicant.gender]}>
@@ -135,7 +135,7 @@ export default function ApplicantDetailClient() {
                   {applicant.declaration}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>
@@ -146,12 +146,18 @@ export default function ApplicantDetailClient() {
                   })}
                 </span>
               </div>
-              
-              <div className="flex items-center gap-3 text-sm">
-                <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+
+              <a
+                href={`https://wa.me/${applicant.mobileNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-sm hover:underline text-green-600 dark:text-green-400"
+              >
+                <Phone className="w-4 h-4" />
                 <span>{applicant.mobileNumber}</span>
-              </div>
-              
+              </a>
+
+
               <div className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-0.5" />
                 <span>{applicant.address}</span>
@@ -189,23 +195,23 @@ export default function ApplicantDetailClient() {
               <Briefcase className="w-5 h-5 text-green-600 dark:text-green-500" />
               Career Preferences
             </h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailCard 
-                label="Expected Position" 
-                value={applicant.expectedPosition || 'Not specified'} 
+              <DetailCard
+                label="Expected Position"
+                value={applicant.expectedPosition || 'Not specified'}
               />
-              <DetailCard 
-                label="Expected Salary" 
-                value={applicant.expectedSalary || 'Not specified'} 
+              <DetailCard
+                label="Expected Salary"
+                value={applicant.expectedSalary || 'Not specified'}
               />
-              <DetailCard 
-                label="Preferred Industry" 
-                value={applicant.preferredIndustry || 'Not specified'} 
+              <DetailCard
+                label="Preferred Industry"
+                value={applicant.preferredIndustry || 'Not specified'}
               />
-              <DetailCard 
-                label="Preferred Location" 
-                value={applicant.preferredLocation || 'Not specified'} 
+              <DetailCard
+                label="Preferred Location"
+                value={applicant.preferredLocation || 'Not specified'}
               />
             </div>
           </div>
@@ -216,23 +222,23 @@ export default function ApplicantDetailClient() {
               <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-500" />
               Education
             </h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailCard 
-                label="Highest Degree" 
-                value={applicant.highestDegree || 'Not specified'} 
+              <DetailCard
+                label="Highest Degree"
+                value={applicant.highestDegree || 'Not specified'}
               />
-              <DetailCard 
-                label="Institution" 
-                value={applicant.degreeInstitution || 'Not specified'} 
+              <DetailCard
+                label="Institution"
+                value={applicant.degreeInstitution || 'Not specified'}
               />
-              <DetailCard 
-                label="Field of Study" 
-                value={applicant.majorFieldOfStudy || 'Not specified'} 
+              <DetailCard
+                label="Field of Study"
+                value={applicant.majorFieldOfStudy || 'Not specified'}
               />
-              <DetailCard 
-                label="Qualification" 
-                value={applicant.qualification || 'Not specified'} 
+              <DetailCard
+                label="Qualification"
+                value={applicant.qualification || 'Not specified'}
               />
             </div>
           </div>
@@ -243,15 +249,15 @@ export default function ApplicantDetailClient() {
               <Building2 className="w-5 h-5 text-green-600 dark:text-green-500" />
               Work Experience
             </h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailCard 
-                label="Experience" 
-                value={applicant.workExperience || 'Not specified'} 
+              <DetailCard
+                label="Experience"
+                value={applicant.workExperience || 'Not specified'}
               />
-              <DetailCard 
-                label="Previous Company" 
-                value={applicant.previousCompany || 'Not specified'} 
+              <DetailCard
+                label="Previous Company"
+                value={applicant.previousCompany || 'Not specified'}
               />
             </div>
           </div>

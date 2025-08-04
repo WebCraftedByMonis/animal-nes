@@ -205,15 +205,13 @@ async function POST(request: NextRequest) {
 }
 
 
-// Define partner type groups for better maintainability
 const PARTNER_TYPE_GROUPS = {
   veterinarian: ['Veterinarian (Clinic, Hospital, Consultant)'],
   sales: [
     'Sales and Marketing (Dealer, Distributor, Sales Person)',
-    'Sales and Marketing ( dealer , distributor , sales person)' // Support the format from your form
+    'Sales and Marketing ( dealer , distributor , sales person)' 
   ],
-  // Easy to add more groups in the future
-  // support: ['Support (Technical Support, Customer Service)'],
+ 
 } as const;
 
 type PartnerTypeGroup = keyof typeof PARTNER_TYPE_GROUPS;

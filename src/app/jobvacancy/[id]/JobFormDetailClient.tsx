@@ -7,7 +7,19 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Calendar, Briefcase, Building2, Phone, Mail, MapPin, Clock, User } from 'lucide-react'
-import { Metadata } from 'next'
+
+// Utility function to detect and format links
+const makeClickable = (text: string) => {
+  // URL regex pattern
+  const urlPattern = /(https?:\/\/[^\s]+)/g;
+  // Email pattern
+  const emailPattern = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/g;
+  // Phone pattern (basic)
+  const phonePattern = /(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/g;
+
+  return text;
+};
+
 
 interface JobFormImage {
   id: number
@@ -115,7 +127,7 @@ export default function JobFormDetailClient() {
 
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4">
             <h2 className="text-xl font-bold">Quick Details</h2>
-            
+
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <Building2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -123,29 +135,51 @@ export default function JobFormDetailClient() {
                   <span className="font-medium">Company:</span> {jobForm.company}
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-3 text-sm">
                 <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>
                   <span className="font-medium">Posted By:</span> {jobForm.name}
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>{jobForm.mobileNumber}</span>
+                <a
+                  href={`https://wa.me/${jobForm.mobileNumber.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {jobForm.mobileNumber}
+                </a>
               </div>
-              
+
+
+
+
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span>{jobForm.email || 'N/A'}</span>
+                {jobForm.email ? (
+                  <a
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${jobForm.email}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {jobForm.email}
+                  </a>
+                ) : (
+                  'N/A'
+                )}
+
               </div>
-              
+
               <div className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-0.5" />
                 <span>{jobForm.location}</span>
               </div>
-              
+
               <div className="flex items-center gap-3 text-sm">
                 <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span>
@@ -171,15 +205,15 @@ export default function JobFormDetailClient() {
               <Briefcase className="w-5 h-5 text-green-600 dark:text-green-500" />
               Job Details
             </h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailCard 
-                label="Eligibility" 
-                value={jobForm.eligibility || 'Not specified'} 
+              <DetailCard
+                label="Eligibility"
+                value={jobForm.eligibility || 'Not specified'}
               />
-              <DetailCard 
-                label="Benefits" 
-                value={jobForm.benefits || 'Not specified'} 
+              <DetailCard
+                label="Benefits"
+                value={jobForm.benefits || 'Not specified'}
               />
             </div>
           </div>
@@ -190,16 +224,18 @@ export default function JobFormDetailClient() {
               <Building2 className="w-5 h-5 text-green-600 dark:text-green-500" />
               Company Information
             </h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailCard 
-                label="Company Address" 
-                value={jobForm.companyAddress || 'Not specified'} 
+              <DetailCard
+                label="Company Address"
+                value={jobForm.companyAddress || 'Not specified'}
               />
-              <DetailCard 
-                label="How to Apply" 
-                value={jobForm.howToApply || 'Not specified'} 
+              <DetailCard
+                label="How to Apply"
+                value={jobForm.howToApply || 'Not specified'}
+                isLink={jobForm.howToApply?.startsWith('http')}
               />
+
             </div>
           </div>
 
@@ -209,15 +245,15 @@ export default function JobFormDetailClient() {
               <Clock className="w-5 h-5 text-green-600 dark:text-green-500" />
               Meta Information
             </h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DetailCard 
-                label="Created At" 
-                value={new Date(jobForm.createdAt).toLocaleString()} 
+              <DetailCard
+                label="Created At"
+                value={new Date(jobForm.createdAt).toLocaleString()}
               />
-              <DetailCard 
-                label="Updated At" 
-                value={new Date(jobForm.updatedAt).toLocaleString()} 
+              <DetailCard
+                label="Updated At"
+                value={new Date(jobForm.updatedAt).toLocaleString()}
               />
             </div>
           </div>
@@ -228,11 +264,22 @@ export default function JobFormDetailClient() {
 }
 
 // Reusable Detail Card Component
-function DetailCard({ label, value }: { label: string; value: string }) {
+function DetailCard({ label, value, isLink = false }: { label: string; value: string; isLink?: boolean }) {
   return (
     <div className="space-y-1">
       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="font-medium text-gray-700 dark:text-gray-200">{value}</p>
+      {isLink ? (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-blue-600 hover:underline"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="font-medium text-gray-700 dark:text-gray-200">{value}</p>
+      )}
     </div>
   )
 }

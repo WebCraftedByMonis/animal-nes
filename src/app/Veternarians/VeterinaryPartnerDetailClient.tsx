@@ -7,8 +7,8 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  User2, Mail, Phone, MapPin, Package, Calendar, 
+import {
+  User2, Mail, Phone, MapPin, Package, Calendar,
   Stethoscope, GraduationCap, Award, Droplet, Clock,
   Building2, ExternalLink
 } from 'lucide-react'
@@ -57,6 +57,14 @@ interface Partner {
   createdAt: string
 }
 
+
+const formatWhatsAppNumber = (number: string) => {
+  if (number.startsWith('03')) {
+    return '+92' + number.slice(1);
+  }
+  return number.startsWith('+') ? number : '+' + number;
+};
+
 export default function VeterinaryPartnerDetailClient() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -87,7 +95,7 @@ export default function VeterinaryPartnerDetailClient() {
   }
 
   const getGenderBadgeColor = (gender?: string) => {
-    switch(gender?.toUpperCase()) {
+    switch (gender?.toUpperCase()) {
       case 'MALE': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
       case 'FEMALE': return 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200'
       default: return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'
@@ -161,15 +169,15 @@ export default function VeterinaryPartnerDetailClient() {
           {/* Contact Information */}
           <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6 space-y-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Contact Information</h2>
-            
+
             <div className="space-y-3">
               {partner.partnerEmail && (
                 <div className="flex items-start gap-3">
                   <Mail className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                    <a 
-                      href={`mailto:${partner.partnerEmail}`} 
+                    <a
+                      href={`mailto:${partner.partnerEmail}`}
                       className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors"
                     >
                       {partner.partnerEmail}
@@ -177,36 +185,47 @@ export default function VeterinaryPartnerDetailClient() {
                   </div>
                 </div>
               )}
-              
+
               {partner.partnerMobileNumber && (
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
-                    <a 
-                      href={`tel:${partner.partnerMobileNumber}`}
+                    <a
+                      href={`https://wa.me/${formatWhatsAppNumber(partner.partnerMobileNumber).replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors"
                     >
                       {partner.partnerMobileNumber}
                     </a>
+
                   </div>
                 </div>
               )}
-              
+
               {partner.fullAddress && (
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
-                    <p className="text-gray-700 dark:text-gray-200">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        `${partner.fullAddress} ${partner.cityName || ''} ${partner.state || ''} ${partner.zipcode || ''}`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors underline"
+                    >
                       {partner.fullAddress}
-                      {partner.cityName && <><br/>{partner.cityName}</>}
+                      {partner.cityName && <><br />{partner.cityName}</>}
                       {partner.state && `, ${partner.state}`}
                       {partner.zipcode && ` ${partner.zipcode}`}
-                    </p>
+                    </a>
                   </div>
                 </div>
               )}
+
             </div>
           </div>
 
@@ -216,7 +235,7 @@ export default function VeterinaryPartnerDetailClient() {
               <Clock className="w-5 h-5 text-green-600 dark:text-green-500" />
               Availability
             </h2>
-            
+
             <div className="space-y-2">
               <p className="text-sm text-gray-500 dark:text-gray-400">Available Days</p>
               <div className="flex flex-wrap gap-2">
@@ -226,7 +245,7 @@ export default function VeterinaryPartnerDetailClient() {
                   </Badge>
                 ))}
               </div>
-              
+
               {partner.startTime && partner.startTime.length > 0 && (
                 <>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Available Times</p>
@@ -272,7 +291,7 @@ export default function VeterinaryPartnerDetailClient() {
               <Stethoscope className="w-5 h-5 text-green-600 dark:text-green-500" />
               Professional Information
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {partner.qualificationDegree && (
                 <div className="space-y-1">
@@ -283,7 +302,7 @@ export default function VeterinaryPartnerDetailClient() {
                   <p className="font-medium text-gray-700 dark:text-gray-200">{partner.qualificationDegree}</p>
                 </div>
               )}
-              
+
               {partner.specialization && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -293,7 +312,7 @@ export default function VeterinaryPartnerDetailClient() {
                   <p className="font-medium text-gray-700 dark:text-gray-200">{partner.specialization}</p>
                 </div>
               )}
-              
+
               {partner.rvmpNumber && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -303,7 +322,7 @@ export default function VeterinaryPartnerDetailClient() {
                   <p className="font-medium text-gray-700 dark:text-gray-200">{partner.rvmpNumber}</p>
                 </div>
               )}
-              
+
               {partner.species && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -326,7 +345,7 @@ export default function VeterinaryPartnerDetailClient() {
             {partner.products.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {partner.products.map((product) => (
-                  <Card 
+                  <Card
                     key={product.id}
                     className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
                     onClick={() => navigateToProduct(product)}
