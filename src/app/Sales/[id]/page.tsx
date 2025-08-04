@@ -51,7 +51,7 @@ export async function generateMetadata({
     const description = `${data.partnerName}${data.shopName ? ` - ${data.shopName}` : ''} | Sales & Marketing Partner at Animal Wellness${location ? ` | ${location}` : ''}${productCount > 0 ? ` | ${productCount} products available` : ''}`
 
     return {
-      title: `${data.partnerName}${data.shopName ? ` - ${data.shopName}` : ''} | Animal Wellness Partner`,
+      title: `${data.partnerName}${data.shopName ? ` - ${data.shopName}` : ''} `,
       description: description.substring(0, 160), // Keep under 160 chars for SEO
       openGraph: {
         title: `${data.partnerName} - Sales & Marketing Partner`,
@@ -85,7 +85,7 @@ export async function generateMetadata({
         data.state,
         data.areaTown,
         'sales partner',
-      ].filter(Boolean),
+      ].filter(Boolean).join(', '),
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

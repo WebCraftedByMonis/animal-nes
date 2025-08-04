@@ -84,7 +84,7 @@ export async function generateMetadata({
         data.cityName,
         data.state,
         'Animal Wellness',
-      ].filter(Boolean),
+      ].filter(Boolean).join(', '),
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

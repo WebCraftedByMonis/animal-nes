@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
+import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { formatDistanceToNow } from 'date-fns'
@@ -60,6 +61,34 @@ interface Partner {
   createdAt: string
 }
 
+// Specialization options based on partner type
+const veterinarianSpecializations = [
+  'Large Animal Veterinarian',
+  'Small Animal Veterinarian',
+  'Poultry Veterinarian',
+  'Parasitologist',
+  'Reproduction Specialist',
+  'Animal Nutritionist',
+  'Veterinary Surgeon',
+  'Veterinary Pathologist',
+  'Wildlife Veterinarian',
+  'Public Health Veterinarian'
+];
+
+const salesMarketingSpecializations = [
+  'Product Specialist',
+  'Equipment Executive',
+  'Brand Manager',
+  'Sales Officer',
+  'Marketing Specialist',
+  'Authorized Dealer',
+  'Bulk Wholesaler',
+  'Regional Distributor',
+  'Licensed Importer',
+  'Product Manufacturer'
+];
+
+
 // Image component with error handling
 const PartnerImage = ({ imageUrl, altText }: { imageUrl: string; altText: string }) => {
   const [imageError, setImageError] = useState(false)
@@ -117,6 +146,10 @@ export default function ViewPartnersPage() {
   const [editState, setEditState] = useState('');
   const [editZipcode, setEditZipcode] = useState('');
   const [editAreaTown, setEditAreaTown] = useState('');
+  const [editGender, setEditGender] = useState<string>('');
+  const [editPartnerType, setEditPartnerType] = useState<string>('');
+  const [originalPartnerType, setOriginalPartnerType] = useState<string>('');
+
 
   const [editImage, setEditImage] = useState<File | null>(null)
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null)
@@ -125,6 +158,28 @@ export default function ViewPartnersPage() {
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
   const [editAvailableDays, setEditAvailableDays] = useState<string[]>([])
 
+
+
+  // Get specialization suggestions based on partner type
+  const editSpecializationSuggestions = useMemo(() => {
+    if (editPartnerType === 'Veterinarian (Clinic, Hospital, Consultant)') {
+      return veterinarianSpecializations;
+    } else if (editPartnerType === 'Sales and Marketing (Dealer, Distributor, Sales Person)') {
+      return salesMarketingSpecializations;
+    }
+    return [];
+  }, [editPartnerType]);
+
+
+
+
+  // Clear specialization when partner type changes
+useEffect(() => {
+  if (open && editPartnerType && editPartnerType !== originalPartnerType) {
+    setEditSpecialization('');
+  }
+}, [editPartnerType, originalPartnerType, open]);
+
   const fetchPartners = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -132,11 +187,11 @@ export default function ViewPartnersPage() {
         params: { search, sortBy, order: sortOrder, page, limit }
       })
       console.log('API Response:', data);
-      
+
       setPartners(data.data || [])
       setTotal(data.meta?.total || data.total || 0) // Handle both response formats
       setLastCreatedAt(data.data?.[0]?.createdAt || null)
-      
+
       // Show success message only if we have data
       if (data.data && data.data.length > 0) {
         // Don't show success toast for normal loading
@@ -159,7 +214,7 @@ export default function ViewPartnersPage() {
     if (!editId) return
 
     setIsUpdating(true)
-    
+
     try {
       // Build the update data object
       const updateData: any = {
@@ -178,6 +233,8 @@ export default function ViewPartnersPage() {
       if (editState) updateData.state = editState
       if (editZipcode) updateData.zipcode = editZipcode
       if (editAreaTown) updateData.areaTown = editAreaTown
+      if (editGender) updateData.gender = editGender
+      if (editPartnerType) updateData.partnerType = editPartnerType
       if (editAvailableDays.length > 0) updateData.availableDays = editAvailableDays
 
       // Handle image upload - convert to base64 like in your POST request
@@ -329,9 +386,9 @@ export default function ViewPartnersPage() {
                     <TableCell className="px-4 py-2">{(page - 1) * limit + idx + 1}</TableCell>
                     <TableCell className="px-4 py-2">
                       {partner.partnerImage ? (
-                        <PartnerImage 
-                          imageUrl={partner.partnerImage.url} 
-                          altText={`${partner.partnerName} image`} 
+                        <PartnerImage
+                          imageUrl={partner.partnerImage.url}
+                          altText={`${partner.partnerName} image`}
                         />
                       ) : (
                         <div className="w-[50px] h-[50px] bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
@@ -375,6 +432,9 @@ export default function ViewPartnersPage() {
                           setEditZipcode(partner.zipcode || '');
                           setEditAreaTown(partner.areaTown || '');
                           setEditAddress(partner.fullAddress || '')
+                          setEditGender(partner.gender || '');
+                          setEditPartnerType(partner.partnerType || '');
+                          setOriginalPartnerType(partner.partnerType || '');
                           setEditImagePreview(partner.partnerImage?.url || null)
                           setOpen(true)
                         }}
@@ -454,6 +514,38 @@ export default function ViewPartnersPage() {
                 <Input value={editMobileNumber} onChange={(e) => setEditMobileNumber(e.target.value)} />
               </div>
 
+              {/* Gender */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">Gender</label>
+                <Select value={editGender} onValueChange={setEditGender}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MALE">MALE</SelectItem>
+                    <SelectItem value="FEMALE">FEMALE</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Partner Type */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium mb-1">Partner Type</label>
+                <Select value={editPartnerType} onValueChange={setEditPartnerType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select partner type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Veterinarian (Clinic, Hospital, Consultant)">
+                      Veterinarian (Clinic, Hospital, Consultant)
+                    </SelectItem>
+                    <SelectItem value="Sales and Marketing (Dealer, Distributor, Sales Person)">
+                      Sales and Marketing (Dealer, Distributor, Sales Person)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Email */}
               <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Email</label>
@@ -469,7 +561,25 @@ export default function ViewPartnersPage() {
               {/* Specialization */}
               <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Specialization</label>
-                <Input value={editSpecialization} onChange={(e) => setEditSpecialization(e.target.value)} />
+                {editPartnerType ? (
+                  <SuggestiveInput
+                    suggestions={editSpecializationSuggestions}
+                    value={editSpecialization}
+                    onChange={(v) => setEditSpecialization(v)}
+                    placeholder={
+                      editPartnerType === 'Veterinarian (Clinic, Hospital, Consultant)'
+                        ? "Select veterinary specialization"
+                        : "Select sales/marketing specialization"
+                    }
+                  />
+                ) : (
+                  <Input
+                    value={editSpecialization}
+                    onChange={(e) => setEditSpecialization(e.target.value)}
+                    placeholder="Select partner type first"
+                    disabled
+                  />
+                )}
               </div>
 
               {/* Qualification Degree */}
@@ -561,17 +671,17 @@ export default function ViewPartnersPage() {
             </div>
 
             <DialogFooter className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
-              <Button 
-                variant="ghost" 
-                onClick={() => setOpen(false)} 
+              <Button
+                variant="ghost"
+                onClick={() => setOpen(false)}
                 disabled={isUpdating}
                 className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button 
-                className="bg-green-500 hover:bg-green-600 w-full sm:w-auto" 
-                onClick={handleUpdate} 
+              <Button
+                className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
+                onClick={handleUpdate}
                 disabled={isUpdating}
               >
                 {isUpdating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>) : 'Update'}
