@@ -94,9 +94,15 @@ export default function VeterinaryPartnersPage() {
     let filtered = allPartners
 
     if (search.trim() !== '') {
-      filtered = filtered.filter((partner) =>
-        partner.partnerName.toLowerCase().includes(search.toLowerCase())
-      )
+      filtered = filtered.filter((partner) => {
+        const searchLower = search.toLowerCase()
+        return (
+          partner.partnerName.toLowerCase().includes(searchLower) ||
+          (partner.shopName && partner.shopName.toLowerCase().includes(searchLower)) ||
+          (partner.cityName && partner.cityName.toLowerCase().includes(searchLower)) ||
+          (partner.state && partner.state.toLowerCase().includes(searchLower))
+        )
+      })
     }
 
     // Apply Sorting
@@ -204,7 +210,7 @@ export default function VeterinaryPartnersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex flex-wrap gap-2 items-center">
           <Input
-            placeholder="Search veterinarians..."
+            placeholder="Search veterinarians, City, Shopname"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="focus:ring-green-500 max-w-md"

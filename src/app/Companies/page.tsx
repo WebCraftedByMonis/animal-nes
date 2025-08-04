@@ -82,7 +82,7 @@ export default function AllCompaniesPage() {
       <h1 className="text-3xl font-bold text-center text-green-500">Our Partner Companies</h1>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2 items-center">
+       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
           <Input
             placeholder="Search companies..."
             value={search}

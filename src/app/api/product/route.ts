@@ -24,7 +24,6 @@ interface CloudinaryError {
   [key: string]: unknown
 }
 
-// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -101,8 +100,7 @@ const productSchema = z.object({
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),
   outofstock: z.boolean().optional(),
-  // REMOVED: companyPrice, dealerPrice, customerPrice, inventory, packingUnit
-  // These belong to variants, not the main product
+
 })
 
 const updateProductSchema = productSchema.partial()
@@ -125,7 +123,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 
-    console.log('--- Incoming FormData Entries ---')
+  
     for (const [key, value] of formData.entries()) {
       console.log(`${key}:`, value)
     }
@@ -165,8 +163,6 @@ export async function POST(request: NextRequest) {
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
 
-    console.log('--- Image Upload Result ---', imageResult)
-    console.log('--- PDF Upload Result ---', pdfResult)
 
     const variants: VariantInput[] = []
 
@@ -303,25 +299,28 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const search = searchParams.get('search') || ''
-  const sortBy = searchParams.get('sortBy') || 'id'
+  const sortBy = searchParams.get('sortBy') || 'createdAt'
   const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc'
   const page = parseInt(searchParams.get('page') || '1', 10)
-  const limit = parseInt(searchParams.get('limit') || '10', 10)
+  const limit = parseInt(searchParams.get('limit') || '16', 10)
   const skip = (page - 1) * limit
+
+  // Build the orderBy object based on sortBy parameter
+  let orderBy: any = {}
+  if (sortBy === 'createdAt') {
+    orderBy = { createdAt: sortOrder }
+  } else if (sortBy === 'productName') {
+    orderBy = { productName: sortOrder }
+  }
 
   const [items, total] = await Promise.all([
     prisma.product.findMany({
       where: {
-        OR: [
-          { productName: { contains: search,  } },
-          { genericName: { contains: search,  } }
-        ]
+        isActive: true // Only fetch active products
       },
-      orderBy: { [sortBy]: sortOrder },
+      orderBy,
       skip,
       take: limit,
       include: {
@@ -329,15 +328,12 @@ export async function GET(req: NextRequest) {
         partner: true,
         image: true,
         pdf: true,
-         variants: true,
+        variants: true,
       }
     }),
     prisma.product.count({
       where: {
-        OR: [
-          { productName: { contains: search,  } },
-          { genericName: { contains: search, } }
-        ]
+        isActive: true // Count only active products
       }
     })
   ])
@@ -346,10 +342,10 @@ export async function GET(req: NextRequest) {
     data: items,
     total,
     page,
+    limit,
     lastSubmittedAt: items.length > 0 ? items[items.length - 1].createdAt ?? null : null,
   })
 }
-
 
 export async function PUT(request: NextRequest) {
   try {

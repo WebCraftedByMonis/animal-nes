@@ -210,7 +210,7 @@ export default function SalesPartnersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex flex-wrap gap-2 items-center">
           <Input
-            placeholder="Search partners..."
+            placeholder="Search partners, City, Shopname"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="focus:ring-green-500 max-w-md"
