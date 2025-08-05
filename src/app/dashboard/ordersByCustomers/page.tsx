@@ -2,16 +2,34 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-
+import { toast } from 'react-toastify'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { Trash2, Download, Edit, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Product {
   id: number;
   productName: string;
   genericName: string;
-  // Remove customerPrice from here
   quantity: number;
 }
 
@@ -69,6 +87,11 @@ interface Order {
   items: Item[];
 }
 
+interface EditedItem {
+  id: number;
+  quantity: number;
+  price: number;
+}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -76,6 +99,93 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [total, setTotal] = useState(0)
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [editedPaymentMethod, setEditedPaymentMethod] = useState('')
+  const [editedItems, setEditedItems] = useState<EditedItem[]>([])
+  const [updatingOrder, setUpdatingOrder] = useState(false)
+
+  const handleDeleteClick = (orderId: string) => {
+    setOrderToDelete(orderId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!orderToDelete) return
+
+    setDeletingOrderId(orderToDelete)
+    try {
+      await axios.delete(`/api/orders/${orderToDelete}/delete`)
+      setOrders((prev) => prev.filter((order) => order.id !== orderToDelete))
+      toast.success('Order deleted successfully!')
+    } catch (err) {
+      console.error('Error deleting order', err)
+      toast.error('Failed to delete order. Please try again.')
+    } finally {
+      setDeletingOrderId(null)
+      setDeleteDialogOpen(false)
+      setOrderToDelete(null)
+    }
+  }
+
+  const handleEditClick = (order: Order) => {
+    setEditingOrder(order)
+    setEditedPaymentMethod(order.paymentMethod)
+    setEditedItems(order.items.map(item => ({
+      id: item.id,
+      quantity: item.quantity,
+      price: item.price
+    })))
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateOrder = async () => {
+    if (!editingOrder) return
+
+    setUpdatingOrder(true)
+    try {
+      await axios.patch(`/api/orders/${editingOrder.id}/update`, {
+        paymentMethod: editedPaymentMethod,
+        items: editedItems,
+      })
+
+      // Update the order in the state
+      setOrders((prev) => prev.map((order) => {
+        if (order.id === editingOrder.id) {
+          return {
+            ...order,
+            paymentMethod: editedPaymentMethod,
+            items: order.items.map((item) => {
+              const editedItem = editedItems.find((ei) => ei.id === item.id)
+              if (editedItem) {
+                return { ...item, quantity: editedItem.quantity, price: editedItem.price }
+              }
+              return item
+            }),
+            total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+          }
+        }
+        return order
+      }))
+
+      toast.success('Order updated successfully!')
+      setEditDialogOpen(false)
+    } catch (err) {
+      console.error('Error updating order', err)
+      toast.error('Failed to update order. Please try again.')
+    } finally {
+      setUpdatingOrder(false)
+    }
+  }
+
+  const updateItemField = (itemId: number, field: 'quantity' | 'price', value: number) => {
+    setEditedItems((prev) => prev.map((item) => 
+      item.id === itemId ? { ...item, [field]: value } : item
+    ))
+  }
 
   useEffect(() => {
     axios
@@ -85,12 +195,14 @@ export default function AdminOrdersPage() {
       .then((res) => {
         setOrders(res.data.orders)
         setTotal(res.data.total)
-        console.log("this is what we are looking for", res.data)
       })
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err)
+        toast.error('Failed to load orders')
+      })
   }, [search, page, limit])
 
-  // Group orders by month for chart
+  // Group orders by date for chart
   const chartData = Array.from({ length: 30 }, (_, i) => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
@@ -112,14 +224,15 @@ export default function AdminOrdersPage() {
   const handleStatusToggle = async (orderId: string) => {
     try {
       await axios.patch(`/api/orders/${orderId}/status`)
-      // Re-fetch data or optimistically update
       setOrders((prev) =>
         prev.map((order) =>
           order.id === orderId ? { ...order, status: 'delivered' } : order
         )
       )
+      toast.success('Order status updated to delivered')
     } catch (err) {
       console.error('Error updating status', err)
+      toast.error('Failed to update order status')
     }
   }
 
@@ -150,7 +263,7 @@ export default function AdminOrdersPage() {
           ))}
         </select>
       </div>
-      
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -172,6 +285,7 @@ export default function AdminOrdersPage() {
               <TableHead>Animal Price</TableHead>
               <TableHead>Product Price</TableHead>
               <TableHead>Order Total</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -217,6 +331,66 @@ export default function AdminOrdersPage() {
                   {idx === 0 && (
                     <TableCell rowSpan={order.items.length} className="font-semibold">
                       PKR {order.total.toFixed(2)}
+                    </TableCell>
+                  )}
+
+                  {idx === 0 && (
+                    <TableCell rowSpan={order.items.length}>
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditClick(order)}
+                              >
+                                <Edit className="w-5 h-5 text-blue-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Order</p>
+                            </TooltipContent>
+                          </UITooltip>
+
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(order.id)}
+                                disabled={deletingOrderId === order.id}
+                              >
+                                {deletingOrderId === order.id ? (
+                                  <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-5 h-5 text-red-500" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete Order</p>
+                            </TooltipContent>
+                          </UITooltip>
+
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  window.open(`/api/orders/${order.id}/invoice`, '_blank');
+                                }}
+                              >
+                                <Download className="w-5 h-5 text-blue-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download Invoice</p>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -266,6 +440,121 @@ export default function AdminOrdersPage() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Are you absolutely sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the order
+              and remove the data from our servers.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Order Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Order #{editingOrder?.id}</DialogTitle>
+            <DialogDescription>
+              Make changes to the order details below. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingOrder && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <Textarea
+                  id="payment-method"
+                  value={editedPaymentMethod}
+                  onChange={(e) => setEditedPaymentMethod(e.target.value)}
+                  placeholder="Enter payment method"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold">Order Items</h3>
+                {editingOrder.items.map((item, index) => {
+                  const editedItem = editedItems.find((ei) => ei.id === item.id)
+                  if (!editedItem) return null
+
+                  return (
+                    <div key={item.id} className="border rounded p-4 space-y-2">
+                      <div className="font-medium">
+                        Item {index + 1}: {item.animal ? `${item.animal.specie} - ${item.animal.breed}` : `${item.product?.productName} - ${item.variant?.packingVolume}`}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                          <Input
+                            id={`quantity-${item.id}`}
+                            type="number"
+                            value={editedItem.quantity}
+                            onChange={(e) => updateItemField(item.id, 'quantity', Number(e.target.value))}
+                            min="1"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`price-${item.id}`}>Price (PKR)</Label>
+                          <Input
+                            id={`price-${item.id}`}
+                            type="number"
+                            value={editedItem.price}
+                            onChange={(e) => updateItemField(item.id, 'price', Number(e.target.value))}
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="text-lg font-semibold">
+                New Total: PKR {editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateOrder} disabled={updatingOrder}>
+              {updatingOrder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

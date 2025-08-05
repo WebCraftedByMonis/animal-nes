@@ -302,7 +302,7 @@ model Checkout {
   status          String
   createdAt       DateTime       @default(now())
 
-  items           CheckoutItem[] @relation("CheckoutToItems") // ✅ Relation name
+  items           CheckoutItem[] @relation("CheckoutToItems")
 }
 
 model CheckoutItem {
