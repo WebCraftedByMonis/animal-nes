@@ -299,15 +299,71 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const sortBy = searchParams.get('sortBy') || 'createdAt'
-  const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc'
+  
+  // Pagination params
   const page = parseInt(searchParams.get('page') || '1', 10)
   const limit = parseInt(searchParams.get('limit') || '16', 10)
   const skip = (page - 1) * limit
+  
+  // Sort params
+  const sortBy = searchParams.get('sortBy') || 'createdAt'
+  const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+  
+  // Filter params
+  const search = searchParams.get('search') || ''
+  const category = searchParams.get('category') || ''
+  const subCategory = searchParams.get('subCategory') || ''
+  const subsubCategory = searchParams.get('subsubCategory') || ''
+  const productType = searchParams.get('productType') || ''
+  const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined
+  const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
 
-  // Build the orderBy object based on sortBy parameter
+  // Build where clause
+  const where: any = {
+    isActive: true, // Always filter for active products
+  }
+
+  // Search filter - searches across multiple fields
+  // In MySQL, contains is case-insensitive by default
+  if (search) {
+    where.OR = [
+      { productName: { contains: search } },
+      { genericName: { contains: search } },
+      { description: { contains: search } },
+      { dosage: { contains: search } },
+    ]
+  }
+
+  // Category filters
+  if (category && category !== 'all') {
+    where.category = category
+  }
+  if (subCategory && subCategory !== 'all') {
+    where.subCategory = subCategory
+  }
+  if (subsubCategory && subsubCategory !== 'all') {
+    where.subsubCategory = subsubCategory
+  }
+  if (productType && productType !== 'all') {
+    where.productType = productType
+  }
+
+  // Price filter - this is a bit complex as price is in variants
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    where.variants = {
+      some: {
+        customerPrice: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        }
+      }
+    }
+  }
+
+  // Build orderBy
   let orderBy: any = {}
   if (sortBy === 'createdAt') {
     orderBy = { createdAt: sortOrder }
@@ -315,37 +371,53 @@ export async function GET(req: NextRequest) {
     orderBy = { productName: sortOrder }
   }
 
-  const [items, total] = await Promise.all([
-    prisma.product.findMany({
+  try {
+    // Execute queries
+    const [items, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          company: true,
+          partner: true,
+          image: true,
+          pdf: true,
+          variants: true,
+        }
+      }),
+      prisma.product.count({ where })
+    ])
+
+    // Get min and max prices for the price range slider
+    const priceStats = await prisma.productVariant.aggregate({
+      _min: { customerPrice: true },
+      _max: { customerPrice: true },
       where: {
-        isActive: true // Only fetch active products
-      },
-      orderBy,
-      skip,
-      take: limit,
-      include: {
-        company: true,
-        partner: true,
-        image: true,
-        pdf: true,
-        variants: true,
-      }
-    }),
-    prisma.product.count({
-      where: {
-        isActive: true // Count only active products
+        product: {
+          isActive: true
+        }
       }
     })
-  ])
 
-  return NextResponse.json({
-    data: items,
-    total,
-    page,
-    limit,
-    lastSubmittedAt: items.length > 0 ? items[items.length - 1].createdAt ?? null : null,
-  })
+    return NextResponse.json({
+      data: items,
+      total,
+      page,
+      limit,
+      minPrice: priceStats._min.customerPrice || 0,
+      maxPrice: priceStats._max.customerPrice || 100000,
+    })
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch products' },
+      { status: 500 }
+    )
+  }
 }
+
 
 export async function PUT(request: NextRequest) {
   try {

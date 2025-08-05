@@ -277,13 +277,13 @@ export default function AnimalDetailClient() {
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <h3 className="font-medium text-lg mb-3">Pricing Details</h3>
               <div className="space-y-2">
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="text-white">Purchase Price:</span>
                   <span className="font-medium">PKR {animal.purchasePrice.toLocaleString()}</span>
-                </div>
+                </div> */}
                 <div className="flex justify-between">
-                  <span className="text-white">Selling Price:</span>
-                  {/* <span className="font-medium text-green-600">PKR {animal.totalPrice.toLocaleString()}</span> */}
+                  <span className="dark:text-white text-black">Selling Price:</span>
+                  <span className="font-medium text-green-600">PKR {animal.totalPrice.toLocaleString()}</span>
                 </div>
                 {animal.quantity > 1 && (
                   <div className="flex justify-between">

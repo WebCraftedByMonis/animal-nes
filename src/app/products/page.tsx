@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
@@ -116,7 +116,7 @@ const productTypes = [
 ]
 
 export default function AllProductsPage() {
-  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'createdAt' | 'productName'>('createdAt')
@@ -131,86 +131,78 @@ export default function AllProductsPage() {
   const [subSubCategoryFilter, setSubSubCategoryFilter] = useState<string>('all')
   const [productTypeFilter, setProductTypeFilter] = useState<string>('all')
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000])
-  const [maxPrice, setMaxPrice] = useState(100000)
+  const [minPriceLimit, setMinPriceLimit] = useState(0)
+  const [maxPriceLimit, setMaxPriceLimit] = useState(100000)
   const [showFilters, setShowFilters] = useState(false)
   
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  
   const router = useRouter()
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1) // Reset to first page on search
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [search])
 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
       const { data } = await axios.get('/api/product', {
         params: { 
+          search: debouncedSearch,
           sortBy, 
           sortOrder, 
-          page: 1, 
-          limit: 1000, // Fetch all for frontend filtering
+          page, 
+          limit,
+          category: categoryFilter,
+          subCategory: subCategoryFilter,
+          subsubCategory: subSubCategoryFilter,
+          productType: productTypeFilter,
+          minPrice: priceRange[0],
+          maxPrice: priceRange[1],
         },
       })
       
-      setAllProducts(data.data)
+      setProducts(data.data)
       setTotal(data.total)
       
-      // Calculate max price from all products
-      const prices = data.data.flatMap((p: Product) => 
-        p.variants.map(v => v.customerPrice)
-      )
-      const max = Math.max(...prices, 0)
-      setMaxPrice(max)
-      setPriceRange([0, max])
+      // Update price limits from backend
+      if (data.minPrice !== undefined && data.maxPrice !== undefined) {
+        setMinPriceLimit(data.minPrice)
+        setMaxPriceLimit(data.maxPrice)
+        // Only update price range if it's the initial load
+        if (priceRange[0] === 0 && priceRange[1] === 100000) {
+          setPriceRange([data.minPrice, data.maxPrice])
+        }
+      }
     } catch (error) {
       console.log(error)
       toast.error('Failed to fetch products')
     } finally {
       setLoading(false)
     }
-  }, [sortBy, sortOrder])
+  }, [debouncedSearch, sortBy, sortOrder, page, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, priceRange])
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
-  // Filter products on frontend
-  const filteredProducts = useMemo(() => {
-    return allProducts.filter((product) => {
-      // Search filter
-      const searchLower = search.toLowerCase()
-      const matchesSearch = !search || 
-        product.productName.toLowerCase().includes(searchLower) ||
-        (product.genericName && product.genericName.toLowerCase().includes(searchLower)) ||
-        (product.description && product.description.toLowerCase().includes(searchLower)) ||
-        (product.dosage && product.dosage.toLowerCase().includes(searchLower))
-
-      // Category filters
-      const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter
-      const matchesSubCategory = subCategoryFilter === 'all' || product.subCategory === subCategoryFilter
-      const matchesSubSubCategory = subSubCategoryFilter === 'all' || product.subsubCategory === subSubCategoryFilter
-      const matchesProductType = productTypeFilter === 'all' || product.productType === productTypeFilter
-
-      // Price filter
-      const productPrices = product.variants.map(v => v.customerPrice)
-      const minProductPrice = Math.min(...productPrices)
-      const maxProductPrice = Math.max(...productPrices)
-      const matchesPrice = minProductPrice <= priceRange[1] && maxProductPrice >= priceRange[0]
-
-      return matchesSearch && matchesCategory && matchesSubCategory && 
-             matchesSubSubCategory && matchesProductType && matchesPrice
-    })
-  }, [allProducts, search, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, priceRange])
-
-  // Paginate filtered results
-  const paginatedProducts = useMemo(() => {
-    const start = (page - 1) * limit
-    const end = start + limit
-    return filteredProducts.slice(start, end)
-  }, [filteredProducts, page, limit])
-
-  const totalPages = Math.ceil(filteredProducts.length / limit)
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, priceRange])
 
   const handleSortChange = (value: string) => {
     const [field, order] = value.split('-')
     setSortBy(field as 'createdAt' | 'productName')
     setSortOrder(order as 'asc' | 'desc')
+    setPage(1)
   }
 
   const clearFilters = () => {
@@ -219,7 +211,7 @@ export default function AllProductsPage() {
     setSubCategoryFilter('all')
     setSubSubCategoryFilter('all')
     setProductTypeFilter('all')
-    setPriceRange([0, maxPrice])
+    setPriceRange([minPriceLimit, maxPriceLimit])
     setPage(1)
   }
 
@@ -227,6 +219,8 @@ export default function AllProductsPage() {
     const path = product.slug ? `/products/${product.slug}` : `/products/${product.id}`
     router.push(path)
   }
+
+  const totalPages = Math.ceil(total / limit)
 
   const FiltersContent = () => (
     <div className="space-y-4">
@@ -291,11 +285,12 @@ export default function AllProductsPage() {
       </div>
 
       <div className="space-y-2">
-        <Label>Price Range: PKR {priceRange[0]} - PKR {priceRange[1]}</Label>
+        <Label>Price Range: PKR {priceRange[0].toLocaleString()} - PKR {priceRange[1].toLocaleString()}</Label>
         <Slider
           value={priceRange}
           onValueChange={(value) => setPriceRange(value as number[])}
-          max={maxPrice}
+          max={maxPriceLimit}
+          min={minPriceLimit}
           step={100}
           className="w-full"
         />
@@ -387,7 +382,7 @@ export default function AllProductsPage() {
 
         <div className="flex items-center gap-2">
           <span className="text-sm">Show</span>
-          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+          <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
             <SelectTrigger className="w-[80px]">
               <SelectValue />
             </SelectTrigger>
@@ -449,7 +444,7 @@ export default function AllProductsPage() {
             </SelectContent>
           </Select>
           
-          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+          <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
             <SelectTrigger className="w-[100px]">
               <SelectValue />
             </SelectTrigger>
@@ -466,17 +461,51 @@ export default function AllProductsPage() {
       <div className="hidden lg:block">
         <div className="flex items-center gap-4">
           <Label>Price Range:</Label>
-          <span>PKR {priceRange[0]}</span>
+          <span>PKR {priceRange[0].toLocaleString()}</span>
           <Slider
             value={priceRange}
             onValueChange={(value) => setPriceRange(value as number[])}
-            max={maxPrice}
+            max={maxPriceLimit}
+            min={minPriceLimit}
             step={100}
             className="w-[300px]"
           />
-          <span>PKR {priceRange[1]}</span>
+          <span>PKR {priceRange[1].toLocaleString()}</span>
         </div>
       </div>
+
+      {/* Active Filters Display
+      {(search || categoryFilter !== 'all' || subCategoryFilter !== 'all' || 
+        subSubCategoryFilter !== 'all' || productTypeFilter !== 'all' || 
+        priceRange[0] !== minPriceLimit || priceRange[1] !== maxPriceLimit) && (
+        <div className="flex flex-wrap gap-2">
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+          {search && (
+            <Badge variant="secondary">
+              Search: {search}
+              <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setSearch('')} />
+            </Badge>
+          )}
+          {categoryFilter !== 'all' && (
+            <Badge variant="secondary">
+              Category: {categoryFilter}
+              <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setCategoryFilter('all')} />
+            </Badge>
+          )}
+          {subCategoryFilter !== 'all' && (
+            <Badge variant="secondary">
+              Sub: {subCategoryFilter}
+              <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setSubCategoryFilter('all')} />
+            </Badge>
+          )}
+          {(priceRange[0] !== minPriceLimit || priceRange[1] !== maxPriceLimit) && (
+            <Badge variant="secondary">
+              Price: PKR {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}
+              <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setPriceRange([minPriceLimit, maxPriceLimit])} />
+            </Badge>
+          )}
+        </div>
+      )} */}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -487,7 +516,7 @@ export default function AllProductsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {paginatedProducts.map((product) => (
+            {products.map((product) => (
               <div 
                 key={product.id} 
                 className="bg-white dark:bg-zinc-900 rounded-lg shadow-md border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 hover:shadow-lg transition-shadow cursor-pointer"
@@ -515,7 +544,7 @@ export default function AllProductsPage() {
                     {product.variants.map((variant, idx) => (
                       <div key={idx} className="flex gap-2 items-center">
                         <Badge variant="outline" className="text-green-600 border-green-600">
-                          {variant.packingVolume} – PKR {variant.customerPrice}
+                          {variant.packingVolume} – PKR {variant.customerPrice.toLocaleString()}
                         </Badge>
                       </div>
                     ))}
@@ -529,7 +558,7 @@ export default function AllProductsPage() {
             ))}
           </div>
 
-          {paginatedProducts.length === 0 && (
+          {products.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No products found</p>
             </div>

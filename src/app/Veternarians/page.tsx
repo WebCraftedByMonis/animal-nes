@@ -278,7 +278,7 @@ export default function VeterinaryPartnersPage() {
                         src={partner.partnerImage.url}
                         alt={partner.partnerName}
                         fill
-                        className="object-cover"
+                        className="object-fit"
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                       />
                     ) : (

@@ -155,7 +155,7 @@ export default function VeterinaryPartnerDetailClient() {
                   src={partner.partnerImage.url}
                   alt={partner.partnerName}
                   fill
-                  className="object-cover"
+                  className="object-fit"
                   priority
                 />
               ) : (

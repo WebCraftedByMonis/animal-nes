@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -16,6 +17,7 @@ interface Product {
   dosage: string | null;
   isFeatured: boolean;
   isActive: boolean;
+  outofstock: boolean;
   image: { url: string; alt: string } | null;
   pdf: { url: string } | null;
   company: { companyName: string };
@@ -31,18 +33,19 @@ interface Product {
 }
 
 export default function ProductClient({ product }: { product: Product }) {
-  const [selectedVariantId, setSelectedVariantId] = useState<number>(product.variants[0].id);
-
-
-
+  const [selectedVariantId, setSelectedVariantId] = useState<number>(product.variants[0]?.id || 0);
+  const [showDescription, setShowDescription] = useState(false);
+  const [showDosage, setShowDosage] = useState(false);
   
+  const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+  const isOutOfStock = product.outofstock || !product.isActive;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Product Image Section */}
         <div className="md:w-1/2">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md overflow-hidden">
             {product.image ? (
               <Image
                 src={product.image.url}
@@ -53,8 +56,8 @@ export default function ProductClient({ product }: { product: Product }) {
                 priority
               />
             ) : (
-              <div className="bg-gray-100 aspect-square flex items-center justify-center">
-                <span className="text-gray-400">No Image Available</span>
+              <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
+                <span className="text-gray-400 dark:text-gray-600">No Image Available</span>
               </div>
             )}
           </div>
@@ -66,121 +69,160 @@ export default function ProductClient({ product }: { product: Product }) {
             {/* Badges */}
             <div className="flex gap-2">
               {product.isFeatured && (
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium px-2.5 py-0.5 rounded">
                   Featured
                 </span>
               )}
-              {!product.isActive && (
-                <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
+              {isOutOfStock && (
+                <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-medium px-2.5 py-0.5 rounded">
                   Out of Stock
+                </span>
+              )}
+              {selectedVariant && selectedVariant.inventory === 0 && !isOutOfStock && (
+                <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs font-medium px-2.5 py-0.5 rounded">
+                  Selected Variant Out of Stock
                 </span>
               )}
             </div>
 
-            <h1 className="text-3xl font-bold ">{product.productName}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{product.productName}</h1>
 
             {product.genericName && (
-              <p >Generic: {product.genericName}</p>
+              <p className="text-gray-600 dark:text-gray-400">Generic: {product.genericName}</p>
             )}
 
-          <div className="space-y-4">
-  {product.variants.map((variant) => (
-    <label
-      key={variant.id}
-      className="border rounded-md p-3 bg-gray-50 flex items-center cursor-pointer"
-    >
-      <input
-        type="radio"
-        name="variant"
-        value={variant.id}
-        checked={selectedVariantId === variant.id}
-        onChange={() => setSelectedVariantId(variant.id)}
-        className="mr-3"
-      />
-      <div>
-        <p className="text-lg font-semibold text-gray-800">
-          Packing: {variant.packingVolume}
-        </p>
-      </div>
-    </label>
-  ))}
-</div>
+            {/* Price Display */}
+            {selectedVariant && (
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  PKR {selectedVariant.customerPrice.toLocaleString()}
+                </p>
+                
+              </div>
+            )}
 
+            {/* Inventory Display */}
+            {selectedVariant && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Inventory: {selectedVariant.inventory > 0 ? `${selectedVariant.inventory} units available` : 'Out of stock'}
+              </p>
+            )}
 
-{selectedVariantId && (
-  <div className="mt-4 border rounded-md p-4 bg-green-50">
-    {product.variants
-      .filter((v) => v.id === selectedVariantId)
-      .map((variant) => (
-        <div key={variant.id}>
-          <p className="text-green-700 font-bold text-xl">
-            PKR {variant.customerPrice.toFixed(2)}
-          </p>
-          {/* {variant.dealerPrice && (
-            <p className="text-sm text-gray-500 line-through">
-              R: PKR {variant.dealerPrice.toFixed(2)}
-            </p>
-          )} */}
-          {variant.companyPrice && (
-            <p className="text-sm text-gray-500">
-              Retail : PKR {variant.companyPrice.toFixed(2)}
-            </p>
-          )}
-          <p className="text-sm text-gray-700">Inventory: {variant.inventory}</p>
-        </div>
-      ))}
-  </div>
-)}
-
-
-
-            <div className="py-4 border-t border-b border-gray-200">
-              <p >{product.description}</p>
+            {/* Variant Selection */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Select Variant</h3>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    onClick={() => setSelectedVariantId(variant.id)}
+                    className={`
+                      px-4 py-2 rounded-lg transition-all text-sm font-medium
+                      ${selectedVariantId === variant.id 
+                        ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                        : 'border-2 border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-zinc-600'
+                      }
+                      ${variant.inventory === 0 ? 'opacity-60' : ''}
+                    `}
+                  >
+                    {variant.packingVolume}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Description Accordion */}
+            {product.description && (
+              <div className="bg-gray-50 dark:bg-zinc-800/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setShowDescription(!showDescription)}
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <span className="font-medium text-gray-900 dark:text-gray-100">Description</span>
+                  {showDescription ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  )}
+                </button>
+                {showDescription && (
+                  <div className="px-4 pb-3">
+                    <p className="text-gray-700 dark:text-gray-300">{product.description}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Dosage Accordion */}
+            {product.dosage && (
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setShowDosage(!showDosage)}
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                >
+                  <span className="font-medium text-green-800 dark:text-green-200">Dosage Information</span>
+                  {showDosage ? (
+                    <ChevronUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  )}
+                </button>
+                {showDosage && (
+                  <div className="px-4 pb-3">
+                    <p className="text-green-700 dark:text-green-300">{product.dosage}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Product Details */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-4 text-sm pt-4">
               <div>
-                <p className="font-medium text-gray-500">Category</p>
-                <p>{product.category}</p>
+                <p className="font-medium text-gray-500 dark:text-gray-400">Category</p>
+                <p className="text-gray-900 dark:text-gray-100">{product.category}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-500">Sub Category</p>
-                <p>{product.subCategory}</p>
+                <p className="font-medium text-gray-500 dark:text-gray-400">Sub Category</p>
+                <p className="text-gray-900 dark:text-gray-100">{product.subCategory}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-500">Product Type</p>
-                <p>{product.productType}</p>
+                <p className="font-medium text-gray-500 dark:text-gray-400">Product Type</p>
+                <p className="text-gray-900 dark:text-gray-100">{product.productType}</p>
               </div>
-
+              <div>
+                <p className="font-medium text-gray-500 dark:text-gray-400">Sub-Sub Category</p>
+                <p className="text-gray-900 dark:text-gray-100">{product.subsubCategory}</p>
+              </div>
             </div>
-
-            {product.dosage && (
-              <div className="bg-green-50 dark:bg-green-800 p-4 rounded-lg">
-                <h3 className="font-medium text-green-800 dark:text-white">Dosage Information</h3>
-                <p className="text-green-700 dark:text-white mt-1">{product.dosage}</p>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-
-              {product.isActive && selectedVariantId && (
-  <AddToCartClientWrapper productId={product.id} variantId={selectedVariantId} isActive={product.isActive} />
-)}
-
-
+              {!isOutOfStock && selectedVariantId && selectedVariant && selectedVariant.inventory > 0 && (
+                <AddToCartClientWrapper 
+                  productId={product.id} 
+                  variantId={selectedVariantId} 
+                  isActive={product.isActive && !product.outofstock} 
+                />
+              )}
+              {(isOutOfStock || (selectedVariant && selectedVariant.inventory === 0)) && (
+                <button
+                  disabled
+                  className="flex-1 bg-gray-300 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 py-3 px-6 rounded-lg font-medium cursor-not-allowed"
+                >
+                  Out of Stock
+                </button>
+              )}
             </div>
 
             {/* Company & Partner Info */}
             <div className="pt-4 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="font-medium text-gray-500">Manufacturer</p>
-                <p>{product.company.companyName}</p>
+                <p className="font-medium text-gray-500 dark:text-gray-400">Manufacturer</p>
+                <p className="text-gray-900 dark:text-gray-100">{product.company.companyName}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-500">Supplier</p>
-                <p>{product.partner.partnerName}</p>
+                <p className="font-medium text-gray-500 dark:text-gray-400">Supplier</p>
+                <p className="text-gray-900 dark:text-gray-100">{product.partner.partnerName}</p>
               </div>
             </div>
           </div>
@@ -189,23 +231,22 @@ export default function ProductClient({ product }: { product: Product }) {
 
       {/* PDF Section */}
       {product.pdf && (
-        <div className="mt-12 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Documents</h2>
+        <div className="mt-12 bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Product Documents</h2>
           <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 bg-green-100 p-3 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex-shrink-0 bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
+              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
-
             <div>
-              <p className="font-medium">Product Information PDF</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">Product Information PDF</p>
               <a
                 href={product.pdf.url}
                 download={`${product.productName.replace(/\s+/g, '_')}_product_sheet.pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-green-600 hover:text-green-800 text-sm flex items-center gap-1 mt-1"
+                className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-sm flex items-center gap-1 mt-1"
               >
                 <span>Download PDF</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,19 +257,20 @@ export default function ProductClient({ product }: { product: Product }) {
           </div>
         </div>
       )}
+
       {/* Product Categories */}
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <p className="font-medium text-gray-500">Category</p>
-          <p className="mt-1 text-black ">{product.category}</p>
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm">
+          <p className="font-medium text-gray-500 dark:text-gray-400">Category</p>
+          <p className="mt-1 text-gray-900 dark:text-gray-100">{product.category}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <p className="font-medium text-gray-500">Sub Category</p>
-          <p className="mt-1 text-black ">{product.subCategory}</p>
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm">
+          <p className="font-medium text-gray-500 dark:text-gray-400">Sub Category</p>
+          <p className="mt-1 text-gray-900 dark:text-gray-100">{product.subCategory}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <p className="font-medium text-gray-500">Sub-Sub Category</p>
-          <p className="mt-1  text-black ">{product.subsubCategory}</p>
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm">
+          <p className="font-medium text-gray-500 dark:text-gray-400">Sub-Sub Category</p>
+          <p className="mt-1 text-gray-900 dark:text-gray-100">{product.subsubCategory}</p>
         </div>
       </div>
     </div>
