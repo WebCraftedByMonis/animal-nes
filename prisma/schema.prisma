@@ -27,6 +27,7 @@ model DeliveryCharge {
   id      Int      @id @default(autoincrement())
   amount  Float
   cityId  Int
+  notes     String?  @db.Text 
   city    City     @relation(fields: [cityId], references: [id])
   createdAt DateTime @default(now())
 }
@@ -295,6 +296,7 @@ model Checkout {
   userId          String
   city            String
   province        String
+  shipmentcharges  String?  @db.Text
   address         String   @db.Text
   shippingAddress String    @db.Text
   paymentMethod   String   @db.Text

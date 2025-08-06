@@ -11,10 +11,59 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
 
-  const { city, province, address, shippingAddress, paymentMethod, cart, animalCart, total } = body
-
+  const { 
+    city, 
+    cityId,
+    province, 
+    address, 
+    shippingAddress, 
+    paymentMethod, 
+    cart, 
+    animalCart, 
+    subtotal,
+    shippingCharges,
+    total 
+  } = body
 
   try {
+    // Validate that shipping charges match the selected city
+    let validatedShippingCharge = 0
+    if (cityId) {
+      const deliveryCharge = await prisma.deliveryCharge.findFirst({
+        where: { cityId: cityId }
+      })
+      
+      if (deliveryCharge) {
+        validatedShippingCharge = deliveryCharge.amount
+        
+        // Verify the shipping charge matches what was sent from frontend
+        if (Math.abs(validatedShippingCharge - shippingCharges) > 0.01) {
+          return NextResponse.json({ 
+            error: 'Invalid shipping charges. Please refresh and try again.' 
+          }, { status: 400 })
+        }
+      } else if (shippingCharges > 0) {
+        // If no delivery charge found but frontend sent charges, something's wrong
+        return NextResponse.json({ 
+          error: 'Invalid shipping charges for selected city.' 
+        }, { status: 400 })
+      }
+    }
+
+    // Recalculate total on server side for security
+    const calculatedSubtotal = 
+      cart.reduce((sum: number, item: any) => sum + (item.quantity * item.variant.customerPrice), 0) +
+      animalCart.reduce((sum: number, item: any) => sum + (item.quantity * item.animal.totalPrice), 0)
+    
+    const calculatedTotal = calculatedSubtotal + validatedShippingCharge
+
+    // Verify the total matches (allowing small floating point differences)
+    if (Math.abs(calculatedTotal - total) > 0.01) {
+      return NextResponse.json({ 
+        error: 'Total mismatch. Please refresh and try again.' 
+      }, { status: 400 })
+    }
+
     const order = await prisma.checkout.create({
       data: {
         user: { connect: { email: session.user.email } },
@@ -23,7 +72,8 @@ export async function POST(req: NextRequest) {
         address,
         shippingAddress,
         paymentMethod,
-        total,
+        shipmentcharges: validatedShippingCharge.toString(), // Store as string in shipmentcharges field
+        total: calculatedTotal,
         status: 'pending',
         items: {
           create: [
@@ -31,9 +81,9 @@ export async function POST(req: NextRequest) {
               if (item.product) {
                 return {
                   product: { connect: { id: item.product.id } },
-                  variant: { connect: { id: item.variant.id } },// Add this if your schema supports it
+                  variant: { connect: { id: item.variant.id } },
                   quantity: item.quantity,
-                  price: item.variant.customerPrice, // Changed from item.product.customerPrice
+                  price: item.variant.customerPrice,
                 }
               } else {
                 throw new Error('Unknown item type in cart');
@@ -46,7 +96,6 @@ export async function POST(req: NextRequest) {
                 price: item.animal.totalPrice,
               }
             })
-
           ]
         }
       }
@@ -61,7 +110,12 @@ export async function POST(req: NextRequest) {
       where: { user: { email: session.user.email } },
     })
 
-    return NextResponse.json({ success: true, orderId: order.id })
+    return NextResponse.json({ 
+      success: true, 
+      orderId: order.id,
+      total: calculatedTotal,
+      shippingCharges: validatedShippingCharge
+    })
   } catch (error) {
     console.error('Checkout error:', error)
     return NextResponse.json({ error: 'Failed to process order' }, { status: 500 })

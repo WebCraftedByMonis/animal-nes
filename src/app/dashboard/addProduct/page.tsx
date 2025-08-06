@@ -725,7 +725,6 @@ export default function AddProductPage() {
               + Add Variant
             </Button>
 
-<pre>{companies.map(company => company.companyName)}</pre>
 
             <div className="mt-8 flex justify-end gap-4">
 

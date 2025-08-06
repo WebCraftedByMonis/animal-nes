@@ -79,6 +79,7 @@ interface Order {
   province: string;
   address: string;
   shippingAddress: string;
+  shipmentcharges: string;
   paymentMethod: string;
   total: number;
   status: string;
@@ -141,7 +142,6 @@ export default function AdminOrdersPage() {
     })))
     setEditDialogOpen(true)
   }
-
   const handleUpdateOrder = async () => {
     if (!editingOrder) return
 
@@ -150,7 +150,9 @@ export default function AdminOrdersPage() {
       await axios.patch(`/api/orders/${editingOrder.id}/update`, {
         paymentMethod: editedPaymentMethod,
         items: editedItems,
-      })
+        shipmentcharges: editingOrder.shipmentcharges,
+        total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')
+      });
 
       // Update the order in the state
       setOrders((prev) => prev.map((order) => {
@@ -158,6 +160,7 @@ export default function AdminOrdersPage() {
           return {
             ...order,
             paymentMethod: editedPaymentMethod,
+            shipmentcharges: editingOrder.shipmentcharges,
             items: order.items.map((item) => {
               const editedItem = editedItems.find((ei) => ei.id === item.id)
               if (editedItem) {
@@ -165,7 +168,7 @@ export default function AdminOrdersPage() {
               }
               return item
             }),
-            total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+            total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')
           }
         }
         return order
@@ -182,7 +185,7 @@ export default function AdminOrdersPage() {
   }
 
   const updateItemField = (itemId: number, field: 'quantity' | 'price', value: number) => {
-    setEditedItems((prev) => prev.map((item) => 
+    setEditedItems((prev) => prev.map((item) =>
       item.id === itemId ? { ...item, [field]: value } : item
     ))
   }
@@ -272,7 +275,7 @@ export default function AdminOrdersPage() {
               <TableHead>Buyer Name</TableHead>
               <TableHead>Buyer Email</TableHead>
               <TableHead>Address</TableHead>
-              <TableHead>Shipping</TableHead>
+              <TableHead>Mobile Number</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
@@ -284,6 +287,7 @@ export default function AdminOrdersPage() {
               <TableHead>Product Qty</TableHead>
               <TableHead>Animal Price</TableHead>
               <TableHead>Product Price</TableHead>
+              <TableHead>Shipment Charges</TableHead>
               <TableHead>Order Total</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -329,9 +333,14 @@ export default function AdminOrdersPage() {
                   <TableCell>{item.product ? `PKR ${item.price?.toFixed(2)}` : '-'}</TableCell>
 
                   {idx === 0 && (
-                    <TableCell rowSpan={order.items.length} className="font-semibold">
-                      PKR {order.total.toFixed(2)}
-                    </TableCell>
+                    <>
+                      <TableCell rowSpan={order.items.length} className="font-semibold">
+                        PKR {order.shipmentcharges}
+                      </TableCell>
+                      <TableCell rowSpan={order.items.length} className="font-semibold">
+                        PKR {order.total.toFixed(2)}
+                      </TableCell>
+                    </>
                   )}
 
                   {idx === 0 && (
@@ -378,15 +387,34 @@ export default function AdminOrdersPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
-                                  window.open(`/api/orders/${order.id}/invoice`, '_blank');
-                                }}
+                                onClick={() => window.open(`/api/orders/${order.id}/invoice`, '_blank')}
+                                className="relative"
                               >
-                                <Download className="w-5 h-5 text-blue-500" />
+                                <Download className="w-5 h-5 text-blue-600" />
+                                <span className="sr-only">Download Invoice</span>
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Download Invoice</p>
+                              <p>Download Standard Invoice</p>
+                            </TooltipContent>
+                          </UITooltip>
+
+                          {/* Branded Invoice Button */}
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(`/api/orders/${order.id}/invoice?branded=true`, '_blank')}
+                                className="relative"
+                              >
+                                <Download className="w-5 h-5 text-green-600" />
+                                
+                                <span className="sr-only">Download Branded Invoice</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download  Invoice (with company details)</p>
                             </TooltipContent>
                           </UITooltip>
                         </TooltipProvider>
@@ -479,7 +507,7 @@ export default function AdminOrdersPage() {
               Make changes to the order details below. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          
+
           {editingOrder && (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -494,6 +522,7 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="space-y-4">
+
                 <h3 className="font-semibold">Order Items</h3>
                 {editingOrder.items.map((item, index) => {
                   const editedItem = editedItems.find((ei) => ei.id === item.id)
@@ -515,6 +544,7 @@ export default function AdminOrdersPage() {
                             min="1"
                           />
                         </div>
+
                         <div className="space-y-2">
                           <Label htmlFor={`price-${item.id}`}>Price (PKR)</Label>
                           <Input
@@ -532,8 +562,27 @@ export default function AdminOrdersPage() {
                 })}
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="shipment-charges">Shipment Charges (PKR)</Label>
+                <Input
+                  id="shipment-charges"
+                  type="number"
+                  value={parseFloat(editingOrder.shipmentcharges || '0')}
+                  onChange={(e) => {
+                    const newShipmentCharges = parseFloat(e.target.value) || 0;
+                    setEditingOrder({
+                      ...editingOrder,
+                      shipmentcharges: newShipmentCharges.toString(),
+                      total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + newShipmentCharges
+                    });
+                  }}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
               <div className="text-lg font-semibold">
-                New Total: PKR {editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+                New Total: PKR {(editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')).toFixed(2)}
               </div>
             </div>
           )}
