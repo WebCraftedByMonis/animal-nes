@@ -235,7 +235,7 @@ async function GET(request: NextRequest) {
     
     // Build where clause
     const whereClause: any = {
-      ...(search && { partnerName: { contains: search, mode: 'insensitive' } }),
+      ...(search && { partnerName: { contains: search, } }),
     };
     
     // Apply partner type filtering

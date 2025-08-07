@@ -21,7 +21,7 @@ interface SellAnimalRequest {
 }
 
 export default function AnimalMarketplace() {
-  const router = useRouter();  // ✅ router hook
+  const router = useRouter();  
 
   const [requests, setRequests] = useState<SellAnimalRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,36 +30,47 @@ export default function AnimalMarketplace() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const fetchRequests = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get('/api/sell-animal', {
-        params: { 
-          q: search, 
-          limit, 
-          page, 
-          sort: 'createdAt', 
-          order: 'desc'
-        },
-      });
+ const fetchRequests = useCallback(async () => {
+  try {
+    setLoading(true);
+    const { data } = await axios.get('/api/sell-animal', {
+      params: { 
+        q: search, 
+        limit, 
+        page, 
+        sort: 'createdAt', 
+        order: 'desc'
+      },
+    });
 
-      const simplified = data.items.map((item: any) => ({
-        id: item.id,
-        specie: item.specie,
-        breed: item.breed,
-        totalPrice: item.totalPrice,
-        images: item.images,
-      }));
+    const simplified = data.items.map((item: any) => ({
+      id: item.id,
+      specie: item.specie,
+      breed: item.breed,
+      totalPrice: item.totalPrice,
+      images: item.images,
+    }));
 
-      setRequests(simplified);
-      setTotal(data.total);
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to fetch requests');
-    } finally {
-      setLoading(false);
+    setRequests(simplified);
+    setTotal(data.total);
+  } catch (error: any) {
+    console.error(error);
+
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        toast.error('You must be logged in first');
+       
+      } else {
+        toast.error('Failed to fetch requests');
+      }
+    } else {
+      toast.error('Something went wrong');
     }
-  }, [search, page, limit]);
+  } finally {
+    setLoading(false);
+  }
+}, [search, page, limit, router]);
+
 
   useEffect(() => {
     fetchRequests();
