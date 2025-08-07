@@ -3,30 +3,38 @@ import React from "react";
 import {
   FaWhatsapp,
   FaFacebook,
-  FaSkype,
-  FaPhoneAlt,
   FaYoutube,
   FaEnvelope,
   FaLinkedin,
   FaInstagram,
   FaTiktok,
+  FaPinterest,
+  FaPhoneAlt,
+  FaGlobe,
 } from "react-icons/fa";
-import { Home } from "lucide-react";
+import { SiThreads } from "react-icons/si";
+import { BsFillHouseDoorFill } from "react-icons/bs";
+import { RiMessage2Line } from "react-icons/ri";
 
 const contactItems = [
   {
-    icon: <Home className="text-green-500" />,
+    icon: <BsFillHouseDoorFill className="text-green-500" />,
     label: "Address: 9 Zubair St, Islamia Park, Poonch Road, Chaburji Lahore",
   },
   {
-    icon: <FaWhatsapp className="text-green-500" />,
-    label: "+923354145431",
-    href: "https://wa.me/c/923354145431",
+    icon: <FaGlobe className="text-green-600" />,
+    label: "Website",
+    href: "https://www.animalwellness.shop/",
   },
   {
-    icon: <FaTiktok className="text-blue-500" />,
-    label: "Tik Tok",
-    href: "https://www.tiktok.com/@animal.wellness.s",
+    icon: <FaWhatsapp className="text-green-500" />,
+    label: "Message on WhatsApp",
+    href: "https://wa.me/923354145431",
+  },
+  {
+    icon: <RiMessage2Line className="text-blue-500" />,
+    label: "imo Lite",
+    href: "https://imolite.onelink.me/82A5/dhpd35zl",
   },
   {
     icon: <FaPhoneAlt className="text-green-500" />,
@@ -38,18 +46,28 @@ const contactItems = [
   },
   {
     icon: <FaFacebook className="text-blue-600" />,
-    label: "Animal Wellness",
-    href: "https://www.facebook.com/profile.php?id=100064043800171&mibextid=ZbWKwL",
+    label: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=61569643526062",
   },
   {
     icon: <FaYoutube className="text-red-500" />,
-    label: "AnimalWell.Shop",
-    href: "https://www.youtube.com/@AnimalWellNessShop",
+    label: "YouTube",
+    href: "https://www.youtube.com/@AnimalWellNessShop/videos",
   },
   {
-    icon: <FaEnvelope className="text-red-500" />,
-    label: "animalwellnessshop@gmail.com",
-    href: "mailto:animalwellnessshop@gmail.com",
+    icon: <FaInstagram className="text-pink-500" />,
+    label: "Instagram",
+    href: "https://www.instagram.com/animalwellnessshop?igsh=Y3ZuYmNpc21iNjZ0",
+  },
+  {
+    icon: <FaTiktok className="text-black" />,
+    label: "TikTok",
+    href: "https://www.tiktok.com/@animalwellnessshop?_t=ZS-8ybHNCBO7wl&_r=1",
+  },
+  {
+    icon: <FaPinterest className="text-red-600" />,
+    label: "Pinterest",
+    href: "https://www.pinterest.com/pin/929360073111456519",
   },
   {
     icon: <FaLinkedin className="text-blue-700" />,
@@ -57,9 +75,14 @@ const contactItems = [
     href: "https://www.linkedin.com/in/muhammad-fiaz-qamar-195208a2/",
   },
   {
-    icon: <FaInstagram className="text-pink-500" />,
-    label: "@AnimalWellness",
-    href: "https://www.instagram.com/animalwellnessshop/",
+    icon: <SiThreads className="text-black" />,
+    label: "Threads",
+    href: "https://www.threads.com/@animalwellnessshop",
+  },
+  {
+    icon: <FaEnvelope className="text-red-500" />,
+    label: "animalwellnessshop@gmail.com",
+    href: "mailto:animalwellnessshop@gmail.com",
   },
 ];
 
@@ -80,15 +103,11 @@ const ContactDetails = () => {
               >
                 {item.label}
               </a>
-
-              
             ) : (
               <span>{item.label}</span>
             )}
           </li>
         ))}
-
-       
       </ul>
     </div>
   );

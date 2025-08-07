@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Head from "next/head";
 import toast from "react-hot-toast";
+import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
 
 export default function NewAppointmentPage() {
   const [form, setForm] = useState({
@@ -22,18 +23,18 @@ export default function NewAppointmentPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const target = e.target;
-  
+
     const value =
       target instanceof HTMLInputElement && target.type === "checkbox"
         ? target.checked
         : target.value;
-  
+
     setForm((prev) => ({
       ...prev,
       [target.name]: value,
     }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -46,7 +47,7 @@ export default function NewAppointmentPage() {
     });
 
     if (res.ok) {
-        toast.success("Appointment request submitted!", { id: toastId });
+      toast.success("Appointment request submitted!", { id: toastId });
       setForm({
         doctor: "",
         city: "",
@@ -59,11 +60,11 @@ export default function NewAppointmentPage() {
         description: "",
       });
     } else {
-        console.log(res)
-        toast.error("Failed to submit appointment", { id: toastId });
+      console.log(res)
+      toast.error("Failed to submit appointment", { id: toastId });
     }
-        setLoading(false);
-      
+    setLoading(false);
+
   };
 
   return (
@@ -95,21 +96,42 @@ export default function NewAppointmentPage() {
               required
               className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
             />
-            <input
-              name="state"
-              placeholder="State (Optional)"
+            <SuggestiveInput
+              suggestions={[
+                "Punjab",
+                "Sindh",
+                "Balochistan",
+                "Khyber Pakhtunkhwa",
+                "Gilgit Baltistan",
+                "Kashmir",
+                "Islamabad",
+              ]}
               value={form.state}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+              onChange={(val) => setForm((prev) => ({ ...prev, state: val }))}
+              placeholder="State (Optional)"
             />
-            <input
-              name="species"
-              placeholder="Animal Species"
-              value={form.species}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+
+           <SuggestiveInput
+  suggestions={[
+    "Cow – گائے",
+    "Buffalo – بھینس",
+    "Goat – بکری",
+    "Sheep – بھیڑ",
+    "Camel – اونٹ",
+    "Donkey – گدھا",
+    "Horse – گھوڑا",
+    "Desi/ Fancy birds – دیسی مرغی / مرغا",
+    "Broiler Chicken – برائلر مرغی",
+    "Layer Chicken – انڈے دینے والی مرغ",
+    "Dog – کتا",
+    "Cat – بلی"
+  ]}
+  value={form.species}
+  onChange={(val) => setForm((prev) => ({ ...prev, species: val }))}
+  placeholder="Animal Species"
+  
+/>
+
             <input
               name="fullAddress"
               placeholder="Full Address (Optional)"
@@ -157,14 +179,13 @@ export default function NewAppointmentPage() {
               className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
             />
 
-<button
+            <button
               type="submit"
               disabled={loading}
-              className={`w-full font-semibold py-3 rounded-xl transition ${
-                loading
+              className={`w-full font-semibold py-3 rounded-xl transition ${loading
                   ? "bg-green-300 cursor-not-allowed"
                   : "bg-green-500 hover:bg-green-600 text-white"
-              }`}
+                }`}
             >
               {loading ? "Submitting..." : "Submit Appointment"}
             </button>

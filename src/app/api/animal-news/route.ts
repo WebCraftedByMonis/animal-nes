@@ -14,19 +14,29 @@ async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
   )
 }
 
-// POST - Create news entry
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
+
     const title = formData.get('title') as string
     const description = formData.get('description') as string
     const image = formData.get('image') as File | null
     const pdf = formData.get('pdf') as File | null
 
+    console.log('📩 Incoming form data:')
+    console.log('Title:', title)
+    console.log('Description:', description)
+    console.log('Image file:', image ? `${image.name}, ${image.size} bytes` : 'No image')
+    console.log('PDF file:', pdf ? `${pdf.name}, ${pdf.size} bytes` : 'No PDF')
+
     const [imageResult, pdfResult] = await Promise.all([
       handleFileUpload(image, 'image'),
       handleFileUpload(pdf, 'pdf'),
     ])
+
+    console.log('✅ File upload results:')
+    console.log('Image upload:', imageResult)
+    console.log('PDF upload:', pdfResult)
 
     const news = await prisma.$transaction(async (tx) => {
       const imageRecord = imageResult
@@ -49,6 +59,10 @@ export async function POST(req: NextRequest) {
           })
         : null
 
+      console.log('📦 Creating Animal News entry with:')
+      console.log('Image ID:', imageRecord?.id)
+      console.log('PDF ID:', pdfRecord?.id)
+
       return tx.animalNews.create({
         data: {
           title,
@@ -60,13 +74,17 @@ export async function POST(req: NextRequest) {
       })
     })
 
+    console.log('🎉 News created successfully:', news.id)
+
     return NextResponse.json(news, { status: 201 })
-  } catch (error) {
-    console.error('Error creating animal news:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (error: any) {
+    console.error('❌ Error creating animal news:', error)
+    return NextResponse.json(
+      { error: 'Internal Server Error', details: error?.message || error },
+      { status: 500 }
+    )
   }
 }
-
 // GET - List news entries
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)

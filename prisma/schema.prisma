@@ -239,6 +239,7 @@ model User {
    sellAnimals       SellAnimal[] 
    animalCart  AnimalCart[] 
      jobApplicants  JobApplicant[]  
+     testimonials  Testimonial[]
 }
 
 model Account {
@@ -551,4 +552,39 @@ model JobFormImage {
 model monis {
   id Int @id @default(autoincrement())
   monisname String
+}
+
+model Banner {
+  id        Int          @id @default(autoincrement())
+  position  Int          @unique
+  image     BannerImage?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model BannerImage {
+  id        Int      @id @default(autoincrement())
+  url       String   @db.Text
+  alt       String   @unique
+  publicId  String?  @unique
+  banner    Banner   @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+  bannerId  Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Testimonial {
+  id          Int                @id @default(autoincrement())
+  content     String             @db.Text
+  
+  isApproved  Boolean            @default(false) // Admin approval before showing
+  isActive    Boolean            @default(true) // To hide/show testimonials
+  
+  // User relation - we'll get name, email, and image from here
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }

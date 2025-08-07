@@ -1,10 +1,127 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase } from "lucide-react";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "react-toastify"
+import axios from "axios"
+import Image from "next/image"
+import { useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
+
+interface Testimonial {
+  id: number
+  content: string
+  user: {
+    name: string | null
+    email: string | null
+    image: string | null
+  }
+  createdAt: string
+}
 
 export default function LandingPage() {
+  const { data: session, status } = useSession()
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [newTestimonial, setNewTestimonial] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(true)
+  const [hasMore, setHasMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  // Fetch testimonials
+  useEffect(() => {
+    fetchTestimonials()
+  }, [])
+
+  const fetchTestimonials = async (loadMore = false) => {
+    try {
+      if (loadMore) {
+        setIsLoadingMore(true)
+      } else {
+        setIsLoadingTestimonials(true)
+      }
+
+      const currentPage = loadMore ? page + 1 : 1
+      const { data } = await axios.get('/api/testimonials', {
+        params: { 
+          page: currentPage, 
+          limit: 6 
+        }
+      })
+
+      if (loadMore) {
+        setTestimonials(prev => [...prev, ...data.data])
+        setPage(currentPage)
+      } else {
+        setTestimonials(data.data)
+      }
+      
+      setHasMore(data.pagination.hasMore)
+    } catch (error) {
+      console.error('Error fetching testimonials:', error)
+    } finally {
+      setIsLoadingTestimonials(false)
+      setIsLoadingMore(false)
+    }
+  }
+
+  const handleSubmitTestimonial = async () => {
+    if (!session) {
+      toast.info("Please login first to post your testimonial")
+      signIn() // Redirect to login
+      return
+    }
+
+    if (!newTestimonial.trim()) {
+      toast.error("Please write your testimonial")
+      return
+    }
+
+    if (newTestimonial.length < 10) {
+      toast.error("Testimonial must be at least 10 characters")
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await axios.post('/api/testimonials', {
+        content: newTestimonial
+      })
+      
+      toast.success("Testimonial submitted! It will be visible after approval.")
+      setNewTestimonial("")
+      // Optionally refresh testimonials
+      fetchTestimonials()
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        toast.error("Please login to post a testimonial")
+        signIn()
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error)
+      } else {
+        toast.error("Failed to submit testimonial")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "U"
+    return name
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Hero Section */}
@@ -25,8 +142,6 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/products">
-
-
               <Button size="lg" className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-8 py-6 text-lg">
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -116,8 +231,7 @@ export default function LandingPage() {
               index % 2 === 0 ? "lg:order-1" : ""
             )}>
               <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center">
-                <img alt={section.title} src={section.src} className=" object-cover object-center " />
-
+                <img alt={section.title} src={section.src} className="object-cover object-center" />
               </div>
             </div>
           </section>
@@ -144,7 +258,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
+        {/* Dynamic Testimonials Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Community Says</h2>
@@ -153,24 +267,122 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, i) => (
-              <Card key={i} className="hover:shadow-lg transition-shadow duration-300 h-full">
-                <CardContent className="p-8">
-                  <Quote className="text-emerald-600 w-8 h-8 mb-6 opacity-30" />
-                  <p className="text-lg italic mb-6">"{testimonial.quote}"</p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
-                      {testimonial.author.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{testimonial.author}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    </div>
+          {/* Testimonials Grid */}
+          {isLoadingTestimonials ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+          ) : testimonials.length > 0 ? (
+            <>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                {testimonials.map((testimonial) => (
+                  <Card key={testimonial.id} className="hover:shadow-lg transition-shadow duration-300 h-full">
+                    <CardContent className="p-8">
+                      <Quote className="text-emerald-600 w-8 h-8 mb-6 opacity-30" />
+                      <p className="text-lg italic mb-6">"{testimonial.content}"</p>
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0">
+                          {testimonial.user.image ? (
+                            <Image
+                              src={testimonial.user.image}
+                              alt={testimonial.user.name || "User"}
+                              width={80}
+                              height={80}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+                              {getInitials(testimonial.user.name)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{testimonial.user.name || "Anonymous"}</p>
+                          <p className="text-sm text-muted-foreground truncate">{testimonial.user.email}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => fetchTestimonials(true)}
+                    disabled={isLoadingMore}
+                    variant="outline"
+                    size="lg"
+                    className="gap-2"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        Load More Testimonials
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              No testimonials yet. Be the first to share your experience!
+            </div>
+          )}
+
+          {/* Post Testimonial Form */}
+          <div className="mt-16 max-w-2xl mx-auto">
+            <Card className="border-emerald-200 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100/50">
+                <CardTitle className="text-xl text-center">Share Your Experience</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Tell us about your experience with AnimalWellness..."
+                    value={newTestimonial}
+                    onChange={(e) => setNewTestimonial(e.target.value)}
+                    rows={4}
+                    className="resize-none focus:ring-emerald-500 focus:border-emerald-500"
+                    maxLength={1000}
+                  />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      {newTestimonial.length}/1000 characters
+                    </span>
+                    <Button
+                      onClick={handleSubmitTestimonial}
+                      disabled={isSubmitting || !newTestimonial.trim()}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          {session ? "Post Testimonial" : "Login to Post"}
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  {!session && (
+                    <p className="text-sm text-center text-muted-foreground">
+                      Please <button onClick={() => signIn()} className="text-emerald-600 hover:underline">login</button> to post your testimonial
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -193,12 +405,11 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-
-      {/* <Footer/> */}
     </div>
-  );
+  )
 }
 
+// Keep your existing data arrays
 const features = [
   {
     title: "Veterinary Directory",
@@ -217,7 +428,6 @@ const features = [
     description: "Buy and sell pets and livestock with verified health records and secure payments.",
     icon: <PawPrint className="h-5 w-5" />,
     link: "/sell"
-
   },
   {
     title: "Latest News",
@@ -237,7 +447,7 @@ const features = [
     icon: <Quote className="h-5 w-5" />,
     link: "https://whatsapp.com/channel/0029VaeV6OQ9mrGjhvOQkW2t"
   }
-];
+]
 
 const sections = [
   {
@@ -253,8 +463,7 @@ const sections = [
       "Transparent pricing and reviews",
       "Video consultation options"
     ],
-    src : "/vet.jpg"
-    
+    src: "/vet.jpg"
   },
   {
     title: "Premium Veterinary Products",
@@ -269,7 +478,7 @@ const sections = [
       "Verified product reviews",
       "Fast, reliable delivery"
     ],
-    src : "/products.jpg"
+    src: "/products.jpg"
   },
   {
     title: "Trusted Animal Marketplace",
@@ -284,7 +493,7 @@ const sections = [
       "Adoption and rehoming services",
       "Breeder verification system"
     ],
-    src : "/pets.jpg"
+    src: "/pets.jpg"
   },
   {
     title: "Veterinary Career Advancement",
@@ -299,31 +508,13 @@ const sections = [
       "Continuing education resources",
       "Practice management tools"
     ],
-    src : "/job.jpg"
+    src: "/job.jpg"
   }
-];
-
-const testimonials = [
-  {
-    quote: "As a small animal vet, I've found AnimalWellness invaluable for connecting with clients and staying updated on the latest treatments. The platform has helped grow my practice by 40% in just one year.",
-    author: "Dr. Emily Rodriguez",
-    role: "Veterinarian, Miami FL"
-  },
-  {
-    quote: "When my horse needed emergency care while traveling, AnimalWellness helped me locate a qualified equine vet within minutes. The detailed profiles and reviews gave me confidence in my choice.",
-    author: "Michael Chen",
-    role: "Equestrian, Kentucky"
-  },
-  {
-    quote: "Our animal shelter has placed 3 times more adoptions since listing on AnimalWellness. The verification process ensures our animals go to responsible homes.",
-    author: "Sarah Johnson",
-    role: "Shelter Director, Portland OR"
-  }
-];
+]
 
 const stats = [
   { value: "50K+", label: "Active Users" },
   { value: "8K+", label: "Veterinary Professionals" },
   { value: "15K+", label: "Animals Helped Monthly" },
   { value: "4.9", label: "Average Rating" }
-];
+]

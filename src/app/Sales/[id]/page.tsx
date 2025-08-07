@@ -46,7 +46,7 @@ export async function generateMetadata({
     const data: Partner = await res.json()
 
     // Create a description with key information
-    const location = [data.areaTown, data.cityName, data.state].filter(Boolean).join(', ')
+    const location = [ data.cityName, data.state].filter(Boolean).join(', ')
     const productCount = data.products.length
     const description = `${data.partnerName}${data.shopName ? ` - ${data.shopName}` : ''} | Sales & Marketing Partner at Animal Wellness${location ? ` | ${location}` : ''}${productCount > 0 ? ` | ${productCount} products available` : ''}`
 

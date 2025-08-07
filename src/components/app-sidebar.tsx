@@ -23,6 +23,8 @@ export function AppSidebar() {
   const [openNews, setOpenNews] = useState(false)
   const [openJobApplicants, setOpenJobApplicants] = useState(false)
   const [openPendingAppointments, setOpenPendingAppointments] = useState(false)
+  const [openAnimalSellRequests, setOpenAnimalSellRequests] = useState(false)
+  const [openWebBanner, setOpenWebBanner] = useState(false)
 
   return (
     <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="h-screen border-r dark:bg-zinc-900">
@@ -169,6 +171,39 @@ export function AppSidebar() {
                 {openPendingAppointments && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/pendingAppointments" className="block text-sm text-muted-foreground hover:underline">Pending Appointments</Link>
+                   
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+
+              {/* Animal sell requests */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenAnimalSellRequests(!openAnimalSellRequests)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Animal sell requests</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openAnimalSellRequests && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/viewanimals" className="block text-sm text-muted-foreground hover:underline">view requests</Link>
+                   
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+
+              {/* Web banner */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenWebBanner(!openWebBanner)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Web Banner</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openWebBanner && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/addwebbanner" className="block text-sm text-muted-foreground hover:underline">Add Web Banner</Link>
+                    <Link href="/dashboard/viewwebbanner" className="block text-sm text-muted-foreground hover:underline">view Web Banner</Link>
                    
                   </div>
                 )}

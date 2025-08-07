@@ -1,29 +1,19 @@
-'use client'
+'use client' 
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { CartItem } from '../../../types/cart'
 import { AnimalCartItem } from '../../../types/animal'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
-import axios from 'axios'
-import { ComboboxSelect } from '@/components/shared/ComboboxSelect'
 
 interface CheckoutProps {
     cartItems: CartItem[]
     animalCartItems: AnimalCartItem[]
 }
 
-interface DeliveryCharge {
-    id: number
-    amount: number
-    cityId: number
-    city: {
-        id: number
-        name: string
-    }
-}
+const FIXED_DELIVERY_CHARGE = 350;
 
 export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutProps) {
     const { data: session } = useSession()
@@ -38,72 +28,32 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     const [showFullTerms, setShowFullTerms] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    // New states for delivery charges
-    const [selectedCityId, setSelectedCityId] = useState<string>('')
-    const [deliveryCharges, setDeliveryCharges] = useState<DeliveryCharge[]>([])
-    const [currentShippingCharge, setCurrentShippingCharge] = useState(0)
-    const [cityOptions, setCityOptions] = useState<{ id: number; label: string }[]>([])
-
-    // Fetch delivery charges and cities on component mount
-    useEffect(() => {
-        fetchDeliveryCharges()
-    }, [])
-
-    // Update shipping charge when city is selected
-    useEffect(() => {
-        if (selectedCityId) {
-            const charge = deliveryCharges.find(dc => dc.cityId === parseInt(selectedCityId))
-            setCurrentShippingCharge(charge ? charge.amount : 0)
-        } else {
-            setCurrentShippingCharge(0)
-        }
-    }, [selectedCityId, deliveryCharges])
-
-    const fetchDeliveryCharges = async () => {
-        try {
-            const res = await axios.get('/api/delivery-charges', {
-                params: { limit: 100 } // Get all delivery charges
-            })
-            setDeliveryCharges(res.data.data)
-            
-            // Create city options for combobox
-            const options = res.data.data.map((dc: DeliveryCharge) => ({
-                id: dc.cityId,
-                label: dc.city.name
-            }))
-            setCityOptions(options)
-        } catch (error) {
-            console.error('Error fetching delivery charges:', error)
-        }
-    }
+    // City state - now just a simple string input
+    const [city, setCity] = useState('')
 
     // Calculate subtotal
     const subtotal =
         cartItems.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0) +
         animalCartItems.reduce((sum, item) => sum + item.quantity * item.animal.totalPrice, 0)
 
-    // Calculate total with shipping
-    const total = subtotal + currentShippingCharge
+    // Calculate total with fixed shipping charge
+    const total = subtotal + FIXED_DELIVERY_CHARGE
 
     const handleSubmit = async () => {
         if (!termsAccepted || !paymentMethod) {
             return alert('Please accept terms and select payment method.')
         }
-        if (!selectedCityId) {
-            return alert('Please select a city for delivery.')
+        if (!city.trim()) {
+            return alert('Please enter your city.')
         }
 
         setLoading(true)
-
-        // Get city name from selected city
-        const selectedCity = cityOptions.find(opt => String(opt.id) === selectedCityId)?.label || ''
 
         const res = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                city: selectedCity,
-                cityId: parseInt(selectedCityId),
+                city: city.trim(),
                 province,
                 address,
                 shippingAddress,
@@ -111,7 +61,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 cart: cartItems,
                 animalCart: animalCartItems,
                 subtotal,
-                shippingCharges: currentShippingCharge,
+                shippingCharges: FIXED_DELIVERY_CHARGE,
                 total,
             }),
         })
@@ -148,20 +98,20 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                     className="w-full border p-2 rounded" 
                 />
 
-                {/* City selection with Combobox */}
+                {/* City input - now manual text input */}
                 <div className="space-y-2">
                     <label className="text-sm font-medium">City *</label>
-                    <ComboboxSelect
-                        options={cityOptions}
-                        value={selectedCityId}
-                        onChange={(value) => setSelectedCityId(value)}
-                        placeholder="Select city for delivery"
+                    <input 
+                        type="text" 
+                        placeholder="Enter your city" 
+                        value={city} 
+                        onChange={e => setCity(e.target.value)} 
+                        className="w-full border p-2 rounded" 
+                        required
                     />
-                    {selectedCityId && currentShippingCharge > 0 && (
-                        <p className="text-sm text-gray-600">
-                            Delivery charges: <span className="font-semibold text-green-500">PKR {currentShippingCharge.toFixed(2)}</span>
-                        </p>
-                    )}
+                    <p className="text-sm text-gray-600">
+                        Delivery charges: <span className="font-semibold text-green-500">PKR {FIXED_DELIVERY_CHARGE.toFixed(2)}</span>
+                    </p>
                 </div>
 
                 <SuggestiveInput
@@ -216,14 +166,12 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                                 <td colSpan={2} className="text-right p-2">Subtotal:</td>
                                 <td className="text-right p-2">PKR {subtotal.toFixed(2)}</td>
                             </tr>
-                            {currentShippingCharge > 0 && (
-                                <tr>
-                                    <td colSpan={2} className="text-right p-2">
-                                        Shipping to {cityOptions.find(opt => String(opt.id) === selectedCityId)?.label}:
-                                    </td>
-                                    <td className="text-right p-2">PKR {currentShippingCharge.toFixed(2)}</td>
-                                </tr>
-                            )}
+                            <tr>
+                                <td colSpan={2} className="text-right p-2">
+                                    Delivery Charges:
+                                </td>
+                                <td className="text-right p-2">PKR {FIXED_DELIVERY_CHARGE.toFixed(2)}</td>
+                            </tr>
                             <tr className="font-bold bg-gray-50">
                                 <td colSpan={2} className="text-right p-2">Total:</td>
                                 <td className="text-right p-2 text-green-500">PKR {total.toFixed(2)}</td>
@@ -238,7 +186,8 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                         {[
                             'Jazz cash 0300-8424741 Muhammad Fiaz Qamar', 
                             'Easypaisa 03354145431 Ghazala Yasmeen', 
-                            'Bank Transfer: Account Title ZAIDIS INTERNATIONAL Account Number  01531002450497 IBAN PK82ALFH0153001002450497 Swift code ALFHPKKAXXX Branch Name Chauburji Branch, Lahore  Branch Code 0153 Bank Name Bank Alfalah'
+                            'CASH ON DELIVERY(COD)', 
+                            'Bank Alfalah: ZAIDIS INTERNATIONAL: 01531002450497: IBAN PK82ALFH0153001002450497 Swift code ALFHPKKAXXX Chauburji Branch, Lahore Branch Code 0153'
                         ].map(method => (
                             <label key={method} className="flex items-center gap-2">
                                 <input
@@ -287,7 +236,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 <Button 
                     type="button" 
                     className="bg-green-500 text-white mt-4" 
-                    disabled={loading || !selectedCityId} 
+                    disabled={loading || !city.trim()} 
                     onClick={handleSubmit}
                 >
                     {loading ? 'Placing Order...' : 'Place Order'}
