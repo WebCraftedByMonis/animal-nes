@@ -48,7 +48,7 @@ const components: { title: string; href: string; description: string }[] = [
   },
   {
     title: "Quick Job Post",
-    href: "/traditionaljobpost",
+    href: "/traditionaljobposts",
     description:
       "A quick hiring job post.",
   },
