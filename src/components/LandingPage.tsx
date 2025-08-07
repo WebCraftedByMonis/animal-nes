@@ -49,9 +49,9 @@ export default function LandingPage() {
 
       const currentPage = loadMore ? page + 1 : 1
       const { data } = await axios.get('/api/testimonials', {
-        params: { 
-          page: currentPage, 
-          limit: 6 
+        params: {
+          page: currentPage,
+          limit: 6
         }
       })
 
@@ -61,7 +61,7 @@ export default function LandingPage() {
       } else {
         setTestimonials(data.data)
       }
-      
+
       setHasMore(data.pagination.hasMore)
     } catch (error) {
       console.error('Error fetching testimonials:', error)
@@ -93,7 +93,7 @@ export default function LandingPage() {
       await axios.post('/api/testimonials', {
         content: newTestimonial
       })
-      
+
       toast.success("Testimonial submitted! It will be visible after approval.")
       setNewTestimonial("")
       // Optionally refresh testimonials
@@ -279,15 +279,19 @@ export default function LandingPage() {
                   <Card key={testimonial.id} className="hover:shadow-lg transition-shadow duration-300 h-full">
                     <CardContent className="p-8">
                       <Quote className="text-emerald-600 w-8 h-8 mb-6 opacity-30" />
-                      <p className="text-lg italic mb-6">"{testimonial.content}"</p>
+                      <p className="text-lg italic mb-6 text-justify">
+                        "{testimonial.content}"
+                      </p>
+                      <Quote className="text-emerald-600 w-8 h-8 mb-6 opacity-30" />
+
                       <div className="flex items-center gap-4">
                         <div className="flex-shrink-0">
                           {testimonial.user.image ? (
                             <Image
                               src={testimonial.user.image}
                               alt={testimonial.user.name || "User"}
-                              width={80}
-                              height={80}
+                              width={50}
+                              height={50}
                               className="rounded-full"
                             />
                           ) : (

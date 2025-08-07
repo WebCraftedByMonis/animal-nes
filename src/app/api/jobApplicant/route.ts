@@ -162,25 +162,35 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search') || ''
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const limit = parseInt(searchParams.get('limit') || '10', 10)
-    const skip = (page - 1) * limit
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get('search') || '';
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '10', 10);
+  const declaration = searchParams.get('declaration'); // e.g. 'AGREED' or undefined
+  const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
-        prisma.jobApplicant.findMany({
-            where: { name: { contains: search } },
-            include: { image: true, cv: true },
-            skip,
-            take: limit,
-        }),
-        prisma.jobApplicant.count({
-            where: { name: { contains: search } },
-        }),
-    ])
+  const whereClause: any = {
+    name: { contains: search },
+  };
 
-    return NextResponse.json({ data, total, page }, { status: 200 })
+  // ✅ Only filter by declaration if provided
+  if (declaration) {
+    whereClause.declaration = declaration;
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.jobApplicant.findMany({
+      where: whereClause,
+      include: { image: true, cv: true },
+      skip,
+      take: limit,
+    }),
+    prisma.jobApplicant.count({
+      where: whereClause,
+    }),
+  ]);
+
+  return NextResponse.json({ data, total, page }, { status: 200 });
 }
 
 export async function PUT(request: NextRequest) {

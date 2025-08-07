@@ -40,18 +40,18 @@ const components: { title: string; href: string; description: string }[] = [
     description: "For sighted users to preview new job listings.",
   },
  
-  // {
-  //   title: "Tabs",
-  //   href: "/docs/primitives/tabs",
-  //   description:
-  //     "A set of layered sections of content—known as tab panels—that are displayed one at a time.",
-  // },
-  // {
-  //   title: "Tooltip",
-  //   href: "/docs/primitives/tooltip",
-  //   description:
-  //     "A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.",
-  // },
+  {
+    title: "Quick Job Post Form",
+    href: "/quickjobform",
+    description:
+      "Share a quick job post to hire emplyoee you want.",
+  },
+  {
+    title: "Quick Job Post",
+    href: "/traditionaljobpost",
+    description:
+      "A quick hiring job post.",
+  },
 ]
 
 export function NavigationMenuDemo() {

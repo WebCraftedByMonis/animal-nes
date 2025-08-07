@@ -67,7 +67,7 @@ export default function NewsListPage() {
                 alt={item.image.alt}
                 width={400}
                 height={600}
-                className="w-full h-96 object-fit" // 96 = ~384px, adjusts height for portrait view
+                className="w-full h-96 object-fit" 
               />
             )}
 

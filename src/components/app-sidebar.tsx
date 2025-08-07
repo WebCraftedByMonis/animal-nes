@@ -25,12 +25,14 @@ export function AppSidebar() {
   const [openPendingAppointments, setOpenPendingAppointments] = useState(false)
   const [openAnimalSellRequests, setOpenAnimalSellRequests] = useState(false)
   const [openWebBanner, setOpenWebBanner] = useState(false)
+  const [openTestomonials, setOpenTestomonials] = useState(false)
+  const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
 
   return (
     <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="h-screen border-r dark:bg-zinc-900">
       <SidebarContent>
         <div className="flex items-center  gap-3 p-4">
-          <Image src="/logo-removebg-preview.png" alt="Logo" width={40} height={40} />
+          <Image src="/logo.jpg" alt="Logo" width={40} height={40} />
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-green-500">Admin</h1>
           </div>
@@ -182,7 +184,7 @@ export function AppSidebar() {
                 <SidebarMenuButton onClick={() => setOpenAnimalSellRequests(!openAnimalSellRequests)}>
                   <ShoppingCart className="w-4 h-4" />
                   <span className="hover:text-green-500">Animal sell requests</span>
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openAnimalSellRequests ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openAnimalSellRequests && (
                   <div className="ml-6 mt-2 space-y-1">
@@ -198,7 +200,7 @@ export function AppSidebar() {
                 <SidebarMenuButton onClick={() => setOpenWebBanner(!openWebBanner)}>
                   <ShoppingCart className="w-4 h-4" />
                   <span className="hover:text-green-500">Web Banner</span>
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openWebBanner ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openWebBanner && (
                   <div className="ml-6 mt-2 space-y-1">
@@ -208,6 +210,42 @@ export function AppSidebar() {
                   </div>
                 )}
               </SidebarMenuItem>
+
+
+              {/* Testomonials */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenTestomonials(!openTestomonials)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Testomonials</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openTestomonials ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openTestomonials && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/viewtestomonials" className="block text-sm text-muted-foreground hover:underline">Manage Testomonials</Link>
+                   
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+
+
+              {/* Traditional job  */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenTraditionaljob(!openTraditionaljob)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span className="hover:text-green-500">Traditional job post</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openTraditionaljob ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openTraditionaljob && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/addtraditionaljob" className="block text-sm text-muted-foreground hover:underline">Add Traditional job</Link>
+                    <Link href="/dashboard/viewtraditionaljob" className="block text-sm text-muted-foreground hover:underline">view traditional</Link>
+                   
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

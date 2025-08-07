@@ -588,3 +588,23 @@ model Testimonial {
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 }
+
+model TraditionalJobPost {
+  id          Int                        @id @default(autoincrement())
+  title       String                     @db.Text
+  description String                     @db.Text
+  image       TraditionalJobPostImage?
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+}
+
+model TraditionalJobPostImage {
+  id        Int                  @id @default(autoincrement())
+  url       String               @db.Text
+  alt       String               @unique
+  publicId  String?              @unique
+  jobPost   TraditionalJobPost   @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  jobPostId Int                  @unique
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}

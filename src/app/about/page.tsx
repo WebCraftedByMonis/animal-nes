@@ -14,7 +14,7 @@ export default function About() {
         {/* Image first on small/medium, side on large screens */}
         <section className="w-full lg:w-1/3 flex justify-center">
           <Image
-            src="/logo-removebg-preview.png"
+            src="/logo.jpg"
             alt="logo"
             width={400}
             height={400}
