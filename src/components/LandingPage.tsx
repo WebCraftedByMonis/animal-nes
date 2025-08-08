@@ -51,7 +51,7 @@ export default function LandingPage() {
       const { data } = await axios.get('/api/testimonials', {
         params: {
           page: currentPage,
-          limit: 6
+          limit: 3
         }
       })
 
@@ -130,13 +130,14 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[url('/pattern.svg')] bg-[length:100px_100px]"></div>
         </div>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-emerald-900/30 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-emerald-400/20">
+          {/* <div className="inline-flex items-center gap-2 bg-emerald-900/30 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-emerald-400/20">
             <PawPrint className="h-5 w-5" />
             <span className="text-sm font-medium">Trusted by 50,000+ animal lovers</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-emerald-100">
+          </div> */}
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-emerald-100">
             AnimalWellness
           </h1>
+
           <p className="text-xl md:text-2xl mt-6 max-w-3xl mx-auto font-medium text-emerald-100">
             The all-in-one platform revolutionizing animal care, commerce, and veterinary careers
           </p>
@@ -238,7 +239,7 @@ export default function LandingPage() {
         ))}
 
         {/* Stats Section */}
-        <section className="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white py-20 px-6">
+        {/* <section className="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white py-20 px-6">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by the Animal Community</h2>
@@ -256,7 +257,7 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Dynamic Testimonials Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -274,15 +275,18 @@ export default function LandingPage() {
             </div>
           ) : testimonials.length > 0 ? (
             <>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 px-4">
                 {testimonials.map((testimonial) => (
-                  <Card key={testimonial.id} className="hover:shadow-lg transition-shadow duration-300 h-full">
-                    <CardContent className="p-8">
-                      <Quote className="text-emerald-600 w-8 h-8 mb-6 opacity-30" />
-                      <p className="text-lg italic mb-6 text-justify">
+                  <Card
+                    key={testimonial.id}
+                    className="hover:shadow-lg transition-shadow duration-300 h-full flex flex-col justify-between"
+                  >
+                    <CardContent className="p-4 sm:p-6">
+                      <Quote className="text-emerald-600 w-8 h-8 mb-4 opacity-30" />
+                      <p className="text-base sm:text-lg italic mb-4 text-center sm:text-justify break-words">
                         "{testimonial.content}"
                       </p>
-                      <Quote className="text-emerald-600 w-8 h-8 mb-6 opacity-30" />
+                      <Quote className="text-emerald-600 w-8 h-8 mb-4 opacity-30 mx-auto sm:mx-0" />
 
                       <div className="flex items-center gap-4">
                         <div className="flex-shrink-0">
@@ -301,14 +305,15 @@ export default function LandingPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold truncate">{testimonial.user.name || "Anonymous"}</p>
-                          <p className="text-sm text-muted-foreground truncate">{testimonial.user.email}</p>
+                          <p className="font-semibold break-words">{testimonial.user.name || "Anonymous"}</p>
+                          <p className="text-sm text-muted-foreground break-words">{testimonial.user.email}</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
+
 
               {/* Load More Button */}
               {hasMore && (
@@ -355,11 +360,11 @@ export default function LandingPage() {
                     onChange={(e) => setNewTestimonial(e.target.value)}
                     rows={4}
                     className="resize-none focus:ring-emerald-500 focus:border-emerald-500"
-                    maxLength={1000}
+                    maxLength={275}
                   />
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
-                      {newTestimonial.length}/1000 characters
+                      {newTestimonial.length}/275 characters
                     </span>
                     <Button
                       onClick={handleSubmitTestimonial}
@@ -419,7 +424,7 @@ const features = [
     title: "Veterinary Directory",
     description: "Find trusted veterinarians near you with verified reviews and 24/7 emergency options.",
     icon: <ShieldCheck className="h-5 w-5" />,
-    link: "findDoctor"
+    link: "/Veternarians"
   },
   {
     title: "Premium Products",
@@ -431,7 +436,7 @@ const features = [
     title: "Animal Marketplace",
     description: "Buy and sell pets and livestock with verified health records and secure payments.",
     icon: <PawPrint className="h-5 w-5" />,
-    link: "/sell"
+    link: "/buy"
   },
   {
     title: "Latest News",
@@ -443,7 +448,7 @@ const features = [
     title: "Career Hub",
     description: "Find your dream veterinary job or qualified professionals for your practice.",
     icon: <Briefcase className="h-5 w-5" />,
-    link: "/jobApplicantForm"
+    link: "/jobvacancy"
   },
   {
     title: "Community Support",
@@ -460,7 +465,7 @@ const sections = [
     category: "Veterinary Services",
     icon: <ShieldCheck className="h-4 w-4" />,
     cta: "Search Vets",
-    link: "/findDoctor",
+    link: "/Veternarians",
     bullets: [
       "Emergency vet services available 24/7",
       "Verified credentials and specialties",
@@ -505,7 +510,7 @@ const sections = [
     category: "Professional Network",
     icon: <Briefcase className="h-4 w-4" />,
     cta: "View Jobs",
-    link: "/jobApplicantForm",
+    link: "/traditionaljobposts",
     bullets: [
       "Exclusive job listings",
       "Resume and profile builder",

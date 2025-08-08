@@ -10,10 +10,8 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-
   const { 
     city, 
-    cityId,
     province, 
     address, 
     shippingAddress, 
@@ -26,44 +24,25 @@ export async function POST(req: NextRequest) {
   } = body
 
   try {
-    // Validate that shipping charges match the selected city
-    let validatedShippingCharge = 0
-    if (cityId) {
-      const deliveryCharge = await prisma.deliveryCharge.findFirst({
-        where: { cityId: cityId }
-      })
-      
-      if (deliveryCharge) {
-        validatedShippingCharge = deliveryCharge.amount
-        
-        // Verify the shipping charge matches what was sent from frontend
-        if (Math.abs(validatedShippingCharge - shippingCharges) > 0.01) {
-          return NextResponse.json({ 
-            error: 'Invalid shipping charges. Please refresh and try again.' 
-          }, { status: 400 })
-        }
-      } else if (shippingCharges > 0) {
-        // If no delivery charge found but frontend sent charges, something's wrong
-        return NextResponse.json({ 
-          error: 'Invalid shipping charges for selected city.' 
-        }, { status: 400 })
-      }
-    }
+    // ✅ Always use the fixed shipping charge from frontend (e.g., 350)
+    const validatedShippingCharge = shippingCharges
 
-    // Recalculate total on server side for security
+    // ✅ Recalculate subtotal server-side
     const calculatedSubtotal = 
       cart.reduce((sum: number, item: any) => sum + (item.quantity * item.variant.customerPrice), 0) +
       animalCart.reduce((sum: number, item: any) => sum + (item.quantity * item.animal.totalPrice), 0)
-    
+
+    // ✅ Recalculate total
     const calculatedTotal = calculatedSubtotal + validatedShippingCharge
 
-    // Verify the total matches (allowing small floating point differences)
+    // ✅ Verify total matches (with float tolerance)
     if (Math.abs(calculatedTotal - total) > 0.01) {
       return NextResponse.json({ 
         error: 'Total mismatch. Please refresh and try again.' 
       }, { status: 400 })
     }
 
+    // ✅ Create order
     const order = await prisma.checkout.create({
       data: {
         user: { connect: { email: session.user.email } },
@@ -72,7 +51,7 @@ export async function POST(req: NextRequest) {
         address,
         shippingAddress,
         paymentMethod,
-        shipmentcharges: validatedShippingCharge.toString(), // Store as string in shipmentcharges field
+        shipmentcharges: validatedShippingCharge.toString(),
         total: calculatedTotal,
         status: 'pending',
         items: {
@@ -85,27 +64,23 @@ export async function POST(req: NextRequest) {
                   quantity: item.quantity,
                   price: item.variant.customerPrice,
                 }
-              } else {
-                throw new Error('Unknown item type in cart');
               }
+              throw new Error('Unknown item type in cart')
             }),
-            ...animalCart.map((item: any) => {
-              return {
-                animal: { connect: { id: item.animal.id } },
-                quantity: item.quantity,
-                price: item.animal.totalPrice,
-              }
-            })
+            ...animalCart.map((item: any) => ({
+              animal: { connect: { id: item.animal.id } },
+              quantity: item.quantity,
+              price: item.animal.totalPrice,
+            }))
           ]
         }
       }
     })
 
-    // Clear both product and animal cart items
+    // ✅ Clear both product and animal cart items
     await prisma.cartItem.deleteMany({
       where: { user: { email: session.user.email } },
     })
-
     await prisma.animalCart.deleteMany({
       where: { user: { email: session.user.email } },
     })

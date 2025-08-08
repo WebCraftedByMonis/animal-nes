@@ -62,9 +62,9 @@ const salesMarketingSpecializations = [
 ];
 
 const formSchema = z.object({
-  partnerName: z.string().min(1),
+  partnerName: z.string().min(1, "Partner name is required"),
   gender: z.enum(genderOptions).optional(),
-  partnerEmail: z.string().email().optional(),
+  partnerEmail: z.string().min(1, "Email is required").email("Please enter a valid email address"), // Made required
   partnerMobileNumber: z.string().optional(),
   shopName: z.string().optional(),
   cityName: z.string().optional(),
@@ -77,13 +77,13 @@ const formSchema = z.object({
   areaTown: z.string().optional(),
   password: z.string().min(6, { message: "Password must be at least 6 characters long" }),
   bloodGroup: z.enum(bloodGroupOptions).optional(),
-  availableDays: z.array(z.enum(dayOptions)).min(1),
+  availableDays: z.array(z.enum(dayOptions)).min(1, "Please select at least one available day"),
   startTimeIds: z.array(z.number()).optional(),
   specialization: z.string().optional(),
   species: z.string().optional(),
   partnerType: z.string().optional(),
   productIds: z.array(z.number()).optional(),
-  image: z.string().min(1),
+  image: z.string().min(1, "Image is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -99,6 +99,8 @@ export default function AddPartnerPage() {
     setValue,
     watch,
     reset,
+    setError,
+    clearErrors,
     formState: { errors }
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -157,6 +159,36 @@ export default function AddPartnerPage() {
     reader.readAsDataURL(acceptedFiles[0]);
   };
 
+  // Helper function to reset form completely
+  const resetFormCompletely = () => {
+    reset({
+      partnerName: '',
+      gender: undefined,
+      partnerEmail: '',
+      partnerMobileNumber: '',
+      shopName: '',
+      cityName: '',
+      fullAddress: '',
+      rvmpNumber: '',
+      sendToPartner: undefined,
+      qualificationDegree: '',
+      zipcode: '',
+      state: '',
+      areaTown: '',
+      password: '',
+      bloodGroup: undefined,
+      availableDays: [],
+      startTimeIds: [],
+      specialization: '',
+      species: '',
+      partnerType: undefined,
+      productIds: [],
+      image: '',
+    });
+    setUploadedImage('');
+    clearErrors();
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
@@ -168,39 +200,40 @@ export default function AddPartnerPage() {
 
       if (res.ok) {
         toast.success('Partner created successfully!');
-        reset({
-          partnerName: '',
-          gender: undefined,
-          partnerEmail: '',
-          partnerMobileNumber: '',
-          shopName: '',
-          cityName: '',
-          fullAddress: '',
-          rvmpNumber: '',
-          sendToPartner: undefined,
-          qualificationDegree: '',
-          zipcode: '',
-          state: '',
-          areaTown: '',
-          password: '',
-          bloodGroup: undefined,
-          availableDays: [],
-          startTimeIds: [],
-          specialization: '',
-          species: '',
-          partnerType: undefined,
-          productIds: [],
-          image: '',
-        });
-        setUploadedImage('');
+        resetFormCompletely(); // Reset form after successful submission
       } else {
         const result = await res.json();
-        toast.error(result?.message || 'Something went wrong.');
+        
+        // Handle duplicate email error specifically
+        if (res.status === 409 || (result.error && result.error.toLowerCase().includes('email already exists'))) {
+          setError('partnerEmail', {
+            type: 'manual',
+            message: 'This email is already registered'
+          });
+          toast.error('Email already exists. Please use a different email address.');
+        } 
+        // Handle other validation errors
+        else if (result.errors && Array.isArray(result.errors)) {
+          result.errors.forEach((error: any) => {
+            if (error.path && error.path.length > 0) {
+              setError(error.path[0], {
+                type: 'manual',
+                message: error.message
+              });
+            }
+          });
+          toast.error('Please fix the form errors and try again.');
+        }
+        // Handle generic errors
+        else {
+          toast.error(result?.message || result?.error || 'Something went wrong.');
+        }
       }
-      setIsSubmitting(false);
     } catch (error) {
-      console.log(error)
+      console.log(error);
       toast.error('Network error or server down.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -212,25 +245,28 @@ export default function AddPartnerPage() {
           <div>
             <Label htmlFor="partnerName">Partner Name*</Label>
             <Input id="partnerName" {...register('partnerName')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.partnerName && <p className="text-red-500 text-sm">{errors.partnerName.message}</p>}
           </div>
 
           <div>
-            <Label htmlFor="partnerEmail">Email</Label>
+            <Label htmlFor="partnerEmail">Email*</Label>
             <Input id="partnerEmail" {...register('partnerEmail')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.partnerEmail && <p className="text-red-500 text-sm">{errors.partnerEmail.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="partnerMobileNumber">Mobile Number</Label>
             <Input id="partnerMobileNumber" {...register('partnerMobileNumber')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.partnerMobileNumber && <p className="text-red-500 text-sm">{errors.partnerMobileNumber.message}</p>}
           </div>
 
           <div>
-            <Label htmlFor="gender">Gender </Label>
+            <Label htmlFor="gender">Gender</Label>
             <Controller
               control={control}
               name="gender"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
@@ -242,6 +278,7 @@ export default function AddPartnerPage() {
                 </Select>
               )}
             />
+            {errors.gender && <p className="text-red-500 text-sm">{errors.gender.message}</p>}
           </div>
 
           <div>
@@ -256,7 +293,7 @@ export default function AddPartnerPage() {
               control={control}
               name="partnerType"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
                     <SelectValue placeholder="Select partner type" />
                   </SelectTrigger>
@@ -268,11 +305,13 @@ export default function AddPartnerPage() {
                 </Select>
               )}
             />
+            {errors.partnerType && <p className="text-red-500 text-sm">{errors.partnerType.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="shopName">Shop Name</Label>
             <Input id="shopName" {...register('shopName')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.shopName && <p className="text-red-500 text-sm">{errors.shopName.message}</p>}
           </div>
 
           {/* Specialization field with conditional autocomplete */}
@@ -298,51 +337,62 @@ export default function AddPartnerPage() {
                 disabled
               />
             )}
+            {errors.specialization && <p className="text-red-500 text-sm">{errors.specialization.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="cityName">City</Label>
             <Input id="cityName" {...register('cityName')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.cityName && <p className="text-red-500 text-sm">{errors.cityName.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="zipcode">Zipcode</Label>
             <Input id="zipcode" {...register('zipcode')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.zipcode && <p className="text-red-500 text-sm">{errors.zipcode.message}</p>}
           </div>
 
-          <SuggestiveInput
-            suggestions={[
-              "Punjab",
-              "Sindh",
-              "Balochistan",
-              "Khyber Pakhtunkhwa",
-              "Gilgit Baltistan",
-              "Kashmir",
-              "Islamabad",
-            ]}
-            value={watch('state') || ""}
-            onChange={(v) => setValue('state', v)}
-            placeholder="Enter state"
-          />
+          <div>
+            <Label>State</Label>
+            <SuggestiveInput
+              suggestions={[
+                "Punjab",
+                "Sindh",
+                "Balochistan",
+                "Khyber Pakhtunkhwa",
+                "Gilgit Baltistan",
+                "Kashmir",
+                "Islamabad",
+              ]}
+              value={watch('state') || ""}
+              onChange={(v) => setValue('state', v)}
+              placeholder="Enter state"
+            />
+            {errors.state && <p className="text-red-500 text-sm">{errors.state.message}</p>}
+          </div>
 
           <div>
             <Label htmlFor="areaTown">Date of Birth</Label>
             <Input id="areaTown" {...register('areaTown')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.areaTown && <p className="text-red-500 text-sm">{errors.areaTown.message}</p>}
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <Label htmlFor="fullAddress">Full Address/ Map Link</Label>
             <Textarea id="fullAddress" {...register('fullAddress')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.fullAddress && <p className="text-red-500 text-sm">{errors.fullAddress.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="rvmpNumber">RVMP Number/ License Number</Label>
             <Input id="rvmpNumber" {...register('rvmpNumber')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.rvmpNumber && <p className="text-red-500 text-sm">{errors.rvmpNumber.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="qualificationDegree">Qualification Degree</Label>
             <Input id="qualificationDegree" {...register('qualificationDegree')} className="focus:border-green-500 focus:ring-green-500" />
+            {errors.qualificationDegree && <p className="text-red-500 text-sm">{errors.qualificationDegree.message}</p>}
           </div>
 
           <div>
@@ -351,7 +401,7 @@ export default function AddPartnerPage() {
               control={control}
               name="bloodGroup"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
@@ -363,6 +413,7 @@ export default function AddPartnerPage() {
                 </Select>
               )}
             />
+            {errors.bloodGroup && <p className="text-red-500 text-sm">{errors.bloodGroup.message}</p>}
           </div>
 
           <div>
@@ -371,7 +422,7 @@ export default function AddPartnerPage() {
               control={control}
               name="sendToPartner"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
                     <SelectValue placeholder="Send to partner?" />
                   </SelectTrigger>
@@ -383,6 +434,7 @@ export default function AddPartnerPage() {
                 </Select>
               )}
             />
+            {errors.sendToPartner && <p className="text-red-500 text-sm">{errors.sendToPartner.message}</p>}
           </div>
         </div>
 
@@ -405,6 +457,7 @@ export default function AddPartnerPage() {
               </label>
             ))}
           </div>
+          {errors.availableDays && <p className="text-red-500 text-sm">{errors.availableDays.message}</p>}
         </div>
 
         <div>
@@ -421,6 +474,7 @@ export default function AddPartnerPage() {
               </div>
             )}
           </Dropzone>
+          {errors.image && <p className="text-red-500 text-sm">{errors.image.message}</p>}
         </div>
 
         <Input type="hidden" {...register('image')} />

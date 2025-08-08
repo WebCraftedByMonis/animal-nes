@@ -60,31 +60,42 @@ async function uploadToCloudinary(file: File, folder: string): Promise<Cloudinar
 
 
 export async function POST(request: NextRequest) {
+    console.log('POST /applicant - received request')
     try {
         const session = await getServerSession(authOptions)
+        console.log('Session fetched:', session ? { userEmail: session.user?.email, userId: session.user?.id } : null)
+
         if (!session?.user?.email) {
+            console.log('Unauthorized: no session or user email')
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-
-
-
         const formData = await request.formData()
-        const fields = Object.fromEntries(formData.entries())
-        const parsed = jobApplicantSchema.safeParse(fields)
+        console.log('Form data keys:', Array.from(formData.keys()))
 
+        const fields = Object.fromEntries(formData.entries())
+        // Note: formData.entries() will include files as well — stringify safely
+        console.log('Fields (raw):', Object.keys(fields))
+
+        const parsed = jobApplicantSchema.safeParse(fields)
+        console.log('Validation result:', parsed.success ? 'success' : 'failure')
         if (!parsed.success) {
+            console.log('Validation errors:', parsed.error.errors)
             return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
         }
 
         const image = formData.get('image')
         const cv = formData.get('cv')
+        console.log('Received image:', image instanceof File ? { name: image.name, size: image.size, type: image.type } : image)
+        console.log('Received cv:', cv instanceof File ? { name: cv.name, size: cv.size, type: cv.type } : cv)
 
         let imageData = null
         let cvData = null
 
         if (image instanceof File) {
+            console.log('Uploading image to Cloudinary:', image.name)
             const result = await uploadToCloudinary(image, 'applicants/images')
+            console.log('Cloudinary image result:', result)
             imageData = await prisma.applicantImage.create({
                 data: {
                     url: result.secure_url,
@@ -92,10 +103,13 @@ export async function POST(request: NextRequest) {
                     alt: parsed.data.name,
                 },
             })
+            console.log('Created applicantImage record id:', imageData.id)
         }
 
         if (cv instanceof File) {
+            console.log('Uploading CV to Cloudinary:', cv.name)
             const result = await uploadToCloudinary(cv, 'applicants/cvs')
+            console.log('Cloudinary cv result:', result)
             cvData = await prisma.applicantCV.create({
                 data: {
                     url: result.secure_url,
@@ -103,35 +117,44 @@ export async function POST(request: NextRequest) {
                     alt: parsed.data.name,
                 },
             })
+            console.log('Created applicantCV record id:', cvData.id)
         }
 
+        console.log('Looking up user by email:', session.user.email)
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
         })
 
         if (!user) {
+            console.log('User not found for email:', session.user.email)
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
+        console.log('User found:', { id: user.id, email: user.email })
+
+        const applicantPayload = {
+            ...parsed.data,
+            imageId: imageData?.id ?? null,
+            cvId: cvData?.id ?? null,
+            userId: user.id,
+        }
+        console.log('Creating jobApplicant with payload keys:', Object.keys(applicantPayload))
 
         const applicant = await prisma.jobApplicant.create({
-            data: {
-                ...parsed.data,
-                imageId: imageData?.id ?? null,
-                cvId: cvData?.id ?? null,
-                userId: user.id,
-
-
-            },
+            data: applicantPayload,
         })
 
-
+        console.log('Applicant created:', { id: applicant.id })
         return NextResponse.json(applicant, { status: 201 })
     } catch (err) {
         console.error('Create error:', err)
+        // If err has .message and .stack, log them for better debugging
+        if (err instanceof Error) {
+            console.error('Error message:', err.message)
+            console.error('Error stack:', err.stack)
+        }
         return NextResponse.json({ error: 'Failed to create applicant' }, { status: 500 })
     }
 }
-
 export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
@@ -194,96 +217,145 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-    try {
-        const formData = await request.formData()
-        const id = formData.get('id');
-        if (typeof id !== 'string') {
-            return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
-        }
+  try {
+    const formData = await request.formData()
 
-
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
-
-        const fields = Object.fromEntries(formData.entries())
-        const parsed = updateApplicantSchema.safeParse(fields)
-
-        if (!parsed.success) {
-            return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
-        }
-
-        const applicantId = parseInt(id)
-        const existingApplicant = await prisma.jobApplicant.findUnique({
-            where: { id: applicantId },
-            include: { image: true, cv: true },
-        })
-
-        if (!existingApplicant) {
-            return NextResponse.json({ error: 'Applicant not found' }, { status: 404 })
-        }
-
-        const image = formData.get('image')
-        const cv = formData.get('cv')
-
-        if (image instanceof File) {
-            if (existingApplicant.image?.publicId) {
-                await cloudinary.uploader.destroy(existingApplicant.image.publicId)
-            }
-            const result = await uploadToCloudinary(image, 'applicants/images')
-            if (existingApplicant.image) {
-                await prisma.applicantImage.update({
-                    where: { id: existingApplicant.image.id },
-                    data: {
-                        url: result.secure_url,
-                        publicId: result.public_id,
-                        alt: parsed.data.name || existingApplicant.name,
-                    },
-                })
-            } else {
-                const imageData = await prisma.applicantImage.create({
-                    data: {
-                        url: result.secure_url,
-                        publicId: result.public_id,
-                        alt: parsed.data.name || existingApplicant.name,
-                    },
-                })
-                parsed.data.imageId = imageData.id
-            }
-        }
-
-        if (cv instanceof File) {
-            if (existingApplicant.cv?.publicId) {
-                await cloudinary.uploader.destroy(existingApplicant.cv.publicId)
-            }
-            const result = await uploadToCloudinary(cv, 'applicants/cvs')
-            if (existingApplicant.cv) {
-                await prisma.applicantCV.update({
-                    where: { id: existingApplicant.cv.id },
-                    data: {
-                        url: result.secure_url,
-                        publicId: result.public_id,
-                        alt: parsed.data.name || existingApplicant.name,
-                    },
-                })
-            } else {
-                const cvData = await prisma.applicantCV.create({
-                    data: {
-                        url: result.secure_url,
-                        publicId: result.public_id,
-                        alt: parsed.data.name || existingApplicant.name,
-                    },
-                })
-                parsed.data.cvId = cvData.id
-            }
-        }
-
-        const updatedApplicant = await prisma.jobApplicant.update({
-            where: { id: applicantId },
-            data: parsed.data,
-        })
-
-        return NextResponse.json(updatedApplicant, { status: 200 })
-    } catch (err) {
-        console.error('Update error:', err)
-        return NextResponse.json({ error: 'Failed to update applicant' }, { status: 500 })
+    console.log('--- RAW FORM DATA ENTRIES ---')
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: File(${value.name}, size=${value.size})`)
+      } else {
+        console.log(`${key}:`, value)
+      }
     }
+
+    const id = formData.get('id')
+    console.log('ID value:', id, 'Type:', typeof id)
+
+    if (!id || typeof id !== 'string') {
+      console.log('❌ ID missing or not a string')
+      return NextResponse.json({ error: 'ID is required and must be a string' }, { status: 400 })
+    }
+
+    // Build a plain object only from non-file entries so TypeScript doesn't complain.
+    // Use `any` so we can coerce types freely before Zod validation.
+    const fields: Record<string, any> = {}
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        // skip files for validation; we'll handle them separately below
+        continue
+      }
+      // convert empty string -> undefined so partial updates don't fail
+      fields[key] = value === '' ? undefined : value
+    }
+
+    // Coerce id-like fields from string -> number (only if they are strings)
+    if (fields.imageId !== undefined && typeof fields.imageId === 'string') {
+      const n = Number(fields.imageId)
+      fields.imageId = Number.isNaN(n) ? undefined : n
+    }
+    if (fields.cvId !== undefined && typeof fields.cvId === 'string') {
+      const n = Number(fields.cvId)
+      fields.cvId = Number.isNaN(n) ? undefined : n
+    }
+
+    console.log('--- FIELDS OBJECT (for Zod) ---', fields)
+
+    const parsed = updateApplicantSchema.safeParse(fields)
+    console.log('--- ZOD PARSE RESULT ---')
+    if (!parsed.success) {
+      console.log('❌ Zod validation failed', parsed.error.errors)
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+    }
+    console.log('✅ Parsed data:', parsed.data)
+
+    const applicantId = parseInt(id, 10)
+    console.log('Applicant ID (int):', applicantId)
+
+    const existingApplicant = await prisma.jobApplicant.findUnique({
+      where: { id: applicantId },
+      include: { image: true, cv: true },
+    })
+    console.log('Existing applicant found:', !!existingApplicant)
+
+    if (!existingApplicant) {
+      return NextResponse.json({ error: 'Applicant not found' }, { status: 404 })
+    }
+
+    const image = formData.get('image')
+    console.log('Image field type:', image instanceof File ? `File(${image.name}, size=${image.size})` : typeof image)
+
+    const cv = formData.get('cv')
+    console.log('CV field type:', cv instanceof File ? `File(${cv.name}, size=${cv.size})` : typeof cv)
+
+    if (image instanceof File && image.size > 0) {
+      if (existingApplicant.image?.publicId) {
+        console.log('Deleting old image from Cloudinary:', existingApplicant.image.publicId)
+        await cloudinary.uploader.destroy(existingApplicant.image.publicId)
+      }
+      const result = await uploadToCloudinary(image, 'applicants/images')
+      console.log('Uploaded new image to Cloudinary:', result)
+
+      if (existingApplicant.image) {
+        await prisma.applicantImage.update({
+          where: { id: existingApplicant.image.id },
+          data: {
+            url: result.secure_url,
+            publicId: result.public_id,
+            alt: parsed.data.name || existingApplicant.name,
+          },
+        })
+      } else {
+        const imageData = await prisma.applicantImage.create({
+          data: {
+            url: result.secure_url,
+            publicId: result.public_id,
+            alt: parsed.data.name || existingApplicant.name,
+          },
+        })
+        // Make sure parsed.data is mutable object from Zod result
+        parsed.data.imageId = imageData.id
+      }
+    }
+
+    if (cv instanceof File && cv.size > 0) {
+      if (existingApplicant.cv?.publicId) {
+        console.log('Deleting old CV from Cloudinary:', existingApplicant.cv.publicId)
+        await cloudinary.uploader.destroy(existingApplicant.cv.publicId)
+      }
+      const result = await uploadToCloudinary(cv, 'applicants/cvs')
+      console.log('Uploaded new CV to Cloudinary:', result)
+
+      if (existingApplicant.cv) {
+        await prisma.applicantCV.update({
+          where: { id: existingApplicant.cv.id },
+          data: {
+            url: result.secure_url,
+            publicId: result.public_id,
+            alt: parsed.data.name || existingApplicant.name,
+          },
+        })
+      } else {
+        const cvData = await prisma.applicantCV.create({
+          data: {
+            url: result.secure_url,
+            publicId: result.public_id,
+            alt: parsed.data.name || existingApplicant.name,
+          },
+        })
+        parsed.data.cvId = cvData.id
+      }
+    }
+
+    const updatedApplicant = await prisma.jobApplicant.update({
+      where: { id: applicantId },
+      data: parsed.data,
+    })
+    console.log('✅ Applicant updated successfully')
+
+    return NextResponse.json(updatedApplicant, { status: 200 })
+  } catch (err) {
+    console.error('❌ Update error:', err)
+    return NextResponse.json({ error: 'Failed to update applicant' }, { status: 500 })
+  }
 }

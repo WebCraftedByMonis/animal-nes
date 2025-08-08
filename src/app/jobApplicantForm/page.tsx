@@ -321,7 +321,7 @@ export default function JobApplicantForm() {
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date of Birth (optional)</FormLabel>
+                  <FormLabel>Date of Birth*</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>

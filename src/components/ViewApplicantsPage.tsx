@@ -1,4 +1,3 @@
-// ViewApplicantsPage.tsx
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
@@ -15,6 +14,7 @@ import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import EditApplicantModal from './EditApplicantModal'
 
 interface Applicant {
   id: number
@@ -63,6 +63,7 @@ export default function ViewApplicantsPage() {
   useEffect(() => { fetchApplicants() }, [fetchApplicants])
 
   const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this applicant?')) return
     setIsDeleting(id)
     try {
       await axios.delete('/api/jobApplicant', { params: { id } })
@@ -73,6 +74,24 @@ export default function ViewApplicantsPage() {
     } finally {
       setIsDeleting(null)
     }
+  }
+
+  const totalPages = Math.ceil(total / limit)
+
+  const getPaginationNumbers = () => {
+    const pages: (number | string)[] = []
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+
+    pages.push(1)
+    if (page > 3) pages.push('...')
+    for (let p = Math.max(2, page - 2); p <= Math.min(totalPages - 1, page + 2); p++) {
+      pages.push(p)
+    }
+    if (page < totalPages - 2) pages.push('...')
+    pages.push(totalPages)
+    return pages
   }
 
   return (
@@ -180,22 +199,32 @@ export default function ViewApplicantsPage() {
             <p>Total entries: {total}</p>
             <div className="flex gap-2">
               <Button size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
-              {Array.from({ length: Math.ceil(total / limit) }, (_, i) => i + 1).map(p => (
-                <Button
-                  key={p}
-                  size="sm"
-                  variant={p === page ? 'default' : 'outline'}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </Button>
-              ))}
-              <Button size="sm" disabled={page * limit >= total} onClick={() => setPage(page + 1)}>Next</Button>
+              {getPaginationNumbers().map((p, i) =>
+                typeof p === 'string' ? (
+                  <span key={i} className="px-2">…</span>
+                ) : (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={p === page ? 'default' : 'outline'}
+                    onClick={() => setPage(p)}
+                  >
+                    {p}
+                  </Button>
+                )
+              )}
+              <Button size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</Button>
             </div>
           </div>
         </div>
 
-      
+        {editingApplicant && (
+          <EditApplicantModal
+            applicant={editingApplicant}
+            onClose={() => setEditingApplicant(null)}
+            onUpdated={fetchApplicants}
+          />
+        )}
       </div>
     </Suspense>
   )

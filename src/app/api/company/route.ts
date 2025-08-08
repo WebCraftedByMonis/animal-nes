@@ -97,7 +97,6 @@ export async function GET(req: NextRequest) {
   });
 }
 
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -126,6 +125,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Company image is required' },
         { status: 400 }
+      )
+    }
+
+    // Check for existing companies with any of the provided fields
+    const existingCompanies = await prisma.company.findMany({
+      where: {
+        OR: [
+          { companyName: validation.data.companyName },
+          ...(validation.data.email ? [{ email: validation.data.email }] : []),
+          ...(validation.data.mobileNumber ? [{ mobileNumber: validation.data.mobileNumber }] : []),
+          ...(validation.data.address ? [{ address: validation.data.address }] : []),
+        ]
+      },
+      select: {
+        companyName: true,
+        email: true,
+        mobileNumber: true,
+        address: true
+      }
+    })
+
+    if (existingCompanies.length > 0) {
+      const duplicateFields = []
+      
+      for (const existing of existingCompanies) {
+        if (existing.companyName === validation.data.companyName) {
+          duplicateFields.push('Company Name')
+        }
+        if (existing.email && existing.email === validation.data.email) {
+          duplicateFields.push('Email')
+        }
+        if (existing.mobileNumber && existing.mobileNumber === validation.data.mobileNumber) {
+          duplicateFields.push('Mobile Number')
+        }
+        if (existing.address && existing.address === validation.data.address) {
+          duplicateFields.push('Address')
+        }
+      }
+
+      const uniqueFields = [...new Set(duplicateFields)]
+      const fieldText = uniqueFields.length === 1 
+        ? uniqueFields[0] 
+        : uniqueFields.slice(0, -1).join(', ') + ' and ' + uniqueFields.slice(-1)
+
+      return NextResponse.json(
+        { 
+          error: `A company with this ${fieldText} already exists`,
+          duplicateFields: uniqueFields
+        },
+        { status: 409 }
       )
     }
 

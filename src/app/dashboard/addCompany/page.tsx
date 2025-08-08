@@ -86,50 +86,91 @@ export default function AddCompanyPage() {
   }
 
   async function onSubmit(data: FormValues) {
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append("companyName", data.companyName);
-      if (data.mobileNumber) formData.append("mobileNumber", data.mobileNumber);
-      if (data.address) formData.append("address", data.address);
-      if (data.email) formData.append("email", data.email);
-      formData.append("image", data.image);
+  setIsSubmitting(true);
+  try {
+    const formData = new FormData();
+    formData.append("companyName", data.companyName);
+    if (data.mobileNumber) formData.append("mobileNumber", data.mobileNumber);
+    if (data.address) formData.append("address", data.address);
+    if (data.email) formData.append("email", data.email);
+    formData.append("image", data.image);
 
-      const response = await fetch("/api/company", {
-        method: "POST",
-        body: formData,
-      });
+    const response = await fetch("/api/company", {
+      method: "POST",
+      body: formData,
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.error.includes("unique")) {
-          // Handle unique constraint errors
-          if (errorData.error.includes("companyName")) {
-            form.setError("companyName", {
-              type: "manual",
-              message: "This company name is already taken",
-            });
-          } else if (errorData.error.includes("email")) {
-            form.setError("email", {
-              type: "manual",
-              message: "This email is already registered",
-            });
-          }
-        } else {
-          toast.error(errorData.error || "Failed to create company");
-        }
-        return;
-      }
-
-      toast.success("Company created successfully");
+    if (!response.ok) {
+      const errorData = await response.json();
       
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsSubmitting(false);
+      // Handle duplicate field errors (status 409)
+      if (response.status === 409 && errorData.duplicateFields) {
+        // Clear any existing form errors
+        form.clearErrors();
+        
+        // Set specific field errors based on duplicates
+        if (errorData.duplicateFields.includes('Company Name')) {
+          form.setError("companyName", {
+            type: "manual",
+            message: "This company name already exists",
+          });
+        }
+        if (errorData.duplicateFields.includes('Email')) {
+          form.setError("email", {
+            type: "manual",
+            message: "This email is already registered",
+          });
+        }
+        if (errorData.duplicateFields.includes('Mobile Number')) {
+          form.setError("mobileNumber", {
+            type: "manual",
+            message: "This mobile number is already registered",
+          });
+        }
+        if (errorData.duplicateFields.includes('Address')) {
+          form.setError("address", {
+            type: "manual",
+            message: "This address is already registered",
+          });
+        }
+        
+        // Show toast with all duplicate fields
+        toast.error(errorData.error);
+      } 
+      // Handle legacy unique constraint errors (for backward compatibility)
+      else if (errorData.error.includes("unique")) {
+        if (errorData.error.includes("companyName")) {
+          form.setError("companyName", {
+            type: "manual",
+            message: "This company name is already taken",
+          });
+        } else if (errorData.error.includes("email")) {
+          form.setError("email", {
+            type: "manual",
+            message: "This email is already registered",
+          });
+        }
+        toast.error("Company with these details already exists");
+      } 
+      // Handle other errors
+      else {
+        toast.error(errorData.error || "Failed to create company");
+      }
+      return;
     }
+
+    toast.success("Company created successfully!");
+    // Reset form after successful submission
+    form.reset();
+    setPreview(null);
+    
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    toast.error("An unexpected error occurred");
+  } finally {
+    setIsSubmitting(false);
   }
+}
 
   return (
     <div className="min-h-screen  flex items-center justify-center p-4">

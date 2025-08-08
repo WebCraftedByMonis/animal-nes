@@ -69,6 +69,7 @@ async function handleImageDelete(publicId: string) {
     // Don't throw error - continue with database operations
   }
 }
+
 async function POST(request: NextRequest) {
   console.log('🚀 POST /api/partner - Request started');
   
@@ -99,6 +100,25 @@ async function POST(request: NextRequest) {
     console.log('  - Product IDs:', productIds);
     console.log('  - Has image:', !!image);
     
+    // Check for existing email before proceeding
+    if (partnerData.partnerEmail) {
+      console.log('🔍 Checking for existing email:', partnerData.partnerEmail);
+      const existingPartner = await prisma.partner.findUnique({
+        where: {
+          partnerEmail: partnerData.partnerEmail
+        }
+      });
+      
+      if (existingPartner) {
+        console.log('❌ Email already exists for partner ID:', existingPartner.id);
+        return NextResponse.json(
+          { error: 'Email already exists. Please use a different email address.' },
+          { status: 409 }
+        );
+      }
+      console.log('✅ Email is unique');
+    }
+
     // Handle image upload OUTSIDE transaction
     console.log('🖼️ Starting image upload to Cloudinary...');
     const imageResult = await handleImageUpload(image);
@@ -184,6 +204,17 @@ async function POST(request: NextRequest) {
     if (error && typeof error === 'object' && 'code' in error) {
       console.error('Prisma error code:', (error as any).code);
       console.error('Prisma error meta:', (error as any).meta);
+      
+      // Handle Prisma unique constraint violations
+      if ((error as any).code === 'P2002') {
+        const meta = (error as any).meta;
+        if (meta && meta.target && meta.target.includes('partnerEmail')) {
+          return NextResponse.json(
+            { error: 'Email already exists. Please use a different email address.' },
+            { status: 409 }
+          );
+        }
+      }
     }
     
     // Additional Cloudinary error logging
@@ -203,7 +234,6 @@ async function POST(request: NextRequest) {
     );
   }
 }
-
 
 const PARTNER_TYPE_GROUPS = {
   veterinarian: ['Veterinarian (Clinic, Hospital, Consultant)'],

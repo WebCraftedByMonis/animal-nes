@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     if (existingtestimonial) {
       return NextResponse.json(
-        { error: 'You have already posted a testimonial. Please edit your existing testimonial instead.' },
+        { error: 'You have already posted a testimonial. Ask customer support to edit your testamonial.' },
         { status: 400 }
       )
     }
@@ -210,7 +210,7 @@ export async function PUT(request: NextRequest) {
     
     if (!isUpdatingOwntestimonial && !isUpdatingApprovalStatus) {
       return NextResponse.json(
-        { error: 'You can only edit your own testimonial' },
+        { error: 'Ask customer support to edit it.' },
         { status: 403 }
       )
     }

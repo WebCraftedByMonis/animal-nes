@@ -156,50 +156,48 @@ export default function Navbar() {
           {/* Mobile menu icon - visible on small screens */}
           <div className="md:hidden  shrink-0">
 
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button variant="ghost" className="p-0"><MenuIcon className="size-6" /></Button>
-              </DrawerTrigger>
+          <Drawer>
+  <DrawerTrigger asChild>
+    <Button variant="ghost" className="p-0"><MenuIcon className="size-6" /></Button>
+  </DrawerTrigger>
 
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Menu</DrawerTitle>
-                </DrawerHeader>
+  <DrawerContent className="h-[80vh] max-h-[80vh]">
+    <DrawerHeader>
+      <DrawerTitle>Menu</DrawerTitle>
+    </DrawerHeader>
 
-                <div className="flex flex-col px-4 gap-4">
-                    <NavigationMenuDemo />
-                  {[
-                    ["Home", "/"],
-                    ["Products", "/products"],
-                    ["Nexus News", "/animal-news"],
-                    ["Sell Animal", "/sell"],
-                    ["Buy Animal", "/buy"],
-                    ["Find Doctor", "/findDoctor"],
-                  ].map(([label, href]) => (
-                    <DrawerClose asChild key={label}>
-                      <Link
-                        href={href}
-                        className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
-                      >
-                        {label}
-                      </Link>
-                    </DrawerClose>
-                  ))}
+    <div className="flex flex-col px-4 gap-4 overflow-y-auto flex-1">
+      <NavigationMenuDemo />
+      {[
+        ["Home", "/"],
+        ["Products", "/products"],
+        ["Nexus News", "/animal-news"],
+        ["Sell Animal", "/sell"],
+        ["Buy Animal", "/buy"],
+        ["Find Doctor", "/findDoctor"],
+      ].map(([label, href]) => (
+        <DrawerClose asChild key={label}>
+          <Link
+            href={href}
+            className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
+          >
+            {label}
+          </Link>
+        </DrawerClose>
+      ))}
 
-                
-                  <ModeToggle />
-                </div>
+      <ModeToggle />
+    </div>
 
-                <DrawerFooter className="mt-6">
-                  <DrawerClose asChild>
-                    <Button variant="outline" className="w-full">
-                      Close Menu
-                    </Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
-
+    <DrawerFooter className="mt-auto">
+      <DrawerClose asChild>
+        <Button variant="outline" className="w-full">
+          Close Menu
+        </Button>
+      </DrawerClose>
+    </DrawerFooter>
+  </DrawerContent>
+</Drawer>
 
 
 

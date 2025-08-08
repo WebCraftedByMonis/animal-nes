@@ -133,7 +133,7 @@ export default function FullScreenSlider() {
           src={banners[0].image!.url}
           alt={banners[0].image!.alt}
           layout="fill"
-          objectFit="fit"
+          objectFit="contain"
           priority
         />
       </div>

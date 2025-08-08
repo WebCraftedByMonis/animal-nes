@@ -18,6 +18,7 @@ interface Product {
   isFeatured: boolean;
   isActive: boolean;
   outofstock: boolean;
+  productLink: string | null;
   image: { url: string; alt: string } | null;
   pdf: { url: string } | null;
   company: { companyName: string };
@@ -204,6 +205,7 @@ export default function ProductClient({ product }: { product: Product }) {
                   isActive={product.isActive && !product.outofstock} 
                 />
               )}
+              
               {(isOutOfStock || (selectedVariant && selectedVariant.inventory === 0)) && (
                 <button
                   disabled
@@ -213,6 +215,8 @@ export default function ProductClient({ product }: { product: Product }) {
                 </button>
               )}
             </div>
+
+            
 
             {/* Company & Partner Info */}
             <div className="pt-4 grid grid-cols-2 gap-4 text-sm">
@@ -225,9 +229,29 @@ export default function ProductClient({ product }: { product: Product }) {
                 <p className="text-gray-900 dark:text-gray-100">{product.partner.partnerName}</p>
               </div>
             </div>
+{/* Product Link */}
+{product.productLink && (
+  <div className="pt-4">
+    <a
+      href={product.productLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+      <span className="font-medium">View External Info</span>
+    </a>
+  </div>
+)}
+            
           </div>
         </div>
       </div>
+      
+
+      
 
       {/* PDF Section */}
       {product.pdf && (
