@@ -252,7 +252,7 @@ async function GET(request: NextRequest) {
     
     // Parse query parameters
     const page = Number(searchParams.get('page')) || 1;
-    const limitParam = searchParams.get('limit') || '10';
+    const limitParam = searchParams.get('limit') || 'all';
     const limit = limitParam === 'all' ? undefined : Math.min(Number(limitParam), 100);
     const search = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'createdAt';
@@ -280,7 +280,7 @@ async function GET(request: NextRequest) {
     // Add any additional filters (example)
     const specialization = searchParams.get('specialization');
     if (specialization) {
-      whereClause.specialization = { contains: specialization, mode: 'insensitive' };
+      whereClause.specialization = { contains: specialization,  };
     }
     
     const species = searchParams.get('species');
