@@ -118,7 +118,7 @@ export default function AddPartnerPage() {
       zipcode: '',
       state: '',
       areaTown: '',
-      password: '',
+      password: '1234566',
       bloodGroup: undefined,
       availableDays: [],
       startTimeIds: [],
@@ -281,11 +281,11 @@ export default function AddPartnerPage() {
             {errors.gender && <p className="text-red-500 text-sm">{errors.gender.message}</p>}
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="password">Password*</Label>
             <Input id="password" type="password" {...register('password')} className="focus:border-green-500 focus:ring-green-500" />
             {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
-          </div>
+          </div> */}
 
           <div>
             <Label htmlFor="partnerType">Partner Type</Label>
@@ -346,11 +346,11 @@ export default function AddPartnerPage() {
             {errors.cityName && <p className="text-red-500 text-sm">{errors.cityName.message}</p>}
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="zipcode">Zipcode</Label>
             <Input id="zipcode" {...register('zipcode')} className="focus:border-green-500 focus:ring-green-500" />
             {errors.zipcode && <p className="text-red-500 text-sm">{errors.zipcode.message}</p>}
-          </div>
+          </div> */}
 
           <div>
             <Label>State</Label>
@@ -416,7 +416,7 @@ export default function AddPartnerPage() {
             {errors.bloodGroup && <p className="text-red-500 text-sm">{errors.bloodGroup.message}</p>}
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="sendToPartner">Send To Partner</Label>
             <Controller
               control={control}
@@ -435,7 +435,7 @@ export default function AddPartnerPage() {
               )}
             />
             {errors.sendToPartner && <p className="text-red-500 text-sm">{errors.sendToPartner.message}</p>}
-          </div>
+          </div> */}
         </div>
 
         <div>
