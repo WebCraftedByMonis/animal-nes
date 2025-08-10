@@ -553,3 +553,64 @@ enum DeclarationStatus {
   AGREED
   NOT_AGREED
 }
+
+
+model HistoryForm {
+  id                    Int       @id @default(autoincrement())
+  
+  // Owner/Contact Information
+  name                  String    @db.Text
+  contact               String    @db.Text
+  address               String    @db.Text
+  
+  // Animal Information
+  animalSpecie          String    @db.Text
+  breed                 String    @db.Text
+  age                   String    @db.Text
+  sex                   String    @db.Text
+  tag                   String?   @db.Text  // Optional
+  use                   String?   @db.Text  // Optional (e.g., dairy, meat, pet, etc.)
+  
+  // Medical History
+  mainIssue             String    @db.Text
+  duration              String    @db.Text
+  pastIllness           String?   @db.Text  // Optional
+  pastTreatment         String?   @db.Text  // Optional
+  allergies             String?   @db.Text  // Optional
+  surgeries             String?   @db.Text  // Optional
+  
+  // Reproductive Information
+  reproductiveStatus    String?   @db.Text  // Optional
+  lastEvent             String?   @db.Text  // Optional (e.g., last calving, breeding)
+  
+  // Management Information
+  diet                  String?   @db.Text  // Optional
+  water                 String?   @db.Text  // Optional
+  housing               String?   @db.Text  // Optional
+  
+  // Production Data
+  milkPerDay            String?   @db.Text  // Optional
+  eggPerDay             String?   @db.Text  // Optional
+  weightGain            String?   @db.Text  // Optional
+  
+  // Vaccination/Deworming
+  vaccinationDeworming  Boolean?  @default(false)  // Optional
+  lastGiven             String?   @db.Text  // Optional
+  nextDue               String?   @db.Text  // Optional
+  
+  // Exposure History (all optional booleans)
+  newAnimalContact      Boolean?  @default(false)
+  transport             Boolean?  @default(false)
+  outbreakNearby        Boolean?  @default(false)
+  wildlife              Boolean?  @default(false)
+  parasites             Boolean?  @default(false)
+  
+  // Examination Details
+  examinedBy            String?   @db.Text  // Optional
+  examinationDate       DateTime? // Optional
+  referalNo             String?   @db.Text  // Optional
+  
+  // Timestamps
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
