@@ -183,7 +183,6 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to delete applicant' }, { status: 500 })
     }
 }
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || '';
@@ -205,6 +204,7 @@ export async function GET(request: NextRequest) {
     prisma.jobApplicant.findMany({
       where: whereClause,
       include: { image: true, cv: true },
+      orderBy: { createdAt: 'desc' }, // ✅ Latest applicants first
       skip,
       take: limit,
     }),
