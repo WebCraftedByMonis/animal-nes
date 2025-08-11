@@ -554,63 +554,127 @@ enum DeclarationStatus {
   NOT_AGREED
 }
 
-
 model HistoryForm {
-  id                    Int       @id @default(autoincrement())
+  id                    Int                @id @default(autoincrement())
   
   // Owner/Contact Information
-  name                  String    @db.Text
-  contact               String    @db.Text
-  address               String    @db.Text
+  name                  String             @db.Text
+  contact               String             @db.Text
+  address               String             @db.Text
   
   // Animal Information
-  animalSpecie          String    @db.Text
-  breed                 String    @db.Text
-  age                   String    @db.Text
-  sex                   String    @db.Text
-  tag                   String?   @db.Text  // Optional
-  use                   String?   @db.Text  // Optional (e.g., dairy, meat, pet, etc.)
+  animalSpecie          String             @db.Text
+  breed                 String             @db.Text
+  age                   String             @db.Text
+  sex                   String             @db.Text
+  tag                   String?            @db.Text
+  use                   String?            @db.Text
   
   // Medical History
-  mainIssue             String    @db.Text
-  duration              String    @db.Text
-  pastIllness           String?   @db.Text  // Optional
-  pastTreatment         String?   @db.Text  // Optional
-  allergies             String?   @db.Text  // Optional
-  surgeries             String?   @db.Text  // Optional
+  mainIssue             String             @db.Text
+  duration              String             @db.Text
+  pastIllness           String?            @db.Text
+  pastTreatment         String?            @db.Text
+  allergies             String?            @db.Text
+  surgeries             String?            @db.Text
   
   // Reproductive Information
-  reproductiveStatus    String?   @db.Text  // Optional
-  lastEvent             String?   @db.Text  // Optional (e.g., last calving, breeding)
+  reproductiveStatus    String?            @db.Text
+  lastEvent             String?            @db.Text
   
   // Management Information
-  diet                  String?   @db.Text  // Optional
-  water                 String?   @db.Text  // Optional
-  housing               String?   @db.Text  // Optional
+  diet                  String?            @db.Text
+  water                 String?            @db.Text
+  housing               String?            @db.Text
   
   // Production Data
-  milkPerDay            String?   @db.Text  // Optional
-  eggPerDay             String?   @db.Text  // Optional
-  weightGain            String?   @db.Text  // Optional
+  milkPerDay            String?            @db.Text
+  eggPerDay             String?            @db.Text
+  weightGain            String?            @db.Text
   
   // Vaccination/Deworming
-  vaccinationDeworming  Boolean?  @default(false)  // Optional
-  lastGiven             String?   @db.Text  // Optional
-  nextDue               String?   @db.Text  // Optional
+  vaccinationDeworming  Boolean?           @default(false)
+  lastGiven             String?            @db.Text
+  nextDue               String?            @db.Text
   
-  // Exposure History (all optional booleans)
-  newAnimalContact      Boolean?  @default(false)
-  transport             Boolean?  @default(false)
-  outbreakNearby        Boolean?  @default(false)
-  wildlife              Boolean?  @default(false)
-  parasites             Boolean?  @default(false)
+  // Exposure History
+  newAnimalContact      Boolean?           @default(false)
+  transport             Boolean?           @default(false)
+  outbreakNearby        Boolean?           @default(false)
+  wildlife              Boolean?           @default(false)
+  parasites             Boolean?           @default(false)
   
   // Examination Details
-  examinedBy            String?   @db.Text  // Optional
-  examinationDate       DateTime? // Optional
-  referalNo             String?   @db.Text  // Optional
+  examinedBy            String?            @db.Text
+  examinationDate       DateTime?
+  referalNo             String?            @db.Text
+  
+  // Relation
+  prescriptionForm      PrescriptionForm?
   
   // Timestamps
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+}
+
+model PrescriptionForm {
+  id                    Int                @id @default(autoincrement())
+  prescriptionNo        String?               
+  
+  // Doctor/Vet Information
+  doctorName            String             @db.Text
+  qualification         String?            @db.Text
+  clinicName            String?            @db.Text
+  clinicAddress         String?            @db.Text
+  clinicPhone           String?            @db.Text
+  clinicEmail           String?            @db.Text
+  
+  // Owner Information
+  ownerName             String             @db.Text
+  ownerContact          String             @db.Text
+  
+  // Animal Information
+  animalSpecies         String             @db.Text
+  breed                 String?            @db.Text
+  age                   String?            @db.Text
+  sex                   String?            @db.Text
+  
+  // Clinical Information
+  clinicalDiagnosis     String?            @db.Text
+  labDiagnosis          String?            @db.Text
+  
+  // Instructions
+  continuePrevMedicine  Boolean            @default(false)
+  followUpDate          DateTime?
+  monitorSideEffects    Boolean            @default(false)
+  maintainHygiene       Boolean            @default(false)
+  
+  // Prescription Items
+  prescriptionItems     PrescriptionItem[]
+  
+  // Relation
+  historyForm           HistoryForm        @relation(fields: [historyFormId], references: [id], onDelete: Cascade)
+  historyFormId         Int                @unique
+  
+  // Timestamps
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+}
+
+model PrescriptionItem {
+  id                    Int                @id @default(autoincrement())
+  
+  // Medicine Details
+  medicineName          String             @db.Text
+  strength              String?            @db.Text
+  dosage                String             @db.Text
+  duration              String             @db.Text
+  notes                 String?            @db.Text
+  
+  // Relations
+  prescription          PrescriptionForm   @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  prescriptionId        Int
+  
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 }

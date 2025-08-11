@@ -48,6 +48,7 @@
     "nprogress": "^0.2.0",
     "pdf-lib": "^1.17.1",
     "react": "^19.0.0",
+    "react-day-picker": "^9.8.1",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.58.1",
