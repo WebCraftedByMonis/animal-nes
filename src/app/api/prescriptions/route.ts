@@ -200,23 +200,73 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete prescription' }, { status: 500 })
   }
 }
-
 // PUT - Update prescription
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('PUT /api/prescriptions body:', body)
+
     const { id, ...updateData } = body
 
-    if (!id) {
+    if (id === undefined || id === null) {
       return NextResponse.json({ error: 'Prescription ID is required' }, { status: 400 })
     }
 
-    const prescriptionId = parseInt(id)
-    if (isNaN(prescriptionId)) {
+    const prescriptionId = Number(id)
+    if (!Number.isInteger(prescriptionId)) {
       return NextResponse.json({ error: 'Invalid prescription ID' }, { status: 400 })
     }
 
-    const validation = updatePrescriptionFormSchema.safeParse(updateData)
+    // --- sanitizer: whitelist and convert null -> undefined for optional fields ---
+    function sanitizeUpdatePayload(raw: any) {
+      if (!raw || typeof raw !== 'object') return {}
+
+      const allowedTop = [
+        'doctorName','qualification','clinicName','clinicAddress','clinicPhone','clinicEmail',
+        'clinicalDiagnosis','labDiagnosis','continuePrevMedicine','followUpDate',
+        'monitorSideEffects','maintainHygiene','prescriptionItems'
+      ]
+
+      const cleaned: any = {}
+
+      for (const key of allowedTop) {
+        if (!(key in raw)) continue
+        const val = raw[key]
+
+        // convert explicit null -> undefined so zod optional() will accept it
+        if (val === null) {
+          cleaned[key] = undefined
+          continue
+        }
+
+        // normalize followUpDate: empty string -> undefined
+        if (key === 'followUpDate') {
+          if (val === '' || val === undefined) cleaned.followUpDate = undefined
+          else cleaned.followUpDate = val
+          continue
+        }
+
+        cleaned[key] = val
+      }
+
+      // prescriptionItems: ensure array of allowed shape and strip extra props
+      if (Array.isArray(raw.prescriptionItems)) {
+        cleaned.prescriptionItems = raw.prescriptionItems.map((it: any) => ({
+          medicineName: it?.medicineName,
+          strength: it?.strength ?? undefined,
+          dosage: it?.dosage,
+          duration: it?.duration,
+          notes: it?.notes ?? undefined,
+        }))
+      }
+
+      return cleaned
+    }
+
+    const sanitized = sanitizeUpdatePayload(updateData)
+
+    // validate with zod
+    const validation = updatePrescriptionFormSchema.safeParse(sanitized)
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.errors[0].message },
@@ -237,12 +287,16 @@ export async function PUT(request: NextRequest) {
     // Update prescription items separately if provided
     let prescriptionItemsUpdate
     if (data.prescriptionItems) {
+      // delete old items
       await prisma.prescriptionItem.deleteMany({
         where: { prescriptionId },
       })
+
+      // prepare create payload (convert undefined -> null for nullable DB columns)
       prescriptionItemsUpdate = {
-        create: data.prescriptionItems.map(item => ({
+        create: data.prescriptionItems.map((item: any) => ({
           medicineName: item.medicineName,
+          // keep null if falsy so DB nullable columns get null; adjust as per your preference
           strength: item.strength || null,
           dosage: item.dosage,
           duration: item.duration,

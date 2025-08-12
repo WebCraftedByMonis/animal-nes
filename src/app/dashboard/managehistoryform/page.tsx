@@ -292,12 +292,7 @@ export default function ViewHistoryFormsPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-green-500">History Forms Management</h1>
-          <Link href="/dashboard/history-forms/add">
-            <Button className="bg-green-500 hover:bg-green-600 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add New History Form
-            </Button>
-          </Link>
+          
         </div>
 
         {/* Controls */}
