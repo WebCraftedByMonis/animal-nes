@@ -89,25 +89,25 @@ model ProductImage {
 
 model Company {
   id          Int           @id @default(autoincrement())
-  companyName String        @unique
+  companyName String?        @unique
   mobileNumber String?      @unique
   products    Product[]
-  address     String?       @unique
+  address     String?       
   email       String?       @unique
   image       CompanyImage?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime?      @default(now())
+  updatedAt   DateTime?      @updatedAt
 }
 
 model CompanyImage {
   id        Int      @id @default(autoincrement())
-  url       String   @db.Text
-  alt       String   @unique
+  url       String?   @db.Text
+  alt       String?   @unique
   publicId  String?  @unique
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId Int      @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId Int?      @unique
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 enum Gender {
@@ -144,7 +144,7 @@ enum DayOfWeek {
 
 model PartnerImage {
   id        Int      @id @default(autoincrement())
-  url       String   @db.Text
+  url       String?   @db.Text
   alt       String?
   publicId  String?
   partner   Partner? @relation(fields: [partnerId], references: [id], onDelete: Cascade)
@@ -187,8 +187,8 @@ model Partner {
   species             String?
   partnerType         String?
   products            Product[]
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
+  createdAt           DateTime?              @default(now())
+  updatedAt           DateTime?              @updatedAt
 }
 
 model PartnerAvailableDay {
@@ -214,6 +214,8 @@ model User {
   animalCart    AnimalCart[]
   jobApplicants JobApplicant[]
   testimonials  Testimonial[]
+  createdAt DateTime? @default(now())
+
 }
 
 model Account {

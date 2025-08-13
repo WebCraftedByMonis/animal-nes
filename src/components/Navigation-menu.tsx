@@ -57,7 +57,9 @@ const components: { title: string; href: string; description: string }[] = [
 export function NavigationMenuDemo() {
   return (
     <NavigationMenu>
-      <NavigationMenuList>
+     <NavigationMenuList className="flex flex-col items-start md:flex-row md:items-center">
+
+
 
         <NavigationMenuItem>
           <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Join</span></NavigationMenuTrigger>
@@ -125,6 +127,39 @@ export function NavigationMenuDemo() {
           </NavigationMenuContent>
         </NavigationMenuItem>
 
+
+          <NavigationMenuItem>
+          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Find Doctor </span></NavigationMenuTrigger>
+          <NavigationMenuContent>
+            <ul className="flex flex-col gap-3 p-4 md:w-[300px] lg:w-[300px] lg:grid-cols-[.75fr_1fr]">
+        {/* <li className="row-span-3 hidden md:block">
+                <NavigationMenuLink
+                  asChild
+                  className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
+                >
+                  <Link href="/">
+                    <div className="mb-2 mt-4 text-lg font-medium">
+                      Animal-wellness
+                    </div>
+                    <p className="text-sm leading-tight text-muted-foreground">
+                      Join Animal-wellness as a partner
+                    </p>
+                  </Link>
+                </NavigationMenuLink>
+              </li>       */}
+              <ListItem href="/findDoctor" title="Appointment Form">
+               
+              </ListItem>
+              <ListItem href="/historyform" title="History Form ">
+               
+              </ListItem>
+              <ListItem href="/prescriptionform" title="Prescription Form">
+               
+              </ListItem>
+            </ul>
+          </NavigationMenuContent>
+        </NavigationMenuItem>
+
         <NavigationMenuItem>
           <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Career Options</span></NavigationMenuTrigger>
           <NavigationMenuContent>
@@ -141,6 +176,10 @@ export function NavigationMenuDemo() {
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
+
+
+
+       
       
       
         

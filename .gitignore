@@ -43,3 +43,15 @@ next-env.d.ts
 backup_*/
 
 backup-aiven.js
+
+# Ignore all Excel files
+*.xlsx
+*.xls
+*.xlsm
+
+# Ignore temp Excel files (start with ~$)
+~$*
+
+# Ignore export and import JS scripts
+export*.js
+import*.js

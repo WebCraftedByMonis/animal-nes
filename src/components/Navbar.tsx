@@ -107,7 +107,7 @@ export default function Navbar() {
                   ["Nexus News", "/animal-news"],
                   ["Sell Animal", "/sell"],
                   ["Buy Animal", "/buy"],
-                  ["Find Doctor", "/findDoctor"],
+                  
                 ].map(([label, href]) => (
                   <NavigationMenuItem key={label}>
                     <NavigationMenuLink
