@@ -35,7 +35,7 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
-              href="/dashboard/products"
+              href="/dashboard/veiwProducts"
               className="block p-6 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
             >
               <h2 className="text-xl font-semibold text-blue-900">Products</h2>
@@ -43,7 +43,7 @@ export default async function DashboardPage() {
             </Link>
 
             <Link
-              href="/dashboard/companies"
+              href="/dashboard/viewCompanies"
               className="block p-6 bg-green-50 rounded-lg hover:bg-green-100 transition"
             >
               <h2 className="text-xl font-semibold text-green-900">Companies</h2>
