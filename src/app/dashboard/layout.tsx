@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   const token = cookieStore.get('admin-token')?.value;
 
   if (!token) {
-    redirect('/dashboard/login');
+    redirect('/login');
   }
 
   const admin = await validateAdminSession(token);
