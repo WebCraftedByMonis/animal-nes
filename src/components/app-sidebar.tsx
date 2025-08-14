@@ -4,17 +4,35 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
-import { Layers, Package, ShoppingCart,  ChevronDown } from "lucide-react"
+import { 
+  Layers, 
+  Package, 
+  ShoppingCart, 
+  ChevronDown,
+  Users,
+  Newspaper,
+  Briefcase,
+  Calendar,
+  Heart,
+  Image as ImageIcon,
+  MessageSquare,
+  UserCog,
+  FileText,
+  Pill,
+  Hammer,
+  LogOut
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export function AppSidebar() {
+  const router = useRouter()
   const [openCategories, setOpenCategories] = useState(false)
   const [openProducts, setOpenProducts] = useState(false)
   const [openOrders, setOpenOrders] = useState(false)
@@ -26,12 +44,29 @@ export function AppSidebar() {
   const [openAnimalSellRequests, setOpenAnimalSellRequests] = useState(false)
   const [openWebBanner, setOpenWebBanner] = useState(false)
   const [openTestomonials, setOpenTestomonials] = useState(false)
+  const [openAdmins, setOpenAdmins] = useState(false)
+  const [openHistoryForm, setOpenHistoryForm] = useState(false)
+  const [openPrescriptionForm, setOpenPrescriptionForm] = useState(false)
   const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/admin/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      router.push('/login');
+      router.refresh();
+    }
+  };
 
   return (
     <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="h-screen border-r dark:bg-zinc-900">
       <SidebarContent>
-        <div className="flex items-center  gap-3 p-4">
+        <div className="flex items-center gap-3 p-4">
           <Image src="/logo.jpg" alt="Logo" width={40} height={40} />
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-green-500">Admin</h1>
@@ -42,7 +77,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Categories */}
+              {/* Categories/Companies */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenCategories(!openCategories)}>
                   <Layers className="w-4 h-4" />
@@ -52,8 +87,7 @@ export function AppSidebar() {
                 {openCategories && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addCompany" className="block text-sm text-muted-foreground hover:underline">Add Company</Link>
-                    <Link href="/dashboard/viewCompanies" className="block text-sm text-muted-foreground hover:underline">Veiw Companies</Link>
-                    
+                    <Link href="/dashboard/viewCompanies" className="block text-sm text-muted-foreground hover:underline">View Companies</Link>
                   </div>
                 )}
               </SidebarMenuItem>
@@ -78,13 +112,12 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-
               {/* Partners */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenPartners(!openPartners)}>
-                  <Package className="w-4 h-4" />
+                  <Users className="w-4 h-4" />
                   <span className="hover:text-green-500">Partners</span>
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openProducts ? "rotate-180" : "rotate-0"}`} />
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPartners ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openPartners && (
                   <div className="ml-6 mt-2 space-y-1">
@@ -118,15 +151,14 @@ export function AppSidebar() {
               {/* Users */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenUsers(!openUsers)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <Users className="w-4 h-4" />
                   <span className="hover:text-green-500">Users</span>
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openOrders ? "rotate-180" : "rotate-0"}`} />
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openUsers ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openUsers && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/user" className="block text-sm text-muted-foreground hover:underline">Customers</Link>
-                    <Link href="/dashboard/employees" className="block text-sm text-muted-foreground hover:underline">Employes</Link>
-                   
+                    <Link href="/dashboard/employees" className="block text-sm text-muted-foreground hover:underline">Employees</Link>
                   </div>
                 )}
               </SidebarMenuItem>
@@ -134,7 +166,7 @@ export function AppSidebar() {
               {/* News */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenNews(!openNews)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <Newspaper className="w-4 h-4" />
                   <span className="hover:text-green-500">Wellness-News</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openNews ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
@@ -146,17 +178,16 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-
               {/* Job Applications */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenJobApplicants(!openJobApplicants)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <Briefcase className="w-4 h-4" />
                   <span className="hover:text-green-500">Applications for Jobs</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openJobApplicants ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openJobApplicants && (
                   <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/jobApplications" className="block text-sm text-muted-foreground hover:underline">Job Applicants </Link>
+                    <Link href="/dashboard/jobApplications" className="block text-sm text-muted-foreground hover:underline">Job Applicants</Link>
                     <Link href="/dashboard/addvacancyform" className="block text-sm text-muted-foreground hover:underline">Post a job</Link>
                     <Link href="/dashboard/viewvacancyform" className="block text-sm text-muted-foreground hover:underline">Job listing</Link>
                   </div>
@@ -166,85 +197,130 @@ export function AppSidebar() {
               {/* Appointments */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenPendingAppointments(!openPendingAppointments)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <Calendar className="w-4 h-4" />
                   <span className="hover:text-green-500">Appointments</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openPendingAppointments && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/pendingAppointments" className="block text-sm text-muted-foreground hover:underline">Pending Appointments</Link>
-                   
                   </div>
                 )}
               </SidebarMenuItem>
 
-
               {/* Animal sell requests */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenAnimalSellRequests(!openAnimalSellRequests)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <Heart className="w-4 h-4" />
                   <span className="hover:text-green-500">Animal sell requests</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openAnimalSellRequests ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openAnimalSellRequests && (
                   <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/viewanimals" className="block text-sm text-muted-foreground hover:underline">view requests</Link>
-                   
+                    <Link href="/dashboard/viewanimals" className="block text-sm text-muted-foreground hover:underline">View requests</Link>
                   </div>
                 )}
               </SidebarMenuItem>
 
-
               {/* Web banner */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenWebBanner(!openWebBanner)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <ImageIcon className="w-4 h-4" />
                   <span className="hover:text-green-500">Web Banner</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openWebBanner ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openWebBanner && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addwebbanner" className="block text-sm text-muted-foreground hover:underline">Add Web Banner</Link>
-                    <Link href="/dashboard/viewwebbanner" className="block text-sm text-muted-foreground hover:underline">view Web Banner</Link>
-                   
+                    <Link href="/dashboard/viewwebbanner" className="block text-sm text-muted-foreground hover:underline">View Web Banner</Link>
                   </div>
                 )}
               </SidebarMenuItem>
 
-
-              {/* Testomonials */}
+              {/* Testimonials */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenTestomonials(!openTestomonials)}>
-                  <ShoppingCart className="w-4 h-4" />
-                  <span className="hover:text-green-500">Testomonials</span>
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="hover:text-green-500">Testimonials</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openTestomonials ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openTestomonials && (
                   <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/viewtestomonials" className="block text-sm text-muted-foreground hover:underline">Manage Testomonials</Link>
-                   
+                    <Link href="/dashboard/viewtestomonials" className="block text-sm text-muted-foreground hover:underline">Manage Testimonials</Link>
+                  </div>
+                )}
+              </SidebarMenuItem>
+              
+              {/* Admins */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenAdmins(!openAdmins)}>
+                  <UserCog className="w-4 h-4" />
+                  <span className="hover:text-green-500">Admins</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openAdmins ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openAdmins && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/admins" className="block text-sm text-muted-foreground hover:underline">Manage Admins</Link>
                   </div>
                 )}
               </SidebarMenuItem>
 
+              {/* History Forms */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenHistoryForm(!openHistoryForm)}>
+                  <FileText className="w-4 h-4" />
+                  <span className="hover:text-green-500">History Forms</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openHistoryForm ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openHistoryForm && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/managehistoryforms" className="block text-sm text-muted-foreground hover:underline">Manage History Forms</Link>
+                  </div>
+                )}
+              </SidebarMenuItem>
 
+              {/* Prescription form */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenPrescriptionForm(!openPrescriptionForm)}>
+                  <Pill className="w-4 h-4" />
+                  <span className="hover:text-green-500">Prescription Forms</span>  
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPrescriptionForm ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openPrescriptionForm && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/manageprescriptionform" className="block text-sm text-muted-foreground hover:underline">Manage Prescription Forms</Link>
+                  </div>
+                )}
+              </SidebarMenuItem>
 
               {/* Traditional job  */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenTraditionaljob(!openTraditionaljob)}>
-                  <ShoppingCart className="w-4 h-4" />
+                  <Hammer className="w-4 h-4" />
                   <span className="hover:text-green-500">Traditional job post</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openTraditionaljob ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openTraditionaljob && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addtraditionaljob" className="block text-sm text-muted-foreground hover:underline">Add Traditional job</Link>
-                    <Link href="/dashboard/viewtraditionaljob" className="block text-sm text-muted-foreground hover:underline">view traditional</Link>
-                   
+                    <Link href="/dashboard/viewtraditionaljob" className="block text-sm text-muted-foreground hover:underline">View traditional</Link>
                   </div>
                 )}
               </SidebarMenuItem>
 
+              {/* Divider */}
+              <div className="my-4 border-t border-gray-300 dark:border-zinc-700" />
+
+              {/* Logout */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={handleLogout}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
             </SidebarMenu>
           </SidebarGroupContent>
@@ -252,4 +328,4 @@ export function AppSidebar() {
       </SidebarContent>
     </Sidebar>
   )
-} 
+}

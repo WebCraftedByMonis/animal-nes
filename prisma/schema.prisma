@@ -92,7 +92,7 @@ model Company {
   companyName String?        @unique
   mobileNumber String?      @unique
   products    Product[]
-  address     String?       
+  address     String?      @db.Text 
   email       String?       @unique
   image       CompanyImage?
   createdAt   DateTime?      @default(now())
@@ -679,4 +679,21 @@ model PrescriptionItem {
   
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+}
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // This will be hashed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  sessions AdminSession[]
+}
+model AdminSession {
+  id        String   @id @default(cuid())
+  token     String   @unique  // This works perfectly!
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

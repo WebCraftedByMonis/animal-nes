@@ -68,12 +68,15 @@ export default function Navbar() {
   }, []);
 
   const pathname = usePathname();
-  const isDashboard = pathname.startsWith('/dashboard');
+  const hiddenRoutes = ['/login', ];
+const shouldHideNavbar =
+  pathname.startsWith('/dashboard') || hiddenRoutes.includes(pathname);
+
+if (shouldHideNavbar) return null;
 
   const { data: session } = useSession();
   const user = session?.user;
 
-  if (isDashboard) return null;
   return (
     <nav className="text-foreground w-full border-b border-border bg-background ">
       <div className="flex items-center justify-between px-4 py-3 overflow-visible flex-nowrap gap-4">
