@@ -274,7 +274,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
                 {openHistoryForm && (
                   <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/managehistoryforms" className="block text-sm text-muted-foreground hover:underline">Manage History Forms</Link>
+                    <Link href="/dashboard/managehistoryform" className="block text-sm text-muted-foreground hover:underline">Manage History Forms</Link>
                   </div>
                 )}
               </SidebarMenuItem>
@@ -288,7 +288,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
                 {openPrescriptionForm && (
                   <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/manageprescriptionform" className="block text-sm text-muted-foreground hover:underline">Manage Prescription Forms</Link>
+                    <Link href="/dashboard/manageprescriptionfrom" className="block text-sm text-muted-foreground hover:underline">Manage Prescription Forms</Link>
                   </div>
                 )}
               </SidebarMenuItem>

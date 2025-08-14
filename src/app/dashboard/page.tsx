@@ -66,14 +66,7 @@ export default async function DashboardPage() {
             >
               Add Company
             </Link>
-            <form action="/api/admin/logout" method="POST" className="inline">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Logout
-              </button>
-            </form>
+          
           </div>
         </div>
       </div>
