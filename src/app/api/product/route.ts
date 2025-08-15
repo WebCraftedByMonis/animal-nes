@@ -323,7 +323,7 @@ export async function GET(req: NextRequest) {
 
   // Build where clause
   const where: any = {
-    isActive: true, // Always filter for active products
+     // Always filter for active products
   }
 
   // Search filter - searches across multiple fields

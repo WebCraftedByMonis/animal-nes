@@ -30,13 +30,13 @@ model Product {
   id             Int             @id @default(autoincrement())
   productName    String          @db.Text
   genericName    String?         @db.Text
-  category       String          @db.Text
-  subCategory    String          @db.Text
-  subsubCategory String          @db.Text
-  productType    String          @db.Text
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category       String?        @db.Text
+  subCategory    String?         @db.Text
+  subsubCategory String?       @db.Text
+  productType    String?       @db.Text
+  company        Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId      Int
-  partner        Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partner        Partner?      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   partnerId      Int
   description    String?         @db.Text
   productLink    String?
@@ -55,11 +55,11 @@ model Product {
 
 model ProductVariant {
   id             Int             @id @default(autoincrement())
-  packingVolume  String          @db.Text
+  packingVolume  String   ?       @db.Text
   companyPrice   Float?
   dealerPrice    Float?
-  customerPrice  Float
-  inventory      Int
+  customerPrice  Float?
+  inventory      Int?
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId      Int
   cartItems      CartItem[]
