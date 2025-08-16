@@ -134,30 +134,32 @@ export default function ViewCompaniesPage() {
       <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
         <h1 className="text-2xl font-bold text-center text-green-500">Companies</h1>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex gap-2 items-center">
-            <Input
-              placeholder="Search companies..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="focus:ring-green-500"
-            />
-            <span>Show</span>
-            <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Show" />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 25, 50, 100].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>entries</span>
-          </div>
-        </div>
+       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap">
+  <div className="flex flex-col sm:flex-row gap-2 flex-wrap w-full sm:w-auto">
+    <Input
+      placeholder="Search companies..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="focus:ring-green-500 w-full sm:w-auto"
+    />
+    <div className="flex items-center gap-1">
+      <span>Show</span>
+      <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+        <SelectTrigger className="w-[80px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {[10, 25, 50, 100].map((n) => (
+            <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <span>entries</span>
+    </div>
+  </div>
+</div>
+</div>
+
 
         <div className="overflow-x-auto bg-white dark:bg-zinc-900 rounded shadow border border-zinc-200 dark:border-zinc-700">
           <Table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
@@ -230,36 +232,47 @@ export default function ViewCompaniesPage() {
             </TableBody>
           </Table>
 
-          <div className="mt-4 px-4 py-2 flex justify-between items-center text-sm">
-            <p className="text-muted-foreground">Total entries: {total}</p>
-            <span>
-              {lastCreatedAt
-                ? `Last entry submitted ${formatDistanceToNow(new Date(lastCreatedAt))} ago`
-                : 'No entries yet'}
-            </span>
-            <div className="flex gap-2">
-              <Button size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
-              {Array.from({ length: Math.ceil(total / limit) }, (_, i) => i + 1).map((p) => (
-                <Button
-                  key={p}
-                  size="sm"
-                  variant={p === page ? 'default' : 'outline'}
-                  onClick={() => setPage(p)}
-                  className={p === page ? 'bg-green-500 text-white' : ''}
-                >
-                  {p}
-                </Button>
-              ))}
-              <Button
-                size="sm"
-                disabled={page * limit >= total}
-                onClick={() => setPage(page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
+        <div className="mt-4 px-4 py-2 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+  <p className="text-muted-foreground">Total entries: {total}</p>
+  <span>
+    {lastCreatedAt
+      ? `Last entry submitted ${formatDistanceToNow(new Date(lastCreatedAt))} ago`
+      : 'No entries yet'}
+  </span>
+  <div className="flex flex-wrap gap-2">
+    <Button size="sm" onClick={() => setPage(1)} disabled={page === 1}>First</Button>
+    <Button size="sm" onClick={() => setPage(page - 1)} disabled={page === 1}>Prev</Button>
+    {[...Array(Math.ceil(total / limit))].slice(Math.max(0, page - 2), page + 1).map((_, i) => {
+      const pageNum = i + Math.max(1, page - 2)
+      return (
+        <Button
+          key={pageNum}
+          size="sm"
+          variant={page === pageNum ? 'default' : 'outline'}
+          onClick={() => setPage(pageNum)}
+          className={page === pageNum ? 'bg-green-500 text-white' : ''}
+        >
+          {pageNum}
+        </Button>
+      )
+    })}
+    <Button
+      size="sm"
+      onClick={() => setPage(page + 1)}
+      disabled={page * limit >= total}
+    >
+      Next
+    </Button>
+    <Button
+      size="sm"
+      onClick={() => setPage(Math.ceil(total / limit))}
+      disabled={page === Math.ceil(total / limit)}
+    >
+      Last
+    </Button>
+  </div>
+</div>
+
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-2xl">

@@ -254,44 +254,42 @@ export default function ViewProductsPage() {
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-center text-green-500">Products</h1>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500"
-          />
-          <Select 
-            value={`${sortBy}-${sortOrder}`}
-            onValueChange={handleSortChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="id-asc">ID (Ascending)</SelectItem>
-              <SelectItem value="id-desc">ID (Descending)</SelectItem>
-              <SelectItem value="productName-asc">Name (A-Z)</SelectItem>
-              <SelectItem value="productName-desc">Name (Z-A)</SelectItem>
-            </SelectContent>
-          </Select>
-          <span>Show</span>
-          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Show" />
-            </SelectTrigger>
-            <SelectContent>
-              {[10, 25, 50, 100].map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span>entries</span>
-        </div>
-      </div>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap">
+  <div className="flex flex-col sm:flex-row gap-2 flex-wrap w-full sm:w-auto">
+    <Input
+      placeholder="Search products..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="focus:ring-green-500 w-full sm:w-auto"
+    />
+    <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
+      <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectValue placeholder="Sort by" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="id-asc">ID (Asc)</SelectItem>
+        <SelectItem value="id-desc">ID (Desc)</SelectItem>
+        <SelectItem value="productName-asc">Name (A-Z)</SelectItem>
+        <SelectItem value="productName-desc">Name (Z-A)</SelectItem>
+      </SelectContent>
+    </Select>
+    <div className="flex items-center gap-1">
+      <span>Show</span>
+      <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+        <SelectTrigger className="w-[80px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {[10, 25, 50, 100].map((n) => (
+            <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <span>entries</span>
+    </div>
+  </div>
+</div>
+
 
       <div className="overflow-x-auto">
         <Table>
@@ -447,32 +445,34 @@ export default function ViewProductsPage() {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          Total entries: {total} | {lastCreatedAt && `Last entry: ${formatDistanceToNow(new Date(lastCreatedAt))} ago`}
-        </p>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center px-3 text-sm">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+   <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-4">
+  <p className="text-sm text-muted-foreground">
+    Total entries: {total} | Page {page} of {totalPages}
+  </p>
+
+  <div className="flex items-center gap-2 flex-wrap">
+    <Button size="sm" variant="outline" onClick={() => setPage(1)} disabled={page === 1}>First</Button>
+    <Button size="sm" variant="outline" onClick={() => setPage(page - 1)} disabled={page === 1}>Previous</Button>
+    
+    {[...Array(totalPages)].slice(Math.max(0, page - 2), page + 1).map((_, i) => {
+      const pageNum = i + Math.max(1, page - 2)
+      return (
+        <Button
+          key={pageNum}
+          size="sm"
+          variant={page === pageNum ? "default" : "outline"}
+          onClick={() => setPage(pageNum)}
+        >
+          {pageNum}
+        </Button>
+      )
+    })}
+    
+    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page === totalPages}>Next</Button>
+    <Button size="sm" variant="outline" onClick={() => setPage(totalPages)} disabled={page === totalPages}>Last</Button>
+  </div>
+</div>
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
