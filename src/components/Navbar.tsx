@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Cat, MenuIcon, } from "lucide-react";
-import { Button } from "@/components/ui/button"
+import { Cat, MenuIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { ShoppingCart } from "lucide-react";
-
+import { cn } from "@/lib/utils"; // Make sure you have this utility or use clsx
 
 import {
   Drawer,
@@ -19,8 +19,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
-
+} from "@/components/ui/drawer";
 
 import {
   NavigationMenu,
@@ -42,23 +41,35 @@ import {
 import { NavigationMenuDemo } from "./Navigation-menu";
 import { ModeToggle } from "./ModeToggle";
 import { usePathname } from "next/navigation";
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-
 export default function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
   const { data } = useSWR("/api/cart-count", fetcher, {
-    refreshInterval: 5000, // Optional: auto-refresh every 5 seconds
+    refreshInterval: 5000,
   });
 
   const cartCount = data?.count || 0;
 
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.scrollY > 10;
+      setIsScrolled(scrolled);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Check initial scroll position
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchCartCount = async () => {
       try {
         const res = await fetch("/api/cart-count");
         const data = await res.json();
-
       } catch (err) {
         console.error("Failed to fetch cart count:", err);
       }
@@ -68,49 +79,47 @@ export default function Navbar() {
   }, []);
 
   const pathname = usePathname();
-  const hiddenRoutes = ['/login', ];
-const shouldHideNavbar =
-  pathname.startsWith('/dashboard') || hiddenRoutes.includes(pathname);
+  const hiddenRoutes = ["/login"];
+  const shouldHideNavbar =
+    pathname.startsWith("/dashboard") || hiddenRoutes.includes(pathname);
 
-if (shouldHideNavbar) return null;
+  if (shouldHideNavbar) return null;
 
   const { data: session } = useSession();
   const user = session?.user;
 
   return (
-    <nav className="text-foreground w-full border-b border-border bg-background ">
+    <nav
+      className={cn(
+        "text-foreground w-full border-b transition-all duration-300 fixed top-0 left-0 right-0 z-50",
+        isScrolled
+          ? "bg-background/75 backdrop-blur-xl border-border/40 shadow-lg supports-[backdrop-filter]:bg-background/60 dark:bg-background/75"
+          : "bg-background border-border shadow-sm"
+      )}
+    >
       <div className="flex items-center justify-between px-4 py-3 overflow-visible flex-nowrap gap-4">
-
         {/* Logo & NavigationMenuDemo (aligned left) */}
-      
         <div className="flex items-center gap-4 shrink-0">
-        <Link href="/">
-          <Image
-            src="/logo.jpg"
-            alt="Logo"
-            width={50}
-            height={50}
-            className="h-12 w-12 object-contain rounded-full"
-          />  </Link>
-
+          <Link href="/">
+            <Image
+              src="/logo.jpg"
+              alt="Logo"
+              width={210}
+              height={60}
+              className="h-16 object-contain"
+            />
+          </Link>
 
           {/* Main nav links - visible on md+ screens */}
-          <div className="hidden lg:flex  gap-4 items-center shrink-0">
+          <div className="hidden lg:flex gap-4 items-center shrink-0">
             <NavigationMenu>
               <NavigationMenuList className="gap-3">
-               <div className="flex flex-col gap-1 justify-center items-center text-center">
-  <div className="text-xl font-semibold">آس</div>
-  <div className="text-[12px]">Wellness Home to Your Animals</div>
-</div>
-
-               
                 {[
                   ["Home", "/"],
                   ["Products", "/products"],
                   ["Nexus News", "/animal-news"],
                   ["Sell Animal", "/sell"],
                   ["Buy Animal", "/buy"],
-                  
                 ].map(([label, href]) => (
                   <NavigationMenuItem key={label}>
                     <NavigationMenuLink
@@ -127,17 +136,12 @@ if (shouldHideNavbar) return null;
           <div className="hidden sm:block">
             <NavigationMenuDemo />
           </div>
-
-
         </div>
-
-
 
         <div className="flex gap-2 justingy-center items-center">
           <div className="hidden sm:block">
             <ModeToggle />
           </div>
-
 
           {/* Cart Button */}
           <Link href="/cart" className="relative">
@@ -150,66 +154,60 @@ if (shouldHideNavbar) return null;
           </Link>
 
           <div className="flex gap-4">
-            <Link href="/animalCart"  >
+            <Link href="/animalCart">
               <Cat className="text-green-500" />
             </Link>
-
           </div>
 
           {/* Mobile menu icon - visible on small screens */}
-          <div className="md:hidden  shrink-0">
+          <div className="md:hidden shrink-0">
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button variant="ghost" className="p-0">
+                  <MenuIcon className="size-6" />
+                </Button>
+              </DrawerTrigger>
 
-          <Drawer>
-  <DrawerTrigger asChild>
-    <Button variant="ghost" className="p-0"><MenuIcon className="size-6" /></Button>
-  </DrawerTrigger>
+              <DrawerContent className="h-[80vh] max-h-[80vh]">
+                <DrawerHeader>
+                  <DrawerTitle>Menu</DrawerTitle>
+                </DrawerHeader>
 
-  <DrawerContent className="h-[80vh] max-h-[80vh]">
-    <DrawerHeader>
-      <DrawerTitle>Menu</DrawerTitle>
-    </DrawerHeader>
+                <div className="flex flex-col px-4 gap-4 overflow-y-auto flex-1">
+                  <NavigationMenuDemo />
+                  {[
+                    ["Home", "/"],
+                    ["Products", "/products"],
+                    ["Nexus News", "/animal-news"],
+                    ["Sell Animal", "/sell"],
+                    ["Buy Animal", "/buy"],
+                    ["Find Doctor", "/findDoctor"],
+                  ].map(([label, href]) => (
+                    <DrawerClose asChild key={label}>
+                      <Link
+                        href={href}
+                        className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
+                      >
+                        {label}
+                      </Link>
+                    </DrawerClose>
+                  ))}
 
-    <div className="flex flex-col px-4 gap-4 overflow-y-auto flex-1">
-      <NavigationMenuDemo />
-      {[
-        ["Home", "/"],
-        ["Products", "/products"],
-        ["Nexus News", "/animal-news"],
-        ["Sell Animal", "/sell"],
-        ["Buy Animal", "/buy"],
-        ["Find Doctor", "/findDoctor"],
-      ].map(([label, href]) => (
-        <DrawerClose asChild key={label}>
-          <Link
-            href={href}
-            className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
-          >
-            {label}
-          </Link>
-        </DrawerClose>
-      ))}
+                  <ModeToggle />
+                </div>
 
-      <ModeToggle />
-    </div>
-
-    <DrawerFooter className="mt-auto">
-      <DrawerClose asChild>
-        <Button variant="outline" className="w-full">
-          Close Menu
-        </Button>
-      </DrawerClose>
-    </DrawerFooter>
-  </DrawerContent>
-</Drawer>
-
-
-
-
+                <DrawerFooter className="mt-auto">
+                  <DrawerClose asChild>
+                    <Button variant="outline" className="w-full">
+                      Close Menu
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           </div>
 
           {/* Avatar & Dropdown */}
-
-          {/* Auth buttons / avatar */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger className="outline-none border-none bg-transparent p-0">
@@ -246,8 +244,12 @@ if (shouldHideNavbar) return null;
             </DropdownMenu>
           ) : (
             <div className="flex gap-2">
-
-              <Button className="bg-green-500 hover:bg-green-600" onClick={() => signIn('google')}>Sign up</Button>
+              <Button
+                className="bg-green-500 hover:bg-green-600"
+                onClick={() => signIn("google")}
+              >
+                Sign up
+              </Button>
             </div>
           )}
         </div>

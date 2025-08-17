@@ -205,6 +205,7 @@ model User {
   email         String?              @unique
   emailVerified DateTime?
   image         String?
+  PhoneNumber   String?
   accounts      Account[]
   sessions      Session[]
   cart          CartItem[]

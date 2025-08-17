@@ -10,16 +10,13 @@ import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
 
-
-
-
 export const metadata: Metadata = {
   title: {
     template: "%s | Animal Wellness",
     absolute: "Animal Wellness",
   },
   description: "Wellness Home to Your Animals  آس",
-  keywords: "darwaza" ,
+  keywords: "darwaza",
   openGraph: {
     images: ["/logo.jpg"]
   }
@@ -31,24 +28,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"  suppressHydrationWarning>
-      <body
-        className={poppins.className}
+    <html lang="en" suppressHydrationWarning>
+      <body className={poppins.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-             <SessionWrapper>
-                <ProgressBar />
-        <Navbar/>
-         <Toaster position="top-center" />
-        {children}
-        <Footer/>
-        </SessionWrapper>
-        <ToastContainer position="top-right" />
+          <SessionWrapper>
+            <ProgressBar />
+            {/* Main layout container */}
+            <div className="min-h-screen flex flex-col">
+              <Navbar />
+              <Toaster position="top-center" />
+              {/* Main content with padding for fixed navbar */}
+              <main className="flex-1 pt-[88px]">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </SessionWrapper>
+          <ToastContainer position="top-right" />
         </ThemeProvider>
       </body>
     </html>

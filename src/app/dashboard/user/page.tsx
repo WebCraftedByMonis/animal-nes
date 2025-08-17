@@ -37,6 +37,7 @@ interface User {
   name: string | null;
   email: string | null;
   image: string | null;
+  PhoneNumber: string | null;
   sessions: Session[];
 }
 
@@ -61,6 +62,7 @@ export default function UsersPage() {
       .then((data) => {
         setUsers(data.users);
         setTotal(data.total);
+        console.log("Fetched users:", data.users);
       });
   }, [page, search, range, pageSize]);
 
@@ -122,6 +124,8 @@ export default function UsersPage() {
             <TableHead>Image</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead>Phone Number</TableHead>
+            
             <TableHead>Last Login</TableHead>
           </TableRow>
         </TableHeader>
@@ -145,6 +149,7 @@ export default function UsersPage() {
                 {user.name ?? "Unnamed"}
               </TableCell>
               <TableCell>{user.email}</TableCell>
+              <TableCell>{user.PhoneNumber}</TableCell>
               <TableCell>
                 {user.sessions[0]
                   ? new Date(user.sessions[0].createdAt).toLocaleString()
