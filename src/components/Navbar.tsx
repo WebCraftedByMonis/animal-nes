@@ -9,7 +9,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { ShoppingCart } from "lucide-react";
-import { cn } from "@/lib/utils"; // Make sure you have this utility or use clsx
+import { cn } from "@/lib/utils";
 
 import {
   Drawer,
@@ -60,7 +60,7 @@ export default function Navbar() {
     };
 
     window.addEventListener("scroll", handleScroll);
-    handleScroll(); // Check initial scroll position
+    handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -97,21 +97,22 @@ export default function Navbar() {
           : "bg-background border-border shadow-sm"
       )}
     >
-      <div className="flex items-center justify-between px-4 py-3 overflow-visible flex-nowrap gap-4">
-        {/* Logo & NavigationMenuDemo (aligned left) */}
-        <div className="flex items-center gap-4 shrink-0">
-          <Link href="/">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-3 w-full">
+        {/* Logo & Navigation - Left Side */}
+        <div className="flex items-center gap-2 lg:gap-4 min-w-0">
+          <Link href="/" className="shrink-0">
             <Image
               src="/logo.jpg"
               alt="Logo"
               width={210}
               height={60}
-              className="h-16 object-contain"
+              className="h-12 sm:h-14 md:h-16 w-auto object-contain max-w-[120px] sm:max-w-[160px] md:max-w-[210px]"
+              priority
             />
           </Link>
 
-          {/* Main nav links - visible on md+ screens */}
-          <div className="hidden lg:flex gap-4 items-center shrink-0">
+          {/* Main nav links - visible on lg+ screens */}
+          <div className="hidden lg:flex gap-4 items-center">
             <NavigationMenu>
               <NavigationMenuList className="gap-3">
                 {[
@@ -133,38 +134,40 @@ export default function Navbar() {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          <div className="hidden sm:block">
+          
+          <div className="hidden md:block ">
             <NavigationMenuDemo />
           </div>
         </div>
 
-        <div className="flex gap-2 justingy-center items-center">
+        {/* Right Side Actions */}
+        <div className="flex gap-1 sm:gap-2 items-center shrink-0">
+          {/* Theme Toggle - Hidden on mobile */}
           <div className="hidden sm:block">
             <ModeToggle />
           </div>
 
           {/* Cart Button */}
-          <Link href="/cart" className="relative">
-            <ShoppingCart className="w-6 h-6 text-green-500 hover:text-green-600 transition-colors" />
+          <Link href="/cart" className="relative p-1 sm:p-2">
+            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] sm:text-xs rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          <div className="flex gap-4">
-            <Link href="/animalCart">
-              <Cat className="text-green-500" />
-            </Link>
-          </div>
+          {/* Animal Cart */}
+          <Link href="/animalCart" className="p-1 sm:p-2">
+            <Cat className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
+          </Link>
 
-          {/* Mobile menu icon - visible on small screens */}
-          <div className="md:hidden shrink-0">
+          {/* Mobile menu - Always visible on small screens */}
+          <div className="lg:hidden">
             <Drawer>
               <DrawerTrigger asChild>
-                <Button variant="ghost" className="p-0">
-                  <MenuIcon className="size-6" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
+                  <MenuIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </DrawerTrigger>
 
@@ -186,14 +189,16 @@ export default function Navbar() {
                     <DrawerClose asChild key={label}>
                       <Link
                         href={href}
-                        className="text-base font-medium text-foreground hover:text-green-500 transition-colors"
+                        className="text-base font-medium text-foreground hover:text-green-500 transition-colors py-2"
                       >
                         {label}
                       </Link>
                     </DrawerClose>
                   ))}
 
-                  <ModeToggle />
+                  <div className="pt-4 border-t">
+                    <ModeToggle />
+                  </div>
                 </div>
 
                 <DrawerFooter className="mt-auto">
@@ -211,9 +216,9 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger className="outline-none border-none bg-transparent p-0">
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
                   <AvatarImage src={user.image || ""} />
-                  <AvatarFallback>
+                  <AvatarFallback className="text-xs sm:text-sm">
                     {user.name
                       ?.split(" ")
                       .map((n) => n[0])
@@ -221,8 +226,8 @@ export default function Navbar() {
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="text-sm">{user.name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="w-full">
@@ -243,14 +248,12 @@ export default function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex gap-2">
-              <Button
-                className="bg-green-500 hover:bg-green-600"
-                onClick={() => signIn("google")}
-              >
-                Sign up
-              </Button>
-            </div>
+            <Button
+              className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-9"
+              onClick={() => signIn("google")}
+            >
+              Sign up
+            </Button>
           )}
         </div>
       </div>
