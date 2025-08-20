@@ -76,7 +76,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export  function AddHistoryFormPage() {
+export default function AddHistoryFormPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <AddHistoryFormContent />
@@ -85,7 +85,7 @@ export  function AddHistoryFormPage() {
 }
 
 
-export default function AddHistoryFormContent() {
+export  function AddHistoryFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasValues, setHasValues] = useState(false);
   const searchParams = useSearchParams();

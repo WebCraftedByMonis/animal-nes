@@ -11,7 +11,7 @@ import { Loader2, UploadCloud, X, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 
-export  function PaymentForm() {
+export default function PaymentForm() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <PaymentFormContent />
@@ -21,7 +21,7 @@ export  function PaymentForm() {
 
 
 
-export default function PaymentFormContent() {
+export  function PaymentFormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appointmentId = searchParams.get('appointmentId');

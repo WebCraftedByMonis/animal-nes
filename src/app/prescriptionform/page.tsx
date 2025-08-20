@@ -55,7 +55,7 @@ type FormValues = z.infer<typeof prescriptionSchema>
 
 
 
-export  function NewPrescriptionPage() {
+export default function NewPrescriptionPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <PrescriptionFormContent />
@@ -64,7 +64,7 @@ export  function NewPrescriptionPage() {
 }
 
 
-export default function PrescriptionFormContent() {
+export  function PrescriptionFormContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
   
