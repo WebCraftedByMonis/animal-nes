@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Loader2, FileText, Heart, Home, Activity, Syringe, AlertCircle, Calendar, User, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +76,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function AddHistoryFormPage() {
+export  function AddHistoryFormPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AddHistoryFormContent />
+    </Suspense>
+  );
+}
+
+
+export default function AddHistoryFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasValues, setHasValues] = useState(false);
   const searchParams = useSearchParams();

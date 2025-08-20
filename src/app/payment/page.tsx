@@ -4,14 +4,24 @@
 
 
 export const dynamic = 'force-dynamic';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { Loader2, UploadCloud, X, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 
-export default function PaymentForm() {
+export  function PaymentForm() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PaymentFormContent />
+    </Suspense>
+  );
+}
+
+
+
+export default function PaymentFormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appointmentId = searchParams.get('appointmentId');
@@ -152,6 +162,10 @@ export default function PaymentForm() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+
+
+  
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {

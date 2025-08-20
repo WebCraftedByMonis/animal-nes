@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -53,7 +53,18 @@ const prescriptionSchema = z.object({
 
 type FormValues = z.infer<typeof prescriptionSchema>
 
-export default function NewPrescriptionPage() {
+
+
+export  function NewPrescriptionPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PrescriptionFormContent />
+    </Suspense>
+  );
+}
+
+
+export default function PrescriptionFormContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
   
