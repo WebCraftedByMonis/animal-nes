@@ -1,8 +1,6 @@
 // app/payment/page.tsx
 "use client";
 
-
-
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -18,8 +16,6 @@ export default function PaymentForm() {
     </Suspense>
   );
 }
-
-
 
 export  function PaymentFormContent() {
   const searchParams = useSearchParams();
