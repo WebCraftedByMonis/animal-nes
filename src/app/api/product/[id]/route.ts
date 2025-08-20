@@ -4,18 +4,20 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
-  console.log('API Route called with ID:', params.id) // Debug log
-  
-  const productId = parseInt(params.id, 10)
-
-  if (isNaN(productId)) {
-    console.log('Invalid ID provided:', params.id) // Debug log
-    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
-  }
-
   try {
+    // Await the params object first
+    const { id: idString } = await params;
+    console.log('API Route called with ID:', idString) // Debug log
+    
+    const productId = parseInt(idString, 10);
+
+    if (isNaN(productId)) {
+      console.log('Invalid ID provided:', idString) // Debug log
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     console.log('Searching for product with ID:', productId) // Debug log
     
     const product = await prisma.product.findUnique({
@@ -27,20 +29,20 @@ export async function GET(
         partner: true,
         variants: true,
       },
-    })
+    });
 
     console.log('Database query result:', product ? 'Product found' : 'Product not found') // Debug log
 
     if (!product) {
       console.log('Product not found in database for ID:', productId) // Debug log
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     console.log('Returning product data successfully') // Debug log
-    return NextResponse.json({ data: product })
+    return NextResponse.json({ data: product });
 
   } catch (error) {
-    console.error('[PRODUCT_DETAIL_ERROR]', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    console.error('[PRODUCT_DETAIL_ERROR]', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

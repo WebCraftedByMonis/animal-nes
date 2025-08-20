@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
-  const id = parseInt(params.id)
+  // Await the params object first
+  const { id: idString } = await params;
+  const id = parseInt(idString);
 
   if (isNaN(id)) {
-    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
   }
 
   const applicant = await prisma.jobApplicant.findUnique({
@@ -17,11 +20,11 @@ export async function GET(
       image: true,
       cv: true,
     },
-  })
+  });
 
   if (!applicant) {
-    return NextResponse.json({ error: 'Applicant not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Applicant not found' }, { status: 404 });
   }
 
-  return NextResponse.json(applicant)
+  return NextResponse.json(applicant);
 }

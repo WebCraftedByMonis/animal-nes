@@ -4,32 +4,34 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
-  const id = parseInt(params.id)
-
-  if (isNaN(id)) {
-    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
-  }
-
   try {
+    // Await the params object first
+    const { id: idString } = await params;
+    const id = parseInt(idString);
+
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     const jobPost = await prisma.traditionalJobPost.findUnique({
       where: { id },
       include: {
         image: true,
       },
-    })
+    });
 
     if (!jobPost) {
-      return NextResponse.json({ error: 'Job post not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job post not found' }, { status: 404 });
     }
 
-    return NextResponse.json(jobPost)
+    return NextResponse.json(jobPost);
   } catch (error) {
-    console.error('Error fetching job post:', error)
+    console.error('Error fetching job post:', error);
     return NextResponse.json(
       { error: 'Failed to fetch job post' },
       { status: 500 }
-    )
+    );
   }
 }

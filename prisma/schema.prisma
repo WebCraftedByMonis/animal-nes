@@ -39,7 +39,7 @@ model Product {
   partner        Partner?      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   partnerId      Int
   description    String?         @db.Text
-  productLink    String?
+  productLink    String?          @db.Text
   dosage         String?         @db.Text
   image          ProductImage?
   pdf            ProductPdf?
@@ -295,22 +295,6 @@ model CheckoutItem {
   price       Float
 }
 
-model AppointmentRequest {
-  id            Int               @id @default(autoincrement())
-  customerId    String
-  customer      User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  doctor        String
-  city          String
-  state         String?
-  species       String
-  fullAddress   String?           @db.Text
-  gender        Gender
-  appointmentAt DateTime
-  isEmergency   Boolean
-  description   String            @db.Text
-  createdAt     DateTime          @default(now())
-  status        AppointmentStatus @default(PENDING)
-}
 
 model AnimalNews {
   id          Int        @id @default(autoincrement())
@@ -556,6 +540,47 @@ enum DeclarationStatus {
   AGREED
   NOT_AGREED
 }
+
+
+model PaymentInfo {
+  id                Int      @id @default(autoincrement())
+  appointmentId     Int      @unique
+  appointment       AppointmentRequest @relation(fields: [appointmentId], references: [id])
+  
+  consultationType  String   // "needy", "virtual", "physical"
+  consultationFee   Float    // 0, 500, 1000
+  paymentMethod     String   // "jazzcash", "easypaisa", "bank", "cod"
+  
+  // Payment screenshot (optional - not needed for COD)
+  screenshotUrl     String?  @db.Text
+  screenshotPublicId String? @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+
+
+
+model AppointmentRequest {
+  id            Int               @id @default(autoincrement())
+  customerId    String
+  customer      User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  doctor        String
+  city          String
+  state         String?
+  species       String
+  fullAddress   String?           @db.Text
+  gender        Gender
+  appointmentAt DateTime
+  isEmergency   Boolean
+  description   String            @db.Text
+  paymentInfo      PaymentInfo?
+  createdAt     DateTime          @default(now())
+  status        AppointmentStatus @default(PENDING)
+}
+
+
 
 model HistoryForm {
   id                    Int                @id @default(autoincrement())

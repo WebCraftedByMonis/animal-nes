@@ -43,7 +43,7 @@ export default function RootLayout({
               <Navbar />
               <Toaster position="top-center" />
               {/* Main content with padding for fixed navbar */}
-              <main className="flex-1 pt-[88px]">
+              <main className="flex-1 pt-[76px]">
                 {children}
               </main>
               <Footer />

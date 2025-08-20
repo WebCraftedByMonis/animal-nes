@@ -1,11 +1,14 @@
-// pages/appointments/new.tsx
-"use client"
-import { useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Head from "next/head";
 import toast from "react-hot-toast";
+import { useSession, signIn } from "next-auth/react"; // ⬅️ NEW
 import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
 
 export default function NewAppointmentPage() {
+  const router = useRouter();
+  const { status } = useSession(); // ⬅️ NEW
   const [form, setForm] = useState({
     doctor: "",
     city: "",
@@ -19,66 +22,111 @@ export default function NewAppointmentPage() {
   });
   const [loading, setLoading] = useState(false);
 
+  // Tell the user to login and redirect them to your login page
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      toast.error("Please log in to book an appointment.");
+      const callback = encodeURIComponent("/findDoctor");
+      
+    }
+  }, [status, router]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const target = e.target;
-
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
     const value =
       target instanceof HTMLInputElement && target.type === "checkbox"
         ? target.checked
         : target.value;
-
-    setForm((prev) => ({
-      ...prev,
-      [target.name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [target.name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     const toastId = toast.loading("Submitting appointment...");
-    const res = await fetch("/api/appointments/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    if (res.ok) {
-      toast.success("Appointment request submitted!", { id: toastId });
-      setForm({
-        doctor: "",
-        city: "",
-        state: "",
-        species: "",
-        fullAddress: "",
-        gender: "MALE",
-        appointmentAt: "",
-        isEmergency: false,
-        description: "",
+    try {
+      const res = await fetch("/api/appointments/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
-    } else {
-      console.log(res)
-      toast.error("Failed to submit appointment", { id: toastId });
-    }
-    setLoading(false);
 
+      if (res.ok) {
+        const appointment = await res.json();
+        toast.success("Appointment submitted! Redirecting to payment...", { id: toastId });
+        setForm({
+          doctor: "",
+          city: "",
+          state: "",
+          species: "",
+          fullAddress: "",
+          gender: "MALE",
+          appointmentAt: "",
+          isEmergency: false,
+          description: "",
+        });
+        setTimeout(() => {
+          router.push(`/payment?appointmentId=${appointment.id}`);
+        }, 1000);
+      } else {
+        const error = await res.json();
+        console.error("Error response:", error);
+        toast.error(error.error || "Failed to submit appointment", { id: toastId });
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.error("An error occurred while submitting", { id: toastId });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // While NextAuth figures out the session
+  if (status === "loading") {
+    return (
+      <>
+        <Head><title>Find a Doctor - Animal Care</title></Head>
+        <div className="min-h-screen flex items-center justify-center py-10 px-4">
+          <div className="p-8 rounded-2xl shadow-lg max-w-xl w-full">
+            <p className="text-center text-gray-500">Checking your session…</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // If unauthenticated, we already pushed to /login, but this is a graceful fallback
+  if (status === "unauthenticated") {
+    return (
+      <>
+        <Head><title>Login required</title></Head>
+        <div className="min-h-screen flex items-center justify-center py-10 px-4">
+          <div className="p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
+            <h1 className="text-2xl font-bold mb-3">Login required</h1>
+            <p className="mb-6">Please log in to book an appointment.</p>
+            <button
+              onClick={() => signIn("google")}
+              className="w-full font-semibold py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Authenticated: render your form as-is
   return (
     <>
-      <Head>
-        <title>Find a Doctor - Animal Care</title>
-      </Head>
-
+      <Head><title>Find a Doctor - Animal Care</title></Head>
       <div className="min-h-screen flex items-center justify-center py-10 px-4">
-        <div className=" p-8 rounded-2xl shadow-lg max-w-xl w-full">
+        <div className="p-8 rounded-2xl shadow-lg max-w-xl w-full">
           <h1 className="text-3xl font-bold text-green-500 mb-6 text-center">
             Find a Doctor for Your Animal
           </h1>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               name="doctor"
@@ -88,6 +136,7 @@ export default function NewAppointmentPage() {
               required
               className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
             />
+            
             <input
               name="city"
               placeholder="City"
@@ -96,6 +145,7 @@ export default function NewAppointmentPage() {
               required
               className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
             />
+            
             <SuggestiveInput
               suggestions={[
                 "Punjab",
@@ -111,26 +161,25 @@ export default function NewAppointmentPage() {
               placeholder="State (Optional)"
             />
 
-           <SuggestiveInput
-  suggestions={[
-    "Cow – گائے",
-    "Buffalo – بھینس",
-    "Goat – بکری",
-    "Sheep – بھیڑ",
-    "Camel – اونٹ",
-    "Donkey – گدھا",
-    "Horse – گھوڑا",
-    "Desi/ Fancy birds – دیسی مرغی / مرغا",
-    "Broiler Chicken – برائلر مرغی",
-    "Layer Chicken – انڈے دینے والی مرغ",
-    "Dog – کتا",
-    "Cat – بلی"
-  ]}
-  value={form.species}
-  onChange={(val) => setForm((prev) => ({ ...prev, species: val }))}
-  placeholder="Animal Species"
-  
-/>
+            <SuggestiveInput
+              suggestions={[
+                "Cow – گائے",
+                "Buffalo – بھینس",
+                "Goat – بکری",
+                "Sheep – بھیڑ",
+                "Camel – اونٹ",
+                "Donkey – گدھا",
+                "Horse – گھوڑا",
+                "Desi/ Fancy birds – دیسی مرغی / مرغا",
+                "Broiler Chicken – برائلر مرغی",
+                "Layer Chicken – انڈے دینے والی مرغ",
+                "Dog – کتا",
+                "Cat – بلی"
+              ]}
+              value={form.species}
+              onChange={(val) => setForm((prev) => ({ ...prev, species: val }))}
+              placeholder="Animal Species"
+            />
 
             <input
               name="fullAddress"
@@ -182,10 +231,11 @@ export default function NewAppointmentPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full font-semibold py-3 rounded-xl transition ${loading
+              className={`w-full font-semibold py-3 rounded-xl transition ${
+                loading
                   ? "bg-green-300 cursor-not-allowed"
                   : "bg-green-500 hover:bg-green-600 text-white"
-                }`}
+              }`}
             >
               {loading ? "Submitting..." : "Submit Appointment"}
             </button>

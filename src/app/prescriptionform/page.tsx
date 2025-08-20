@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'react-hot-toast'
 import { Plus, Trash2, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 /** Zod validation schemas */
 const prescriptionItemSchema = z.object({
@@ -22,7 +23,7 @@ const prescriptionItemSchema = z.object({
 })
 
 const prescriptionSchema = z.object({
-  historyFormId: z.number().int().min(1, 'History Form ID is required'),
+  appointmentId: z.number().int().optional(), // Optional since it comes from URL
   doctorName: z.string().min(1, 'Doctor name is required'),
   qualification: z.string().optional().nullable(),
   prescriptionNo: z.string().optional().nullable(),
@@ -52,18 +53,22 @@ const prescriptionSchema = z.object({
 type FormValues = z.infer<typeof prescriptionSchema>
 
 export default function NewPrescriptionPage() {
+  const searchParams = useSearchParams();
+  const appointmentId = searchParams.get('appointmentId');
+  
+  const [loadingAppointment, setLoadingAppointment] = useState(false)
+
   const {
     register,
     control,
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
-      historyFormId: undefined as unknown as number,
+      appointmentId: undefined,
       doctorName: '',
       qualification: '',
       prescriptionNo: '',
@@ -92,59 +97,60 @@ export default function NewPrescriptionPage() {
     name: 'prescriptionItems',
   })
 
-  const historyFormId = watch('historyFormId')
-
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  // When the user enters a historyFormId, fetch that history form and auto-fill
+  // Fetch appointment data and auto-fill fields
   useEffect(() => {
-    async function fetchHistory(id: number) {
-      setLoadingHistory(true)
+    async function fetchAppointmentData() {
+      if (!appointmentId) return;
+      
+      setLoadingAppointment(true);
       try {
-        const res = await fetch(`/api/history-forms/${id}`)
+        const res = await fetch(`/api/appointments/${appointmentId}`);
         if (!res.ok) {
           if (res.status === 404) {
-            toast.error('History form not found')
-            // clear owner/animal fields
-            setValue('ownerName', '')
-            setValue('ownerContact', '')
-            setValue('animalSpecies', '')
-            setValue('breed', '')
-            setValue('age', '')
-            setValue('sex', '')
-            return
+            toast.error('Appointment not found');
+            return;
           }
-          throw new Error('Failed to fetch history form')
+          throw new Error('Failed to fetch appointment');
         }
-        const history = await res.json()
-        // set owner & animal fields from history (names based on your HistoryForm model)
-        setValue('ownerName', history.name ?? '')
-        setValue('ownerContact', history.contact ?? '')
-        setValue('animalSpecies', history.animalSpecie ?? '')
-        setValue('breed', history.breed ?? '')
-        setValue('age', history.age ?? '')
-        setValue('sex', history.sex ?? '')
-        toast.success('History form loaded — owner & animal fields filled')
+        
+        const appointment = await res.json();
+        
+        // Set appointmentId in form
+        setValue('appointmentId', parseInt(appointmentId));
+        
+        // Auto-fill owner information
+        setValue('ownerName', appointment.customer?.name || '');
+        setValue('ownerContact', appointment.doctor || ''); // doctor field contains phone number
+        
+        // Clean and set animal species (remove Urdu text)
+        const speciesName = appointment.species?.split('–')[0]?.trim() || '';
+        setValue('animalSpecies', speciesName);
+        
+        // Set animal sex
+        setValue('sex', appointment.gender === 'MALE' ? 'M' : appointment.gender === 'FEMALE' ? 'F' : '');
+        
+        // You could also set breed and age if they exist in appointment
+        // setValue('breed', appointment.breed || '');
+        // setValue('age', appointment.age || '');
+        
+        toast.success('Appointment data loaded successfully');
       } catch (err: any) {
-        console.error(err)
-        toast.error(err?.message || 'Failed to load history form')
+        console.error(err);
+        toast.error(err?.message || 'Failed to load appointment data');
       } finally {
-        setLoadingHistory(false)
+        setLoadingAppointment(false);
       }
     }
-
-    // only fetch when a positive integer is provided
-    if (historyFormId && !Number.isNaN(Number(historyFormId))) {
-      const idNum = Number(historyFormId)
-      if (idNum > 0) fetchHistory(idNum)
-    }
-  }, [historyFormId, setValue])
+    
+    fetchAppointmentData();
+  }, [appointmentId, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     try {
-      // ensure followUpDate is either null or ISO string
+      // Prepare payload with appointmentId and formatted date
       const payload = {
         ...data,
+        appointmentId: appointmentId ? parseInt(appointmentId) : undefined,
         followUpDate: data.followUpDate ? new Date(data.followUpDate).toISOString() : null,
       }
 
@@ -160,8 +166,12 @@ export default function NewPrescriptionPage() {
       }
 
       toast.success('Prescription created successfully')
-      // reset the form to defaults
+      // Reset the form to defaults
       reset()
+      
+      // Optionally redirect back or to a success page
+      // router.push('/dashboard/prescriptions');
+      
     } catch (err: any) {
       console.error(err)
       toast.error(err?.message || 'Failed to create prescription')
@@ -172,16 +182,26 @@ export default function NewPrescriptionPage() {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-green-500">New Prescription</h1>
-        <Link href="/dashboard/prescriptions">
-          <Button variant="ghost">Back to Prescriptions</Button>
-        </Link>
+      
       </div>
 
+      {/* Show appointment ID if present */}
+      {appointmentId && (
+        <div className="bg-green-50 p-4 rounded-lg">
+          <p className="text-sm text-green-700">
+            Creating prescription for Appointment ID: <strong>{appointmentId}</strong>
+          </p>
+          {loadingAppointment && (
+            <p className="text-xs text-green-600 mt-1">Loading appointment data...</p>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Top row: Doctor, Qualification, Prescription No., Dated (use createdAt server-side) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Top row: Doctor, Qualification, Prescription No. */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="text-sm font-medium text-gray-600">Doctor</label>
+            <label className="text-sm font-medium text-gray-600">Doctor *</label>
             <Input {...register('doctorName')} placeholder="Doctor name" />
             {errors.doctorName && <p className="text-xs text-red-600 mt-1">{errors.doctorName.message}</p>}
           </div>
@@ -194,17 +214,6 @@ export default function NewPrescriptionPage() {
           <div>
             <label className="text-sm font-medium text-gray-600">Prescription No.</label>
             <Input {...register('prescriptionNo')} placeholder="Prescription number (optional)" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-600">History Form ID</label>
-            <Input
-              type="number"
-              {...register('historyFormId', { valueAsNumber: true })}
-              placeholder="Enter history form ID to auto-fill owner/animal"
-            />
-            {loadingHistory && <p className="text-xs text-gray-500 mt-1">Loading history...</p>}
-            {errors.historyFormId && <p className="text-xs text-red-600 mt-1">{errors.historyFormId.message}</p>}
           </div>
         </div>
 
@@ -223,35 +232,39 @@ export default function NewPrescriptionPage() {
             <Input {...register('clinicPhone')} placeholder="Clinic phone (optional)" />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600">Email (optional)</label>
+            <label className="text-sm font-medium text-gray-600">Email</label>
             <Input {...register('clinicEmail')} placeholder="Clinic email (optional)" />
           </div>
         </div>
 
-        {/* Owner & Animal (auto-filled when id inserted) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-600">Owner Name</label>
-            <Input {...register('ownerName')} placeholder="Owner name (auto-filled from history)" />
-            {errors.ownerName && <p className="text-xs text-red-600 mt-1">{errors.ownerName.message}</p>}
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Owner Contact</label>
-            <Input {...register('ownerContact')} placeholder="Owner contact (auto-filled)" />
-            {errors.ownerContact && <p className="text-xs text-red-600 mt-1">{errors.ownerContact.message}</p>}
-          </div>
+        {/* Owner & Animal (auto-filled from appointment) */}
+        <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700">Patient Information (Auto-filled from appointment)</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-600">Owner Name *</label>
+              <Input {...register('ownerName')} placeholder="Owner name" />
+              {errors.ownerName && <p className="text-xs text-red-600 mt-1">{errors.ownerName.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Owner Contact *</label>
+              <Input {...register('ownerContact')} placeholder="Owner contact" />
+              {errors.ownerContact && <p className="text-xs text-red-600 mt-1">{errors.ownerContact.message}</p>}
+            </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-600">Animal Species</label>
-            <Input {...register('animalSpecies')} placeholder="e.g., Cattle, Dog (auto-filled)" />
-            {errors.animalSpecies && <p className="text-xs text-red-600 mt-1">{errors.animalSpecies.message}</p>}
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Breed / Age / Sex</label>
-            <div className="grid grid-cols-3 gap-2">
-              <Input {...register('breed')} placeholder="Breed" />
-              <Input {...register('age')} placeholder="Age" />
-              <Input {...register('sex')} placeholder="Sex (M/F)" />
+            <div>
+              <label className="text-sm font-medium text-gray-600">Animal Species *</label>
+              <Input {...register('animalSpecies')} placeholder="e.g., Cattle, Dog" />
+              {errors.animalSpecies && <p className="text-xs text-red-600 mt-1">{errors.animalSpecies.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Breed / Age / Sex</label>
+              <div className="grid grid-cols-3 gap-2">
+                <Input {...register('breed')} placeholder="Breed" />
+                <Input {...register('age')} placeholder="Age" />
+                <Input {...register('sex')} placeholder="M/F" />
+              </div>
             </div>
           </div>
         </div>
@@ -316,7 +329,7 @@ export default function NewPrescriptionPage() {
 
                 <div>
                   <label className="text-sm text-gray-600">Notes</label>
-                  <Input {...register(`prescriptionItems.${idx}.notes` as const)} placeholder="notes (optional)" />
+                  <Input {...register(`prescriptionItems.${idx}.notes` as const)} placeholder="Notes (optional)" />
                 </div>
 
                 <div className="flex items-end">
@@ -326,6 +339,7 @@ export default function NewPrescriptionPage() {
                     size="icon"
                     onClick={() => remove(idx)}
                     title="Remove item"
+                    disabled={fields.length === 1}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -342,25 +356,25 @@ export default function NewPrescriptionPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
             <div className="flex items-center space-x-2">
               <Checkbox {...register('continuePrevMedicine')} />
-              <label>Continue previous medicines as advised</label>
+              <label className="text-sm">Continue previous medicines as advised</label>
             </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox {...register('monitorSideEffects')} />
-              <label>Monitor for side effects</label>
+              <label className="text-sm">Monitor for side effects</label>
             </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox {...register('maintainHygiene')} />
-              <label>Maintain hygiene and biosecurity</label>
+              <label className="text-sm">Maintain hygiene and biosecurity</label>
             </div>
           </div>
 
-          <div className="mt-2">
-            <label className="text-sm font-medium">Follow-up on</label>
+          <div className="mt-4">
+            <label className="text-sm font-medium">Follow-up Date</label>
             <div className="flex items-center gap-3 mt-1">
-              <Input type="date" {...register('followUpDate')} />
-              <span className="text-sm text-gray-500"> — enter follow-up date (appears like: ☐ Follow-up on: DD / MM / YYYY)</span>
+              <Input type="date" {...register('followUpDate')} className="max-w-xs" />
+              <span className="text-sm text-gray-500">Schedule a follow-up appointment if needed</span>
             </div>
           </div>
         </div>
@@ -380,7 +394,7 @@ export default function NewPrescriptionPage() {
             variant="outline"
             onClick={() =>
               reset({
-                historyFormId: undefined as unknown as number,
+                appointmentId: undefined,
                 doctorName: '',
                 qualification: '',
                 prescriptionNo: '',

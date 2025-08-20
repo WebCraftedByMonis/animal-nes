@@ -329,29 +329,31 @@ export async function PUT(request: NextRequest) {
 // GET single history form by ID
 export async function GET_BY_ID(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
   try {
-    const id = parseInt(params.id)
+    // Await the params object first
+    const { id: idString } = await params;
+    const id = parseInt(idString);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
     const historyForm = await prisma.historyForm.findUnique({
       where: { id },
-    })
+    });
 
     if (!historyForm) {
-      return NextResponse.json({ error: 'History form not found' }, { status: 404 })
+      return NextResponse.json({ error: 'History form not found' }, { status: 404 });
     }
 
-    return NextResponse.json(historyForm)
+    return NextResponse.json(historyForm);
   } catch (error) {
-    console.error('Error fetching history form:', error)
+    console.error('Error fetching history form:', error);
     return NextResponse.json(
       { error: 'Failed to fetch history form' },
       { status: 500 }
-    )
+    );
   }
 }

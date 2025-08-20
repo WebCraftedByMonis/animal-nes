@@ -39,10 +39,11 @@ export async function GET(req: NextRequest) {
       [sortBy]: sortOrder,
     },
     include: {
-      customer: {
-        select: { name: true, email: true },
-      },
-    },
+  customer: {
+    select: { name: true, email: true },
+  },
+  paymentInfo: true,  // Add this line
+},
   });
 
   return Response.json({

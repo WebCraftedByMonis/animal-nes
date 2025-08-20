@@ -90,26 +90,30 @@ export default function Navbar() {
 
   return (
     <nav
-      className={cn(
-        "text-foreground w-full border-b transition-all duration-300 fixed top-0 left-0 right-0 z-50",
-        isScrolled
-          ? "bg-background/75 backdrop-blur-xl border-border/40 shadow-lg supports-[backdrop-filter]:bg-background/60 dark:bg-background/75"
-          : "bg-background border-border shadow-sm"
-      )}
-    >
-      <div className="flex items-center justify-between px-2 sm:px-4 py-3 w-full">
-        {/* Logo & Navigation - Left Side */}
-        <div className="flex items-center gap-2 lg:gap-4 min-w-0">
-          <Link href="/" className="shrink-0">
-            <Image
-              src="/logo.jpg"
-              alt="Logo"
-              width={210}
-              height={60}
-              className="h-12 sm:h-14 md:h-16 w-auto object-contain max-w-[120px] sm:max-w-[160px] md:max-w-[210px]"
-              priority
-            />
-          </Link>
+  className={cn(
+    "text-foreground w-full border-b transition-all duration-300 fixed top-0 left-0 right-0 z-50",
+    isScrolled
+      ? "bg-background/75 backdrop-blur-xl border-border/40 shadow-lg supports-[backdrop-filter]:bg-background/60 dark:bg-background/75"
+      : "bg-background border-border shadow-sm"
+  )}
+>
+  <div className="flex items-center justify-between px-2 sm:px-4 py-2 w-full"> 
+    {/* ↓ py-3 → py-2 reduces vertical padding */}
+    
+    {/* Logo */}
+    <div className="flex items-center gap-2 lg:gap-4 min-w-0">
+      <Link href="/" className="shrink-0">
+        <Image
+          src="/logo.jpg"
+          alt="Logo"
+          width={180}
+          height={50}
+          className="h-10 sm:h-12 md:h-14 w-auto object-contain 
+                     max-w-[100px] sm:max-w-[140px] md:max-w-[180px]" 
+          /* ↓ Reduced h-12 → h-10 etc. */
+          priority
+        />
+      </Link>
 
           {/* Main nav links - visible on lg+ screens */}
           <div className="hidden lg:flex gap-4 items-center">

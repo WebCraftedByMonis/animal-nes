@@ -16,6 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import { useSearchParams } from "next/navigation";
+
 
 // Define form schema
 const formSchema = z.object({
@@ -77,6 +79,8 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AddHistoryFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasValues, setHasValues] = useState(false);
+  const searchParams = useSearchParams();
+  const appointmentId = searchParams.get('appointmentId');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -117,6 +121,66 @@ export default function AddHistoryFormPage() {
       referalNo: "",
     },
   });
+
+ useEffect(() => {
+    async function fetchAppointmentData() {
+      if (!appointmentId) return;
+      
+      try {
+        const response = await axios.get(`/api/appointments/${appointmentId}`);
+        const appointment = response.data;
+        
+        // Auto-fill the form with appointment data
+
+       const speciesName = appointment.species?.split('–')[0]?.trim() || '';
+const speciesMap: { [key: string]: string } = {
+  'Cow': 'Cattle',
+  'Buffalo': 'Buffalo', 
+  'Goat': 'Goat',
+  'Sheep': 'Sheep',
+  'Camel': 'Other',
+  'Donkey': 'Other',
+  'Horse': 'Other',
+  'Desi/ Fancy birds': 'Poultry',
+  'Broiler Chicken': 'Poultry',
+  'Layer Chicken': 'Poultry',
+  'Dog': 'Dog',
+  'Cat': 'Cat'
+};
+form.setValue('animalSpecie', speciesMap[speciesName] || 'Other');
+
+
+form.setValue('sex', appointment.gender === 'MALE' ? 'Male' : appointment.gender === 'FEMALE' ? 'Female' : '');
+
+        form.setValue('name', appointment.customer?.name || '');
+        form.setValue('contact', appointment.doctor || '');
+        form.setValue('address', appointment.fullAddress || `${appointment.city}, ${appointment.state || ''}`);
+        form.setValue('animalSpecie', appointment.species || '');
+        form.setValue('sex', appointment.gender === 'MALE' ? 'Male' : appointment.gender === 'FEMALE' ? 'Female' : '');
+        form.setValue('mainIssue', appointment.description || '');
+        
+        // Set emergency status if needed
+        if (appointment.isEmergency) {
+          // You might want to add this to your form or handle it differently
+        }
+        
+        // Set examination date from appointment date
+        if (appointment.appointmentAt) {
+          const date = new Date(appointment.appointmentAt).toISOString().split('T')[0];
+          form.setValue('examinationDate', date);
+        }
+        
+        // form.setValue('examinedBy', appointment.doctor || '');
+        
+      } catch (error) {
+        console.error('Error fetching appointment:', error);
+        toast.error('Failed to load appointment data');
+      }
+    }
+    
+    fetchAppointmentData();
+  }, [appointmentId, form]);
+
 
   // Check if form has any values
   useEffect(() => {
@@ -233,7 +297,7 @@ export default function AddHistoryFormPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Species *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select species" />
@@ -286,7 +350,7 @@ export default function AddHistoryFormPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sex *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select sex" />

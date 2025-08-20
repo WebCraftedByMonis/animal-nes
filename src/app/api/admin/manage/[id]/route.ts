@@ -5,9 +5,12 @@ import { hashPassword, validateAdminSession } from '@/lib/auth/admin-auth';
 // PUT update admin (username or password)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
   try {
+    // Await the params object first
+    const { id: adminId } = await params;
+    
     const token = request.cookies.get('admin-token')?.value;
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,7 +22,6 @@ export async function PUT(
     }
 
     const { username, password } = await request.json();
-    const adminId = params.id;
 
     // Prepare update data
     const updateData: any = {};
@@ -85,13 +87,15 @@ export async function PUT(
     );
   }
 }
-
 // DELETE admin
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
   try {
+    // Await the params object first
+    const { id: adminId } = await params;
+    
     const token = request.cookies.get('admin-token')?.value;
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -101,8 +105,6 @@ export async function DELETE(
     if (!currentAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const adminId = params.id;
 
     // Prevent self-deletion
     if (currentAdmin.id === adminId) {
