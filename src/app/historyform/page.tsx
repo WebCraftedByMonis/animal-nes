@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -17,7 +18,6 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
-
 
 // Define form schema
 const formSchema = z.object({
