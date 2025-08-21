@@ -180,7 +180,7 @@ Veterinary Management System
 
 // Send bulk notifications to all veterinarians in a city
 export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://www.animalwellness.shop';
+  const baseUrl = 'http://www.animalwellness.shop';
   const links = {
     historyForm: `${baseUrl}/historyform?appointmentId=${appointment.id}`,
     prescriptionForm: appointment.historyForm?.id 
