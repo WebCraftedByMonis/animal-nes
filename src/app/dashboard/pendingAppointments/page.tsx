@@ -27,11 +27,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { 
-    ChevronLeft, 
-    ChevronRight, 
-    ArrowUpDown, 
-    Eye, 
+import {
+    ChevronLeft,
+    ChevronRight,
+    ArrowUpDown,
+    Eye,
     ImageIcon,
     Link,
     CreditCard,
@@ -71,6 +71,7 @@ interface AppointmentRequest {
         email: string;
     };
     paymentInfo?: PaymentInfo;
+    historyForm?: { id: number };
 }
 
 export default function DashboardPage() {
@@ -173,7 +174,7 @@ export default function DashboardPage() {
     }, [search, page, limit, sortField, sortOrder]);
 
     const totalPages = Math.ceil(total / limit);
-    
+
     // Group appointments by date for the last 30 days
     const appointmentChartData = Array.from({ length: 30 }, (_, i) => {
         const date = new Date();
@@ -250,12 +251,12 @@ export default function DashboardPage() {
                                             <p className="text-xs text-gray-500">{a.customer?.email || "N/A"}</p>
                                         </div>
                                     </TableCell>
-                                    
+
                                     {/* Contact */}
                                     <TableCell>
                                         <p className="text-sm">{a.doctor}</p>
                                     </TableCell>
-                                    
+
                                     {/* Location */}
                                     <TableCell>
                                         <div>
@@ -263,7 +264,7 @@ export default function DashboardPage() {
                                             <p className="text-xs text-gray-500">{a.state || "Pakistan"}</p>
                                         </div>
                                     </TableCell>
-                                    
+
                                     {/* Animal */}
                                     <TableCell>
                                         <div>
@@ -271,7 +272,7 @@ export default function DashboardPage() {
                                             <p className="text-xs text-gray-500">{a.gender}</p>
                                         </div>
                                     </TableCell>
-                                    
+
                                     {/* Consultation Type */}
                                     <TableCell>
                                         {a.paymentInfo ? (
@@ -283,7 +284,7 @@ export default function DashboardPage() {
                                             <Badge variant="outline">No Payment</Badge>
                                         )}
                                     </TableCell>
-                                    
+
                                     {/* Payment Method */}
                                     <TableCell>
                                         {a.paymentInfo ? (
@@ -295,7 +296,7 @@ export default function DashboardPage() {
                                             <span className="text-sm text-gray-400">-</span>
                                         )}
                                     </TableCell>
-                                    
+
                                     {/* Screenshot */}
                                     <TableCell>
                                         {a.paymentInfo?.screenshotUrl ? (
@@ -314,7 +315,7 @@ export default function DashboardPage() {
                                             <span className="text-xs text-gray-400">-</span>
                                         )}
                                     </TableCell>
-                                    
+
                                     {/* Emergency */}
                                     <TableCell>
                                         {a.isEmergency ? (
@@ -323,7 +324,7 @@ export default function DashboardPage() {
                                             <span className="text-sm text-gray-500">No</span>
                                         )}
                                     </TableCell>
-                                    
+
                                     {/* Date/Time */}
                                     <TableCell>
                                         <div>
@@ -331,7 +332,7 @@ export default function DashboardPage() {
                                             <p className="text-xs text-gray-500">{new Date(a.appointmentAt).toLocaleTimeString()}</p>
                                         </div>
                                     </TableCell>
-                                    
+
                                     {/* Status */}
                                     <TableCell>
                                         <div className="flex items-center gap-2">
@@ -343,17 +344,16 @@ export default function DashboardPage() {
                                             />
                                             <div className="flex items-center gap-1">
                                                 {getStatusIcon(a.status)}
-                                                <span className={`text-sm font-medium ${
-                                                    a.status === "APPROVED" ? "text-green-600" : 
-                                                    a.status === "REJECTED" ? "text-red-600" : 
-                                                    "text-yellow-600"
-                                                }`}>
+                                                <span className={`text-sm font-medium ${a.status === "APPROVED" ? "text-green-600" :
+                                                        a.status === "REJECTED" ? "text-red-600" :
+                                                            "text-yellow-600"
+                                                    }`}>
                                                     {a.status}
                                                 </span>
                                             </div>
                                         </div>
                                     </TableCell>
-                                    
+
                                     {/* Actions */}
                                     <TableCell>
                                         <div className="flex gap-2">
@@ -368,8 +368,15 @@ export default function DashboardPage() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => window.open(`/prescriptionform?appointmentId=${a.id}`, '_blank')}
+                                                onClick={() => {
+                                                    if (a.historyForm?.id) {
+                                                        window.open(`/prescriptionform?historyFormId=${a.historyForm.id}`, '_blank');
+                                                    } else {
+                                                        toast.error('Please fill history form first');
+                                                    }
+                                                }}
                                                 title="Prescription"
+                                                disabled={!a.historyForm}
                                             >
                                                 <Link className="h-3 w-3" />
                                             </Button>
@@ -407,19 +414,19 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setPage((p) => Math.max(1, p - 1))} 
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={page === 1}
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </Button>
                     <div className="text-sm font-medium">{page}</div>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))} 
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                         disabled={page >= totalPages}
                     >
                         <ChevronRight className="w-4 h-4" />

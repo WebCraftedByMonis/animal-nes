@@ -117,10 +117,11 @@ export async function POST(request: NextRequest) {
     if (!history) {
       return NextResponse.json({ error: 'Related history form not found' }, { status: 404 })
     }
-
+const appointmentId = body.appointmentId ? parseInt(body.appointmentId) : null;
     const prescription = await prisma.prescriptionForm.create({
       data: {
-        historyFormId: data.historyFormId,
+        
+        historyFormId: data.historyFormId ,
         doctorName: data.doctorName,
         qualification: data.qualification || null,
         clinicName: data.clinicName || null,

@@ -121,11 +121,12 @@ export async function POST(request: NextRequest) {
     if (data.examinationDate) {
       data.examinationDate = new Date(data.examinationDate) as any
     }
-
+const appointmentId = body.appointmentId ? parseInt(body.appointmentId) : null;
     // Create history form record
     const historyForm = await prisma.historyForm.create({
       data: {
         // Required fields
+         appointmentId: appointmentId, 
         name: data.name,
         contact: data.contact,
         address: data.address,
@@ -279,6 +280,8 @@ export async function PUT(request: NextRequest) {
       where: { id: historyFormId },
       data: {
         // Update only provided fields
+          // Add this
+    
         name: data.name ?? existingHistoryForm.name,
         contact: data.contact ?? existingHistoryForm.contact,
         address: data.address ?? existingHistoryForm.address,

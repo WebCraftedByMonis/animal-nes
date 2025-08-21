@@ -576,6 +576,9 @@ model AppointmentRequest {
   isEmergency   Boolean
   description   String            @db.Text
   paymentInfo      PaymentInfo?
+   historyForm          HistoryForm?
+  
+  
   createdAt     DateTime          @default(now())
   status        AppointmentStatus @default(PENDING)
 }
@@ -590,6 +593,11 @@ model HistoryForm {
   contact               String             @db.Text
   address               String             @db.Text
   
+
+appointmentId        Int?                 @unique
+  appointment          AppointmentRequest?  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  
+
   // Animal Information
   animalSpecie          String             @db.Text
   breed                 String             @db.Text
@@ -649,6 +657,7 @@ model PrescriptionForm {
   id                    Int                @id @default(autoincrement())
   prescriptionNo        String?               
   
+
   // Doctor/Vet Information
   doctorName            String             @db.Text
   qualification         String?            @db.Text

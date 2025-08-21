@@ -19,13 +19,13 @@ export async function GET(req: NextRequest) {
   const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
   const where = {
-  
+
     OR: query
       ? [
-          { doctor: { contains: query,  } },
-          { species: { contains: query, } },
-          { city: { contains: query, } },
-        ]
+        { doctor: { contains: query, } },
+        { species: { contains: query, } },
+        { city: { contains: query, } },
+      ]
       : undefined,
   };
 
@@ -39,11 +39,15 @@ export async function GET(req: NextRequest) {
       [sortBy]: sortOrder,
     },
     include: {
-  customer: {
-    select: { name: true, email: true },
-  },
-  paymentInfo: true,  // Add this line
-},
+      customer: {
+        select: { name: true, email: true },
+      },
+      paymentInfo: true,
+      historyForm: {
+        select: { id: true }, // Just get the ID
+      },
+    },
+
   });
 
   return Response.json({

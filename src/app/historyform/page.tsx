@@ -208,8 +208,12 @@ form.setValue('sex', appointment.gender === 'MALE' ? 'Male' : appointment.gender
 
   async function onSubmit(data: FormValues) {
     setIsSubmitting(true);
-    try {
-      const response = await axios.post("/api/history-forms", data);
+     try {
+    const payload = {
+      ...data,
+      appointmentId: appointmentId ? parseInt(appointmentId) : null
+    };
+    const response = await axios.post("/api/history-forms", payload);
       
       if (response.status === 201) {
         toast.success(`History form created successfully! Reference No: ${response.data.id}`);

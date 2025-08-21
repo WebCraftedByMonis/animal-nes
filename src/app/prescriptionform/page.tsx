@@ -24,6 +24,7 @@ const prescriptionItemSchema = z.object({
 })
 
 const prescriptionSchema = z.object({
+  historyFormId: z.number().int().min(1, 'History Form ID is required'),
   appointmentId: z.number().int().optional(), // Optional since it comes from URL
   doctorName: z.string().min(1, 'Doctor name is required'),
   qualification: z.string().optional().nullable(),
@@ -65,8 +66,7 @@ export default function NewPrescriptionPage() {
 
 
 export  function PrescriptionFormContent() {
-  const searchParams = useSearchParams();
-  const appointmentId = searchParams.get('appointmentId');
+ 
   
   const [loadingAppointment, setLoadingAppointment] = useState(false)
 
@@ -80,6 +80,7 @@ export  function PrescriptionFormContent() {
   } = useForm<FormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: {
+      historyFormId: undefined as unknown as number,
       appointmentId: undefined,
       doctorName: '',
       qualification: '',
@@ -110,59 +111,55 @@ export  function PrescriptionFormContent() {
   })
 
   // Fetch appointment data and auto-fill fields
-  useEffect(() => {
-    async function fetchAppointmentData() {
-      if (!appointmentId) return;
-      
-      setLoadingAppointment(true);
-      try {
-        const res = await fetch(`/api/appointments/${appointmentId}`);
-        if (!res.ok) {
-          if (res.status === 404) {
-            toast.error('Appointment not found');
-            return;
-          }
-          throw new Error('Failed to fetch appointment');
-        }
-        
-        const appointment = await res.json();
-        
-        // Set appointmentId in form
-        setValue('appointmentId', parseInt(appointmentId));
-        
-        // Auto-fill owner information
-        setValue('ownerName', appointment.customer?.name || '');
-        setValue('ownerContact', appointment.doctor || ''); // doctor field contains phone number
-        
-        // Clean and set animal species (remove Urdu text)
-        const speciesName = appointment.species?.split('–')[0]?.trim() || '';
-        setValue('animalSpecies', speciesName);
-        
-        // Set animal sex
-        setValue('sex', appointment.gender === 'MALE' ? 'M' : appointment.gender === 'FEMALE' ? 'F' : '');
-        
-        // You could also set breed and age if they exist in appointment
-        // setValue('breed', appointment.breed || '');
-        // setValue('age', appointment.age || '');
-        
-        toast.success('Appointment data loaded successfully');
-      } catch (err: any) {
-        console.error(err);
-        toast.error(err?.message || 'Failed to load appointment data');
-      } finally {
-        setLoadingAppointment(false);
-      }
-    }
+// First, get historyFormId from URL params instead of appointmentId
+const searchParams = useSearchParams();
+const historyFormId = searchParams.get('historyFormId');
+
+useEffect(() => {
+  async function fetchHistoryData() {
+    if (!historyFormId) return;
     
-    fetchAppointmentData();
-  }, [appointmentId, setValue]);
+    setLoadingAppointment(true);
+    try {
+      // Directly fetch the history form by its ID
+      const historyRes = await fetch(`/api/history-forms/${historyFormId}`);
+      if (!historyRes.ok) {
+        toast.error('History form not found');
+        return;
+      }
+      
+      const history = await historyRes.json();
+      
+      // Set the historyFormId
+      setValue('historyFormId', parseInt(historyFormId));
+      
+      // Auto-fill from history form
+      setValue('ownerName', history.name || '');
+      setValue('ownerContact', history.contact || '');
+      setValue('animalSpecies', history.animalSpecie || '');
+      setValue('breed', history.breed || '');
+      setValue('age', history.age || '');
+      setValue('sex', history.sex || '');
+      
+      toast.success('History form data loaded');
+      
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to load history data');
+    } finally {
+      setLoadingAppointment(false);
+    }
+  }
+  
+  fetchHistoryData();
+}, [historyFormId, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     try {
       // Prepare payload with appointmentId and formatted date
       const payload = {
         ...data,
-        appointmentId: appointmentId ? parseInt(appointmentId) : undefined,
+        historyFormId: historyFormId ? parseInt(historyFormId) : undefined,
         followUpDate: data.followUpDate ? new Date(data.followUpDate).toISOString() : null,
       }
 
@@ -198,10 +195,10 @@ export  function PrescriptionFormContent() {
       </div>
 
       {/* Show appointment ID if present */}
-      {appointmentId && (
+      {historyFormId && (
         <div className="bg-green-50 p-4 rounded-lg">
           <p className="text-sm text-green-700">
-            Creating prescription for Appointment ID: <strong>{appointmentId}</strong>
+            Creating prescription for History Form  ID: <strong>{historyFormId}</strong>
           </p>
           {loadingAppointment && (
             <p className="text-xs text-green-600 mt-1">Loading appointment data...</p>
