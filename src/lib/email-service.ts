@@ -248,7 +248,7 @@ export async function sendCaseTakenNotification(
 
 // Main function to notify all veterinarians (PHASE 1 only)
 export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://www.animalwellness.shop';
+  const baseUrl = 'http://www.animalwellness.shop';
   const results = [];
   
   for (const vet of veterinarians) {
