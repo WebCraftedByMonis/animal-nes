@@ -186,6 +186,7 @@ model Partner {
   specialization      String?               @db.Text
   species             String?
   partnerType         String?
+  assignedAppointments  AppointmentRequest[]
   products            Product[]
   createdAt           DateTime?              @default(now())
   updatedAt           DateTime?              @updatedAt
@@ -577,7 +578,9 @@ model AppointmentRequest {
   description   String            @db.Text
   paymentInfo      PaymentInfo?
    historyForm          HistoryForm?
-  
+   assignedDoctorId    Int?
+  assignedDoctor      Partner?  @relation(fields: [assignedDoctorId], references: [id])
+  assignedAt          DateTime?
   
   createdAt     DateTime          @default(now())
   status        AppointmentStatus @default(PENDING)

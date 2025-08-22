@@ -1,33 +1,19 @@
-// lib/email-service.ts
-import nodemailer from 'nodemailer';
-
-// Create transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-});
-
-// PHASE 1: Initial notification - LIMITED INFO (no phone/address)
-export async function sendInitialNotification(
+export function getInitialNotificationEmail(
   vet: any,
   appointment: any,
   acceptLink: string,
   declineLink: string
 ) {
-  try {
-    const consultationType = 
-      appointment.paymentInfo?.consultationType === 'physical' ? '🏥 Physical Visit' :
-      appointment.paymentInfo?.consultationType === 'virtual' ? '💻 Virtual Consultation' :
-      appointment.paymentInfo?.consultationType === 'needy' ? '🤝 Free Consultation (Needy)' :
-      '📋 Consultation';
+  const urgencyTag = appointment.isEmergency ? 
+    '<div style="background: #ff4444; color: white; padding: 10px; text-align: center; font-weight: bold;">⚠️ EMERGENCY CASE ⚠️</div>' : '';
 
-    const urgencyTag = appointment.isEmergency ? 
-      '<div style="background: #ff4444; color: white; padding: 10px; text-align: center; font-weight: bold;">⚠️ EMERGENCY CASE ⚠️</div>' : '';
+  const consultationType = 
+    appointment.paymentInfo?.consultationType === 'physical' ? '🏥 Physical Visit' :
+    appointment.paymentInfo?.consultationType === 'virtual' ? '💻 Virtual Consultation' :
+    appointment.paymentInfo?.consultationType === 'needy' ? '🤝 Free Consultation (Needy)' :
+    '📋 Consultation';
 
-    const emailHtml = `
+  const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -40,6 +26,7 @@ export async function sendInitialNotification(
     .button { display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 5px; font-weight: bold; }
     .btn-accept { background: #22c55e; color: white; }
     .btn-decline { background: #666; color: white; }
+    .footer { margin-top: 20px; padding: 15px; background: #f1f1f1; font-size: 12px; color: #666; }
   </style>
 </head>
 <body>
@@ -60,7 +47,6 @@ export async function sendInitialNotification(
         <h3 style="margin-top: 0;">🐾 Case Summary</h3>
         <strong>Animal:</strong> ${appointment.species}<br>
         <strong>Issue:</strong> ${appointment.description}<br>
-        <strong>City:</strong> ${appointment.city}<br>
         <strong>Type:</strong> ${consultationType}<br>
         ${appointment.isEmergency ? '<strong style="color: red;">⚠️ EMERGENCY CASE</strong><br>' : ''}
       </div>
@@ -72,41 +58,32 @@ export async function sendInitialNotification(
       </div>
       
       <p style="text-align: center; color: #666;">
-        <small>First doctor to accept will receive full patient details and contact information</small>
+        <small>First doctor to accept will receive full patient details</small>
       </p>
+    </div>
+    
+    <div class="footer">
+      <p>Quick response appreciated ${appointment.isEmergency ? 'especially for this emergency' : ''}.</p>
     </div>
   </div>
 </body>
-</html>`;
+</html>
+  `;
 
-    const mailOptions = {
-      from: `"Veterinary Cases" <${process.env.EMAIL_USER}>`,
-      to: vet.partnerEmail,
-      subject: `${appointment.isEmergency ? '🚨 URGENT: ' : ''}New Case - ${appointment.species} in ${appointment.city}`,
-      html: emailHtml,
-      text: `New case: ${appointment.species} with ${appointment.description} in ${appointment.city}. Click to accept or decline.`,
-      ...(appointment.isEmergency && {
-        priority: 'high',
-        headers: { 'X-Priority': '1', 'Importance': 'high' }
-      })
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
-  } catch (error) {
-    console.error('Error sending initial notification:', error);
-    return { success: false, error };
-  }
+  return {
+    subject: `${appointment.isEmergency ? '🚨 URGENT: ' : ''}New Case - ${appointment.species} in ${appointment.city}`,
+    html: emailHtml,
+    text: `New case available: ${appointment.species} with ${appointment.description} in ${appointment.city}. Click to accept or decline.`
+  };
 }
 
-// PHASE 2: Send full details to accepting doctor
-export async function sendAcceptanceConfirmation(
+// Acceptance confirmation - full details
+export function getAcceptanceConfirmationEmail(
   vet: any,
   appointment: any,
   links: { historyForm: string; prescriptionForm: string | null }
 ) {
-  try {
-    const emailHtml = `
+  const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -118,7 +95,9 @@ export async function sendAcceptanceConfirmation(
     .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #22c55e; }
     .button { display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 5px; font-weight: bold; }
     .btn-form { background: #3b82f6; color: white; }
+    .btn-prescription { background: #9333ea; color: white; }
     .success { background: #d4edda; border-color: #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; }
+    .forms-container { background: #fff3cd; padding: 20px; border-radius: 10px; margin: 30px 0; }
   </style>
 </head>
 <body>
@@ -160,52 +139,65 @@ export async function sendAcceptanceConfirmation(
         ${appointment.isEmergency ? '<strong style="color: red;">⚠️ EMERGENCY - Immediate attention required</strong><br>' : ''}
       </div>
       
-      <div style="text-align: center; margin: 30px 0; padding: 20px; background: #fff3cd; border-radius: 10px;">
-        <h3>📋 Patient Forms</h3>
-        <a href="${links.historyForm}" class="button btn-form">📝 Fill History Form</a>
-        ${links.prescriptionForm ? 
-          `<a href="${links.prescriptionForm}" class="button btn-form">💊 Fill Prescription Form</a>` : 
-          '<p style="color: #666;">Prescription form available after history form</p>'
-        }
+      <div class="info-box">
+        <h3>💰 Payment Information</h3>
+        <strong>Consultation Type:</strong> ${appointment.paymentInfo?.consultationType || 'Standard'}<br>
+        ${appointment.paymentInfo?.consultationFee ? `<strong>Fee:</strong> Rs. ${appointment.paymentInfo.consultationFee}<br>` : ''}
+        <strong>Payment Method:</strong> ${appointment.paymentInfo?.paymentMethod || 'Not specified'}
+      </div>
+      
+      <div class="forms-container">
+        <h3 style="text-align: center; margin-top: 0;">📋 PATIENT FORMS - PLEASE COMPLETE BOTH</h3>
+        <p style="text-align: center;">Please fill these forms for proper record keeping and treatment documentation:</p>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <h4>Step 1: Complete History Form</h4>
+          <p style="font-size: 14px; color: #666;">Document the examination findings and patient history</p>
+          <a href="${links.historyForm}" class="button btn-form">📝 Fill History Form</a>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <h4>Step 2: Create Prescription</h4>
+          <p style="font-size: 14px; color: #666;">Provide treatment plan and medication details</p>
+          <a href="${links.prescriptionForm}" class="button btn-prescription">💊 Fill Prescription Form</a>
+        </div>
+        
+        <p style="text-align: center; font-size: 12px; color: #666; margin-top: 15px;">
+          <em>Both forms are pre-filled with appointment data for your convenience</em>
+        </p>
       </div>
       
       <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
-        <strong>Next Steps:</strong>
-        <ol>
-          <li>Contact owner at <strong>${appointment.doctor}</strong></li>
-          <li>Fill history form with examination details</li>
-          <li>Provide prescription if needed</li>
+        <strong>✅ Next Steps:</strong>
+        <ol style="margin: 10px 0;">
+          <li>Contact the owner immediately at <strong>${appointment.doctor}</strong></li>
+          <li>Complete the <strong>History Form</strong> with examination findings</li>
+          <li>Fill the <strong>Prescription Form</strong> with treatment details</li>
+          <li>Schedule follow-up if needed</li>
         </ol>
+      </div>
+      
+      <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; text-align: center;">
+        <p style="color: #666; font-size: 14px;">
+          <strong>Important:</strong> This information is confidential. Please handle with care.<br>
+          If you have any issues with the forms, please contact system support.
+        </p>
       </div>
     </div>
   </div>
 </body>
 </html>`;
 
-    const mailOptions = {
-      from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
-      to: vet.partnerEmail,
-      subject: `✅ Case Assigned - ${appointment.species} - Contact: ${appointment.doctor}`,
-      html: emailHtml,
-      text: `Case assigned. Owner contact: ${appointment.doctor}. Check email for full details.`
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
-  } catch (error) {
-    console.error('Error sending confirmation:', error);
-    return { success: false, error };
-  }
+  return {
+    subject: `✅ Case Assigned - ${appointment.species} - Contact: ${appointment.doctor}`,
+    html: emailHtml,
+    text: `Case assigned. Owner contact: ${appointment.doctor}. Please check email for full details and both forms (History & Prescription).`
+  };
 }
 
-// PHASE 3: Notify other doctors that case is taken
-export async function sendCaseTakenNotification(
-  vet: any,
-  appointment: any,
-  acceptedByDoctor: string
-) {
-  try {
-    const emailHtml = `
+// Case taken notification for other doctors
+export function getCaseTakenEmail(vet: any, appointment: any, acceptedByDoctor: string) {
+  const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -228,48 +220,12 @@ export async function sendCaseTakenNotification(
     </div>
   </div>
 </body>
-</html>`;
+</html>
+  `;
 
-    const mailOptions = {
-      from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
-      to: vet.partnerEmail,
-      subject: `Case Taken - ${appointment.species} in ${appointment.city}`,
-      html: emailHtml,
-      text: `The case has been accepted by Dr. ${acceptedByDoctor}. Thank you for your availability.`
-    };
-
-    await transporter.sendMail(mailOptions);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending case taken notification:', error);
-    return { success: false, error };
-  }
-}
-
-// Main function to notify all veterinarians (PHASE 1 only)
-export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://www.animalwellness.shop';
-  const results = [];
-  
-  for (const vet of veterinarians) {
-    if (vet.partnerEmail) {
-      // Create unique accept/decline links for each doctor
-      const acceptLink = `${baseUrl}/api/appointments/accept?appointmentId=${appointment.id}&doctorId=${vet.id}&action=accept`;
-      const declineLink = `${baseUrl}/api/appointments/accept?appointmentId=${appointment.id}&doctorId=${vet.id}&action=decline`;
-      
-      // Send only basic info (Phase 1)
-      const result = await sendInitialNotification(vet, appointment, acceptLink, declineLink);
-      
-      results.push({
-        veterinarian: vet.partnerName,
-        email: vet.partnerEmail,
-        ...result
-      });
-      
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-  
-  return results;
+  return {
+    subject: `Case Taken - ${appointment.species} in ${appointment.city}`,
+    html: emailHtml,
+    text: `The case has been accepted by Dr. ${acceptedByDoctor}. Thank you for your availability.`
+  };
 }

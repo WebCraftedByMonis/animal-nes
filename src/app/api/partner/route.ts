@@ -1,10 +1,9 @@
 // app/api/partners/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "@/lib/prisma";
 import { v2 as cloudinary } from 'cloudinary';
 
-const prisma = new PrismaClient();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

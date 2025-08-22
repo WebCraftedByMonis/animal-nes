@@ -181,7 +181,7 @@ useEffect(() => {
 }, [editPartnerType, originalPartnerType, open]);
 
   const fetchPartners = useCallback(async () => {
-    setIsLoading(true)
+    
     try {
       const { data } = await axios.get('/api/partner', {
         params: { search, sortBy, order: sortOrder, page, limit }

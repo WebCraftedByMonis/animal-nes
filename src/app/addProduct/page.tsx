@@ -93,7 +93,7 @@ export default function AddProductPage() {
     defaultValues: {
       isFeatured: false,
       isActive: true,
-      outofstock: true,
+      outofstock: false,
       productName: "",
       genericName: "",
       category: "",
@@ -211,7 +211,7 @@ export default function AddProductPage() {
   form.reset({
     isFeatured: false,
     isActive: true,
-    outofstock: true,
+    outofstock: false,
     productName: "",
     genericName: "",
     category: "",

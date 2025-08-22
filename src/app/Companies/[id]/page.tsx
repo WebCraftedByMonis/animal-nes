@@ -23,7 +23,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://www.animalwellness.shop'}/api/company/${params.id}`, {
+    const res = await fetch(`${ 'https://www.animalwellness.shop'}/api/company/${params.id}`, {
       next: { revalidate: 3600 }, // Revalidate every hour
     })
 
