@@ -27,6 +27,20 @@ interface Testimonial {
   createdAt: string
 }
 
+interface InitialTestimonialsData {
+  data: Testimonial[]
+  pagination: {
+    hasMore: boolean
+    total: number
+    page: number
+    limit: number
+  }
+}
+
+interface LandingPageProps {
+  initialTestimonials?: InitialTestimonialsData
+}
+
 // Animation Variants - Optimized for performance
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -167,23 +181,25 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
   )
 }
 
-export default function LandingPage() {
+export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const { data: session, status } = useSession()
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials?.data || [])
   const [newTestimonial, setNewTestimonial] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(true)
-  const [hasMore, setHasMore] = useState(false)
-  const [page, setPage] = useState(1)
+  const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(!initialTestimonials)
+  const [hasMore, setHasMore] = useState(initialTestimonials?.pagination.hasMore || false)
+  const [page, setPage] = useState(initialTestimonials?.pagination.page || 1)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   // Parallax scroll
   const { scrollY } = useScroll()
   const heroY = useTransform(scrollY, [0, 300], [0, 50])
 
-  // Fetch testimonials
+  // Fetch testimonials only if not provided initially (ISR optimization)
   useEffect(() => {
-    fetchTestimonials()
+    if (!initialTestimonials) {
+      fetchTestimonials()
+    }
   }, [])
 
   const fetchTestimonials = async (loadMore = false) => {
