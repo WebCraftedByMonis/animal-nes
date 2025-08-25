@@ -172,3 +172,13 @@ html, body {
     @apply bg-background text-foreground;
   }
 }
+
+:root {
+  --navbar-height: 56px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --navbar-height: 64px;
+  }
+}

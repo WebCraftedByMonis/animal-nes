@@ -34,12 +34,11 @@ export default function FullScreenSlider() {
         setIsLoading(true)
         const { data } = await axios.get('/api/banner', {
           params: {
-            limit: 'all', // Get all banners
-            sortOrder: 'asc' // Sort by position ascending
+            limit: 'all',
+            sortOrder: 'asc'
           }
         })
         
-        // Filter out banners without images
         const validBanners = data.data.filter((banner: Banner) => banner.image?.url)
         
         if (validBanners.length === 0) {
@@ -71,7 +70,6 @@ export default function FullScreenSlider() {
     }
   }
 
-  // Auto-advance slider
   useEffect(() => {
     if (banners.length > 1) {
       timeoutRef.current = setTimeout(() => {
@@ -84,14 +82,21 @@ export default function FullScreenSlider() {
     }
   }, [current, banners.length])
 
+  // Container classes for consistent sizing
+const containerClasses = "absolute inset-0 w-full h-full"
   // Loading state
   if (isLoading) {
     return (
-      <div className="relative h-[50vh] lg:w-screen lg:h-screen overflow-hidden flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-green-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading banners...</p>
-        </div>
+      <div className={containerClasses}>
+        <Image
+          src="/fallback-slider.jpg"
+          alt="Loading"
+          layout="fill"
+          objectFit="cover"
+          objectPosition="center"
+          priority
+        />
+       
       </div>
     )
   }
@@ -99,7 +104,7 @@ export default function FullScreenSlider() {
   // Error state
   if (error) {
     return (
-      <div className="relative h-[50vh] lg:w-screen lg:h-screen overflow-hidden flex items-center justify-center bg-gray-100">
+      <div className={`${containerClasses} flex items-center justify-center bg-gray-100`}>
         <div className="text-center">
           <p className="text-gray-600 mb-2">{error}</p>
           <button 
@@ -116,7 +121,7 @@ export default function FullScreenSlider() {
   // No banners state
   if (banners.length === 0) {
     return (
-      <div className="relative h-[50vh] lg:w-screen lg:h-screen overflow-hidden flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+      <div className={`${containerClasses} flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200`}>
         <div className="text-center">
           <p className="text-gray-600 text-lg">No banners to display</p>
           <p className="text-gray-500 text-sm mt-2">Please add banners from the admin dashboard</p>
@@ -128,12 +133,13 @@ export default function FullScreenSlider() {
   // Single banner (no navigation needed)
   if (banners.length === 1) {
     return (
-      <div className="relative h-[50vh] lg:w-screen lg:h-screen overflow-hidden">
+      <div className={containerClasses}>
         <Image
           src={banners[0].image!.url}
           alt={banners[0].image!.alt}
           layout="fill"
-          objectFit="contain"
+          objectFit="cover"
+          objectPosition="center"
           priority
         />
       </div>
@@ -142,7 +148,7 @@ export default function FullScreenSlider() {
 
   // Multiple banners with navigation
   return (
-    <div className="relative h-[50vh] lg:w-screen lg:h-screen overflow-hidden group">
+    <div className={`${containerClasses} group`}>
       {banners.map((banner, index) => (
         <div
           key={banner.id}
@@ -156,45 +162,47 @@ export default function FullScreenSlider() {
               alt={banner.image.alt}
               layout="fill"
               objectFit="cover"
+              objectPosition="center"
               className="transition-all duration-1000"
               priority={index === 0}
+              quality={90}
             />
           )}
           
-          {/* Optional: Add caption/overlay if needed */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <p className="text-white text-lg font-medium">
+          {/* Optional overlay - only shows on hover */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4 sm:p-6 lg:p-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <p className="text-white text-sm sm:text-base lg:text-lg font-medium">
               {banner.image?.alt}
             </p>
           </div>
         </div>
       ))}
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons - Responsive sizing */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black/50 p-3 rounded-full hover:bg-black/70 transition z-20 opacity-0 group-hover:opacity-100"
+        className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 text-white bg-black/50 p-2 sm:p-3 rounded-full hover:bg-black/70 transition z-20 opacity-0 group-hover:opacity-100"
         aria-label="Previous slide"
       >
-        <ChevronLeft size={24} />
+        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black/50 p-3 rounded-full hover:bg-black/70 transition z-20 opacity-0 group-hover:opacity-100"
+        className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-white bg-black/50 p-2 sm:p-3 rounded-full hover:bg-black/70 transition z-20 opacity-0 group-hover:opacity-100"
         aria-label="Next slide"
       >
-        <ChevronRight size={24} />
+        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-4 w-full flex justify-center gap-2 z-20">
+      {/* Slide Indicators - Always visible on mobile, hover on desktop */}
+      <div className="absolute bottom-2 sm:bottom-4 w-full flex justify-center gap-2 z-20">
         {banners.map((_, idx) => (
           <button
             key={idx}
-            className={`w-3 h-3 rounded-full transition-all ${
+            className={`h-2 sm:h-3 rounded-full transition-all ${
               idx === current 
-                ? "bg-white w-8" 
-                : "bg-white/40 hover:bg-white/60"
+                ? "bg-white w-6 sm:w-8" 
+                : "bg-white/40 hover:bg-white/60 w-2 sm:w-3"
             }`}
             onClick={() => setCurrent(idx)}
             aria-label={`Go to slide ${idx + 1}`}
@@ -202,8 +210,8 @@ export default function FullScreenSlider() {
         ))}
       </div>
 
-      {/* Optional: Slide counter */}
-      <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm z-20">
+      {/* Slide counter - Hidden on mobile */}
+      <div className="hidden sm:block absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm z-20 opacity-0 group-hover:opacity-100 transition-opacity">
         {current + 1} / {banners.length}
       </div>
     </div>

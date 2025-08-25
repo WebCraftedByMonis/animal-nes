@@ -90,175 +90,211 @@ export default function Navbar() {
 
   return (
     <nav
-  className={cn(
-    "text-foreground w-full border-b transition-all duration-300 fixed top-0 left-0 right-0 z-50",
-    isScrolled
-      ? "bg-background/75 backdrop-blur-xl border-border/40 shadow-lg supports-[backdrop-filter]:bg-background/60 dark:bg-background/75"
-      : "bg-background border-border shadow-sm"
-  )}
->
-  <div className="flex items-center justify-between px-2 sm:px-4 py-2 w-full"> 
-    {/* ↓ py-3 → py-2 reduces vertical padding */}
-    
-    {/* Logo */}
-    <div className="flex items-center gap-2 lg:gap-4 min-w-0">
-      <Link href="/" className="shrink-0">
-        <Image
-          src="/logo.jpg"
-          alt="Logo"
-          width={180}
-          height={50}
-          className="h-10 sm:h-12 md:h-14 w-auto object-contain 
-                     max-w-[100px] sm:max-w-[140px] md:max-w-[180px]" 
-          /* ↓ Reduced h-12 → h-10 etc. */
-          priority
-        />
-      </Link>
+      className={cn(
+        "text-foreground w-full border-b transition-all duration-300 fixed top-0 left-0 right-0 z-50",
+        isScrolled
+          ? "bg-background/75 backdrop-blur-xl border-border/40 shadow-lg supports-[backdrop-filter]:bg-background/60 dark:bg-background/75"
+          : "bg-background border-border shadow-sm"
+      )}
+    >
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between h-14 sm:h-16">
+          {/* Left Section - Logo and Navigation */}
+          <div className="flex items-center gap-2 lg:gap-6">
+            {/* Circular Logo - No brand name */}
+            <Link href="/" className="shrink-0">
+              <div className="relative h-10 w-10 sm:h-12 sm:w-12  overflow-hidden bg-background border-2  transition-colors">
+                <Image
+                  src="/logo.jpg"
+                  alt="Logo"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 40px, 48px"
+                  priority
+                />
+              </div>
+            </Link>
 
-          {/* Main nav links - visible on lg+ screens */}
-          <div className="hidden lg:flex gap-4 items-center">
-            <NavigationMenu>
-              <NavigationMenuList className="gap-3">
-                {[
-                  ["Home", "/"],
-                  ["Products", "/products"],
-                  ["Nexus News", "/animal-news"],
-                  ["Sell Animal", "/sell"],
-                  ["Buy Animal", "/buy"],
-                ].map(([label, href]) => (
-                  <NavigationMenuItem key={label}>
-                    <NavigationMenuLink
-                      asChild
-                      className={`${navigationMenuTriggerStyle()} font-normal hover:text-green-500`}
-                    >
-                      <Link href={href}>{label}</Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
-          
-          <div className="hidden md:block ">
-            <NavigationMenuDemo />
-          </div>
-        </div>
-
-        {/* Right Side Actions */}
-        <div className="flex gap-1 sm:gap-2 items-center shrink-0">
-          {/* Theme Toggle - Hidden on mobile */}
-          <div className="hidden sm:block">
-            <ModeToggle />
-          </div>
-
-          {/* Cart Button */}
-          <Link href="/cart" className="relative p-1 sm:p-2">
-            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] sm:text-xs rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Animal Cart */}
-          <Link href="/animalCart" className="p-1 sm:p-2">
-            <Cat className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
-          </Link>
-
-          {/* Mobile menu - Always visible on small screens */}
-          <div className="lg:hidden">
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
-                  <MenuIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                </Button>
-              </DrawerTrigger>
-
-              <DrawerContent className="h-[80vh] max-h-[80vh]">
-                <DrawerHeader>
-                  <DrawerTitle>Menu</DrawerTitle>
-                </DrawerHeader>
-
-                <div className="flex flex-col px-4 gap-4 overflow-y-auto flex-1">
-                  <NavigationMenuDemo />
+            {/* Desktop Navigation - Only on large screens (lg:1024px+) */}
+            <div className="hidden lg:flex items-center gap-1">
+              <NavigationMenu>
+                <NavigationMenuList >
                   {[
                     ["Home", "/"],
                     ["Products", "/products"],
                     ["Nexus News", "/animal-news"],
                     ["Sell Animal", "/sell"],
                     ["Buy Animal", "/buy"],
-                    ["Find Doctor", "/findDoctor"],
                   ].map(([label, href]) => (
-                    <DrawerClose asChild key={label}>
-                      <Link
-                        href={href}
-                        className="text-base font-medium text-foreground hover:text-green-500 transition-colors py-2"
+                    <NavigationMenuItem  key={label}>
+                      <NavigationMenuLink
+                        asChild
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "text-sm font-medium hover:text-green-500 transition-colors"
+                        )}
                       >
-                        {label}
-                      </Link>
-                    </DrawerClose>
+                        <Link href={href}>{label}</Link>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
                   ))}
-
-                  <div className="pt-4 border-t">
-                    <ModeToggle />
-                  </div>
-                </div>
-
-                <DrawerFooter className="mt-auto">
-                  <DrawerClose asChild>
-                    <Button variant="outline" className="w-full">
-                      Close Menu
-                    </Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+            
+            {/* Navigation Menu Demo - Visible on tablet (md:768px+) and desktop */}
+            <div className="hidden md:block">
+              <NavigationMenuDemo />
+            </div>
           </div>
 
-          {/* Avatar & Dropdown */}
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="outline-none border-none bg-transparent p-0">
-                <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
-                  <AvatarImage src={user.image || ""} />
-                  <AvatarFallback className="text-xs sm:text-sm">
-                    {user.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("") || "?"}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="text-sm">{user.name}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="w-full">
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
+          {/* Right Section - Actions */}
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
+            {/* Theme Toggle - Hidden on mobile */}
+            <div className="hidden sm:block">
+              <ModeToggle />
+            </div>
 
-                <DropdownMenuItem asChild>
-                  <Link href="/orders" className="w-full">
-                    Order history
-                  </Link>
-                </DropdownMenuItem>
+            {/* Cart Button with Badge */}
+            <Link href="/cart" className="relative p-2">
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
 
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button
-              className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-9"
-              onClick={() => signIn("google")}
-            >
-              Sign up
-            </Button>
-          )}
+            {/* Animal Cart */}
+            <Link href="/animalCart" className="p-2">
+              <Cat className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
+            </Link>
+
+            {/* User Menu / Sign In */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="outline-none">
+                  <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border-2 border-transparent hover:border-green-500/40 transition-colors">
+                    <AvatarImage src={user.image || ""} />
+                    <AvatarFallback className="text-xs sm:text-sm bg-green-500/10">
+                      {user.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-sm font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="w-full cursor-pointer">
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/orders" className="w-full cursor-pointer">
+                      Order History
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => signOut()} 
+                    className="text-red-600 cursor-pointer"
+                  >
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9"
+                onClick={() => signIn("google")}
+              >
+                <span className="hidden sm:inline">Sign up</span>
+                <span className="sm:hidden">Join</span>
+              </Button>
+            )}
+
+            {/* Mobile Menu - Now only on mobile and tablet (md:768px and below) */}
+            <div className="md:hidden">
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 sm:h-9 sm:w-9"
+                  >
+                    <MenuIcon className="h-5 w-5" />
+                  </Button>
+                </DrawerTrigger>
+
+                <DrawerContent className="max-h-[85vh]">
+                  <DrawerHeader className="border-b">
+                    <DrawerTitle>Navigation Menu</DrawerTitle>
+                  </DrawerHeader>
+
+                  <div className="flex flex-col px-4 py-4 space-y-3 overflow-y-auto">
+                    {/* Mobile Navigation Links */}
+                    <div className="space-y-1">
+                      {[
+                        ["Home", "/"],
+                        ["Products", "/products"],
+                        ["Nexus News", "/animal-news"],
+                        ["Sell Animal", "/sell"],
+                        ["Buy Animal", "/buy"],
+                        ["Find Doctor", "/findDoctor"],
+                      ].map(([label, href]) => (
+                        <DrawerClose asChild key={label}>
+                          <Link
+                            href={href}
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                          >
+                            {label}
+                          </Link>
+                        </DrawerClose>
+                      ))}
+                    </div>
+
+                    {/* NavigationMenuDemo for mobile */}
+                    <div className="pt-3 border-t">
+                      <NavigationMenuDemo />
+                    </div>
+
+                    {/* Theme Toggle in mobile menu */}
+                    <div className="pt-3 border-t">
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <span className="text-sm font-medium">Theme</span>
+                        <ModeToggle />
+                      </div>
+                    </div>
+
+                    {/* User info in mobile menu */}
+                    {user && (
+                      <div className="pt-3 border-t">
+                        <div className="px-3 py-2">
+                          <p className="text-sm font-medium">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <DrawerFooter className="border-t">
+                    <DrawerClose asChild>
+                      <Button variant="outline" className="w-full">
+                        Close Menu
+                      </Button>
+                    </DrawerClose>
+                  </DrawerFooter>
+                </DrawerContent>
+              </Drawer>
+            </div>
+          </div>
         </div>
       </div>
     </nav>
