@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     default: "Animal Wellness",
   },
   description: "Wellness Home to Your Animals  آس",
-  keywords: ["darwaza", "animal wellness", "veterinary products", "pet care"],
+  keywords: [ "animal wellness", "veterinary products", "pet care"],
   openGraph: {
     url: "https://www.animalwellness.shop",
     title: "Animal Wellness",
