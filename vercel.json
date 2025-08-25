@@ -1,0 +1,16 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "animalwellness.shop" }],
+      "destination": "https://www.animalwellness.shop/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "animalwellness.shop" }],
+      "destination": "https://www.animalwellness.shop/:path*",
+      "permanent": true
+    }
+  ]
+}

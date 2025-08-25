@@ -28,8 +28,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+
     <html lang="en" suppressHydrationWarning>
       <body className={poppins.className}>
+       
+
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -42,10 +45,10 @@ export default function RootLayout({
             <div className="min-h-screen flex flex-col">
               <Navbar />
               <Toaster position="top-center" />
-              
-            
-                {children}
-             
+
+
+              {children}
+
               <Footer />
             </div>
           </SessionWrapper>
