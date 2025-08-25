@@ -285,14 +285,14 @@ export default function AnimalDetailClient() {
                   <span className="dark:text-white text-black">Selling Price:</span>
                   <span className="font-medium text-green-600">PKR {animal.totalPrice.toLocaleString()}</span>
                 </div>
-                {animal.quantity > 1 && (
+                {/* {animal.quantity > 1 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Price per animal:</span>
                     <span className="font-medium">
                       PKR {(animal.totalPrice / animal.quantity).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           </div>
