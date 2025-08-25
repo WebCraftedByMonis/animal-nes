@@ -11,15 +11,23 @@ import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.animalwellness.shop"), // 👈 sets your base URL
   title: {
     template: "%s | Animal Wellness",
-    absolute: "Animal Wellness",
+    default: "Animal Wellness",
   },
   description: "Wellness Home to Your Animals  آس",
-  keywords: "darwaza",
+  keywords: ["darwaza", "animal wellness", "veterinary products", "pet care"],
   openGraph: {
-    images: ["/logo.jpg"]
-  }
+    url: "https://www.animalwellness.shop",
+    title: "Animal Wellness",
+    description: "Wellness Home to Your Animals  آس",
+    images: ["/logo.jpg"],
+    siteName: "Animal Wellness",
+  },
+  alternates: {
+    canonical: "/", // 👈 homepage canonical (resolves to https://www.animalwellness.shop/)
+  },
 };
 
 export default function RootLayout({
@@ -28,11 +36,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-
     <html lang="en" suppressHydrationWarning>
       <body className={poppins.className}>
-       
-
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -45,9 +50,11 @@ export default function RootLayout({
             <div className="min-h-screen flex flex-col">
               <Navbar />
               <Toaster position="top-center" />
-
-
-              {children}
+              
+              {/* Main content with padding-top to account for fixed navbar */}
+              <main className="flex-1 pt-14 sm:pt-16">
+                {children}
+              </main>
 
               <Footer />
             </div>
