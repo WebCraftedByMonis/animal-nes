@@ -57,54 +57,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Dynamic pages
-  const productPages = products.map((p: any) => ({
-    url: `${baseUrl}/products/${p.id}`,
-    lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
+const productPages = products.map((p: any) => ({
+  url: `${baseUrl}/products/${p.id}`,  // ✅ enforce ID
+  lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+  changeFrequency: "weekly" as const,
+  priority: 0.7,
+}));
 
-  const companyPages = companies.map((c: any) => ({
-    url: `${baseUrl}/companies/${c.id}`,
-    lastModified: c.createdAt ? new Date(c.createdAt) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.6,
-  }));
+const companyPages = companies.map((c: any) => ({
+  url: `${baseUrl}/companies/${c.id}`,  // ✅ enforce ID
+  lastModified: c.createdAt ? new Date(c.createdAt) : new Date(),
+  changeFrequency: "weekly" as const,
+  priority: 0.6,
+}));
 
-  const applicantPages = applicants.map((a: any) => ({
-    url: `${baseUrl}/applicant/${a.id}`,
-    lastModified: a.dateOfBirth ? new Date(a.dateOfBirth) : new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.5,
-  }));
+const applicantPages = applicants.map((a: any) => ({
+  url: `${baseUrl}/applicant/${a.id}`,  // ✅ enforce ID
+  lastModified: a.dateOfBirth ? new Date(a.dateOfBirth) : new Date(),
+  changeFrequency: "monthly" as const,
+  priority: 0.5,
+}));
 
-  const vacancyPages = vacancies.map((v: any) => ({
-    url: `${baseUrl}/jobvacancy/${v.id}`,
-    lastModified: v.updatedAt ? new Date(v.updatedAt) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
+const vacancyPages = vacancies.map((v: any) => ({
+  url: `${baseUrl}/jobvacancy/${v.id}`,  // ✅ enforce ID
+  lastModified: v.updatedAt ? new Date(v.updatedAt) : new Date(),
+  changeFrequency: "weekly" as const,
+  priority: 0.7,
+}));
 
-  const newsPages = news.map((n: any) => ({
-    url: `${baseUrl}/animal-news/${n.id}`,
-    lastModified: n.createdAt ? new Date(n.createdAt) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.6,
-  }));
+const newsPages = news.map((n: any) => ({
+  url: `${baseUrl}/animal-news/${n.id}`,  // ✅ enforce ID
+  lastModified: n.createdAt ? new Date(n.createdAt) : new Date(),
+  changeFrequency: "weekly" as const,
+  priority: 0.6,
+}));
 
-  const partnerPages = partners.map((p: any) => ({
-    url: `${baseUrl}/veterinary-partners/${p.id}`,
-    lastModified: p.createdAt ? new Date(p.createdAt) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.6,
-  }));
+const partnerPages = partners.map((p: any) => ({
+  url: `${baseUrl}/veterinary-partners/${p.id}`,  // ✅ enforce ID
+  lastModified: p.createdAt ? new Date(p.createdAt) : new Date(),
+  changeFrequency: "weekly" as const,
+  priority: 0.6,
+}));
 
-  const jobPostPages = jobPosts.map((j: any) => ({
-    url: `${baseUrl}/job-posts/${j.id}`,
-    lastModified: j.updatedAt ? new Date(j.updatedAt) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
+const jobPostPages = jobPosts.map((j: any) => ({
+  url: `${baseUrl}/job-posts/${j.id}`,  // ✅ enforce ID
+  lastModified: j.updatedAt ? new Date(j.updatedAt) : new Date(),
+  changeFrequency: "weekly" as const,
+  priority: 0.7,
+}));
+
 
   return [
     ...staticPages,
