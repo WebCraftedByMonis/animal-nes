@@ -103,13 +103,13 @@ export default function Navbar() {
           <div className="flex items-center gap-2 lg:gap-6">
             {/* Circular Logo - No brand name */}
             <Link href="/" className="shrink-0">
-              <div className="relative h-10 w-10 sm:h-12 sm:w-12  overflow-hidden bg-background border-2  transition-colors">
+              <div className="relative h-12 w-auto sm:h-14 md:h-16">
                 <Image
                   src="/logo.jpg"
-                  alt="Logo"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 40px, 48px"
+                  alt="Animal Wellness Shop Logo"
+                  width={200}  // Adjust based on your logo's actual dimensions
+                  height={60}   // Adjust based on your logo's actual dimensions
+                  className="object-contain h-full w-auto"
                   priority
                 />
               </div>
@@ -126,7 +126,7 @@ export default function Navbar() {
                     ["Sell Animal", "/sell"],
                     ["Buy Animal", "/buy"],
                   ].map(([label, href]) => (
-                    <NavigationMenuItem  key={label}>
+                    <NavigationMenuItem key={label}>
                       <NavigationMenuLink
                         asChild
                         className={cn(
@@ -141,7 +141,7 @@ export default function Navbar() {
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
-            
+
             {/* Navigation Menu Demo - Visible on tablet (md:768px+) and desktop */}
             <div className="hidden md:block">
               <NavigationMenuDemo />
@@ -202,8 +202,8 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => signOut()} 
+                  <DropdownMenuItem
+                    onClick={() => signOut()}
                     className="text-red-600 cursor-pointer"
                   >
                     Logout
@@ -224,9 +224,9 @@ export default function Navbar() {
             <div className="md:hidden">
               <Drawer>
                 <DrawerTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 sm:h-9 sm:w-9"
                   >
                     <MenuIcon className="h-5 w-5" />
