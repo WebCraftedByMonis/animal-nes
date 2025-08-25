@@ -268,7 +268,7 @@ export default function LandingPage() {
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/hero-bg.png" // Change this to your image path in public folder
+            src="/hero-bg.webp" // Change this to your image path in public folder
             alt="Hero Background"
             layout="fill"
             objectFit="cover"
