@@ -6,8 +6,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> } // Add Promise wrapper
 ) {
   const session = await auth();
+  const { searchParams } = new URL(req.url);
+  const forHistoryForm = searchParams.get('forHistoryForm') === 'true';
   
-  if (!session?.user?.email) {
+  // Allow access for history form creation without authentication
+  if (!session?.user?.email && !forHistoryForm) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
   
@@ -24,6 +27,28 @@ export async function GET(
     
     if (!appointment) {
       return new Response(JSON.stringify({ error: "Appointment not found" }), { status: 404 });
+    }
+    
+    // If this is for history form and user is not authenticated, 
+    // only return necessary fields for form pre-filling
+    if (forHistoryForm && !session?.user?.email) {
+      const limitedData = {
+        id: appointment.id,
+        species: appointment.species,
+        gender: appointment.gender,
+        description: appointment.description,
+        isEmergency: appointment.isEmergency,
+        appointmentAt: appointment.appointmentAt,
+        city: appointment.city,
+        state: appointment.state,
+        fullAddress: appointment.fullAddress,
+        customer: appointment.customer ? {
+          name: appointment.customer.name,
+          contact: appointment.customer.PhoneNumber,
+          phone: appointment.customer.PhoneNumber
+        } : null
+      };
+      return Response.json(limitedData);
     }
     
     return Response.json(appointment);

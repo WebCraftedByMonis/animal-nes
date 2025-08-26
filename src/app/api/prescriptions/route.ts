@@ -20,7 +20,7 @@ const prescriptionFormSchema = z.object({
 
   // Instructions
   continuePrevMedicine: z.boolean().optional(),
-  followUpDate: z.string().optional(),
+  followUpDate: z.string().optional().nullable(),
   monitorSideEffects: z.boolean().optional(),
   maintainHygiene: z.boolean().optional(),
 
@@ -98,26 +98,61 @@ export async function GET(req: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    
+    console.log('=== PRESCRIPTION API POST REQUEST DEBUG ===');
+    console.log('Raw request body:', JSON.stringify(body, null, 2));
+    console.log('Request body keys:', Object.keys(body));
+    console.log('History Form ID received:', body.historyFormId);
+    console.log('Doctor name received:', body.doctorName);
+    console.log('Prescription items received:', body.prescriptionItems?.length || 0);
+    console.log('First prescription item:', body.prescriptionItems?.[0]);
+    
     const validation = prescriptionFormSchema.safeParse(body)
 
     if (!validation.success) {
+      console.log('=== VALIDATION FAILED ===');
+      console.log('Validation errors:', JSON.stringify(validation.error.errors, null, 2));
+      console.log('First validation error:', validation.error.errors[0]);
       return NextResponse.json(
         { error: validation.error.errors[0].message },
         { status: 400 }
       )
     }
+    
+    console.log('=== VALIDATION PASSED ===');
+    console.log('Validated data:', JSON.stringify(validation.data, null, 2));
 
     const data = { ...validation.data }
 
+    console.log('=== DATABASE OPERATIONS ===');
+    console.log('Looking for history form with ID:', data.historyFormId);
+    
     // Fetch related history form for owner/animal info
     const history = await prisma.historyForm.findUnique({
       where: { id: data.historyFormId },
     })
 
     if (!history) {
+      console.log('History form not found with ID:', data.historyFormId);
       return NextResponse.json({ error: 'Related history form not found' }, { status: 404 })
     }
+    
+    console.log('Found history form:', {
+      id: history.id,
+      name: history.name,
+      animalSpecie: history.animalSpecie,
+      appointmentId: history.appointmentId
+    });
 const appointmentId = body.appointmentId ? parseInt(body.appointmentId) : null;
+    
+    console.log('Creating prescription with data:', {
+      historyFormId: data.historyFormId,
+      doctorName: data.doctorName,
+      ownerName: history.name,
+      animalSpecies: history.animalSpecie,
+      prescriptionItemsCount: data.prescriptionItems.length
+    });
+    
     const prescription = await prisma.prescriptionForm.create({
       data: {
         
@@ -161,9 +196,23 @@ const appointmentId = body.appointmentId ? parseInt(body.appointmentId) : null;
       },
     })
 
+    console.log('=== PRESCRIPTION CREATED SUCCESSFULLY ===');
+    console.log('Created prescription ID:', prescription.id);
+    console.log('Prescription items created:', prescription.prescriptionItems.length);
+
     return NextResponse.json(prescription, { status: 201 })
   } catch (error) {
-    console.error('Error creating prescription:', error)
+    console.error('=== PRESCRIPTION CREATION ERROR ===');
+    console.error('Error creating prescription:', error);
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Check if it's a Prisma error
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('Prisma error code:', error.code);
+      console.error('Prisma error meta:', error.meta);
+    }
+    
     return NextResponse.json({ error: 'Failed to create prescription' }, { status: 500 })
   }
 }

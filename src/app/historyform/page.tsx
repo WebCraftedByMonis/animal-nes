@@ -136,7 +136,7 @@ export  function AddHistoryFormContent() {
       if (!appointmentId) return;
       
       try {
-        const response = await axios.get(`/api/appointments/${appointmentId}`);
+        const response = await axios.get(`/api/appointments/${appointmentId}?forHistoryForm=true`);
         const appointment = response.data;
         
         // Auto-fill the form with appointment data
@@ -156,12 +156,36 @@ const speciesMap: { [key: string]: string } = {
   'Dog': 'Dog',
   'Cat': 'Cat'
 };
-        form.setValue('name', appointment.customer?.name || '');
-        form.setValue('contact', appointment.customer?.contact || appointment.customer?.phone || '');
-        form.setValue('address', appointment.fullAddress || `${appointment.city}, ${appointment.state || ''}`);
-        form.setValue('animalSpecie', speciesMap[speciesName] || 'Other');
-        form.setValue('sex', appointment.gender === 'MALE' ? 'Male' : appointment.gender === 'FEMALE' ? 'Female' : '');
-        form.setValue('mainIssue', appointment.description || '');
+        // Pre-fill form with appointment data
+        if (appointment.customer?.name) {
+          form.setValue('name', appointment.customer.name);
+        }
+        
+        const contactNumber = appointment.customer?.contact || appointment.customer?.phone || appointment.doctor || '';
+        if (contactNumber) {
+          form.setValue('contact', contactNumber);
+        }
+        
+        const fullAddress = appointment.fullAddress || `${appointment.city}${appointment.state ? ', ' + appointment.state : ''}`;
+        if (fullAddress) {
+          form.setValue('address', fullAddress);
+        }
+        
+        const mappedSpecies = speciesMap[speciesName] || 'Other';
+        if (mappedSpecies) {
+          form.setValue('animalSpecie', mappedSpecies);
+        }
+        
+        if (appointment.gender) {
+          const gender = appointment.gender === 'MALE' ? 'Male' : appointment.gender === 'FEMALE' ? 'Female' : '';
+          if (gender) {
+            form.setValue('sex', gender);
+          }
+        }
+        
+        if (appointment.description) {
+          form.setValue('mainIssue', appointment.description);
+        }
         
         // Set emergency status if needed
         if (appointment.isEmergency) {
@@ -176,9 +200,15 @@ const speciesMap: { [key: string]: string } = {
         
         // form.setValue('examinedBy', appointment.doctor || '');
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching appointment:', error);
-        toast.error('Failed to load appointment data');
+        if (error.response?.status === 401) {
+          toast.error('Access denied. Please ensure you have permission to view this appointment.');
+        } else if (error.response?.status === 404) {
+          toast.error('Appointment not found. Please check the appointment ID.');
+        } else {
+          toast.error('Failed to load appointment data. Please try again.');
+        }
       }
     }
     
@@ -203,19 +233,54 @@ const speciesMap: { [key: string]: string } = {
 
   async function onSubmit(data: FormValues) {
     setIsSubmitting(true);
-     try {
-    const payload = {
-      ...data,
-      appointmentId: appointmentId ? parseInt(appointmentId) : null
-    };
-    const response = await axios.post("/api/history-forms", payload);
+    try {
+      // Transform empty strings to null for optional fields
+      const transformedData = {
+        ...data,
+        // Convert empty strings to null for optional string fields
+        tag: data.tag?.trim() || null,
+        use: data.use?.trim() || null,
+        pastIllness: data.pastIllness?.trim() || null,
+        pastTreatment: data.pastTreatment?.trim() || null,
+        allergies: data.allergies?.trim() || null,
+        surgeries: data.surgeries?.trim() || null,
+        reproductiveStatus: data.reproductiveStatus?.trim() || null,
+        lastEvent: data.lastEvent?.trim() || null,
+        diet: data.diet?.trim() || null,
+        water: data.water?.trim() || null,
+        housing: data.housing?.trim() || null,
+        milkPerDay: data.milkPerDay?.trim() || null,
+        eggPerDay: data.eggPerDay?.trim() || null,
+        weightGain: data.weightGain?.trim() || null,
+        lastGiven: data.lastGiven?.trim() || null,
+        nextDue: data.nextDue?.trim() || null,
+        examinedBy: data.examinedBy?.trim() || null,
+        examinationDate: data.examinationDate?.trim() || null,
+        referalNo: data.referalNo?.trim() || null,
+        appointmentId: appointmentId ? parseInt(appointmentId) : null
+      };
+
+      console.log('Submitting payload:', transformedData);
+      const response = await axios.post("/api/history-forms", transformedData);
       
       if (response.status === 201) {
-        toast.success(`History form created successfully! Reference No: ${response.data.id}`);
+        const historyFormId = response.data.id;
+        toast.success(`History form created successfully! Reference No: ${historyFormId}`);
+        
+        // Show success message with prescription form link
+        toast.success(
+          <div>
+            <p>History form submitted successfully!</p>
+            <p>You can now <a href={`/prescriptionform?historyFormId=${historyFormId}`} style={{color: '#3b82f6', textDecoration: 'underline'}}>create prescription form</a></p>
+          </div>,
+           // Show for 10 seconds
+        );
+        
         form.reset();
       }
     } catch (error: any) {
       console.error("Error submitting form:", error);
+      console.error("Error response:", error.response?.data);
       if (error.response?.data?.error) {
         toast.error(error.response.data.error);
       } else {

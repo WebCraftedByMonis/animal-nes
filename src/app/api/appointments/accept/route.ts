@@ -74,36 +74,16 @@ export async function GET(request: NextRequest) {
           }
         });
         
-        // 2. Create history form if it doesn't exist
-        let historyForm = appointment.historyForm;
-        if (!historyForm) {
-          const newHistoryForm = await tx.historyForm.create({
-            data: {
-              appointmentId: parseInt(appointmentId),
-              name: appointment.customer.name || '',
-              contact: appointment.doctor, // phone number from appointment
-              address: appointment.fullAddress || `${appointment.city}, ${appointment.state || ''}`,
-              animalSpecie: appointment.species,
-              breed: '',
-              age: '',
-              sex: appointment.gender === 'MALE' ? 'Male' : 'Female',
-              mainIssue: appointment.description,
-              duration: '',
-              examinedBy: doctor.partnerName || '',
-              examinationDate: appointment.appointmentAt
-            }
-          });
-          historyForm = { id: newHistoryForm.id };
-        }
+        // Note: History form will be created manually by the doctor
         
-        return { updatedAppointment, historyFormId: historyForm.id };
+        return { updatedAppointment, historyFormId: appointment.historyForm?.id || null };
       });
       
-      // Prepare links with both forms
+      // Prepare links - prescription form will only be available after history form is submitted
       const baseUrl = 'https://www.animalwellness.shop';
       const links = {
         historyForm: `${baseUrl}/historyform?appointmentId=${appointmentId}`,
-        prescriptionForm: `${baseUrl}/prescriptionform?historyFormId=${result.historyFormId}` // Now we always have historyFormId
+        prescriptionForm: result.historyFormId ? `${baseUrl}/prescriptionform?historyFormId=${result.historyFormId}` : null
       };
       
       // Send full details email with both form links
@@ -134,18 +114,18 @@ export async function GET(request: NextRequest) {
         });
       }
       
-      // Return success page with both forms mentioned
+      // Return success page
       return new NextResponse(
         `<html><body style="font-family: Arial; padding: 50px; text-align: center;">
           <h2 style="color: #22c55e;">✅ Case Accepted Successfully!</h2>
           <p>Thank you, Dr. ${doctor.partnerName}!</p>
-          <p>Full patient details and forms have been sent to your email:</p>
+          <p>Patient details have been sent to your email:</p>
           <ul style="text-align: left; display: inline-block;">
-            <li>📝 History Form - for examination details</li>
-            <li>💊 Prescription Form - for treatment plan</li>
+            <li>📝 History Form - Please complete first for patient examination</li>
+            <li>💊 Prescription Form - Available after history form submission</li>
           </ul>
           <p><strong>Owner Contact:</strong> ${appointment.doctor}</p>
-          <p style="margin-top: 30px; color: #666;">Please check your email for complete information and direct links to both forms.</p>
+          <p style="margin-top: 30px; color: #666;">Please start with the History Form. The Prescription Form link will be provided after the history form is completed.</p>
         </body></html>`,
         { headers: { 'Content-Type': 'text/html' } }
       );

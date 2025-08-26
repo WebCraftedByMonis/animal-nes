@@ -15,33 +15,33 @@ const historyFormSchema = z.object({
   mainIssue: z.string().min(1, 'Main issue is required'),
   duration: z.string().min(1, 'Duration is required'),
   
-  // Optional fields
-  tag: z.string().optional(),
-  use: z.string().optional(),
-  pastIllness: z.string().optional(),
-  pastTreatment: z.string().optional(),
-  allergies: z.string().optional(),
-  surgeries: z.string().optional(),
-  reproductiveStatus: z.string().optional(),
-  lastEvent: z.string().optional(),
-  diet: z.string().optional(),
-  water: z.string().optional(),
-  housing: z.string().optional(),
-  milkPerDay: z.string().optional(),
-  eggPerDay: z.string().optional(),
-  weightGain: z.string().optional(),
+  // Optional fields - allow null values
+  tag: z.string().nullable().optional(),
+  use: z.string().nullable().optional(),
+  pastIllness: z.string().nullable().optional(),
+  pastTreatment: z.string().nullable().optional(),
+  allergies: z.string().nullable().optional(),
+  surgeries: z.string().nullable().optional(),
+  reproductiveStatus: z.string().nullable().optional(),
+  lastEvent: z.string().nullable().optional(),
+  diet: z.string().nullable().optional(),
+  water: z.string().nullable().optional(),
+  housing: z.string().nullable().optional(),
+  milkPerDay: z.string().nullable().optional(),
+  eggPerDay: z.string().nullable().optional(),
+  weightGain: z.string().nullable().optional(),
   vaccinationDeworming: z.boolean().optional(),
-  lastGiven: z.string().optional(),
-  nextDue: z.string().optional(),
+  lastGiven: z.string().nullable().optional(),
+  nextDue: z.string().nullable().optional(),
   newAnimalContact: z.boolean().optional(),
   transport: z.boolean().optional(),
   outbreakNearby: z.boolean().optional(),
   wildlife: z.boolean().optional(),
   parasites: z.boolean().optional(),
-  examinedBy: z.string().optional(),
-  examinationDate: z.string().optional(), // Will be converted to Date
-  referalNo: z.string().optional(),
-  appointmentId: z.number().optional(),
+  examinedBy: z.string().nullable().optional(),
+  examinationDate: z.string().nullable().optional(), // Will be converted to Date
+  referalNo: z.string().nullable().optional(),
+  appointmentId: z.number().nullable().optional(),
 })
 
 const updateHistoryFormSchema = historyFormSchema.partial()
@@ -107,15 +107,33 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    console.log('=== HISTORY FORM POST REQUEST DEBUG ===')
+    console.log('Raw body received:', JSON.stringify(body, null, 2))
+    console.log('Body keys:', Object.keys(body))
+    console.log('Body values with types:', Object.entries(body).map(([key, value]) => ({
+      key,
+      value,
+      type: typeof value,
+      isNull: value === null,
+      isUndefined: value === undefined,
+      isEmpty: value === ''
+    })))
+    
     // Validate input
     const validation = historyFormSchema.safeParse(body)
 
     if (!validation.success) {
+      console.log('=== VALIDATION FAILED ===')
+      console.log('Validation errors:', JSON.stringify(validation.error.errors, null, 2))
+      console.log('First error details:', validation.error.errors[0])
       return NextResponse.json(
         { error: validation.error.errors[0].message },
         { status: 400 }
       )
     }
+    
+    console.log('=== VALIDATION PASSED ===')
+    console.log('Validated data:', JSON.stringify(validation.data, null, 2))
 
     // Convert examination date string to DateTime if provided
     const data = { ...validation.data }
@@ -123,6 +141,21 @@ export async function POST(request: NextRequest) {
       data.examinationDate = new Date(data.examinationDate) as any
     }
 const appointmentId = validation.data.appointmentId || null;
+    
+    // Check if history form already exists for this appointment
+    if (appointmentId) {
+      const existingForm = await prisma.historyForm.findUnique({
+        where: { appointmentId: appointmentId }
+      });
+
+      if (existingForm) {
+        return NextResponse.json(
+          { error: 'History form already exists for this appointment' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create history form record
     const historyForm = await prisma.historyForm.create({
       data: {

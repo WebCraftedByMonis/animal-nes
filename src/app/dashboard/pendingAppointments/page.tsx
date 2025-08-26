@@ -90,7 +90,7 @@ export default function DashboardPage() {
         try {
             setLoading(true);
             const res = await fetch(
-                `/api/appointments/list?q=${search}&limit=${limit}&page=${page}&sort=${sortField}&order=${sortOrder}`
+                `/api/appointments/list?q=${search}&limit=${limit}&page=${page}&sortBy=${sortField}&sortOrder=${sortOrder}`
             );
             const json = await res.json();
             setAppointments(json.data);

@@ -66,9 +66,8 @@ export default function NewPrescriptionPage() {
 
 
 export  function PrescriptionFormContent() {
- 
-  
   const [loadingAppointment, setLoadingAppointment] = useState(false)
+  const [historyFormError, setHistoryFormError] = useState<string | null>(null)
 
   const {
     register,
@@ -117,14 +116,23 @@ const historyFormId = searchParams.get('historyFormId');
 
 useEffect(() => {
   async function fetchHistoryData() {
-    if (!historyFormId) return;
+    if (!historyFormId) {
+      setHistoryFormError('No history form ID provided. Please complete the history form first.');
+      return;
+    }
     
     setLoadingAppointment(true);
+    setHistoryFormError(null);
+    
     try {
       // Directly fetch the history form by its ID
       const historyRes = await fetch(`/api/history-forms/${historyFormId}`);
       if (!historyRes.ok) {
-        toast.error('History form not found');
+        if (historyRes.status === 404) {
+          setHistoryFormError('History form not found. Please complete the history form first.');
+        } else {
+          setHistoryFormError('Unable to load history form. Please try again.');
+        }
         return;
       }
       
@@ -141,11 +149,11 @@ useEffect(() => {
       setValue('age', history.age || '');
       setValue('sex', history.sex || '');
       
-      toast.success('History form data loaded');
+      toast.success('History form data loaded successfully');
       
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to load history data');
+      setHistoryFormError('Failed to load history data. Please try again.');
     } finally {
       setLoadingAppointment(false);
     }
@@ -155,6 +163,12 @@ useEffect(() => {
 }, [historyFormId, setValue]);
 
   const onSubmit = async (data: FormValues) => {
+    // Prevent submission if there's a history form error
+    if (historyFormError) {
+      toast.error('Please complete the history form first before creating a prescription');
+      return;
+    }
+
     try {
       // Prepare payload with appointmentId and formatted date
       const payload = {
@@ -163,16 +177,32 @@ useEffect(() => {
         followUpDate: data.followUpDate ? new Date(data.followUpDate).toISOString() : null,
       }
 
+      console.log('=== PRESCRIPTION FORM SUBMISSION DEBUG ===');
+      console.log('Form data received:', data);
+      console.log('History Form ID from URL:', historyFormId);
+      console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
+      console.log('Payload keys:', Object.keys(payload));
+      console.log('Prescription items count:', payload.prescriptionItems?.length || 0);
+      console.log('First prescription item:', payload.prescriptionItems?.[0]);
+
       const res = await fetch('/api/prescriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
+      console.log('API Response status:', res.status);
+      console.log('API Response ok:', res.ok);
+      console.log('API Response headers:', Object.fromEntries(res.headers.entries()));
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
+        console.error('API Error response:', err);
         throw new Error(err?.error || 'Failed to create prescription')
       }
+
+      const result = await res.json();
+      console.log('Successful API response:', result);
 
       toast.success('Prescription created successfully')
       // Reset the form to defaults
@@ -194,19 +224,37 @@ useEffect(() => {
       
       </div>
 
-      {/* Show appointment ID if present */}
-      {historyFormId && (
-        <div className="bg-green-50 p-4 rounded-lg">
-          <p className="text-sm text-green-700">
-            Creating prescription for History Form  ID: <strong>{historyFormId}</strong>
-          </p>
-          {loadingAppointment && (
-            <p className="text-xs text-green-600 mt-1">Loading appointment data...</p>
-          )}
+      {/* Show error if history form is not available */}
+      {historyFormError && (
+        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+          <p className="text-red-700 font-medium">⚠️ History Form Required</p>
+          <p className="text-sm text-red-600 mt-1">{historyFormError}</p>
+          <p className="text-sm text-red-600 mt-2">Please complete the history form before creating a prescription.</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Show success when history form is loaded */}
+      {historyFormId && !historyFormError && !loadingAppointment && (
+        <div className="bg-green-50 p-4 rounded-lg">
+          <p className="text-sm text-green-700">
+            ✅ Creating prescription for History Form ID: <strong>{historyFormId}</strong>
+          </p>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {historyFormId && loadingAppointment && (
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <p className="text-sm text-blue-700">
+            📋 Loading history form data for ID: <strong>{historyFormId}</strong>
+          </p>
+          <p className="text-xs text-blue-600 mt-1">Please wait...</p>
+        </div>
+      )}
+
+      {/* Only show form if no history form error */}
+      {!historyFormError && (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Top row: Doctor, Qualification, Prescription No. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -430,7 +478,8 @@ useEffect(() => {
             Reset
           </Button>
         </div>
-      </form>
+        </form>
+      )}
     </div>
   )
 }
