@@ -21,16 +21,27 @@ export async function POST(request: NextRequest) {
     const appointmentId = formData.get('appointmentId') as string;
     const consultationType = formData.get('consultationType') as string;
     const consultationFee = formData.get('consultationFee') as string;
-    const paymentMethod = formData.get('paymentMethod') as string;
+    const paymentMethod = formData.get('paymentMethod') as string | null;
     const screenshotFile = formData.get('screenshot') as File | null;
     
-    // Validate required fields
+    // Debug logs
+    console.log('=== BACKEND PAYMENT API DEBUG ===');
+    console.log('appointmentId:', appointmentId);
+    console.log('consultationType:', consultationType);
+    console.log('consultationFee:', consultationFee);
+    console.log('paymentMethod:', paymentMethod);
+    console.log('paymentMethod type:', typeof paymentMethod);
+    console.log('screenshotFile:', screenshotFile?.name || 'null');
+    
+    // Validate required fields - convert null to undefined for optional fields
     const validation = paymentSchema.safeParse({
       appointmentId,
       consultationType,
       consultationFee,
-      paymentMethod,
+      paymentMethod: paymentMethod || undefined, // Convert null to undefined for optional field
     });
+    
+    console.log('Validation result:', validation);
     
     if (!validation.success) {
       return NextResponse.json(

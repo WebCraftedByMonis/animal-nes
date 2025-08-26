@@ -48,7 +48,7 @@ interface PaymentInfo {
     id: number;
     consultationType: "needy" | "virtual" | "physical";
     consultationFee: number;
-    paymentMethod: "jazzcash" | "easypaisa" | "bank" | "cod";
+    paymentMethod: "jazzcash" | "easypaisa" | "bank" | "cod" | null;
     screenshotUrl?: string;
     screenshotPublicId?: string;
     createdAt: string;
@@ -130,7 +130,8 @@ export default function DashboardPage() {
         setImageDialogOpen(true);
     };
 
-    const getPaymentBadgeColor = (method: string) => {
+    const getPaymentBadgeColor = (method: string | null) => {
+        if (!method) return 'bg-gray-100 text-gray-800';
         switch (method) {
             case 'jazzcash':
                 return 'bg-blue-100 text-blue-800';
@@ -287,10 +288,14 @@ export default function DashboardPage() {
 
                                     {/* Payment Method */}
                                     <TableCell>
-                                        {a.paymentInfo ? (
+                                        {a.paymentInfo && a.paymentInfo.paymentMethod ? (
                                             <Badge className={getPaymentBadgeColor(a.paymentInfo.paymentMethod)}>
                                                 <CreditCard className="h-3 w-3 mr-1" />
                                                 {a.paymentInfo.paymentMethod.toUpperCase()}
+                                            </Badge>
+                                        ) : a.paymentInfo && a.paymentInfo.consultationType === 'needy' ? (
+                                            <Badge className="bg-green-100 text-green-800">
+                                                <span className="text-xs">FREE</span>
                                             </Badge>
                                         ) : (
                                             <span className="text-sm text-gray-400">-</span>

@@ -187,14 +187,35 @@ export  function PaymentFormContent() {
     const toastId = toast.loading('Submitting payment information...');
     
     try {
+      // Debug logs
+      console.log('=== PAYMENT FORM DEBUG ===');
+      console.log('consultationType:', consultationType);
+      console.log('consultationFee:', consultationFee);
+      console.log('paymentMethod:', paymentMethod);
+      console.log('screenshotFile:', screenshotFile);
+      
       const formData = new FormData();
       formData.append('appointmentId', appointmentId);
       formData.append('consultationType', consultationType);
       formData.append('consultationFee', consultationFee.toString());
-      formData.append('paymentMethod', paymentMethod);
+      
+      // Only append paymentMethod if it's not a needy consultation
+      if (consultationType !== 'needy' && paymentMethod) {
+        formData.append('paymentMethod', paymentMethod);
+        console.log('Added paymentMethod to formData:', paymentMethod);
+      } else {
+        console.log('Skipped paymentMethod for needy consultation');
+      }
       
       if (screenshotFile) {
         formData.append('screenshot', screenshotFile);
+        console.log('Added screenshot to formData');
+      }
+      
+      // Log all FormData entries
+      console.log('FormData entries:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
       }
       
       const response = await fetch('/api/appointment-payment', {

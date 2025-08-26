@@ -26,6 +26,11 @@ export async function POST(req: NextRequest) {
   } = body;
 
   try {
+    // Auto-generate appointment date if not provided (24 hours from now for processing)
+    const autoAppointmentDate = appointmentAt && appointmentAt !== "" 
+      ? new Date(appointmentAt) 
+      : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+    
     const appointment = await prisma.appointmentRequest.create({
       data: {
         doctor,
@@ -34,7 +39,7 @@ export async function POST(req: NextRequest) {
         species,
         fullAddress,
         gender,
-        appointmentAt: new Date(appointmentAt),
+        appointmentAt: autoAppointmentDate,
         isEmergency,
         description,
         customer: {
