@@ -141,21 +141,7 @@ export  function AddHistoryFormContent() {
         
         // Auto-fill the form with appointment data
 
-       const speciesName = appointment.species?.split('–')[0]?.trim() || '';
-const speciesMap: { [key: string]: string } = {
-  'Cow': 'Cattle',
-  'Buffalo': 'Buffalo', 
-  'Goat': 'Goat',
-  'Sheep': 'Sheep',
-  'Camel': 'Other',
-  'Donkey': 'Other',
-  'Horse': 'Other',
-  'Desi/ Fancy birds': 'Poultry',
-  'Broiler Chicken': 'Poultry',
-  'Layer Chicken': 'Poultry',
-  'Dog': 'Dog',
-  'Cat': 'Cat'
-};
+        // Use the exact species from appointment without mapping
         // Pre-fill form with appointment data
         if (appointment.customer?.name) {
           form.setValue('name', appointment.customer.name);
@@ -171,9 +157,9 @@ const speciesMap: { [key: string]: string } = {
           form.setValue('address', fullAddress);
         }
         
-        const mappedSpecies = speciesMap[speciesName] || 'Other';
-        if (mappedSpecies) {
-          form.setValue('animalSpecie', mappedSpecies);
+        // Use the exact species from appointment
+        if (appointment.species) {
+          form.setValue('animalSpecie', appointment.species);
         }
         
         if (appointment.gender) {
@@ -370,23 +356,9 @@ const speciesMap: { [key: string]: string } = {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Species *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select species" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Cattle">Cattle</SelectItem>
-                            <SelectItem value="Buffalo">Buffalo</SelectItem>
-                            <SelectItem value="Goat">Goat</SelectItem>
-                            <SelectItem value="Sheep">Sheep</SelectItem>
-                            <SelectItem value="Poultry">Poultry</SelectItem>
-                            <SelectItem value="Dog">Dog</SelectItem>
-                            <SelectItem value="Cat">Cat</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Input {...field} placeholder="Species from appointment" readOnly className="bg-gray-50" />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

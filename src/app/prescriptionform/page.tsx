@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'react-hot-toast'
 import { Plus, Trash2, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 /** Zod validation schemas */
 const prescriptionItemSchema = z.object({
@@ -66,8 +66,10 @@ export default function NewPrescriptionPage() {
 
 
 export  function PrescriptionFormContent() {
+  const router = useRouter()
   const [loadingAppointment, setLoadingAppointment] = useState(false)
   const [historyFormError, setHistoryFormError] = useState<string | null>(null)
+  const [chargeAdditionalFee, setChargeAdditionalFee] = useState(false)
 
   const {
     register,
@@ -205,11 +207,16 @@ useEffect(() => {
       console.log('Successful API response:', result);
 
       toast.success('Prescription created successfully')
+      
+      // Check if additional fee should be charged
+      if (chargeAdditionalFee) {
+        toast.success('Redirecting to additional consultation fee form...')
+        router.push(`/additional-consultation-fee?prescriptionId=${result.id}`)
+        return
+      }
+      
       // Reset the form to defaults
       reset()
-      
-      // Optionally redirect back or to a success page
-      // router.push('/dashboard/prescriptions');
       
     } catch (err: any) {
       console.error(err)
@@ -436,6 +443,23 @@ useEffect(() => {
           </div>
         </div>
 
+        {/* Additional Consultation Fee Option */}
+        <div className="border rounded-lg p-4 bg-blue-50">
+          <div className="flex items-center space-x-2 mb-2">
+            <Checkbox
+              checked={chargeAdditionalFee}
+              onCheckedChange={setChargeAdditionalFee}
+            />
+            <label className="text-sm font-medium text-blue-800">
+              Charge Additional Consultation Fee
+            </label>
+          </div>
+          <p className="text-xs text-blue-600">
+            Check this box if you want to charge an additional consultation fee after submitting this prescription. 
+            You will be redirected to the consultation fee form.
+          </p>
+        </div>
+
         {/* Submit + Reset */}
         <div className="flex gap-3">
           <Button
@@ -443,7 +467,7 @@ useEffect(() => {
             className="bg-green-500 hover:bg-green-600 text-white"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : 'Submit Prescription'}
+            {isSubmitting ? 'Saving...' : chargeAdditionalFee ? 'Submit & Charge Fee' : 'Submit Prescription'}
           </Button>
 
           <Button

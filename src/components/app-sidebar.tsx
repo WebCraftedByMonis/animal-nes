@@ -48,6 +48,7 @@ export function AppSidebar() {
   const [openHistoryForm, setOpenHistoryForm] = useState(false)
   const [openPrescriptionForm, setOpenPrescriptionForm] = useState(false)
   const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
+  const [openAdditionalFees, setOpenAdditionalFees] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -204,6 +205,7 @@ export function AppSidebar() {
                 {openPendingAppointments && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/pendingAppointments" className="block text-sm text-muted-foreground hover:underline">Pending Appointments</Link>
+                    <Link href="/dashboard/additional-consultation-fees" className="block text-sm text-muted-foreground hover:underline">Additional Consultation Fees</Link>
                   </div>
                 )}
               </SidebarMenuItem>

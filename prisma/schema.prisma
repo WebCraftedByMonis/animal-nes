@@ -692,6 +692,9 @@ model PrescriptionForm {
   // Prescription Items
   prescriptionItems     PrescriptionItem[]
   
+  // Additional consultation fees
+  additionalFees        AdditionalConsultationFee[]
+  
   // Relation
   historyForm           HistoryForm        @relation(fields: [historyFormId], references: [id], onDelete: Cascade)
   historyFormId         Int                @unique
@@ -734,4 +737,34 @@ model AdminSession {
   admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+enum AdditionalFeeStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model AdditionalConsultationFee {
+  id                Int                   @id @default(autoincrement())
+  
+  // Link to prescription
+  prescriptionId    Int
+  prescription      PrescriptionForm      @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  
+  // Fee details
+  consultationFee   Float
+  feeDescription    String                @db.Text
+  
+  // Payment information
+  paymentMethod     String                // "jazzcash", "easypaisa", "bank", "cod"
+  screenshotUrl     String?               @db.Text
+  screenshotPublicId String?              @db.Text
+  
+  // Status
+  status            AdditionalFeeStatus   @default(PENDING)
+  
+  // Timestamps
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
