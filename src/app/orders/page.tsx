@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../api/auth/[...nextauth]/route'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export default async function OrdersPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.email) {
     return <p className="text-center mt-10">Please log in to view your orders.</p>
   }

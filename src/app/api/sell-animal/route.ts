@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { v2 as cloudinary } from 'cloudinary'
-import { authOptions } from '../auth/[...nextauth]/route'
 import { Prisma, SellStatus } from '@prisma/client'
 
 cloudinary.config({
@@ -37,7 +36,7 @@ async function deleteFromCloudinary(publicId: string, resourceType: 'image' | 'v
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

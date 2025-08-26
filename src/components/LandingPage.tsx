@@ -274,6 +274,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     }
   }
 
+
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* First Section: Slider (50vh on mobile, 100vh on desktop) */}

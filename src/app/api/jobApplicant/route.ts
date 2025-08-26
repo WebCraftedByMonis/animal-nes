@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { v2 as cloudinary } from 'cloudinary'
 import { z } from 'zod'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../auth/[...nextauth]/route'
+import { auth } from '@/lib/auth'
 
 interface CloudinaryUploadResult {
     public_id: string
@@ -62,7 +61,7 @@ async function uploadToCloudinary(file: File, folder: string): Promise<Cloudinar
 export async function POST(request: NextRequest) {
     console.log('POST /applicant - received request')
     try {
-        const session = await getServerSession(authOptions)
+        const session = await auth()
         console.log('Session fetched:', session ? { userEmail: session.user?.email, userId: session.user?.id } : null)
 
         if (!session?.user?.email) {

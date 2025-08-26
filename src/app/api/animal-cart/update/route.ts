@@ -1,11 +1,10 @@
 // /app/api/animal-cart/update/route.ts
 
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '../../auth/[...nextauth]/route'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
 
   if (!session?.user?.email) {
     return new Response('Unauthorized', { status: 401 })

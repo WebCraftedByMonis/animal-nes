@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth' // Adjust path to your auth config
+import { auth } from '@/lib/auth'
 import { z } from 'zod'
-import { authOptions } from '../auth/[...nextauth]/route'
 
 // Zod schemas for validation
 const testimonialSchema = z.object({
@@ -81,7 +80,7 @@ export async function GET(req: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check if user is authenticated
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -155,7 +154,7 @@ export async function POST(request: NextRequest) {
 // PUT - Update a testimonial
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -271,7 +270,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete a testimonial
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(

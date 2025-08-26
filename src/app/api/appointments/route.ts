@@ -1,11 +1,10 @@
 // src/app/api/appointments/route.ts
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";// adjust path if needed
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session || !session.user || !session.user.email) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {

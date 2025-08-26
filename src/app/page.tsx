@@ -1,5 +1,5 @@
 
-import FullScreenSlider from "@/components/FullScreenSlider";
+
 import LandingPage from "@/components/LandingPage";
 import { prisma } from '@/lib/prisma'
 
@@ -46,7 +46,10 @@ async function getInitialTestimonials() {
     ])
 
     return {
-      data: testimonials,
+      data: testimonials.map(testimonial => ({
+        ...testimonial,
+        createdAt: testimonial.createdAt.toISOString()
+      })),
       pagination: {
         hasMore: total > limit,
         total,

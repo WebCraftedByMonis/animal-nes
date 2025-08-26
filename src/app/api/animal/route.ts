@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { v2 as cloudinary } from 'cloudinary'
-import { authOptions } from '../auth/[...nextauth]/route'
-import { Gender, AnimalStatus } from '@prisma/client'
+import { Gender, SellStatus, AgeType, WeightType } from '@prisma/client'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -29,24 +28,26 @@ async function uploadToCloudinary(buffer: Buffer, type: 'image' | 'video') {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const formData = await request.formData()
 
-    const breedId = parseInt(formData.get('breedId') as string)
-    const name = formData.get('name') as string
+    const specie = formData.get('specie') as string
+    const breed = formData.get('breed') as string
     const gender = formData.get('gender') as Gender
-    const castrated = formData.get('castrated') === 'true'
-    const vetCertificate = formData.get('vetCertificate') === 'true'
-    const age = formData.get('age') as string
-    const weight = parseFloat(formData.get('weight') as string)
+    const healthCertificate = formData.get('healthCertificate') === 'true'
+    const ageNumber = parseInt(formData.get('ageNumber') as string)
+    const ageType = formData.get('ageType') as AgeType
+    const weightValue = parseFloat(formData.get('weightValue') as string)
+    const weightType = formData.get('weightType') as WeightType
     const totalPrice = parseFloat(formData.get('totalPrice') as string)
+    const purchasePrice = parseFloat(formData.get('purchasePrice') as string)
     const location = formData.get('location') as string
-    const quantity = parseInt(formData.get('quantity') as string)
-    const addedBy = session.user.email
+    const quantity = parseInt(formData.get('quantity') as string) || 1
+    const referredBy = formData.get('referredBy') as string | null
 
     const imageFile = formData.get('image') as File | null
     const videoFile = formData.get('video') as File | null
@@ -68,43 +69,47 @@ export async function POST(request: NextRequest) {
       videoUpload = await uploadToCloudinary(bufferVideo, 'video')
     }
 
-    const animal = await prisma.animal.create({
+    const sellAnimal = await prisma.sellAnimal.create({
       data: {
-        name,
+        specie,
+        breed,
         gender,
-        age,
-        weight,
+        ageNumber,
+        ageType,
+        weightValue,
+        weightType,
         totalPrice,
-        status: AnimalStatus.AVAILABLE,
-        castrated,
-        vetCertificate,
+        purchasePrice,
+        healthCertificate,
         quantity,
         location,
-        addedBy,
-        breed: {
-          connect: { id: breedId },
-        },
+        referredBy,
+        status: SellStatus.PENDING,
+        userId: session.user.id,
         images: {
           create: [
             {
               url: imageUpload.secure_url,
-              alt: name,
+              alt: `${specie} - ${breed}`,
               publicId: imageUpload.public_id,
             },
           ],
         },
-        video: videoUpload
+        videos: videoUpload
           ? {
-              create: {
-                url: videoUpload.secure_url,
-                publicId: videoUpload.public_id,
-              },
+              create: [
+                {
+                  url: videoUpload.secure_url,
+                  alt: `${specie} - ${breed} video`,
+                  publicId: videoUpload.public_id,
+                },
+              ],
             }
           : undefined,
       },
     })
 
-    return NextResponse.json(animal, { status: 201 })
+    return NextResponse.json(sellAnimal, { status: 201 })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

@@ -1,14 +1,13 @@
 // app/api/appointments/status/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyVeterinarians } from "@/lib/email-service";
 
 export async function PATCH(req: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: "Unauthorized" }, 

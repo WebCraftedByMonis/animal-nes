@@ -1,10 +1,9 @@
-import { getServerSession } from 'next-auth'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '../api/auth/[...nextauth]/route'
 import AnimalCartClient from '@/components/AnimalCartClient'
 
 export default async function AnimalCartPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.email) return <p className="text-center mt-10">Please login to view cart.</p>
 
   const user = await prisma.user.findUnique({

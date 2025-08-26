@@ -1,11 +1,10 @@
 // app/checkout/page.tsx
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../api/auth/[...nextauth]/route'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import CheckoutClient from './CheckoutClient'
 
 export default async function CheckoutPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.email) {
     return <p className="text-center mt-10">Please login to proceed with checkout.</p>
   }
