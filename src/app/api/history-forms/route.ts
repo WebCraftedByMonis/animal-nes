@@ -41,6 +41,7 @@ const historyFormSchema = z.object({
   examinedBy: z.string().optional(),
   examinationDate: z.string().optional(), // Will be converted to Date
   referalNo: z.string().optional(),
+  appointmentId: z.number().optional(),
 })
 
 const updateHistoryFormSchema = historyFormSchema.partial()
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     if (data.examinationDate) {
       data.examinationDate = new Date(data.examinationDate) as any
     }
-const appointmentId = body.appointmentId ? parseInt(body.appointmentId) : null;
+const appointmentId = validation.data.appointmentId || null;
     // Create history form record
     const historyForm = await prisma.historyForm.create({
       data: {

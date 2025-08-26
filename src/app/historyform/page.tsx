@@ -156,15 +156,10 @@ const speciesMap: { [key: string]: string } = {
   'Dog': 'Dog',
   'Cat': 'Cat'
 };
-form.setValue('animalSpecie', speciesMap[speciesName] || 'Other');
-
-
-form.setValue('sex', appointment.gender === 'MALE' ? 'Male' : appointment.gender === 'FEMALE' ? 'Female' : '');
-
         form.setValue('name', appointment.customer?.name || '');
-        form.setValue('contact', appointment.doctor || '');
+        form.setValue('contact', appointment.customer?.contact || appointment.customer?.phone || '');
         form.setValue('address', appointment.fullAddress || `${appointment.city}, ${appointment.state || ''}`);
-        form.setValue('animalSpecie', appointment.species || '');
+        form.setValue('animalSpecie', speciesMap[speciesName] || 'Other');
         form.setValue('sex', appointment.gender === 'MALE' ? 'Male' : appointment.gender === 'FEMALE' ? 'Female' : '');
         form.setValue('mainIssue', appointment.description || '');
         
