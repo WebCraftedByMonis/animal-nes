@@ -9,7 +9,7 @@ const paymentSchema = z.object({
   appointmentId: z.string().min(1, 'Appointment ID is required'),
   consultationType: z.enum(['needy', 'virtual', 'physical']),
   consultationFee: z.string().transform(val => parseFloat(val)),
-  paymentMethod: z.enum(['jazzcash', 'easypaisa', 'bank', 'cod']),
+  paymentMethod: z.enum(['jazzcash', 'easypaisa', 'bank', 'cod']).optional(),
 });
 
 // POST - Create appointment payment record
@@ -35,6 +35,16 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    
+    const { consultationType: validatedConsultationType, paymentMethod: validatedPaymentMethod } = validation.data;
+    
+    // Additional validation for non-needy consultations
+    if (validatedConsultationType !== 'needy' && !validatedPaymentMethod) {
+      return NextResponse.json(
+        { error: 'Payment method is required for non-free consultations' },
         { status: 400 }
       );
     }
@@ -69,8 +79,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Screenshot required for all payment methods except COD
-    if (paymentMethod !== 'cod' && !screenshotFile) {
+    // Screenshot required for all payment methods except COD and needy
+    if (validatedConsultationType !== 'needy' && validatedPaymentMethod && validatedPaymentMethod !== 'cod' && !screenshotFile) {
       return NextResponse.json(
         { error: 'Payment screenshot is required for online payment methods' },
         { status: 400 }
@@ -81,7 +91,7 @@ export async function POST(request: NextRequest) {
     let screenshotPublicId = null;
     
     // Upload screenshot to Cloudinary if provided
-    if (screenshotFile && paymentMethod !== 'cod') {
+    if (screenshotFile && validatedConsultationType !== 'needy' && validatedPaymentMethod && validatedPaymentMethod !== 'cod') {
       try {
         // Validate file type
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -129,9 +139,9 @@ export async function POST(request: NextRequest) {
       const paymentInfo = await prisma.paymentInfo.create({
         data: {
           appointmentId: appointmentIdNum,
-          consultationType: validation.data.consultationType,
+          consultationType: validatedConsultationType,
           consultationFee: validation.data.consultationFee,
-          paymentMethod: validation.data.paymentMethod,
+          paymentMethod: validatedPaymentMethod || null, // null for needy consultations
           screenshotUrl,
           screenshotPublicId,
         },

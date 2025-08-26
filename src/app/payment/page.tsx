@@ -146,6 +146,12 @@ export  function PaymentFormContent() {
       newErrors.consultationType = 'Please select consultation type';
     }
     
+    // Skip payment validation for needy consultation
+    if (consultationType === 'needy') {
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
+    
     if (!paymentMethod) {
       newErrors.paymentMethod = 'Please select payment method';
     }
@@ -205,7 +211,10 @@ export  function PaymentFormContent() {
       
       toast.success('Payment information submitted successfully!', { id: toastId });
       
-      // Redirect to dashboard after success
+      // Redirect to thank you page after success
+      setTimeout(() => {
+        router.push('/thank-you-appointment');
+      }, 1500);
      
       
     } catch (error: any) {
@@ -299,7 +308,8 @@ export  function PaymentFormContent() {
               )}
             </div>
             
-            {/* Payment Method */}
+            {/* Payment Method - Hidden for needy consultation */}
+            {consultationType !== 'needy' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Payment Method *
@@ -378,9 +388,10 @@ export  function PaymentFormContent() {
                 <p className="text-red-500 text-sm mt-2">{errors.paymentMethod}</p>
               )}
             </div>
+            )}
             
-            {/* Payment Screenshot Upload - Only show if not COD */}
-            {paymentMethod && paymentMethod !== 'cod' && (
+            {/* Payment Screenshot Upload - Only show if not COD and not needy */}
+            {consultationType !== 'needy' && paymentMethod && paymentMethod !== 'cod' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Payment Screenshot *
@@ -434,8 +445,17 @@ export  function PaymentFormContent() {
               </div>
             )}
             
-            {/* Important Note */}
-            {consultationFee > 0 && paymentMethod && paymentMethod !== 'cod' && (
+            {/* Important Note for Needy */}
+            {consultationType === 'needy' && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                <p className="text-sm text-green-800">
+                  <strong>Free Consultation:</strong> This is a free consultation for those in need. No payment is required. We will find a qualified veterinarian to help your animal.
+                </p>
+              </div>
+            )}
+            
+            {/* Important Note for Paid Consultations */}
+            {consultationType !== 'needy' && consultationFee > 0 && paymentMethod && paymentMethod !== 'cod' && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <p className="text-sm text-yellow-800">
                   <strong>Important:</strong> Please complete the payment of <strong>{consultationFee} PKR</strong> to the selected payment method before uploading the screenshot.

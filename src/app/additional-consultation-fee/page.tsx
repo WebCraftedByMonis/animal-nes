@@ -181,9 +181,9 @@ export function AdditionalConsultationFeeContent() {
       
       toast.success('Additional consultation fee submitted successfully!', { id: toastId });
       
-      // Redirect to dashboard after success
+      // Redirect to thank you page after success
       setTimeout(() => {
-        router.push('/dashboard/additional-consultation-fees');
+        router.push('/thank-you-consultation');
       }, 1500);
       
     } catch (error: any) {

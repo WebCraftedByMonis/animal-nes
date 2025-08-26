@@ -550,7 +550,7 @@ model PaymentInfo {
   
   consultationType  String   // "needy", "virtual", "physical"
   consultationFee   Float    // 0, 500, 1000
-  paymentMethod     String   // "jazzcash", "easypaisa", "bank", "cod"
+  paymentMethod     String?  // "jazzcash", "easypaisa", "bank", "cod" - null for needy
   
   // Payment screenshot (optional - not needed for COD)
   screenshotUrl     String?  @db.Text

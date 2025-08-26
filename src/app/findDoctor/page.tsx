@@ -16,7 +16,6 @@ export default function NewAppointmentPage() {
     species: "",
     fullAddress: "",
     gender: "MALE",
-    appointmentAt: "",
     isEmergency: false,
     description: "",
   });
@@ -63,7 +62,6 @@ export default function NewAppointmentPage() {
           species: "",
           fullAddress: "",
           gender: "MALE",
-          appointmentAt: "",
           isEmergency: false,
           description: "",
         });
@@ -189,24 +187,21 @@ export default function NewAppointmentPage() {
               className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
             />
 
-            <select
-              name="gender"
-              value={form.gender}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Animal Gender
+              </label>
+              <select
+                name="gender"
+                value={form.gender}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+              </select>
+            </div>
 
-            <input
-              type="datetime-local"
-              name="appointmentAt"
-              value={form.appointmentAt}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
 
             <label className="flex items-center space-x-2">
               <input
