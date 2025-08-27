@@ -24,15 +24,6 @@ export async function POST(request: NextRequest) {
     const paymentMethod = formData.get('paymentMethod') as string | null;
     const screenshotFile = formData.get('screenshot') as File | null;
     
-    // Debug logs
-    console.log('=== BACKEND PAYMENT API DEBUG ===');
-    console.log('appointmentId:', appointmentId);
-    console.log('consultationType:', consultationType);
-    console.log('consultationFee:', consultationFee);
-    console.log('paymentMethod:', paymentMethod);
-    console.log('paymentMethod type:', typeof paymentMethod);
-    console.log('screenshotFile:', screenshotFile?.name || 'null');
-    
     // Validate required fields - convert null to undefined for optional fields
     const validation = paymentSchema.safeParse({
       appointmentId,
@@ -40,8 +31,6 @@ export async function POST(request: NextRequest) {
       consultationFee,
       paymentMethod: paymentMethod || undefined, // Convert null to undefined for optional field
     });
-    
-    console.log('Validation result:', validation);
     
     if (!validation.success) {
       return NextResponse.json(

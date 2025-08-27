@@ -229,3 +229,127 @@ export function getCaseTakenEmail(vet: any, appointment: any, acceptedByDoctor: 
     text: `The case has been accepted by Dr. ${acceptedByDoctor}. Thank you for your availability.`
   };
 }
+
+// Patient notification when doctor is assigned
+export function getPatientDoctorAssignmentEmail(appointment: any, doctor: any) {
+  console.log('=== EMAIL TEMPLATE DEBUG ===');
+  console.log('appointment data:', {
+    id: appointment.id,
+    species: appointment.species,
+    customerName: appointment.customer?.name,
+    customerEmail: appointment.customer?.email,
+    city: appointment.city
+  });
+  console.log('doctor data:', {
+    name: doctor.partnerName,
+    email: doctor.partnerEmail,
+    city: doctor.cityName
+  });
+  const consultationType = 
+    appointment.paymentInfo?.consultationType === 'physical' ? '🏥 Physical Visit' :
+    appointment.paymentInfo?.consultationType === 'virtual' ? '💻 Virtual Consultation' :
+    appointment.paymentInfo?.consultationType === 'needy' ? '🤝 Free Consultation' :
+    '📋 Consultation';
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #22c55e; color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center; }
+    .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-radius: 0 0 10px 10px; }
+    .info-box { background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #22c55e; }
+    .doctor-box { background: #e8f5e9; padding: 20px; margin: 20px 0; border-radius: 10px; text-align: center; }
+    .contact-box { background: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #ffc107; }
+    .footer { background: #f8f9fa; padding: 15px; margin-top: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>🎉 Great News!</h2>
+      <h3>A Veterinarian Has Been Found for Your Animal</h3>
+    </div>
+    
+    <div class="content">
+      <p>Dear ${appointment.customer?.name || 'Valued Customer'},</p>
+      
+      <p>We're excited to inform you that we have found a qualified veterinarian for your <strong>${appointment.species}</strong>!</p>
+      
+      <div class="doctor-box">
+        <h3 style="margin-top: 0; color: #22c55e;">🩺 Your Assigned Veterinarian</h3>
+        <h2 style="margin: 10px 0; color: #333;">Dr. ${doctor.partnerName}</h2>
+        ${doctor.specialization ? `<p><strong>Specialization:</strong> ${doctor.specialization}</p>` : ''}
+        <p><strong>Location:</strong> ${doctor.cityName}${doctor.state ? `, ${doctor.state}` : ''}</p>
+        ${doctor.partnerMobileNumber ? `<p><strong>Contact:</strong> ${doctor.partnerMobileNumber}</p>` : ''}
+      </div>
+      
+      <div class="info-box">
+        <h4 style="margin-top: 0;">📋 Appointment Summary</h4>
+        <strong>Animal:</strong> ${appointment.species}<br>
+        <strong>Gender:</strong> ${appointment.gender || 'Not specified'}<br>
+        <strong>Issue:</strong> ${appointment.description}<br>
+        <strong>Type:</strong> ${consultationType}<br>
+        <strong>Location:</strong> ${appointment.city}${appointment.state ? `, ${appointment.state}` : ''}<br>
+        ${appointment.fullAddress ? `<strong>Address:</strong> ${appointment.fullAddress}<br>` : ''}
+        ${appointment.isEmergency ? '<strong style="color: red;">⚠️ Emergency Case - Priority Treatment</strong><br>' : ''}
+        <strong>Scheduled:</strong> ${new Date(appointment.appointmentAt).toLocaleString('en-PK', {
+          timeZone: 'Asia/Karachi',
+          dateStyle: 'full',
+          timeStyle: 'short'
+        })}
+      </div>
+      
+      <div class="contact-box">
+        <h4 style="margin-top: 0;">📞 What Happens Next?</h4>
+        <ol style="margin: 10px 0; padding-left: 20px;">
+          <li><strong>Dr. ${doctor.partnerName} will contact you directly</strong> at your provided number: <strong>${appointment.doctor}</strong></li>
+          <li>The doctor will coordinate the appointment time and location</li>
+          <li>Please be available to receive the doctor's call</li>
+          <li>The doctor will examine your animal and provide treatment</li>
+        </ol>
+      </div>
+      
+      ${appointment.paymentInfo?.consultationType !== 'needy' ? `
+      <div class="info-box">
+        <h4 style="margin-top: 0;">💰 Payment Information</h4>
+        <strong>Consultation Fee:</strong> Rs. ${appointment.paymentInfo?.consultationFee || 0}<br>
+        <strong>Payment Status:</strong> ${appointment.paymentInfo ? 'Paid' : 'Pending'}<br>
+        <strong>Payment Method:</strong> ${appointment.paymentInfo?.paymentMethod ? appointment.paymentInfo.paymentMethod.toUpperCase() : 'N/A'}<br>
+      </div>
+      ` : `
+      <div class="info-box" style="background: #d4edda;">
+        <h4 style="margin-top: 0; color: #155724;">🤝 Free Consultation</h4>
+        <p style="margin: 0; color: #155724;">This is a free consultation service for those in need. No payment is required.</p>
+      </div>
+      `}
+      
+      <div style="background: #e8f5e9; padding: 15px; margin: 20px 0; border-radius: 5px; text-align: center;">
+        <h4 style="color: #22c55e; margin-top: 0;">Important Instructions:</h4>
+        <ul style="text-align: left; display: inline-block; margin: 0;">
+          <li>Keep your phone available - the doctor will call you</li>
+          <li>Prepare any questions about your animal's condition</li>
+          <li>Have your animal ready for examination</li>
+          <li>Follow the doctor's treatment instructions carefully</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p><strong>Thank you for using our veterinary service!</strong></p>
+      <p>If you have any questions or concerns, please contact our support team.</p>
+      <p>We hope your animal recovers quickly! 🐾</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return {
+    subject: `🩺 Veterinarian Assigned - Dr. ${doctor.partnerName} will contact you soon!`,
+    html: emailHtml,
+    text: `Great news! Dr. ${doctor.partnerName} has been assigned to your ${appointment.species}. The doctor will contact you at ${appointment.doctor}. Please keep your phone available.`
+  };
+}

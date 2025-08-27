@@ -37,7 +37,8 @@ import {
     CreditCard,
     CheckCircle,
     XCircle,
-    Clock
+    Clock,
+    Loader2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Switch } from "@/components/ui/switch";
@@ -85,6 +86,7 @@ export default function DashboardPage() {
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
     const fetchData = async () => {
         try {
@@ -103,16 +105,29 @@ export default function DashboardPage() {
     };
 
     const handleStatusChange = async (id: number, status: "APPROVED" | "REJECTED") => {
-        const res = await fetch(`/api/appointments/status`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, status }),
-        });
-        if (res.ok) {
-            toast.success("Status updated");
-            fetchData();
-        } else {
-            toast.error("Failed to update status");
+        setUpdatingStatus(id);
+        const toastId = toast.loading(`Updating status to ${status.toLowerCase()}...`);
+        
+        try {
+            const res = await fetch(`/api/appointments/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, status }),
+            });
+            
+            if (res.ok) {
+                const result = await res.json();
+                toast.success(result.message || "Status updated successfully", { id: toastId });
+                fetchData();
+            } else {
+                const error = await res.json();
+                toast.error(error.error || "Failed to update status", { id: toastId });
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            toast.error("Network error - failed to update status", { id: toastId });
+        } finally {
+            setUpdatingStatus(null);
         }
     };
 
@@ -341,19 +356,33 @@ export default function DashboardPage() {
                                     {/* Status */}
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <Switch
-                                                checked={a.status === "APPROVED"}
-                                                onCheckedChange={(checked) =>
-                                                    handleStatusChange(a.id, checked ? "APPROVED" : "REJECTED")
-                                                }
-                                            />
+                                            <div className="relative">
+                                                <Switch
+                                                    checked={a.status === "APPROVED"}
+                                                    disabled={updatingStatus === a.id}
+                                                    onCheckedChange={(checked) =>
+                                                        handleStatusChange(a.id, checked ? "APPROVED" : "REJECTED")
+                                                    }
+                                                />
+                                                {updatingStatus === a.id && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Loader2 className="h-4 w-4 animate-spin text-green-500" />
+                                                    </div>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-1">
-                                                {getStatusIcon(a.status)}
-                                                <span className={`text-sm font-medium ${a.status === "APPROVED" ? "text-green-600" :
-                                                        a.status === "REJECTED" ? "text-red-600" :
-                                                            "text-yellow-600"
-                                                    }`}>
-                                                    {a.status}
+                                                {updatingStatus === a.id ? (
+                                                    <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
+                                                ) : (
+                                                    getStatusIcon(a.status)
+                                                )}
+                                                <span className={`text-sm font-medium ${
+                                                    updatingStatus === a.id ? "text-blue-600" :
+                                                    a.status === "APPROVED" ? "text-green-600" :
+                                                    a.status === "REJECTED" ? "text-red-600" :
+                                                    "text-yellow-600"
+                                                }`}>
+                                                    {updatingStatus === a.id ? "Updating..." : a.status}
                                                 </span>
                                             </div>
                                         </div>

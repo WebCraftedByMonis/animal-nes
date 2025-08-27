@@ -277,6 +277,43 @@ export  function AddHistoryFormContent() {
     }
   }
 
+  // Check if appointmentId is missing - after all hooks are declared
+  if (!appointmentId) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">
+              Access Denied
+            </h1>
+            
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              This history form can only be accessed with a valid appointment ID. Please use the proper link provided by the system.
+            </p>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-red-800">
+                <strong>Error:</strong> Missing appointment ID parameter in URL.
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => window.history.back()}
+              className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 bg-gray-50">
       <div className="w-full max-w-6xl mx-auto">

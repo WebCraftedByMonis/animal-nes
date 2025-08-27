@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
-import { getAcceptanceConfirmationEmail, getCaseTakenEmail } from '@/lib/email-templates';
+import { getAcceptanceConfirmationEmail, getCaseTakenEmail, getPatientDoctorAssignmentEmail } from '@/lib/email-templates';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -33,6 +33,17 @@ export async function GET(request: NextRequest) {
         assignedDoctor: true
       }
     });
+    
+    console.log('=== APPOINTMENT FETCH DEBUG ===');
+    console.log('appointmentId:', appointmentId);
+    console.log('appointment found:', !!appointment);
+    if (appointment) {
+      console.log('customer included:', {
+        hasCustomer: !!appointment.customer,
+        customerEmail: appointment.customer?.email,
+        customerName: appointment.customer?.name
+      });
+    }
     
     if (!appointment) {
       return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
@@ -86,7 +97,7 @@ export async function GET(request: NextRequest) {
         prescriptionForm: result.historyFormId ? `${baseUrl}/prescriptionform?historyFormId=${result.historyFormId}` : null
       };
       
-      // Send full details email with both form links
+      // Send full details email with both form links to doctor
       const confirmationEmail = getAcceptanceConfirmationEmail(doctor, appointment, links);
       
       await transporter.sendMail({
@@ -94,6 +105,50 @@ export async function GET(request: NextRequest) {
         to: doctor.partnerEmail,
         ...confirmationEmail
       });
+      
+      // Send notification email to patient
+      console.log('=== PATIENT EMAIL DEBUG ===');
+      console.log('appointment.customer:', appointment.customer);
+      console.log('appointment.customer?.email:', appointment.customer?.email);
+      console.log('appointmentId:', appointmentId);
+      console.log('doctor:', {
+        name: doctor.partnerName,
+        email: doctor.partnerEmail
+      });
+      
+      if (appointment.customer?.email) {
+        try {
+          console.log(`Attempting to send patient email to: ${appointment.customer.email}`);
+          
+          const patientEmail = getPatientDoctorAssignmentEmail(appointment, doctor);
+          
+          console.log('Email template generated:', {
+            subject: patientEmail.subject,
+            to: appointment.customer.email,
+            from: `"Animal Wellness Service" <${process.env.EMAIL_USER}>`
+          });
+          
+          const emailResult = await transporter.sendMail({
+            from: `"Animal Wellness Service" <${process.env.EMAIL_USER}>`,
+            to: appointment.customer.email,
+            ...patientEmail
+          });
+          
+          console.log(`✅ Patient notification sent successfully!`);
+          console.log('Email result:', emailResult);
+        } catch (patientEmailError) {
+          console.error('❌ Failed to send patient notification email:', patientEmailError);
+          console.error('Error details:', {
+            message: patientEmailError.message,
+            code: patientEmailError.code,
+            stack: patientEmailError.stack
+          });
+          // Don't fail the entire process if patient email fails
+        }
+      } else {
+        console.log('❌ No patient email available for notification');
+        console.log('Customer data:', appointment.customer);
+      }
       
       // Notify other doctors that case is taken
       const otherDoctors = await prisma.partner.findMany({

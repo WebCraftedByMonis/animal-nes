@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
+  experimental: {
+    // Increase body size limits for email sending
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+
+  // API route configuration for larger request bodies
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+
   images: {
     unoptimized: true, // 🚀 Disable Next.js image optimizer
     remotePatterns: [
