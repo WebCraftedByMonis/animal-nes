@@ -6,6 +6,10 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
+import { 
+  partnerTypeOptions, 
+  getSpecializationsByPartnerType 
+} from '@/lib/partner-constants'
 import {
   Table,
   TableBody,
@@ -61,32 +65,6 @@ interface Partner {
   createdAt: string
 }
 
-// Specialization options based on partner type
-const veterinarianSpecializations = [
-  'Large Animal Veterinarian',
-  'Small Animal Veterinarian',
-  'Poultry Veterinarian',
-  'Parasitologist',
-  'Reproduction Specialist',
-  'Animal Nutritionist',
-  'Veterinary Surgeon',
-  'Veterinary Pathologist',
-  'Wildlife Veterinarian',
-  'Public Health Veterinarian'
-];
-
-const salesMarketingSpecializations = [
-  'Product Specialist',
-  'Equipment Executive',
-  'Brand Manager',
-  'Sales Officer',
-  'Marketing Specialist',
-  'Authorized Dealer',
-  'Bulk Wholesaler',
-  'Regional Distributor',
-  'Licensed Importer',
-  'Product Manufacturer'
-];
 
 
 // Image component with error handling
@@ -162,12 +140,7 @@ export default function ViewPartnersPage() {
 
   // Get specialization suggestions based on partner type
   const editSpecializationSuggestions = useMemo(() => {
-    if (editPartnerType === 'Veterinarian (Clinic, Hospital, Consultant)') {
-      return veterinarianSpecializations;
-    } else if (editPartnerType === 'Sales and Marketing (Dealer, Distributor, Sales Person)') {
-      return salesMarketingSpecializations;
-    }
-    return [];
+    return getSpecializationsByPartnerType(editPartnerType || '');
   }, [editPartnerType]);
 
 
@@ -552,12 +525,11 @@ useEffect(() => {
                     <SelectValue placeholder="Select partner type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Veterinarian (Clinic, Hospital, Consultant)">
-                      Veterinarian (Clinic, Hospital, Consultant)
-                    </SelectItem>
-                    <SelectItem value="Sales and Marketing (Dealer, Distributor, Sales Person)">
-                      Sales and Marketing (Dealer, Distributor, Sales Person)
-                    </SelectItem>
+                    {partnerTypeOptions.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -582,11 +554,7 @@ useEffect(() => {
                     suggestions={editSpecializationSuggestions}
                     value={editSpecialization}
                     onChange={(v) => setEditSpecialization(v)}
-                    placeholder={
-                      editPartnerType === 'Veterinarian (Clinic, Hospital, Consultant)'
-                        ? "Select veterinary specialization"
-                        : "Select sales/marketing specialization"
-                    }
+                    placeholder={`Select ${editPartnerType?.toLowerCase()} specialization`}
                   />
                 ) : (
                   <Input

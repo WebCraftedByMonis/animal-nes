@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from "@/lib/prisma";
 import { v2 as cloudinary } from 'cloudinary';
+import { PARTNER_TYPE_GROUPS, PartnerTypeGroup } from '@/lib/partner-constants';
+
+// Configure route to handle larger payloads for image uploads
+export const runtime = 'nodejs'
+export const maxDuration = 60
 
 
 cloudinary.config({
@@ -234,16 +239,6 @@ async function POST(request: NextRequest) {
   }
 }
 
-const PARTNER_TYPE_GROUPS = {
-  veterinarian: ['Veterinarian (Clinic, Hospital, Consultant)'],
-  sales: [
-    'Sales and Marketing (Dealer, Distributor, Sales Person)',
-    'Sales and Marketing ( dealer , distributor , sales person)' 
-  ],
- 
-} as const;
-
-type PartnerTypeGroup = keyof typeof PARTNER_TYPE_GROUPS;
 
 async function GET(request: NextRequest) {
   try {

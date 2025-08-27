@@ -123,6 +123,12 @@ export function NavigationMenuDemo() {
               <ListItem href="/Sales" title="Sales and Marketing">
                
               </ListItem>
+              <ListItem href="/VeterinaryAssistants" title="Veterinary Assistants">
+               
+              </ListItem>
+              <ListItem href="/Students" title="Students">
+               
+              </ListItem>
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
