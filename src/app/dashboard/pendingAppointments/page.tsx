@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,7 +38,8 @@ import {
     CheckCircle,
     XCircle,
     Clock,
-    Loader2
+    Loader2,
+    Search
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Switch } from "@/components/ui/switch";
@@ -88,21 +89,38 @@ export default function DashboardPage() {
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async (searchTerm = '', pageNum = page, limitNum = limit, sortF = sortField, sortO = sortOrder) => {
         try {
             setLoading(true);
             const res = await fetch(
-                `/api/appointments/list?q=${search}&limit=${limit}&page=${page}&sortBy=${sortField}&sortOrder=${sortOrder}`
+                `/api/appointments/list?q=${searchTerm}&limit=${limitNum}&page=${pageNum}&sortBy=${sortF}&sortOrder=${sortO}`
             );
+            
+            if (!res.ok) {
+                console.error('API Error:', res.status, res.statusText);
+                const errorData = await res.json().catch(() => ({}));
+                console.error('Error details:', errorData);
+                toast.error(`Failed to load appointments: ${res.status} ${res.statusText}`);
+                return;
+            }
+            
             const json = await res.json();
-            setAppointments(json.data);
-            setTotal(json.total);
-        } catch {
+            console.log('API Response:', json);
+            
+            if (json.data) {
+                setAppointments(json.data);
+                setTotal(json.total || 0);
+            } else {
+                console.error('Invalid API response structure:', json);
+                toast.error("Invalid response from server");
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
             toast.error("Failed to load appointments");
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit, sortField, sortOrder]);
 
     const handleStatusChange = async (id: number, status: "APPROVED" | "REJECTED") => {
         setUpdatingStatus(id);
@@ -185,9 +203,28 @@ export default function DashboardPage() {
         }
     };
 
+    const handleSearch = () => {
+        setPage(1);
+        fetchData(search, 1, limit, sortField, sortOrder);
+    };
+
+    const resetFilters = () => {
+        setSearch("");
+        setPage(1);
+        fetchData('', 1, limit, sortField, sortOrder);
+    };
+
+    // Load initial data on component mount
     useEffect(() => {
-        fetchData();
-    }, [search, page, limit, sortField, sortOrder]);
+        fetchData('', 1, limit, sortField, sortOrder);
+    }, [limit, sortField, sortOrder]);
+
+    // Handle page changes - maintain current search
+    useEffect(() => {
+        if (page > 1) {
+            fetchData(search, page, limit, sortField, sortOrder);
+        }
+    }, [page]);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -197,9 +234,9 @@ export default function DashboardPage() {
         date.setDate(date.getDate() - i);
         const label = date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
 
-        const count = appointments.filter(
+        const count = appointments?.filter(
             (a) => new Date(a.appointmentAt).toDateString() === date.toDateString()
-        ).length;
+        ).length || 0;
 
         return { name: label, appointments: count };
     }).reverse();
@@ -209,15 +246,41 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-green-500 mb-6">Appointment & Payment Dashboard</h1>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <Input
-                    placeholder="Search name, phone, city, species..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-sm"
-                />
+                <div className="flex items-center gap-2 flex-1 max-w-lg">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            placeholder="Search by name, email, phone, city, species, description..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-10 focus:border-green-500 focus:ring-green-500"
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                    </div>
+                    <Button 
+                        onClick={handleSearch} 
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={loading}
+                    >
+                        <Search className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                        onClick={resetFilters} 
+                        variant="outline"
+                        className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                        disabled={loading}
+                    >
+                        Clear
+                    </Button>
+                </div>
 
-                <Select value={limit.toString()} onValueChange={(val) => setLimit(Number(val))}>
-                    <SelectTrigger className="w-28">
+                <Select value={limit.toString()} onValueChange={(val) => {
+                    const newLimit = Number(val);
+                    setLimit(newLimit);
+                    setPage(1);
+                    fetchData(search, 1, newLimit, sortField, sortOrder);
+                }}>
+                    <SelectTrigger className="w-32 focus:border-green-500 focus:ring-green-500">
                         <SelectValue placeholder="Entries" />
                     </SelectTrigger>
                     <SelectContent>
@@ -229,6 +292,20 @@ export default function DashboardPage() {
             </div>
 
             <div className="rounded-xl overflow-x-auto border bg-white">
+                {loading && (
+                    <div className="text-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin inline-block text-green-600" />
+                        <span className="ml-2 text-gray-600">Loading appointments...</span>
+                    </div>
+                )}
+                
+                {!loading && appointments?.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                        No appointments found. Try adjusting your search criteria.
+                    </div>
+                )}
+                
+                {!loading && appointments?.length > 0 && (
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-green-100">
@@ -258,7 +335,7 @@ export default function DashboardPage() {
                                     ))}
                                 </TableRow>
                             ))
-                            : appointments.map((a) => (
+                            : appointments?.map((a) => (
                                 <TableRow key={a.id} className="hover:bg-gray-50">
                                     {/* Customer Info */}
                                     <TableCell>
@@ -420,6 +497,7 @@ export default function DashboardPage() {
                             ))}
                     </TableBody>
                 </Table>
+                )}
             </div>
 
             {/* Image Preview Dialog */}
@@ -442,31 +520,37 @@ export default function DashboardPage() {
             </Dialog>
 
             {/* Pagination */}
-            <div className="flex justify-between items-center mt-6">
-                <div className="text-sm text-gray-600">
-                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} entries
-                </div>
+            {!loading && appointments?.length > 0 && (
+                <div className="flex justify-between items-center mt-6">
+                    <div className="text-sm text-gray-600">
+                        Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} appointments
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <div className="text-sm font-medium">{page}</div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages}
-                    >
-                        <ChevronRight className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={page === 1 || loading}
+                            className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <div className="text-sm font-medium px-2">
+                            Page {page} of {totalPages}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={page >= totalPages || loading}
+                            className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Chart */}
             <div className="mt-8">

@@ -12,6 +12,10 @@ export async function GET(req: Request) {
         OR: [
           { user: { name: { contains: search,  } } },
           { user: { email: { contains: search, } } },
+          { city: { contains: search, } },
+          { province: { contains: search, } },
+          { address: { contains: search, } },
+          { shippingAddress: { contains: search, } },
         ],
       }
     : {}

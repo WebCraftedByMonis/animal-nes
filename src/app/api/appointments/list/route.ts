@@ -1,14 +1,8 @@
 // src/app/api/appointments/list/route.ts
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-
-  if (!session?.user?.email) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-  }
 
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1", 10);
@@ -18,12 +12,16 @@ export async function GET(req: NextRequest) {
   const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
   const where = {
-
     OR: query
       ? [
         { doctor: { contains: query, } },
         { species: { contains: query, } },
         { city: { contains: query, } },
+        { state: { contains: query, } },
+        { fullAddress: { contains: query, } },
+        { customer: { name: { contains: query, } } },
+        { customer: { email: { contains: query, } } },
+        { description: { contains: query, } },
       ]
       : undefined,
   };

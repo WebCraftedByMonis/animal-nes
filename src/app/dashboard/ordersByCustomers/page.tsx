@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Trash2, Download, Edit, Loader2 } from 'lucide-react'
+import { Trash2, Download, Edit, Loader2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip as UITooltip,
@@ -100,6 +100,7 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [total, setTotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null)
@@ -190,20 +191,44 @@ export default function AdminOrdersPage() {
     ))
   }
 
+  const handleSearch = () => {
+    setPage(1)
+    fetchOrders(search, 1, limit)
+  }
+
+  const resetFilters = () => {
+    setSearch('')
+    setPage(1)
+    fetchOrders('', 1, limit)
+  }
+
+  const fetchOrders = useCallback(async (searchTerm = '', pageNum = page, limitNum = limit) => {
+    setIsLoading(true)
+    try {
+      const response = await axios.get('/api/orders', {
+        params: { search: searchTerm, page: pageNum, limit: limitNum },
+      })
+      setOrders(response.data.orders)
+      setTotal(response.data.total)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to load orders')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [page, limit])
+
+  // Load initial data on component mount
   useEffect(() => {
-    axios
-      .get('/api/orders', {
-        params: { search, page, limit },
-      })
-      .then((res) => {
-        setOrders(res.data.orders)
-        setTotal(res.data.total)
-      })
-      .catch((err) => {
-        console.error(err)
-        toast.error('Failed to load orders')
-      })
-  }, [search, page, limit])
+    fetchOrders('', 1, limit)
+  }, [limit])
+
+  // Handle page changes - maintain current search
+  useEffect(() => {
+    if (page > 1) {
+      fetchOrders(search, page, limit)
+    }
+  }, [page])
 
   // Group orders by date for chart
   const chartData = Array.from({ length: 30 }, (_, i) => {
@@ -243,20 +268,43 @@ export default function AdminOrdersPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <h1 className="text-3xl font-bold text-green-500">All Orders</h1>
 
-      <div className="flex items-center justify-between gap-4">
-        <Input
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search by name, email, city, or mobile..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 focus:border-green-500 focus:ring-green-500"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <Button 
+            onClick={handleSearch} 
+            className="bg-green-600 hover:bg-green-700"
+            disabled={isLoading}
+          >
+            <Search className="w-4 h-4" />
+          </Button>
+          <Button 
+            onClick={resetFilters} 
+            variant="outline"
+            className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+            disabled={isLoading}
+          >
+            Clear
+          </Button>
+        </div>
 
         <select
-          className="border p-2 rounded"
+          className="border p-2 rounded focus:border-green-500 focus:ring-green-500"
           value={limit}
           onChange={(e) => {
-            setLimit(Number(e.target.value))
+            const newLimit = Number(e.target.value)
+            setLimit(newLimit)
             setPage(1)
+            fetchOrders(search, 1, newLimit)
           }}
         >
           {[10, 25, 50].map((n) => (
@@ -268,6 +316,20 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="overflow-x-auto">
+        {isLoading && (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 animate-spin inline-block text-green-600" />
+            <span className="ml-2 text-gray-600">Loading orders...</span>
+          </div>
+        )}
+        
+        {!isLoading && orders.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No orders found. Try adjusting your search criteria.
+          </div>
+        )}
+        
+        {!isLoading && orders.length > 0 && (
         <Table>
           <TableHeader>
             <TableRow>
@@ -426,28 +488,33 @@ export default function AdminOrdersPage() {
             ))}
           </TableBody>
         </Table>
+        )}
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center">
-        <button
-          disabled={page === 1}
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
-          className="bg-gray-200 px-3 py-1 rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          disabled={page === totalPages}
-          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-          className="bg-gray-200 px-3 py-1 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+      {!isLoading && orders.length > 0 && (
+        <div className="flex justify-between items-center">
+          <Button
+            variant="outline"
+            disabled={page === 1 || isLoading}
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+          >
+            Prev
+          </Button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {totalPages} • Total: {total} orders
+          </span>
+          <Button
+            variant="outline"
+            disabled={page === totalPages || isLoading}
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Line Chart */}
       <div className="mt-8">
