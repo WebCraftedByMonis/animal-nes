@@ -172,7 +172,6 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
             </motion.div>
             <div className="min-w-0">
               <p className="font-semibold text-sm break-words">{testimonial.user.name || "Anonymous"}</p>
-              <p className="text-xs text-muted-foreground break-words">{testimonial.user.email}</p>
             </div>
           </div>
         </CardContent>

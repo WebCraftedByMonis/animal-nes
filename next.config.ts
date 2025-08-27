@@ -11,16 +11,9 @@ const nextConfig: NextConfig = {
   },
 
   experimental: {
-    // Increase body size limits for email sending
+    // Increase body size limits for server actions only
     serverActions: {
-      bodySizeLimit: '50mb',
-    },
-  },
-
-  // API route configuration for larger request bodies
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
+      bodySizeLimit: "50mb",
     },
   },
 
