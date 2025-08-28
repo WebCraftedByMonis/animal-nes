@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/contexts/CartContext";
 
 import {
   Drawer,
@@ -42,15 +42,9 @@ import { NavigationMenuDemo } from "./Navigation-menu";
 import { ModeToggle } from "./ModeToggle";
 import { usePathname } from "next/navigation";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { data } = useSWR("/api/cart-count", fetcher, {
-    refreshInterval: 5000,
-  });
-
-  const cartCount = data?.count || 0;
+  const { counts } = useCart();
 
   // Handle scroll effect
   useEffect(() => {
@@ -65,18 +59,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      try {
-        const res = await fetch("/api/cart-count");
-        const data = await res.json();
-      } catch (err) {
-        console.error("Failed to fetch cart count:", err);
-      }
-    };
-
-    fetchCartCount();
-  }, []);
 
   const pathname = usePathname();
   const hiddenRoutes = ["/login"];
@@ -111,6 +93,8 @@ export default function Navbar() {
                   height={60}   // Adjust based on your logo's actual dimensions
                   className="object-contain h-full w-auto"
                   priority
+                  sizes="200px"
+                  quality={85}
                 />
               </div>
             </Link>
@@ -158,16 +142,21 @@ export default function Navbar() {
             {/* Cart Button with Badge */}
             <Link href="/cart" className="relative p-2">
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
-              {cartCount > 0 && (
+              {counts.productCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
-                  {cartCount > 99 ? '99+' : cartCount}
+                  {counts.productCount > 99 ? '99+' : counts.productCount}
                 </span>
               )}
             </Link>
 
-            {/* Animal Cart */}
-            <Link href="/animalCart" className="p-2">
+            {/* Animal Cart with Badge */}
+            <Link href="/animalCart" className="relative p-2">
               <Cat className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
+              {counts.animalCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                  {counts.animalCount > 99 ? '99+' : counts.animalCount}
+                </span>
+              )}
             </Link>
 
             {/* User Menu / Sign In */}

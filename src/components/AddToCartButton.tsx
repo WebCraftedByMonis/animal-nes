@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'  // <-- Spinner Icon (Lucide)
+import { useCart } from '@/contexts/CartContext'
 
 interface AddToCartButtonProps {
   productId: number
@@ -15,6 +16,7 @@ interface AddToCartButtonProps {
 export default function AddToCartButton({ productId, isActive, variantId }: AddToCartButtonProps) {
   const { data: session } = useSession()
   const router = useRouter()
+  const { incrementProductCount } = useCart()
 
   const [loading, setLoading] = useState(false)
 
@@ -35,6 +37,7 @@ export default function AddToCartButton({ productId, isActive, variantId }: AddT
 
       if (res.ok) {
         toast.success('Product added to cart.')
+        incrementProductCount() // Update cart count immediately
         router.refresh()  // Optional: Refresh page to reflect cart state
       } else {
         const err = await res.json()

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+import { useCart } from '@/contexts/CartContext'
 
 interface AddAnimalToCartButtonProps {
   animalId: number
@@ -12,6 +13,7 @@ interface AddAnimalToCartButtonProps {
 export default function AddAnimalToCartButton({ animalId }: AddAnimalToCartButtonProps) {
   const { data: session } = useSession()
   const router = useRouter()
+  const { incrementAnimalCount } = useCart()
   const [loading, setLoading] = useState(false)
 
   const handleAddToCart = async () => {
@@ -32,6 +34,7 @@ export default function AddAnimalToCartButton({ animalId }: AddAnimalToCartButto
 
       if (res.ok) {
         toast.success('Animal added to cart.')
+        incrementAnimalCount() // Update cart count immediately
         router.refresh()
       } else {
         const err = await res.json()

@@ -163,6 +163,9 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
                   width={40}
                   height={40}
                   className="rounded-full"
+                  loading="lazy"
+                  sizes="40px"
+                  quality={60}
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm">
@@ -287,11 +290,11 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           <Image
             src="/hero-bg.webp" // Change this to your image path in public folder
             alt="Hero Background"
-            layout="fill"
-            objectFit="cover"
-            objectPosition="center"
-            quality={90}
+            fill
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+            quality={80}
             priority
+            sizes="100vw"
           />
           {/* Dark overlay for better text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40"></div>

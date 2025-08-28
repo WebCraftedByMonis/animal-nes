@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { useCart } from '@/contexts/CartContext'
 
 interface ProductImage {
   url: string
@@ -36,6 +37,7 @@ interface CartClientProps {
 export default function CartClient({ cartItems }: CartClientProps) {
   const [cart, setCart] = useState<CartItem[]>(cartItems)
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
+  const { decrementProductCount } = useCart()
 
   const updateQuantity = async (id: number, newQuantity: string) => {
     // Parse the quantity and validate
@@ -81,6 +83,7 @@ export default function CartClient({ cartItems }: CartClientProps) {
       
       if (res.ok) {
         setCart(prev => prev.filter(item => item.id !== id))
+        decrementProductCount() // Update cart count immediately
       }
     } catch (error) {
       console.error('Error removing item:', error)

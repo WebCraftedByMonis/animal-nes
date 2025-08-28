@@ -1,10 +1,11 @@
 'use client'
 
-import Image from 'next/image'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
+import { useCart } from '@/contexts/CartContext'
+import OptimizedImage from '@/components/OptimizedImage'
 
 interface AnimalImage {
   id: number
@@ -34,6 +35,7 @@ interface AnimalCartClientProps {
 
 export default function AnimalCartClient({ cartItems }: AnimalCartClientProps) {
   const [cart, setCart] = useState<AnimalCartItem[]>(cartItems)
+  const { decrementAnimalCount } = useCart()
 
   const removeItem = async (id: number) => {
     const res = await fetch('/api/animal-cart/remove', {
@@ -44,6 +46,7 @@ export default function AnimalCartClient({ cartItems }: AnimalCartClientProps) {
 
     if (res.ok) {
       setCart(prev => prev.filter(item => item.id !== id))
+      decrementAnimalCount() // Update cart count immediately
       toast.success('Animal removed from cart')
     } else {
       toast.error('Failed to remove animal from cart')
@@ -72,12 +75,20 @@ export default function AnimalCartClient({ cartItems }: AnimalCartClientProps) {
       <ul className="space-y-6">
         {cart.map(item => (
           <li key={item.id} className="flex flex-col sm:flex-row items-center bg-white shadow rounded-xl p-4 gap-4">
-            <Image
+            <OptimizedImage
               src={item.animal.images[0]?.url || '/placeholder.png'}
               alt={item.animal.images[0]?.alt || item.animal.specie}
               width={100}
               height={100}
               className="rounded-md object-cover"
+              loading="lazy"
+              cloudinaryOptions={{
+                width: 150,
+                height: 150,
+                quality: 'auto',
+                format: 'auto',
+                crop: 'fill'
+              }}
             />
 
             <div className="flex-1 w-full">

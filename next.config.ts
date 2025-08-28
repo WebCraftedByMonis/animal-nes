@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    unoptimized: true, // 🚀 Disable Next.js image optimizer
+    unoptimized: true, // Keep this for Cloudinary free plan to avoid bandwidth limits
     remotePatterns: [
       {
         protocol: "https",

@@ -9,6 +9,7 @@ import SessionWrapper from "../components/sessionWrapper";
 import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
+import { CartProvider } from "@/contexts/CartContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.animalwellness.shop"), // 👈 sets your base URL
@@ -45,19 +46,21 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionWrapper>
-            <ProgressBar />
-            {/* Main layout container */}
-            <div className="min-h-screen flex flex-col">
-              <Navbar />
-              <Toaster position="top-center" />
-              
-              {/* Main content with padding-top to account for fixed navbar */}
-              <main className="flex-1 pt-14 sm:pt-16">
-                {children}
-              </main>
+            <CartProvider>
+              <ProgressBar />
+              {/* Main layout container */}
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <Toaster position="top-center" />
+                
+                {/* Main content with padding-top to account for fixed navbar */}
+                <main className="flex-1 pt-14 sm:pt-16">
+                  {children}
+                </main>
 
-              <Footer />
-            </div>
+                <Footer />
+              </div>
+            </CartProvider>
           </SessionWrapper>
           <ToastContainer position="top-right" />
         </ThemeProvider>
