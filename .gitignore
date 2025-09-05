@@ -57,3 +57,6 @@ export*.js
 import*.js
 
 /scripts/
+
+aiven-backup.sql
+backup.sh
