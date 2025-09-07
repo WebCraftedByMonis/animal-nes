@@ -3,6 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { v2 as cloudinary } from 'cloudinary'
 import { z } from 'zod'
 
+// Configure route to handle larger payloads (up to 50MB)
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds for file processing
+
 interface CloudinaryUploadResult {
   secure_url: string
   public_id: string

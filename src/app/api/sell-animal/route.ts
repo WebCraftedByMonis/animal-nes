@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { v2 as cloudinary } from 'cloudinary'
 import { Prisma, SellStatus } from '@prisma/client'
 
+// Configure route to handle larger payloads (up to 50MB)
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds for file processing
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,

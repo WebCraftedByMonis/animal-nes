@@ -4,6 +4,10 @@ import { v2 as cloudinary } from 'cloudinary'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 
+// Configure route to handle larger payloads (up to 50MB)
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds for file processing
+
 interface CloudinaryUploadResult {
     public_id: string
     secure_url: string

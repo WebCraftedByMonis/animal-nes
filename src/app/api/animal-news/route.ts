@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { uploadFileToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary'
 
+// Configure route to handle larger payloads (up to 50MB)
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds for file processing
+
 async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
   if (!file) return null
   const arrayBuffer = await file.arrayBuffer()
