@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
           prescription: {
             ownerName: {
               contains: search,
-              mode: 'insensitive'
+              
             }
           }
         },
@@ -139,14 +139,14 @@ export async function GET(request: NextRequest) {
           prescription: {
             doctorName: {
               contains: search,
-              mode: 'insensitive'
+              
             }
           }
         },
         {
           feeDescription: {
             contains: search,
-            mode: 'insensitive'
+           
           }
         }
       ];
