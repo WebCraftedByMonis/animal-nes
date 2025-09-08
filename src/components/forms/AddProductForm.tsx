@@ -468,7 +468,7 @@ export default function AddProductForm() {
                 name="dosage"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Dosage</FormLabel>
+                    <FormLabel>Dosage/Usage</FormLabel>
                     <FormControl>
                       <Textarea {...field} placeholder="Enter dosage information" rows={2} />
                     </FormControl>

@@ -243,7 +243,7 @@ export default function PartnerForm({
           </div>
 
           <div>
-            <Label htmlFor="shopName">Shop Name</Label>
+            <Label htmlFor="shopName">Shop Name/Instition </Label>
             <Input id="shopName" {...register('shopName')} className="focus:border-green-500 focus:ring-green-500" />
             {errors.shopName && <p className="text-red-500 text-sm">{errors.shopName.message}</p>}
           </div>

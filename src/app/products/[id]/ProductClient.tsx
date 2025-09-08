@@ -161,7 +161,7 @@ export default function ProductClient({ product }: { product: Product }) {
                   onClick={() => setShowDosage(!showDosage)}
                   className="w-full px-4 py-3 flex items-center justify-between hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                 >
-                  <span className="font-medium text-green-800 dark:text-green-200">Dosage Information</span>
+                  <span className="font-medium text-green-800 dark:text-green-200">Dosage/Use Information</span>
                   {showDosage ? (
                     <ChevronUp className="w-5 h-5 text-green-600 dark:text-green-400" />
                   ) : (

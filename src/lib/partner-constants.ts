@@ -13,7 +13,7 @@ export const veterinarianSpecializations = [
   'Small Animal Veterinarian',
   'Poultry Veterinarian',
   'Parasitologist',
-  'Reproduction Specialist',
+  'Reproductive and Ultrasound Specialist',
   'Animal Nutritionist',
   'Veterinary Surgeon',
   'Veterinary Pathologist',
