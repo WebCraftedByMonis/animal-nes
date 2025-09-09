@@ -1,6 +1,7 @@
 // app/job-posts/[id]/page.tsx
 import { Metadata } from 'next'
 import JobPostDetailClient from './JobPostDetailClient'
+import { getApiUrl } from '@/lib/utils'
 interface TraditionalJobPost {
   id: number
   title: string
@@ -16,7 +17,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`${ 'https://www.animalwellness.shop'}/api/traditionaljobpost/${params.id}`, {
+    const res = await fetch(`${getApiUrl()}/api/traditionaljobpost/${params.id}`, {
       next: { revalidate: 3600 }, // Revalidate every hour
     })
 

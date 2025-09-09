@@ -1,6 +1,7 @@
 
 import { Metadata } from "next";
 import NewsDetailPage from "./NewsDetailPage";
+import { getApiUrl } from "@/lib/utils";
 
 type NewsItem = {
   id: string;
@@ -18,7 +19,7 @@ type PageProps = {
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const res = await fetch(`https://animal-nes-lv3a.vercel.app/api/animal-news/${params.id}`, {
+  const res = await fetch(`${getApiUrl()}/api/animal-news/${params.id}`, {
     cache: "no-store",
   });
 

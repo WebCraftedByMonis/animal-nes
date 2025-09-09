@@ -1,6 +1,7 @@
 // src/app/applicant/[id]/page.tsx
 import { Metadata } from 'next'
 import ApplicantDetailClient from './ApplicantDetailClient'
+import { getApiUrl } from '@/lib/utils'
 
 interface Applicant {
   id: number
@@ -30,7 +31,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`https://www.animalwellness.shop//api/jobApplicant/${params.id}`, {
+    const res = await fetch(`${getApiUrl()}/api/jobApplicant/${params.id}`, {
       next: { revalidate: 3600 }, // optional revalidation
     })
 

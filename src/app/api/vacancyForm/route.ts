@@ -295,16 +295,16 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Job Form not found' }, { status: 404 })
     }
 
+    // Delete image from Cloudinary if exists
     if (existing.jobFormImage?.publicId) {
-      await cloudinary.uploader.destroy(existing.jobFormImage.publicId, { resource_type: 'image' })
+      await cloudinary.uploader.destroy(existing.jobFormImage.publicId, {
+        resource_type: 'image',
+      })
     }
 
-    await prisma.$transaction(async (tx) => {
-      if (existing.jobFormImageId) {
-        await tx.jobFormImage.delete({ where: { id: existing.jobFormImageId } })
-      }
-
-      await tx.jobForm.delete({ where: { id } })
+    // Delete the job form (cascade will remove JobFormImage)
+    await prisma.jobForm.delete({
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Deleted successfully' })

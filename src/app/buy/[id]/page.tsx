@@ -1,6 +1,7 @@
 // src/app/animals/[id]/page.tsx
 import { Metadata } from 'next'
 import AnimalDetailClient from './AnimalDetailClient'
+import { getApiUrl } from '@/lib/utils'
 
 interface SellAnimal {
   id: number
@@ -33,7 +34,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`https://www.animalwellness.shop/api/sell-animal/${params.id}`, {
+    const res = await fetch(`${getApiUrl()}/api/sell-animal/${params.id}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     })
 
