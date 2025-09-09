@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, ArrowUpDown, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, ArrowUpDown, Loader2, Search } from 'lucide-react'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import {
   Select,
@@ -46,6 +46,7 @@ interface Company {
 export default function ViewCompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'id' | 'companyName'>('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [limit, setLimit] = useState(10)
@@ -129,6 +130,17 @@ export default function ViewCompaniesPage() {
     }
   }
 
+  const handleSearch = () => {
+    setSearch(searchTerm)
+    setPage(1) // Reset to first page when searching
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
   return (
     <Suspense fallback={<TableSkeleton />}>
       <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
@@ -136,12 +148,22 @@ export default function ViewCompaniesPage() {
 
        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap">
   <div className="flex flex-col sm:flex-row gap-2 flex-wrap w-full sm:w-auto">
-    <Input
-      placeholder="Search companies..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="focus:ring-green-500 w-full sm:w-auto"
-    />
+    <div className="flex gap-1 w-full sm:w-auto">
+      <Input
+        placeholder="Search companies..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onKeyPress={handleKeyPress}
+        className="focus:ring-green-500 w-full"
+      />
+      <Button
+        onClick={handleSearch}
+        size="sm"
+        className="bg-green-500 hover:bg-green-600 px-3"
+      >
+        <Search className="h-4 w-4" />
+      </Button>
+    </div>
     <div className="flex items-center gap-1">
       <span>Show</span>
       <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Loader2, Link, Plus, X, Eye } from 'lucide-react'
+import { Pencil, Trash2, Loader2, Link, Plus, X, Eye, Search } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -77,6 +77,7 @@ interface Product {
 export default function ViewProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'id' | 'productName'>('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [limit, setLimit] = useState(10)
@@ -228,6 +229,17 @@ export default function ViewProductsPage() {
     setSortOrder(sortOrder as 'asc' | 'desc')
   }
 
+  const handleSearch = () => {
+    setSearch(searchTerm)
+    setPage(1) // Reset to first page when searching
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
   const handleAddVariant = () => {
     setEditVariants([...editVariants, {
       packingVolume: '',
@@ -256,12 +268,22 @@ export default function ViewProductsPage() {
 
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap">
   <div className="flex flex-col sm:flex-row gap-2 flex-wrap w-full sm:w-auto">
-    <Input
-      placeholder="Search products..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="focus:ring-green-500 w-full sm:w-auto"
-    />
+    <div className="flex gap-1 w-full sm:w-auto">
+      <Input
+        placeholder="Search products..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onKeyPress={handleKeyPress}
+        className="focus:ring-green-500 w-full"
+      />
+      <Button
+        onClick={handleSearch}
+        size="sm"
+        className="bg-green-500 hover:bg-green-600 px-3"
+      >
+        <Search className="h-4 w-4" />
+      </Button>
+    </div>
     <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
       <SelectTrigger className="w-full sm:w-[180px]">
         <SelectValue placeholder="Sort by" />

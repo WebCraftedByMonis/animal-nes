@@ -282,7 +282,7 @@ async function GET(request: NextRequest) {
       whereClause.species = species;
     }
     
-    // Execute queries
+    // Execute queries - Optimized to prevent N+1 queries
     const [partners, total] = await Promise.all([
       prisma.partner.findMany({
         where: whereClause,
@@ -291,9 +291,13 @@ async function GET(request: NextRequest) {
         orderBy: { [sortBy]: order },
         include: {
           partnerImage: true,
-          products: true,
+          products: {
+            select: {
+              id: true, // Only select ID for count, not full product data
+            }
+          },
           availableDaysOfWeek: true,
-          startTime: true,
+          // Removed startTime include as it's not used in the view and causes N+1 queries
         },
       }),
       prisma.partner.count({

@@ -85,7 +85,11 @@ export async function GET(req: NextRequest) {
       take: limit,
       include: {
         image: true,
-        products: true,
+        products: {
+          select: {
+            id: true, // Only select ID for count, not full product data
+          }
+        },
       },
     }),
     prisma.company.count({
