@@ -313,7 +313,7 @@ export default function PartnerForm({
           </div>
 
           <div>
-            <Label htmlFor="rvmpNumber">RVMP Number/ License Number</Label>
+            <Label htmlFor="rvmpNumber">RVMP no./ License no. / Registration no.</Label>
             <Input id="rvmpNumber" {...register('rvmpNumber')} className="focus:border-green-500 focus:ring-green-500" />
             {errors.rvmpNumber && <p className="text-red-500 text-sm">{errors.rvmpNumber.message}</p>}
           </div>

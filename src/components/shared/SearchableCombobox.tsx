@@ -50,7 +50,9 @@ export function SearchableCombobox({
       const response = await axios.get(apiEndpoint, {
         params: {
           limit: 10,
-          sort: 'desc' // Get latest items
+          sortBy: 'createdAt',
+          sortOrder: 'desc', // Company API uses sortOrder
+          order: 'desc' // Partner API uses order
         }
       });
       
