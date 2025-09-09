@@ -296,10 +296,15 @@ export default function PartnerForm({
           </div>
 
           <div>
-            <Label htmlFor="areaTown">Date of Birth</Label>
-            <Input id="areaTown" {...register('areaTown')} className="focus:border-green-500 focus:ring-green-500" />
-            {errors.areaTown && <p className="text-red-500 text-sm">{errors.areaTown.message}</p>}
-          </div>
+  <Label htmlFor="areaTown">Date of Birth</Label>
+  <Input 
+    type="date"
+    id="areaTown" 
+    {...register('areaTown')} 
+    className="focus:border-green-500 focus:ring-green-500" 
+  />
+  {errors.areaTown && <p className="text-red-500 text-sm">{errors.areaTown.message}</p>}
+</div>
 
           <div className="md:col-span-2">
             <Label htmlFor="fullAddress">Full Address/ Map Link</Label>
@@ -342,7 +347,22 @@ export default function PartnerForm({
         </div>
 
         <div>
-          <Label>Available Days*</Label>
+          <div className="flex items-center justify-between mb-3">
+            <Label>Available Days*</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-green-500 text-green-600 hover:bg-green-50"
+              onClick={() => {
+                const currentDays = watch('availableDays');
+                const allSelected = dayOptions.every(day => currentDays.includes(day));
+                setValue('availableDays', allSelected ? [] : [...dayOptions]);
+              }}
+            >
+              {dayOptions.every(day => watch('availableDays').includes(day)) ? 'Unselect All' : 'Select All Days'}
+            </Button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {dayOptions.map((day) => (
               <label key={day} className="flex items-center space-x-2">

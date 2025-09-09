@@ -32,6 +32,7 @@ export function SearchableCombobox({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState<SearchableOption | null>(null);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Debounce search function
   const debounce = useCallback((func: Function, delay: number) => {
@@ -42,10 +43,40 @@ export function SearchableCombobox({
     };
   }, []);
 
+  // Load latest 10 items
+  const loadInitialOptions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(apiEndpoint, {
+        params: {
+          limit: 10,
+          sort: 'desc' // Get latest items
+        }
+      });
+      
+      const data = response.data.data || response.data || [];
+      const formattedOptions = data.map((item: any) => ({
+        id: item.id,
+        label: item[searchKey]
+      }));
+      
+      setOptions(formattedOptions);
+      setInitialLoaded(true);
+    } catch (error) {
+      console.error("Error loading initial options:", error);
+      setOptions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiEndpoint, searchKey]);
+
   // Search function
   const searchOptions = useCallback(async (query: string) => {
     if (!query.trim()) {
-      setOptions([]);
+      // If search is cleared, reload initial options
+      if (initialLoaded) {
+        loadInitialOptions();
+      }
       return;
     }
 
@@ -71,7 +102,7 @@ export function SearchableCombobox({
     } finally {
       setLoading(false);
     }
-  }, [apiEndpoint, searchKey]);
+  }, [apiEndpoint, searchKey, initialLoaded, loadInitialOptions]);
 
   // Debounced search
   const debouncedSearch = useCallback(
@@ -106,12 +137,25 @@ export function SearchableCombobox({
     }
   }, [value, apiEndpoint, searchKey, selectedItem]);
 
+  // Load initial options when component mounts
+  useEffect(() => {
+    loadInitialOptions();
+  }, [loadInitialOptions]);
+
   // Clear options when popover closes
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
       setSearchTerm("");
-      setOptions([]);
+      // Show initial options when popover closes
+      if (initialLoaded) {
+        loadInitialOptions();
+      }
+    } else {
+      // Load initial options when popover opens if not already loaded
+      if (!initialLoaded) {
+        loadInitialOptions();
+      }
     }
   };
 
@@ -147,14 +191,14 @@ export function SearchableCombobox({
             <CommandEmpty>No results found.</CommandEmpty>
           )}
           
-          {!loading && !searchTerm && (
+          {!loading && !searchTerm && options.length === 0 && (
             <div className="py-4 text-center text-sm text-gray-500">
               Start typing to search...
             </div>
           )}
           
           {!loading && options.length > 0 && (
-            <CommandGroup>
+            <CommandGroup heading={!searchTerm ? `Latest 10 ${placeholder.toLowerCase()}s` : `Search Results`}>
               {options.map((item) => (
                 <CommandItem
                   key={item.id}

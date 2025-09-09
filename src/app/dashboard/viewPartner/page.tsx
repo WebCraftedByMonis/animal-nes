@@ -580,7 +580,7 @@ useEffect(() => {
 
               {/* RVMP Number */}
               <div className="col-span-1">
-                <label className="block text-sm font-medium mb-1">RVMP Number/ License Number</label>
+                <label className="block text-sm font-medium mb-1">RVMP no./ License no./ Registration no.</label>
                 <Input value={editRvmpNumber} onChange={(e) => setEditRvmpNumber(e.target.value)} />
               </div>
 
