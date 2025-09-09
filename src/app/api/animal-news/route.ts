@@ -7,19 +7,36 @@ export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds for file processing
 
 async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
-  if (!file) return null
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-  return uploadFileToCloudinary(
-    buffer,
-    `animal-news/${type}s`,
-    type === 'pdf' ? 'raw' : 'image',
-    file.name
-  )
+  if (!file) {
+    console.log(`⏭️ [SERVER] No ${type} file to upload`)
+    return null
+  }
+  
+  console.log(`📁 [SERVER] Processing ${type} file: ${file.name} (${file.size} bytes)`)
+  try {
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    console.log(`☁️ [SERVER] Uploading ${type} to Cloudinary...`)
+    
+    const result = await uploadFileToCloudinary(
+      buffer,
+      `animal-news/${type}s`,
+      type === 'pdf' ? 'raw' : 'image',
+      file.name
+    )
+    
+    console.log(`✅ [SERVER] ${type} upload successful: ${result.public_id}`)
+    return result
+  } catch (error) {
+    console.error(`❌ [SERVER] ${type} upload failed:`, error)
+    throw error
+  }
 }
 
 export async function POST(req: NextRequest) {
+  console.log('🚀 [SERVER] Starting animal news creation API call');
   try {
+    console.log('📋 [SERVER] Parsing form data...');
     const formData = await req.formData()
 
     const title = formData.get('title') as string
@@ -27,20 +44,34 @@ export async function POST(req: NextRequest) {
     const image = formData.get('image') as File | null
     const pdf = formData.get('pdf') as File | null
 
-    console.log('📩 Incoming form data:')
-    console.log('Title:', title)
-    console.log('Description:', description)
-    console.log('Image file:', image ? `${image.name}, ${image.size} bytes` : 'No image')
-    console.log('PDF file:', pdf ? `${pdf.name}, ${pdf.size} bytes` : 'No PDF')
+    console.log('📩 [SERVER] Incoming form data:')
+    console.log('  Title:', title)
+    console.log('  Description length:', description?.length || 0)
+    console.log('  Image file:', image ? `${image.name}, ${image.size} bytes, type: ${image.type}` : 'No image')
+    console.log('  PDF file:', pdf ? `${pdf.name}, ${pdf.size} bytes, type: ${pdf.type}` : 'No PDF')
+
+    // Validation checks
+    if (!title || !description || !image) {
+      console.error('❌ [SERVER] Validation failed - missing required fields', {
+        hasTitle: !!title,
+        hasDescription: !!description,
+        hasImage: !!image
+      });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    console.log('📤 [SERVER] Starting file uploads...');
 
     const [imageResult, pdfResult] = await Promise.all([
       handleFileUpload(image, 'image'),
       handleFileUpload(pdf, 'pdf'),
     ])
 
-    console.log('✅ File upload results:')
-    console.log('Image upload:', imageResult)
-    console.log('PDF upload:', pdfResult)
+    console.log('✅ [SERVER] File upload results:')
+    console.log('  Image upload:', imageResult ? `✅ ${imageResult.secure_url}` : '❌ Failed')
+    console.log('  PDF upload:', pdfResult ? `✅ ${pdfResult.secure_url}` : 'No PDF uploaded')
+    
+    console.log('💾 [SERVER] Starting database transaction...');
 
     const news = await prisma.$transaction(async (tx) => {
       const imageRecord = imageResult
@@ -63,9 +94,9 @@ export async function POST(req: NextRequest) {
           })
         : null
 
-      console.log('📦 Creating Animal News entry with:')
-      console.log('Image ID:', imageRecord?.id)
-      console.log('PDF ID:', pdfRecord?.id)
+      console.log('📦 [SERVER] Creating Animal News entry with:')
+      console.log('  Image ID:', imageRecord?.id || 'No image')
+      console.log('  PDF ID:', pdfRecord?.id || 'No PDF')
 
       return tx.animalNews.create({
         data: {
@@ -78,15 +109,27 @@ export async function POST(req: NextRequest) {
       })
     })
 
-    console.log('🎉 News created successfully:', news.id)
+    console.log('🎉 [SERVER] News created successfully!', {
+      id: news.id,
+      title: news.title,
+      hasImage: !!news.image,
+      hasPdf: !!news.pdf,
+      createdAt: news.createdAt
+    })
 
     return NextResponse.json(news, { status: 201 })
   } catch (error: any) {
-    console.error('❌ Error creating animal news:', error)
+    console.error('💥 [SERVER] Error creating animal news:', {
+      error: error?.message || error,
+      stack: error?.stack,
+      name: error?.name
+    })
     return NextResponse.json(
       { error: 'Internal Server Error', details: error?.message || error },
       { status: 500 }
     )
+  } finally {
+    console.log('🏁 [SERVER] Animal news creation API call finished')
   }
 }
 // GET - List news entries

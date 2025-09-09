@@ -84,6 +84,13 @@ export default function AddAnimalNewsPage() {
   }
 
   async function onSubmit(data: FormValues) {
+    console.log("🚀 Starting news creation process", { 
+      title: data.title, 
+      description: data.description, 
+      hasImage: !!data.image,
+      hasPdf: !!data.pdf 
+    });
+    
     setIsSubmitting(true);
     try {
       const formData = new FormData();
@@ -92,25 +99,40 @@ export default function AddAnimalNewsPage() {
       formData.append("image", data.image);
       if (data.pdf) formData.append("pdf", data.pdf);
 
+      console.log("📤 Sending POST request to /api/animal-news");
+      
       const response = await fetch("/api/animal-news", {
         method: "POST",
         body: formData,
       });
 
+      console.log("📨 Response received", { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText 
+      });
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("❌ Server returned error", { 
+          status: response.status, 
+          errorData 
+        });
         toast.error(errorData.error || "Failed to create news");
         return;
       }
 
+      const successData = await response.json();
+      console.log("✅ News created successfully", successData);
       toast.success("News created successfully");
       form.reset();
       setPreview(null);
     } catch (error) {
-      console.error("Submission error:", error);
+      console.error("💥 Submission error:", error);
       toast.error("Unexpected error occurred");
     } finally {
       setIsSubmitting(false);
+      console.log("🏁 News creation process finished");
     }
   }
 
