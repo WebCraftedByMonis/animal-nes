@@ -33,30 +33,15 @@ interface TraditionalJobPost {
   updatedAt: string
 }
 
-export default function JobPostDetailClient() {
-  const params = useParams()
+interface JobPostDetailClientProps {
+  traditionalJobPost: TraditionalJobPost | null
+}
+
+export default function JobPostDetailClient({ traditionalJobPost }: JobPostDetailClientProps) {
   const router = useRouter()
-  const [jobPost, setJobPost] = useState<TraditionalJobPost | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [jobPost] = useState<TraditionalJobPost | null>(traditionalJobPost)
+  const [loading] = useState(false)
   const [imageError, setImageError] = useState(false)
-
-  useEffect(() => {
-    fetchJobPost()
-  }, [params.id])
-
-  const fetchJobPost = async () => {
-    try {
-      setLoading(true)
-      const { data } = await axios.get(`/api/traditionaljobpost/${params.id}`)
-      setJobPost(data)
-    } catch (error) {
-      console.error('Error fetching job post:', error)
-      toast.error('Failed to load job post')
-      router.push('/job-posts')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -92,7 +77,7 @@ export default function JobPostDetailClient() {
         <div className="text-center space-y-4">
           <Briefcase className="h-20 w-20 text-gray-300 mx-auto" />
           <h2 className="text-2xl font-bold text-gray-600">Job Post Not Found</h2>
-          <Button onClick={() => router.push('/job-posts')}>
+          <Button onClick={() => router.push('/traditionaljobposts')}>
             View All Jobs
           </Button>
         </div>
@@ -127,14 +112,14 @@ export default function JobPostDetailClient() {
                 <div className="flex flex-col sm:flex-row gap-6">
                   {/* Company Logo/Image */}
                   <div className="flex-shrink-0">
-                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                    <div className="w-32 h-32 rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800">
                       {jobPost.image && !imageError ? (
                         <Image
                           src={jobPost.image.url}
                           alt={jobPost.image.alt || jobPost.title}
-                          width={96}
-                          height={96}
-                          className="object-cover w-full h-full"
+                          width={600}
+                          height={600}
+                          className="w-full h-auto object-contain"
                           onError={() => setImageError(true)}
                         />
                       ) : (

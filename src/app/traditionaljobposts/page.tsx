@@ -1,23 +1,8 @@
-'use client'
+import { Metadata } from 'next'
+import TraditionalJobPostsClient from './TraditionalJobPostsClient'
+import { getApiUrl } from '@/lib/utils'
 
-import { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
-import { toast } from 'react-toastify'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Briefcase, FileText, Calendar, Clock } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+export const revalidate = 1800 // 30 minutes
 
 interface TraditionalJobPost {
   id: number
@@ -28,241 +13,85 @@ interface TraditionalJobPost {
   updatedAt: string
 }
 
-export default function AllJobPostsPage() {
-  const [jobPosts, setJobPosts] = useState<TraditionalJobPost[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState<'id' | 'title'>('id')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [limit, setLimit] = useState(8)
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const router = useRouter()
+async function getInitialTraditionalJobPosts(): Promise<TraditionalJobPost[]> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/traditionaljobpost?page=1&limit=8&sortBy=id&sortOrder=desc`, {
+      next: { revalidate: 1800 },
+      cache: 'force-cache'
+    })
 
-  const fetchJobPosts = useCallback(async () => {
-    try {
-      setLoading(true)
-      const { data } = await axios.get('/api/traditionaljobpost', {
-        params: { 
-          search, 
-          sortBy, 
-          sortOrder, 
-          page, 
-          limit
-        },
-      })
-      setJobPosts(data.data)
-      setTotal(data.total)
-    } catch (error) {
-      console.log(error)
-      toast.error('Failed to fetch job posts')
-    } finally {
-      setLoading(false)
+    if (!response.ok) {
+      console.error('Failed to fetch traditional job posts:', response.status, response.statusText)
+      return []
     }
-  }, [search, sortBy, sortOrder, page, limit])
 
-  useEffect(() => {
-    fetchJobPosts()
-  }, [fetchJobPosts])
-
-  const handleSortChange = (value: string) => {
-    const [sortBy, sortOrder] = value.split('-')
-    setSortBy(sortBy as 'id' | 'title')
-    setSortOrder(sortOrder as 'asc' | 'desc')
+    const data = await response.json()
+    return data.data || []
+  } catch (error) {
+    console.error('Error fetching initial traditional job posts:', error)
+    return []
   }
-
-  const navigateToJobPost = (jobPost: TraditionalJobPost) => {
-    // Navigate to job post detail page
-    router.push(`/traditionaljobposts/${jobPost.id}`)
-  }
-
-  const truncateDescription = (description: string, maxLength: number = 150) => {
-    if (description.length <= maxLength) return description
-    return description.substring(0, maxLength).trim() + '...'
-  }
-
-  return (
-    <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-green-500">Job Opportunities</h1>
-        <p className="text-muted-foreground">Discover exciting career opportunities in the veterinary and animal care industry</p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
-          <Input
-            placeholder="Search job posts..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 max-w-md"
-          />
-          <Select 
-            value={`${sortBy}-${sortOrder}`}
-            onValueChange={handleSortChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="id-desc">Newest First</SelectItem>
-              <SelectItem value="id-asc">Oldest First</SelectItem>
-              <SelectItem value="title-asc">Title (A-Z)</SelectItem>
-              <SelectItem value="title-desc">Title (Z-A)</SelectItem>
-            </SelectContent>
-          </Select>
-          <span>Show</span>
-          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Show" />
-            </SelectTrigger>
-            <SelectContent>
-              {[8, 16, 32, 64].map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span>entries</span>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: limit }).map((_, index) => (
-            <JobPostCardSkeleton key={index} />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {jobPosts.map((jobPost) => (
-              <div 
-                key={jobPost.id} 
-                className="bg-white dark:bg-zinc-900 rounded-lg shadow-md border border-zinc-200 dark:border-zinc-700 overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] cursor-pointer group"
-                onClick={() => navigateToJobPost(jobPost)}
-              >
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100 dark:from-zinc-800 dark:to-zinc-900">
-                  {jobPost.image ? (
-                    <Image
-                      src={jobPost.image.url}
-                      alt={jobPost.image.alt || jobPost.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-gradient-to-br from-green-100 to-emerald-200 dark:from-zinc-800 dark:to-zinc-700">
-                      <Briefcase className="h-16 w-16 text-green-600 dark:text-green-500" />
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-green-500 text-white">
-                      Open
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-3">
-                  <h3 className="font-bold text-lg line-clamp-2 group-hover:text-green-600 transition-colors">
-                    {jobPost.title}
-                  </h3>
-                  
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {truncateDescription(jobPost.description)}
-                  </p>
-
-                  <div className="flex items-center justify-between pt-3 border-t">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>Posted {formatDistanceToNow(new Date(jobPost.createdAt), { addSuffix: true })}</span>
-                    </div>
-                  </div>
-
-                  <Button 
-                    className="w-full bg-green-500 hover:bg-green-600 text-white"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigateToJobPost(jobPost)
-                    }}
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {jobPosts.length === 0 && (
-            <div className="text-center py-16 space-y-4">
-              <Briefcase className="h-20 w-20 text-gray-300 mx-auto" />
-              <div className="space-y-2">
-                <p className="text-xl font-semibold text-gray-600">No job posts found</p>
-                <p className="text-muted-foreground">Check back later for new opportunities</p>
-              </div>
-            </div>
-          )}
-
-          {total > limit && (
-            <div className="mt-8 flex justify-center gap-2">
-              <Button 
-                variant="outline" 
-                disabled={page === 1} 
-                onClick={() => setPage(page - 1)}
-              >
-                Previous
-              </Button>
-              {Array.from({ length: Math.min(5, Math.ceil(total / limit)) }, (_, i) => {
-                let pageNum
-                if (Math.ceil(total / limit) <= 5) {
-                  pageNum = i + 1
-                } else if (page <= 3) {
-                  pageNum = i + 1
-                } else if (page >= Math.ceil(total / limit) - 2) {
-                  pageNum = Math.ceil(total / limit) - 4 + i
-                } else {
-                  pageNum = page - 2 + i
-                }
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={pageNum === page ? 'default' : 'outline'}
-                    onClick={() => setPage(pageNum)}
-                    className={pageNum === page ? 'bg-green-500 hover:bg-green-600 text-white' : ''}
-                  >
-                    {pageNum}
-                  </Button>
-                )
-              })}
-              <Button
-                variant="outline"
-                disabled={page * limit >= total}
-                onClick={() => setPage(page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
 }
 
-function JobPostCardSkeleton() {
-  return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-      <Skeleton className="aspect-[16/9] w-full" />
-      <div className="p-4 space-y-3">
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <div className="pt-3 border-t">
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-        <Skeleton className="h-9 w-full" />
-      </div>
-    </div>
-  )
+export const metadata: Metadata = {
+  title: 'Traditional Job Posts | Browse Career Opportunities',
+  description: 'Browse traditional job postings and career opportunities in veterinary sciences, animal care, agriculture, and livestock management. Find your next career opportunity from employers across Pakistan.',
+  keywords: [
+    'traditional job posts',
+    'career opportunities',
+    'job listings',
+    'veterinary job openings',
+    'animal care positions',
+    'agriculture careers',
+    'livestock management jobs',
+    'farm jobs',
+    'veterinary assistant openings',
+    'animal doctor positions',
+    'poultry farm jobs',
+    'dairy farm careers',
+    'cattle management positions',
+    'animal husbandry jobs',
+    'veterinary technician roles',
+    'pet care jobs',
+    'zoo positions'
+  ].join(', '),
+  openGraph: {
+    title: 'Traditional Job Posts | Career Opportunities',
+    description: 'Discover career opportunities in veterinary sciences, animal care, and agriculture. Browse job postings from employers looking for qualified professionals.',
+    type: 'website',
+    images: [
+      {
+        url: '/images/traditional-jobs-og.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Traditional Job Posts - Career Opportunities'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Traditional Job Posts | Find Your Next Career',
+    description: 'Browse job opportunities in veterinary sciences, animal care, and agriculture industries.',
+    images: ['/images/traditional-jobs-og.jpg']
+  },
+  alternates: {
+    canonical: '/traditionaljobposts'
+  }
 }
+
+interface TraditionalJobPost {
+  id: number
+  title: string
+  description: string
+  image: { url: string; alt: string; publicId: string | null } | null
+  createdAt: string
+  updatedAt: string
+}
+
+export default async function TraditionalJobPostsPage() {
+  const initialJobPosts = await getInitialTraditionalJobPosts()
+  
+  return <TraditionalJobPostsClient initialJobPosts={initialJobPosts} />
+}
+

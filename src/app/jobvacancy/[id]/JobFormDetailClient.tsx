@@ -1,8 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import axios from 'axios'
+import React from 'react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -48,25 +46,13 @@ interface JobForm {
 }
 
 
-export default function JobFormDetailClient() {
-  const { id } = useParams()
-  const [jobForm, setJobForm] = useState<JobForm | null>(null)
-  const [loading, setLoading] = useState(true)
+interface JobFormDetailClientProps {
+  jobVacancy: JobForm | null
+}
 
-  useEffect(() => {
-    async function fetchJob() {
-      try {
-        const { data } = await axios.get<JobForm>(`/api/vacancyForm/${id}`)
-        setJobForm(data)
-      } catch (err) {
-        console.error('Failed to load job:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (id) fetchJob()
-  }, [id])
+export default function JobFormDetailClient({ jobVacancy }: JobFormDetailClientProps) {
+  const jobForm = jobVacancy
+  const loading = false
 
   if (loading) {
     return (
@@ -109,18 +95,22 @@ export default function JobFormDetailClient() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Image and Basic Info */}
         <div className="space-y-6">
-          <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg overflow-hidden">
             {jobForm.jobFormImage?.url ? (
               <Image
                 src={jobForm.jobFormImage.url}
-                alt={jobForm.jobFormImage.alt}
-                fill
-                className="object-fit"
+                alt={jobForm.jobFormImage.alt || jobForm.position}
+                width={600}
+                height={600}
+                className="w-full h-auto object-contain"
                 priority
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                <Briefcase className="w-16 h-16" />
+              <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
+                <div className="text-center text-gray-400 dark:text-gray-500">
+                  <Briefcase className="w-16 h-16 mx-auto mb-2" />
+                  <span className="text-sm">No Image Available</span>
+                </div>
               </div>
             )}
           </div>

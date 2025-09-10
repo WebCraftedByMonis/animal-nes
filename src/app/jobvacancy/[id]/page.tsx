@@ -1,7 +1,12 @@
-// src/app/jobvacancy/[id]/page.tsx
 import { Metadata } from 'next'
 import JobFormDetailClient from './JobFormDetailClient'
 import { getApiUrl } from '@/lib/utils'
+
+export const revalidate = 1800 // 30 minutes
+
+export async function generateStaticParams() {
+  return []
+}
 
 interface JobForm {
   id: number
@@ -27,34 +32,68 @@ interface JobForm {
   } | null
 }
 
+async function getJobVacancy(id: string): Promise<JobForm | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/vacancyForm/${id}`, {
+      next: { revalidate: 1800 },
+      cache: 'force-cache'
+    })
+
+    if (!response.ok) {
+      console.error('Failed to fetch job vacancy:', response.status, response.statusText)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching job vacancy:', error)
+    return null
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`${getApiUrl()}/api/vacancyForm/${params.id}`, {
-      next: { revalidate: 3600 }, // optional revalidation
-    })
+    const { id } = await params;
+    const data = await getJobVacancy(id)
 
-    if (!res.ok) {
+    if (!data) {
       return {
-        title: 'Job Not Found ',
+        title: 'Job Not Found | Animal Wellness',
         description: 'The job you are looking for may no longer be available.',
       }
     }
 
-    const data: JobForm = await res.json()
+    const description = `Apply for ${data.position} at ${data.company} in ${data.location}. ${data.eligibility}. Deadline: ${new Date(data.deadline).toLocaleDateString()}`
 
     return {
-      title: `${data.position} at ${data.company} `,
-      description: `Apply for ${data.position} at ${data.company} in ${data.location}. Deadline: ${data.deadline}`,
+      title: `${data.position} at ${data.company} | Animal Wellness Jobs`,
+      description: description.substring(0, 160),
+      keywords: [
+        data.position,
+        data.company,
+        data.location,
+        'veterinary jobs',
+        'animal care careers',
+        'job vacancy',
+        'apply now',
+        data.eligibility || 'professional'
+      ].filter(Boolean).join(', '),
       openGraph: {
+        title: `${data.position} at ${data.company}`,
+        description: `${data.position} opportunity at ${data.company} in ${data.location}. Apply by ${new Date(data.deadline).toLocaleDateString()}.`,
+        type: 'website',
         images: data.jobFormImage
           ? [
               {
                 url: data.jobFormImage.url,
                 alt: data.jobFormImage.alt ?? data.position,
+                width: 1200,
+                height: 630,
               },
             ]
           : [],
@@ -62,18 +101,29 @@ export async function generateMetadata({
       twitter: {
         card: 'summary_large_image',
         title: `${data.position} at ${data.company}`,
-        description: `Location: ${data.location}, Deadline: ${data.deadline}`,
+        description: `Location: ${data.location} | Deadline: ${new Date(data.deadline).toLocaleDateString()}`,
         images: data.jobFormImage?.url ? [data.jobFormImage.url] : [],
       },
+      alternates: {
+        canonical: `/jobvacancy/${id}`
+      }
     }
   } catch (e) {
+    console.error('Error generating metadata:', e)
     return {
-      title: 'Job Vacancy ',
+      title: 'Job Vacancy | Animal Wellness',
       description: 'Explore career opportunities at Animal Wellness.',
     }
   }
 }
 
-export default function Page() {
-  return <JobFormDetailClient />
+export default async function JobVacancyDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params;
+  const jobVacancy = await getJobVacancy(id)
+  
+  return <JobFormDetailClient jobVacancy={jobVacancy} />
 }

@@ -2,6 +2,8 @@
 import { Metadata } from 'next'
 import JobPostDetailClient from './JobPostDetailClient'
 import { getApiUrl } from '@/lib/utils'
+
+export const revalidate = 1800 // 30 minutes
 interface TraditionalJobPost {
   id: number
   title: string
@@ -11,24 +13,41 @@ interface TraditionalJobPost {
   updatedAt: string
 }
 
+async function getTraditionalJobPost(id: string): Promise<TraditionalJobPost | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/traditionaljobpost/${id}`, {
+      next: { revalidate: 1800 },
+      cache: 'force-cache'
+    })
+
+    if (!response.ok) {
+      console.error('Failed to fetch traditional job post:', response.status, response.statusText)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching traditional job post:', error)
+    return null
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`${getApiUrl()}/api/traditionaljobpost/${params.id}`, {
-      next: { revalidate: 3600 }, // Revalidate every hour
-    })
+    const { id } = await params;
+    const data = await getTraditionalJobPost(id)
 
-    if (!res.ok) {
+    if (!data) {
       return {
-        title: 'Job Post Not Found | Animal Wellness Careers',
-        description: 'The job posting you are looking for may no longer be available or has been filled.',
+        title: 'Traditional Job Post Not Found | Animal Wellness',
+        description: 'The traditional job post you are looking for may no longer be available.',
       }
     }
-
-    const data: TraditionalJobPost = await res.json()
 
     // Create a description from the job post content
     const cleanDescription = data.description.replace(/\n/g, ' ').trim()
@@ -44,7 +63,7 @@ export async function generateMetadata({
     })
 
     return {
-      title: `${data.title} | Animal Wellness Careers`,
+      title: `${data.title} | Traditional Job Posts | Animal Wellness`,
       description: shortDescription,
       openGraph: {
         title: data.title,
@@ -72,13 +91,20 @@ export async function generateMetadata({
       },
       keywords: [
         data.title,
-        'animal wellness jobs',
-        'veterinary careers',
-        'animal care jobs',
-        'pet industry jobs',
-        'veterinary employment',
+        'traditional job posts',
+        'career opportunities', 
+        'job listings',
+        'veterinary job openings',
+        'animal care positions',
+        'agriculture careers',
+        'livestock management jobs',
+        'farm jobs',
         'animal health careers',
+        'Pakistan jobs'
       ].filter(Boolean),
+      alternates: {
+        canonical: `/traditionaljobposts/${id}`
+      },
       other: {
         'article:published_time': data.createdAt,
         'article:modified_time': data.updatedAt,
@@ -88,12 +114,19 @@ export async function generateMetadata({
   } catch (e) {
     console.error('Error generating metadata:', e)
     return {
-      title: 'Job Opportunities | Animal Wellness Careers',
-      description: 'Explore exciting career opportunities in the veterinary and animal care industry at Animal Wellness.',
+      title: 'Traditional Job Posts | Animal Wellness',
+      description: 'Explore traditional job opportunities in the veterinary and animal care industry at Animal Wellness.',
     }
   }
 }
 
-export default function Page() {
-  return <JobPostDetailClient />
+export default async function TraditionalJobPostDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params;
+  const traditionalJobPost = await getTraditionalJobPost(id)
+  
+  return <JobPostDetailClient traditionalJobPost={traditionalJobPost} />
 }

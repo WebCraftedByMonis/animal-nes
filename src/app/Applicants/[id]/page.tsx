@@ -1,7 +1,12 @@
-// src/app/applicant/[id]/page.tsx
 import { Metadata } from 'next'
 import ApplicantDetailClient from './ApplicantDetailClient'
 import { getApiUrl } from '@/lib/utils'
+
+export const revalidate = 1800 // 30 minutes
+
+export async function generateStaticParams() {
+  return []
+}
 
 interface Applicant {
   id: number
@@ -25,31 +30,58 @@ interface Applicant {
   cv?: { url: string; alt: string } | null
 }
 
+async function getApplicant(id: string): Promise<Applicant | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/jobApplicant/${id}`, {
+      next: { revalidate: 1800 },
+      cache: 'force-cache'
+    })
+
+    if (!response.ok) {
+      console.error('Failed to fetch applicant:', response.status, response.statusText)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching applicant:', error)
+    return null
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`${getApiUrl()}/api/jobApplicant/${params.id}`, {
-      next: { revalidate: 3600 }, // optional revalidation
-    })
+    const { id } = await params;
+    const data = await getApplicant(id)
 
-    if (!res.ok) {
+    if (!data) {
       return {
         title: 'Applicant Not Found | Animal Wellness',
         description: 'The applicant profile you are looking for may no longer be available.',
       }
     }
 
-    const data: Applicant = await res.json()
-
     // Format the description with key information
     const description = `${data.name} - ${data.expectedPosition || 'Job Applicant'} | ${data.qualification || data.highestDegree || 'Professional'} | ${data.preferredLocation || data.address}`
 
     return {
-      title: `${data.name} - ${data.expectedPosition || 'Applicant'} `,
+      title: `${data.name} - ${data.expectedPosition || 'Applicant'} | Animal Wellness`,
       description: description.substring(0, 160), // Keep under 160 chars for SEO
+      keywords: [
+        data.name,
+        data.expectedPosition || 'job applicant',
+        data.qualification || 'professional',
+        data.highestDegree || '',
+        data.preferredIndustry || '',
+        'veterinary candidate',
+        'animal care applicant',
+        'job seeker'
+      ].filter(Boolean).join(', '),
       openGraph: {
         title: `${data.name} - ${data.expectedPosition || 'Job Applicant'}`,
         description: `View ${data.name}'s professional profile. ${data.qualification ? `Qualification: ${data.qualification}` : ''} ${data.workExperience ? `| Experience: ${data.workExperience}` : ''}`,
@@ -71,16 +103,26 @@ export async function generateMetadata({
         description: `${data.qualification || data.highestDegree || 'Professional'} | ${data.preferredLocation || 'Location not specified'}`,
         images: data.image?.url ? [data.image.url] : [],
       },
+      alternates: {
+        canonical: `/Applicants/${id}`
+      }
     }
   } catch (e) {
     console.error('Error generating metadata:', e)
     return {
-      title: 'Job Applicant ',
+      title: 'Job Applicant | Animal Wellness',
       description: 'View professional profiles of job applicants at Animal Wellness.',
     }
   }
 }
 
-export default function Page() {
-  return <ApplicantDetailClient />
+export default async function ApplicantPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params;
+  const applicant = await getApplicant(id)
+  
+  return <ApplicantDetailClient applicant={applicant} />
 }

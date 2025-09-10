@@ -1,8 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { useParams } from 'next/navigation'
+import React from 'react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -31,29 +29,12 @@ interface Applicant {
   cv?: { url: string; alt: string } | null
 }
 
-export default function ApplicantDetailClient() {
-  const { id } = useParams<{ id: string }>()
-  const [applicant, setApplicant] = useState<Applicant | null>(null)
-  const [loading, setLoading] = useState(true)
+interface ApplicantDetailClientProps {
+  applicant: Applicant | null
+}
 
-  useEffect(() => {
-    if (!id) return
-
-    const fetchApplicant = async () => {
-      try {
-        const numericId = parseInt(id)
-        if (isNaN(numericId)) return
-        const { data } = await axios.get(`/api/jobApplicant/${numericId}`)
-        setApplicant(data)
-      } catch (error) {
-        console.error('Error fetching applicant details', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchApplicant()
-  }, [id])
+export default function ApplicantDetailClient({ applicant }: ApplicantDetailClientProps) {
+  const loading = false
 
   if (loading) {
     return (
@@ -107,18 +88,22 @@ export default function ApplicantDetailClient() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Image and Basic Info */}
         <div className="space-y-6">
-          <div className="relative w-full h-[450px] rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg overflow-hidden">
             {applicant.image?.url ? (
               <Image
                 src={applicant.image.url}
                 alt={applicant.image.alt || applicant.name}
-                fill
-                className="object-fit"
+                width={600}
+                height={600}
+                className="w-full h-auto object-contain"
                 priority
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                <User2 className="w-16 h-16" />
+              <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
+                <div className="text-center text-gray-400 dark:text-gray-500">
+                  <User2 className="w-16 h-16 mx-auto mb-2" />
+                  <span className="text-sm">No Image Available</span>
+                </div>
               </div>
             )}
           </div>

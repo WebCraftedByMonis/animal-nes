@@ -1,16 +1,15 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { useParams, useRouter } from 'next/navigation'
+import React from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   User2, Mail, Phone, MapPin, Package, Calendar,
-  Store, Clock, ExternalLink, Building2, Droplet,
-  GraduationCap, Stethoscope, Award, UserCheck
+  Clock, ExternalLink, Building2, Droplet,
+  GraduationCap, BookOpen, Award, Users
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -56,6 +55,7 @@ interface Partner {
   products: Product[]
   createdAt: string
 }
+
 const formatWhatsAppNumber = (number: string) => {
   if (number.startsWith('03')) {
     return '+92' + number.slice(1);
@@ -63,30 +63,13 @@ const formatWhatsAppNumber = (number: string) => {
   return number.startsWith('+') ? number : '+' + number;
 };
 
-export default function SalesPartnerDetailClient() {
-  const { id } = useParams<{ id: string }>()
+interface StudentDetailClientProps {
+  partner: Partner | null
+}
+
+export default function StudentDetailClient({ partner }: StudentDetailClientProps) {
   const router = useRouter()
-  const [partner, setPartner] = useState<Partner | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!id) return
-
-    const fetchPartner = async () => {
-      try {
-        const numericId = parseInt(id)
-        if (isNaN(numericId)) return
-        const { data } = await axios.get(`/api/partner/${numericId}`)
-        setPartner(data)
-      } catch (error) {
-        console.error('Error fetching partner details', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPartner()
-  }, [id])
+  const loading = false
 
   const navigateToProduct = (product: Product) => {
     router.push(`/products/${product.id}`)
@@ -131,9 +114,9 @@ export default function SalesPartnerDetailClient() {
     return (
       <div className="max-w-7xl mx-auto p-10 text-center">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 inline-block">
-          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Partner not found</h2>
+          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Student not found</h2>
           <p className="text-red-500 dark:text-red-400">
-            The sales partner you're looking for doesn't exist or may have been removed.
+            The student you're looking for doesn't exist or may have been removed.
           </p>
         </div>
       </div>
@@ -207,98 +190,35 @@ export default function SalesPartnerDetailClient() {
                   <MapPin className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
-                    <p className="text-gray-700 dark:text-gray-200 break-words">
-                      {(() => {
-                        const urlRegex = /(https?:\/\/[^\s]+)/g
-                        const parts = partner.fullAddress.split(urlRegex)
-
-                        return parts.map((part, idx) =>
-                          urlRegex.test(part) ? (
-                            <a
-                              key={idx}
-                              href={part}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-green-600 dark:text-green-500 underline hover:text-green-800"
-                            >
-                              {part}
-                            </a>
-                          ) : (
-                            <span key={idx}>{part}</span>
-                          )
-                        )
-                      })()}
-                      {partner.areaTown && <><br />{partner.areaTown}</>}
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        `${partner.fullAddress} ${partner.cityName || ''} ${partner.state || ''} ${partner.zipcode || ''}`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors underline"
+                    >
+                      {partner.fullAddress}
                       {partner.cityName && <><br />{partner.cityName}</>}
                       {partner.state && `, ${partner.state}`}
                       {partner.zipcode && ` ${partner.zipcode}`}
-                    </p>
+                    </a>
                   </div>
                 </div>
               )}
-
             </div>
           </div>
 
-          {/* Professional Info */}
-          {(partner.qualificationDegree || partner.rvmpNumber || partner.specialization || partner.species) && (
-            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6 space-y-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Professional Information</h2>
-
-              <div className="space-y-3">
-                {partner.qualificationDegree && (
-                  <div className="flex items-start gap-3">
-                    <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Qualification</p>
-                      <p className="text-gray-700 dark:text-gray-200">{partner.qualificationDegree}</p>
-                    </div>
-                  </div>
-                )}
-
-                {partner.rvmpNumber && (
-                  <div className="flex items-start gap-3">
-                    <Award className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">RVMP Number</p>
-                      <p className="text-gray-700 dark:text-gray-200">{partner.rvmpNumber}</p>
-                    </div>
-                  </div>
-                )}
-
-                {partner.specialization && (
-                  <div className="flex items-start gap-3">
-                    <Stethoscope className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Specialization</p>
-                      <p className="text-gray-700 dark:text-gray-200">{partner.specialization}</p>
-                    </div>
-                  </div>
-                )}
-
-                {partner.species && (
-                  <div className="flex items-start gap-3">
-                    <UserCheck className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Species</p>
-                      <p className="text-gray-700 dark:text-gray-200">{partner.species}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Business Hours */}
+          {/* Availability */}
           {partner.availableDaysOfWeek.length > 0 && (
             <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6 space-y-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-green-600 dark:text-green-500" />
-                Business Hours
+                Availability
               </h2>
 
               <div className="space-y-2">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Open Days</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Available Days</p>
                 <div className="flex flex-wrap gap-2">
                   {partner.availableDaysOfWeek.map((dayObj) => (
                     <Badge key={dayObj.day} variant="outline" className="text-green-600 border-green-600">
@@ -309,7 +229,7 @@ export default function SalesPartnerDetailClient() {
 
                 {partner.startTime && partner.startTime.length > 0 && (
                   <>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Operating Hours</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Available Times</p>
                     <div className="flex flex-wrap gap-2">
                       {partner.startTime.map((timeObj, idx) => (
                         <Badge key={idx} variant="secondary">
@@ -322,26 +242,15 @@ export default function SalesPartnerDetailClient() {
               </div>
             </div>
           )}
-
-          {/* Stats Card */}
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Products Available</p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{partner.products.length}</p>
-              </div>
-              <Package className="w-12 h-12 text-green-600 dark:text-green-500" />
-            </div>
-          </div>
         </div>
 
-        {/* Right Column - Business Details */}
+        {/* Right Column - Academic Details */}
         <div className="lg:col-span-2 space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{partner.partnerName}</h1>
             {partner.shopName && (
               <p className="text-lg text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
-                <Store className="w-5 h-5" />
+                <Building2 className="w-5 h-5" />
                 {partner.shopName}
               </p>
             )}
@@ -357,12 +266,10 @@ export default function SalesPartnerDetailClient() {
                   {getBloodGroupBadge(partner.bloodGroup)}
                 </Badge>
               )}
-              {partner.partnerType && (
-                <Badge variant="secondary">
-                  <Building2 className="w-3 h-3 mr-1" />
-                  {partner.partnerType}
-                </Badge>
-              )}
+              <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                <Users className="w-3 h-3 mr-1" />
+                Student
+              </Badge>
               <Badge variant="secondary">
                 <Calendar className="w-3 h-3 mr-1" />
                 Partner since {formatDistanceToNow(new Date(partner.createdAt), { addSuffix: true })}
@@ -370,11 +277,61 @@ export default function SalesPartnerDetailClient() {
             </div>
           </div>
 
-          {/* Products Catalog */}
+          {/* Academic Information */}
+          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6 space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-green-600 dark:text-green-500" />
+              Academic Information
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {partner.qualificationDegree && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <GraduationCap className="w-4 h-4" />
+                    Current Studies
+                  </div>
+                  <p className="font-medium text-gray-700 dark:text-gray-200">{partner.qualificationDegree}</p>
+                </div>
+              )}
+
+              {partner.specialization && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <Award className="w-4 h-4" />
+                    Field of Study
+                  </div>
+                  <p className="font-medium text-gray-700 dark:text-gray-200">{partner.specialization}</p>
+                </div>
+              )}
+
+              {partner.rvmpNumber && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <Award className="w-4 h-4" />
+                    Student ID
+                  </div>
+                  <p className="font-medium text-gray-700 dark:text-gray-200">{partner.rvmpNumber}</p>
+                </div>
+              )}
+
+              {partner.species && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <BookOpen className="w-4 h-4" />
+                    Area of Interest
+                  </div>
+                  <p className="font-medium text-gray-700 dark:text-gray-200">{partner.species}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Associated Products/Resources */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <Package className="w-5 h-5 text-green-600 dark:text-green-500" />
-              Available Products ({partner.products.length})
+              Associated Resources ({partner.products.length})
             </h2>
 
             {partner.products.length > 0 ? (
@@ -382,29 +339,25 @@ export default function SalesPartnerDetailClient() {
                 {partner.products.map((product) => (
                   <Card
                     key={product.id}
-                    className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden group"
+                    className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
                     onClick={() => navigateToProduct(product)}
                   >
                     <CardContent className="p-0">
                       <div className="flex gap-4">
-                        {product.image ? (
-                          <div className="w-32 h-32 bg-gray-100 dark:bg-zinc-800 flex-shrink-0 overflow-hidden">
+                        {product.image && (
+                          <div className="w-32 h-32 bg-gray-100 dark:bg-zinc-800 flex-shrink-0">
                             <Image
                               src={product.image.url}
                               alt={product.image.alt || product.productName}
                               width={128}
                               height={128}
-                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                              className="w-full h-full object-contain"
                               sizes="128px"
                             />
                           </div>
-                        ) : (
-                          <div className="w-32 h-32 bg-gray-100 dark:bg-zinc-800 flex-shrink-0 flex items-center justify-center">
-                            <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-                          </div>
                         )}
                         <div className="flex-1 p-4 space-y-2">
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 group-hover:text-green-600 dark:group-hover:text-green-500 transition-colors">
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
                             {product.productName}
                           </h3>
                           {product.genericName && (
@@ -412,29 +365,15 @@ export default function SalesPartnerDetailClient() {
                               {product.genericName}
                             </p>
                           )}
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            <p>{product.category}</p>
-                            {product.company && (
-                              <p className="italic">by {product.company.companyName}</p>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {product.variants.slice(0, 2).map((variant, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {variant.packingVolume}
-                              </Badge>
-                            ))}
-                            {product.variants.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{product.variants.length - 2} more
-                              </Badge>
-                            )}
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <Building2 className="w-3 h-3" />
+                            {product.company?.companyName}
                           </div>
                           <div className="flex items-center justify-between pt-1">
                             <p className="text-sm text-green-600 dark:text-green-500 font-medium">
                               PKR {product.variants[0]?.customerPrice || 0}
                             </p>
-                            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-500 transition-colors" />
+                            <ExternalLink className="w-4 h-4 text-gray-400" />
                           </div>
                         </div>
                       </div>
@@ -445,7 +384,7 @@ export default function SalesPartnerDetailClient() {
             ) : (
               <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-12 text-center">
                 <Package className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">No products available at this location yet.</p>
+                <p className="text-gray-600 dark:text-gray-400">No resources associated with this student yet.</p>
               </div>
             )}
           </div>
