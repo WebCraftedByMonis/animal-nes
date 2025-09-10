@@ -18,6 +18,18 @@ cloudinary.config({
 })
 
 /**
+ * Sanitizes a filename for use as a Cloudinary public_id
+ */
+function sanitizePublicId(filename: string): string {
+  return filename
+    .replace(/\.[^/.]+$/, '') // Remove extension
+    .replace(/[^a-zA-Z0-9\-_]/g, '_') // Replace special chars with underscore
+    .replace(/_+/g, '_') // Replace multiple underscores with single
+    .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+    .toLowerCase()
+}
+
+/**
  * Uploads a file buffer to Cloudinary.
  */
 export async function uploadFileToCloudinary(
@@ -27,22 +39,28 @@ export async function uploadFileToCloudinary(
   originalFileName?: string
 ): Promise<CloudinaryUploadResult> {
   const baseFileName = originalFileName
-    ? originalFileName.replace(/\.[^/.]+$/, '')
+    ? sanitizePublicId(originalFileName)
     : `file-${Date.now()}`
 
-  const extension = originalFileName?.split('.').pop() || 'pdf'
+  const extension = originalFileName?.split('.').pop()?.toLowerCase()
   const publicId = `${baseFileName}-${Date.now()}`
 
   return new Promise((resolve, reject) => {
+    const uploadOptions: any = {
+      folder,
+      resource_type: resourceType,
+      public_id: publicId,
+      use_filename: false,
+      unique_filename: false,
+    }
+
+    // Only set format for non-raw files or when extension is known
+    if (resourceType === 'image' || (resourceType === 'raw' && extension)) {
+      uploadOptions.format = extension
+    }
+
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-        public_id: publicId,
-        use_filename: true,
-        unique_filename: false,
-        format: extension,
-      },
+      uploadOptions,
       (error, result) => {
         if (error) {
           return reject(new Error(error.message))
@@ -56,6 +74,39 @@ export async function uploadFileToCloudinary(
 
     uploadStream.end(buffer)
   })
+}
+
+/**
+ * Uploads an image file to Cloudinary
+ */
+export async function uploadImage(
+  buffer: Buffer,
+  folder: string,
+  originalFileName?: string
+): Promise<CloudinaryUploadResult> {
+  return uploadFileToCloudinary(buffer, folder, 'image', originalFileName)
+}
+
+/**
+ * Uploads a PDF file to Cloudinary
+ */
+export async function uploadPDF(
+  buffer: Buffer,
+  folder: string,
+  originalFileName?: string
+): Promise<CloudinaryUploadResult> {
+  return uploadFileToCloudinary(buffer, folder, 'raw', originalFileName)
+}
+
+/**
+ * Uploads any raw file to Cloudinary
+ */
+export async function uploadRawFile(
+  buffer: Buffer,
+  folder: string,
+  originalFileName?: string
+): Promise<CloudinaryUploadResult> {
+  return uploadFileToCloudinary(buffer, folder, 'raw', originalFileName)
 }
 
 /**

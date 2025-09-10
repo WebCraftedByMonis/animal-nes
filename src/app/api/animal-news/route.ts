@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { uploadFileToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary'
+import { uploadImage, uploadPDF, deleteFromCloudinary } from '@/lib/cloudinary'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
@@ -18,12 +18,9 @@ async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
     const buffer = Buffer.from(arrayBuffer)
     console.log(`☁️ [SERVER] Uploading ${type} to Cloudinary...`)
     
-    const result = await uploadFileToCloudinary(
-      buffer,
-      `animal-news/${type}s`,
-      type === 'pdf' ? 'raw' : 'image',
-      file.name
-    )
+    const result = type === 'pdf' 
+      ? await uploadPDF(buffer, `animal-news/${type}s`, file.name)
+      : await uploadImage(buffer, `animal-news/${type}s`, file.name)
     
     console.log(`✅ [SERVER] ${type} upload successful: ${result.public_id}`)
     return result

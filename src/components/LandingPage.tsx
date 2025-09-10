@@ -162,7 +162,7 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
                   alt={testimonial.user.name || "User"}
                   width={40}
                   height={40}
-                  className="rounded-full"
+                  className="w-10 h-10 rounded-full object-contain"
                   loading="lazy"
                   sizes="40px"
                   quality={60}
@@ -290,8 +290,9 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           <Image
             src="/hero-bg.webp" // Change this to your image path in public folder
             alt="Hero Background"
-            fill
-            style={{ objectFit: 'cover', objectPosition: 'center' }}
+            width={1920}
+            height={1080}
+            className="w-full h-full object-cover"
             quality={80}
             priority
             sizes="100vw"
@@ -567,19 +568,19 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                   index % 2 === 0 ? "lg:order-1" : ""
                 )}
               >
-                <div className="aspect-[4/3] lg:aspect-[16/10] rounded-2xl shadow-xl overflow-hidden">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3 }}
-                    className="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-200"
-                  >
-                    <img
-                      alt={section.title}
-                      src={section.src}
-                      className="w-full h-full object-cover"
-                    />
-                  </motion.div>
-                </div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                  className="aspect-[4/3] lg:aspect-[16/10]"
+                >
+                  <Image
+                    alt={section.title}
+                    src={section.src}
+                    width={600}
+                    height={400}
+                    className="w-full h-full object-contain"
+                  />
+                </motion.div>
               </motion.div>
             </div>
           </div>

@@ -149,21 +149,20 @@ export default function VeterinaryPartnerDetailClient() {
         <div className="lg:col-span-1 space-y-6">
           {/* Partner Photo */}
           <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg overflow-hidden">
-            <div className="relative w-full h-[400px] bg-gray-100 dark:bg-zinc-800">
-              {partner.partnerImage?.url ? (
-                <Image
-                  src={partner.partnerImage.url}
-                  alt={partner.partnerName}
-                  fill
-                  className="object-fit"
-                  priority
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                  <User2 className="w-24 h-24" />
-                </div>
-              )}
-            </div>
+            {partner.partnerImage?.url ? (
+              <Image
+                src={partner.partnerImage.url}
+                alt={partner.partnerName}
+                width={400}
+                height={400}
+                className="w-full h-auto object-contain"
+                priority
+              />
+            ) : (
+              <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
+                <User2 className="w-24 h-24 text-gray-400 dark:text-gray-500" />
+              </div>
+            )}
           </div>
 
           {/* Contact Information */}

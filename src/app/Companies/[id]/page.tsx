@@ -1,7 +1,12 @@
-// app/companies/[id]/page.tsx
 import { Metadata } from 'next'
 import CompanyDetailClient from './CompanyDetailClient'
 import { getApiUrl } from '@/lib/utils'
+
+export const revalidate = 1800
+
+export async function generateStaticParams() {
+  return []
+}
 
 interface Company {
   id: number
@@ -21,11 +26,12 @@ interface Company {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }): Promise<Metadata> {
   try {
-    const res = await fetch(`${getApiUrl()}/api/company/${params.id}`, {
-      next: { revalidate: 3600 }, // Revalidate every hour
+    const { id } = await params;
+    const res = await fetch(`${getApiUrl()}/api/company/${id}`, {
+      next: { revalidate: 1800 },
     })
 
     if (!res.ok) {

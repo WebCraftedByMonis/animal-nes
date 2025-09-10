@@ -113,18 +113,19 @@ export default function AnimalDetailClient() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Gallery */}
         <div className="space-y-4">
-          <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-lg bg-gray-100">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg overflow-hidden">
             {animal.images.length > 0 ? (
               <Image
                 src={animal.images[activeImage].url}
                 alt={animal.images[activeImage].alt}
-                fill
-                className="object-fit"
+                width={600}
+                height={600}
+                className="w-full h-auto object-contain"
                 priority
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                No images available
+              <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
+                <span className="text-gray-400 dark:text-gray-600">No images available</span>
               </div>
             )}
           </div>
@@ -135,13 +136,14 @@ export default function AnimalDetailClient() {
                 <button
                   key={image.id}
                   onClick={() => setActiveImage(index)}
-                  className={`relative h-20 rounded-md overflow-hidden transition-all ${activeImage === index ? 'ring-2 ring-green-500' : 'opacity-80 hover:opacity-100'}`}
+                  className={`bg-white dark:bg-zinc-900 rounded-md overflow-hidden transition-all ${activeImage === index ? 'ring-2 ring-green-500' : 'opacity-80 hover:opacity-100'}`}
                 >
                   <Image
                     src={image.url}
                     alt={image.alt}
-                    fill
-                    className="object-cover"
+                    width={80}
+                    height={80}
+                    className="w-full h-20 object-contain"
                   />
                 </button>
               ))}

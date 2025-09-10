@@ -1,7 +1,7 @@
 // app/api/appointment-payment/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { uploadFileToCloudinary } from '@/lib/cloudinary'; // Your existing cloudinary utility
+import { uploadImage } from '@/lib/cloudinary';
 import { z } from 'zod';
 
 // Validation schema
@@ -115,10 +115,9 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
         
         // Upload to Cloudinary with specific folder for payment screenshots
-        const uploadResult = await uploadFileToCloudinary(
+        const uploadResult = await uploadImage(
           buffer,
           'appointment-payments', // Folder name in Cloudinary
-          'image',
           `payment-${appointmentIdNum}-${Date.now()}.${screenshotFile.name.split('.').pop()}`
         );
         
