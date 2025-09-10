@@ -1,5 +1,12 @@
+import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import ProductsClient from '@/components/ProductsClient'
+
+export const metadata: Metadata = {
+  title: 'Buy Products',
+  description: 'Browse and purchase quality animal wellness products',
+  keywords: ['buy products', 'animal products', 'veterinary supplies', 'animal wellness'],
+}
 
 interface Product {
   id: number

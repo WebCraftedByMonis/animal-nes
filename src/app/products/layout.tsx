@@ -1,8 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Veterinary Products",
-  description: "A full-stack e-commerce application built with Next.js 15",
+  title: "Veterinary Products | Animal Wellness",
+  description: "Browse our comprehensive selection of high-quality veterinary products and animal wellness supplies",
+  keywords: ["veterinary products", "animal wellness", "pet supplies", "livestock supplies"],
 };
 
 

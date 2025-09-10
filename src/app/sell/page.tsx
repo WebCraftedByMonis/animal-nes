@@ -1,16 +1,14 @@
-import { auth } from '@/lib/auth'
+import { Metadata } from 'next'
 import SellFormClient from './SellFormClient'
 
+export const revalidate = 3600
+
+export const metadata: Metadata = {
+  title: 'Sell Animal',
+  description: 'Submit your animal for sale on our platform',
+  keywords: ['sell animal', 'animal marketplace', 'livestock sale'],
+}
+
 export default async function SellPage() {
-  const session = await auth()
-
-  if (!session?.user?.email) {
-    return (
-      <div className="text-center mt-20 text-lg font-medium text-gray-600">
-        Please log in to submit an animal for sale.
-      </div>
-    )
-  }
-
   return <SellFormClient />
 }

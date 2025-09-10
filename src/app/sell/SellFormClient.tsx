@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -10,6 +11,23 @@ import { toast } from 'react-hot-toast'
 
 export default function SellFormClient() {
   const [loading, setLoading] = useState(false)
+  const { data: session, status } = useSession()
+
+  if (status === 'loading') {
+    return (
+      <div className="text-center mt-20 text-lg font-medium text-gray-600">
+        Loading...
+      </div>
+    )
+  }
+
+  if (!session?.user?.email) {
+    return (
+      <div className="text-center mt-20 text-lg font-medium text-gray-600">
+        Please log in to submit an animal for sale.
+      </div>
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
