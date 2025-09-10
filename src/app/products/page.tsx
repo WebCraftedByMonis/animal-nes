@@ -3,9 +3,22 @@ import { prisma } from '@/lib/prisma'
 import ProductsClient from '@/components/ProductsClient'
 
 export const metadata: Metadata = {
-  title: 'Buy Products',
-  description: 'Browse and purchase quality animal wellness products',
-  keywords: ['buy products', 'animal products', 'veterinary supplies', 'animal wellness'],
+  title: 'Veterinary Products & Pet Care Supplies - Buy Online',
+  description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions. Quality products from trusted brands with fast delivery across the region.',
+  keywords: [
+    'veterinary products', 'pet care supplies', 'animal medicines', 'veterinary supplies',
+    'pet pharmacy', 'animal healthcare products', 'veterinary equipment', 'pet nutrition',
+    'animal supplements', 'veterinary medicine online', 'pet care products', 'animal health'
+  ],
+  openGraph: {
+    title: 'Veterinary Products & Pet Care Supplies - Animal Wellness',
+    description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions.',
+    type: 'website',
+    images: ['/products-og.jpg'],
+  },
+  alternates: {
+    canonical: '/products',
+  },
 }
 
 interface Product {
@@ -32,8 +45,8 @@ interface Product {
   variants: { packingVolume: string | null; customerPrice: number | null; companyPrice?: number | null; dealerPrice?: number | null; inventory: number | null }[]
 }
 
-// ISR Configuration - revalidate every 60 seconds
-export const revalidate = 60
+// ISR Configuration - revalidate every 1800 seconds (30 minutes)
+export const revalidate = 1800
 
 // Generate static params for initial ISR generation (optional)
 export async function generateStaticParams() {

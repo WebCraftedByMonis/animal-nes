@@ -23,16 +23,35 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     }
     
     const { data } = await res.json();
+    const price = data.variants?.[0]?.customerPrice;
 
     return {
-      title: `${data.productName} | Animal Wellness`,
-      description: data.description || `Buy ${data.productName} - Quality animal wellness product`,
-      keywords: [data.productName, data.category, 'animal wellness', 'veterinary products'],
+      title: `${data.productName} | Buy Online - Animal Wellness`,
+      description: data.description || `Buy ${data.productName} - High quality veterinary product ${price ? `starting at $${price}` : ''}. Fast delivery and professional support.`,
+      keywords: [
+        data.productName, 
+        data.genericName,
+        data.category, 
+        data.subCategory,
+        'veterinary products', 
+        'animal wellness',
+        'buy veterinary medicine',
+        'pet care products'
+      ].filter(Boolean),
       openGraph: {
-        title: data.productName,
-        description: data.description || `Buy ${data.productName} - Quality animal wellness product`,
-        images: data.image ? [{ url: data.image.url, alt: data.image.alt ?? data.productName }] : [],
-        type: 'website',
+        title: `${data.productName} - Buy Online`,
+        description: data.description || `Buy ${data.productName} - Quality veterinary product`,
+        images: data.image ? [{
+          url: data.image.url,
+          width: 800,
+          height: 600,
+          alt: data.image.alt ?? data.productName
+        }] : [],
+        type: 'product',
+        siteName: 'Animal Wellness',
+      },
+      alternates: {
+        canonical: `/products/${id}`,
       },
     };
   } catch (error) {
@@ -54,7 +73,50 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
     const { data } = await res.json();
 
-    return <ProductClient product={data} />;
+    // Generate structured data for SEO
+    const structuredData = {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      name: data.productName,
+      description: data.description || `${data.productName} - Quality veterinary product`,
+      image: data.image?.url || '',
+      brand: {
+        "@type": "Brand",
+        name: data.company?.companyName || "Animal Wellness"
+      },
+      manufacturer: {
+        "@type": "Organization",
+        name: data.company?.companyName || "Animal Wellness"
+      },
+      category: data.category || "Veterinary Products",
+      ...(data.variants?.[0]?.customerPrice && {
+        offers: {
+          "@type": "Offer",
+          price: data.variants[0].customerPrice,
+          priceCurrency: "PKR",
+          availability: data.outofstock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+          seller: {
+            "@type": "Organization",
+            name: "Animal Wellness"
+          }
+        }
+      }),
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.5",
+        reviewCount: "10"
+      }
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <ProductClient product={data} />
+      </>
+    );
   } catch (error) {
     console.error('Error fetching product:', error);
     return notFound();

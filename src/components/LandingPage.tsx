@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion, useScroll, useTransform, Variants } from "framer-motion"
+import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "react-toastify"
+import toast from 'react-hot-toast'
 import axios from "axios"
 import Image from "next/image"
 import { useSession } from "next-auth/react"
@@ -40,6 +40,9 @@ interface InitialTestimonialsData {
 interface LandingPageProps {
   initialTestimonials?: InitialTestimonialsData
 }
+
+// Import framer-motion normally - dynamic import doesn't work well for hooks
+import { motion, useScroll, useTransform, type Variants } from "framer-motion"
 
 // Animation Variants - Optimized for performance
 const fadeInUp: Variants = {

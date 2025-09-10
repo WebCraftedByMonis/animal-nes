@@ -3,8 +3,8 @@
 import LandingPage from "@/components/LandingPage";
 import { prisma } from '@/lib/prisma'
 
-// ISR Configuration - revalidate every 3600 seconds (1 hour)
-export const revalidate = 3600
+// ISR Configuration - revalidate every 1800 seconds (30 minutes)
+export const revalidate = 1800
 
 // Generate static params for initial ISR generation
 export async function generateStaticParams() {
@@ -75,8 +75,52 @@ export default async function Home() {
   // Fetch initial testimonials on the server for ISR
   const initialTestimonials = await getInitialTestimonials()
 
+  // Organization structured data
+  const organizationData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Animal Wellness",
+    description: "Complete veterinary solutions and pet care products marketplace",
+    url: "https://www.animalwellness.shop",
+    logo: "https://www.animalwellness.shop/logo.jpg",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer service",
+      availableLanguage: "English"
+    },
+    sameAs: [
+      "https://www.animalwellness.shop"
+    ],
+    serviceArea: {
+      "@type": "Country",
+      name: "Pakistan"
+    }
+  };
+
+  // Website structured data
+  const websiteData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Animal Wellness",
+    url: "https://www.animalwellness.shop",
+    description: "Your trusted partner for comprehensive animal wellness solutions",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.animalwellness.shop/products?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <div className="">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteData) }}
+      />
       <LandingPage initialTestimonials={initialTestimonials} />
     </div>
   );

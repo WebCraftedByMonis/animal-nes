@@ -3,8 +3,6 @@ import { poppins } from "./fonts";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navbar from "@/components/Navbar";
-import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
 import SessionWrapper from "../components/sessionWrapper";
 import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
@@ -12,22 +10,59 @@ import Footer from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.animalwellness.shop"), // 👈 sets your base URL
+  metadataBase: new URL("https://www.animalwellness.shop"),
   title: {
-    template: "%s | Animal Wellness",
-    default: "Animal Wellness",
+    template: "%s | Animal Wellness - Complete Veterinary Solutions",
+    default: "Animal Wellness - Complete Veterinary Solutions & Pet Care Products",
   },
-  description: "Wellness Home to Your Animals  آس",
-  keywords: [ "animal wellness", "veterinary products", "pet care"],
+  description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, browse job opportunities, and discover quality pet care products. Complete veterinary marketplace for professionals and pet owners.",
+  keywords: [
+    "animal wellness", "veterinary products", "pet care", "veterinary supplies",
+    "animal healthcare", "veterinary medicine", "pet products", "animal doctors",
+    "veterinary jobs", "animal hospital", "pet health", "veterinary services",
+    "animal nutrition", "pet pharmacy", "veterinary equipment"
+  ],
+  authors: [{ name: "Animal Wellness Team" }],
+  creator: "Animal Wellness",
+  publisher: "Animal Wellness",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   openGraph: {
+    type: "website",
+    locale: "en_US",
     url: "https://www.animalwellness.shop",
-    title: "Animal Wellness",
-    description: "Wellness Home to Your Animals  آس",
-    images: ["/logo.jpg"],
+    title: "Animal Wellness - Complete Veterinary Solutions & Pet Care",
+    description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
+    images: [
+      {
+        url: "/logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Animal Wellness - Complete Veterinary Solutions",
+      }
+    ],
     siteName: "Animal Wellness",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Animal Wellness - Complete Veterinary Solutions",
+    description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
+    images: ["/logo.jpg"],
+  },
   alternates: {
-    canonical: "/", // 👈 homepage canonical (resolves to https://www.animalwellness.shop/)
+    canonical: "/",
+  },
+  verification: {
+    google: "your-google-verification-code", // Add your Google verification code
   },
 };
 
@@ -62,7 +97,6 @@ export default function RootLayout({
               </div>
             </CartProvider>
           </SessionWrapper>
-          <ToastContainer position="top-right" />
         </ThemeProvider>
       </body>
     </html>
