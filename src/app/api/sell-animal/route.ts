@@ -1,40 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { v2 as cloudinary } from 'cloudinary'
+import { uploadImage, uploadRawFile, deleteFromCloudinary } from '@/lib/cloudinary'
 import { Prisma, SellStatus } from '@prisma/client'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds for file processing
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-async function uploadToCloudinary(buffer: Buffer, type: 'image' | 'video') {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'animals',
-        resource_type: type,
-      },
-      (error, result) => {
-        if (error) return reject(error)
-        resolve(result)
-      }
-    )
-    uploadStream.end(buffer)
-  })
-}
-
-async function deleteFromCloudinary(publicId: string, resourceType: 'image' | 'video' = 'image') {
-  try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
-  } catch (error) {
-    console.error('Failed to delete from Cloudinary:', error)
+async function uploadToCloudinary(buffer: Buffer, type: 'image' | 'video', originalFileName?: string) {
+  if (type === 'image') {
+    return uploadImage(buffer, 'animals', originalFileName)
+  } else {
+    return uploadRawFile(buffer, 'animals', originalFileName)
   }
 }
 

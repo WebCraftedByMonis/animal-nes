@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { v2 as cloudinary } from 'cloudinary'
+import { uploadImage, uploadRawFile, deleteFromCloudinary } from '@/lib/cloudinary'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 
@@ -8,17 +8,6 @@ import { auth } from '@/lib/auth'
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds for file processing
 
-interface CloudinaryUploadResult {
-    public_id: string
-    secure_url: string
-    [key: string]: any // To support any extra properties returned by Cloudinary
-}
-
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-})
 
 const jobApplicantSchema = z.object({
     name: z.string().min(1),
@@ -46,19 +35,15 @@ const jobApplicantSchema = z.object({
 
 const updateApplicantSchema = jobApplicantSchema.partial()
 
-async function uploadToCloudinary(file: File, folder: string): Promise<CloudinaryUploadResult> {
+async function uploadToCloudinary(file: File, folder: string) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream({ folder }, (err, result) => {
-            if (err || !result) {
-                reject(err ?? new Error('No result returned from Cloudinary'))
-            } else {
-                resolve(result as CloudinaryUploadResult)
-            }
-        })
-        uploadStream.end(buffer)
-    })
+    
+    if (file.type.startsWith('image/')) {
+        return uploadImage(buffer, folder, file.name)
+    } else {
+        return uploadRawFile(buffer, folder, file.name)
+    }
 }
 
 
@@ -172,10 +157,10 @@ export async function DELETE(request: NextRequest) {
         if (!applicant) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
         if (applicant.image?.publicId) {
-            await cloudinary.uploader.destroy(applicant.image.publicId)
+            await deleteFromCloudinary(applicant.image.publicId, 'image')
         }
         if (applicant.cv?.publicId) {
-            await cloudinary.uploader.destroy(applicant.cv.publicId)
+            await deleteFromCloudinary(applicant.cv.publicId, 'raw')
         }
 
         await prisma.jobApplicant.delete({ where: { id: applicant.id } })
@@ -294,7 +279,7 @@ export async function PUT(request: NextRequest) {
     if (image instanceof File && image.size > 0) {
       if (existingApplicant.image?.publicId) {
         console.log('Deleting old image from Cloudinary:', existingApplicant.image.publicId)
-        await cloudinary.uploader.destroy(existingApplicant.image.publicId)
+        await deleteFromCloudinary(existingApplicant.image.publicId, 'image')
       }
       const result = await uploadToCloudinary(image, 'applicants/images')
       console.log('Uploaded new image to Cloudinary:', result)
@@ -324,7 +309,7 @@ export async function PUT(request: NextRequest) {
     if (cv instanceof File && cv.size > 0) {
       if (existingApplicant.cv?.publicId) {
         console.log('Deleting old CV from Cloudinary:', existingApplicant.cv.publicId)
-        await cloudinary.uploader.destroy(existingApplicant.cv.publicId)
+        await deleteFromCloudinary(existingApplicant.cv.publicId, 'raw')
       }
       const result = await uploadToCloudinary(cv, 'applicants/cvs')
       console.log('Uploaded new CV to Cloudinary:', result)

@@ -1,50 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { v2 as cloudinary } from 'cloudinary'
+import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary'
 import { z } from 'zod'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds for file processing
 
-interface CloudinaryUploadResult {
-  secure_url: string
-  public_id: string
-  [key: string]: unknown
-}
-
-interface CloudinaryError {
-  message: string
-  [key: string]: unknown
-}
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-async function uploadImageToCloudinary(buffer: Buffer): Promise<CloudinaryUploadResult> {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { 
-        folder: 'banners',
-        resource_type: 'image',
-      },
-      (error: CloudinaryError | undefined, result: CloudinaryUploadResult | undefined) => {
-        if (error) {
-          reject(new Error(error.message))
-        } else if (!result) {
-          reject(new Error('No result from Cloudinary'))
-        } else {
-          resolve(result)
-        }
-      }
-    )
-    uploadStream.end(buffer)
-  })
-}
 
 // Zod schemas for validation
 const bannerSchema = z.object({
@@ -156,7 +118,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer)
 
     // Upload image to Cloudinary
-    const uploadResult = await uploadImageToCloudinary(buffer)
+    const uploadResult = await uploadImage(buffer, 'banners', imageFile.name)
 
     // Create banner and image records in a transaction
     const result = await prisma.$transaction(async (prisma) => {
@@ -232,7 +194,7 @@ export async function DELETE(request: NextRequest) {
     if (banner.image) {
       try {
         if (banner.image.publicId) {
-          await cloudinary.uploader.destroy(banner.image.publicId)
+          await deleteFromCloudinary(banner.image.publicId, 'image')
         }
       } catch (error) {
         console.error('Error deleting image from Cloudinary:', error)
@@ -347,7 +309,7 @@ export async function PUT(request: NextRequest) {
         oldPublicId = existingBanner.image.publicId
         try {
           if (oldPublicId) {
-            await cloudinary.uploader.destroy(oldPublicId)
+            await deleteFromCloudinary(oldPublicId, 'image')
           }
         } catch (error) {
           console.error('Error deleting old image from Cloudinary:', error)
@@ -359,7 +321,7 @@ export async function PUT(request: NextRequest) {
       const arrayBuffer = await imageFile.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
 
-      const uploadResult = await uploadImageToCloudinary(buffer)
+      const uploadResult = await uploadImage(buffer, 'banners', imageFile.name)
 
       newImageData = {
         url: uploadResult.secure_url,

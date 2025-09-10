@@ -1,43 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { v2 as cloudinary } from 'cloudinary'
+import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary'
 import { z } from 'zod'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds for file processing
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-interface CloudinaryUploadResult {
-  secure_url: string
-  public_id: string
-  [key: string]: unknown
-}
-
-async function uploadImageToCloudinary(buffer: Buffer): Promise<CloudinaryUploadResult> {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'jobforms',
-        resource_type: 'image',
-      },
-      (error, result) => {
-        if (error || !result) {
-          reject(new Error(error?.message || 'Failed to upload image'))
-        } else {
-          resolve(result)
-        }
-      }
-    )
-    uploadStream.end(buffer)
-  })
-}
 
 // Zod validation schema for job form input
 const jobFormSchema = z.object({
@@ -83,12 +52,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 })
     }
 
-    let imageUploadResult: CloudinaryUploadResult | null = null
+    let imageUploadResult = null
 
     if (imageFile) {
       const arrayBuffer = await imageFile.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
-      imageUploadResult = await uploadImageToCloudinary(buffer)
+      imageUploadResult = await uploadImage(buffer, 'jobforms', imageFile.name)
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -226,12 +195,12 @@ export async function PUT(req: NextRequest) {
     if (imageFile) {
       // Delete old image if exists
       if (existing.jobFormImage?.publicId) {
-        await cloudinary.uploader.destroy(existing.jobFormImage.publicId, { resource_type: 'image' })
+        await deleteFromCloudinary(existing.jobFormImage.publicId, 'image')
       }
 
       const arrayBuffer = await imageFile.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
-      imageUploadResult = await uploadImageToCloudinary(buffer)
+      imageUploadResult = await uploadImage(buffer, 'jobforms', imageFile.name)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -297,9 +266,7 @@ export async function DELETE(req: NextRequest) {
 
     // Delete image from Cloudinary if exists
     if (existing.jobFormImage?.publicId) {
-      await cloudinary.uploader.destroy(existing.jobFormImage.publicId, {
-        resource_type: 'image',
-      })
+      await deleteFromCloudinary(existing.jobFormImage.publicId, 'image')
     }
 
     // Delete the job form (cascade will remove JobFormImage)

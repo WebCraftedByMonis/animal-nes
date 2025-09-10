@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { v2 as cloudinary } from 'cloudinary'
+import { uploadImage, uploadPDF, deleteFromCloudinary } from '@/lib/cloudinary'
 import { z } from 'zod'
 
 // Configure route to handle larger payloads (up to 50MB)
@@ -28,65 +28,6 @@ interface CloudinaryError {
   [key: string]: unknown
 }
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-async function retry<T>(
-  fn: () => Promise<T>,
-  retries = 3,
-  delay = 1000
-): Promise<T> {
-  let attempt = 0
-  while (attempt < retries) {
-    try {
-      return await fn()
-    } catch (error) {
-      attempt++
-      if (attempt >= retries) throw error
-      console.warn(`Retry attempt ${attempt} failed. Retrying in ${delay}ms...`)
-      await new Promise(res => setTimeout(res, delay))
-    }
-  }
-  throw new Error('All retry attempts failed.')
-}
-
-
-async function uploadImageToCloudinary(buffer: Buffer, folder: string): Promise<CloudinaryUploadResult> {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { 
-        folder: folder,
-        resource_type: 'image',
-      },
-      (error, result) => {
-        if (error) reject(new Error(error.message))
-        else if (!result) reject(new Error('No result from Cloudinary'))
-        else resolve(result)
-      }
-    )
-    uploadStream.end(buffer)
-  })
-}
-
-async function uploadPdfToCloudinary(buffer: Buffer, folder: string): Promise<CloudinaryUploadResult> {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { 
-        folder: folder,
-        resource_type: 'auto',
-      },
-      (error, result) => {
-        if (error) reject(new Error(error.message))
-        else if (!result) reject(new Error('No result from Cloudinary'))
-        else resolve(result)
-      }
-    )
-    uploadStream.end(buffer)
-  })
-}
 
 // Zod schemas
 const productSchema = z.object({
@@ -117,9 +58,9 @@ async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
   const buffer = Buffer.from(arrayBuffer)
 
   if (type === 'image') {
-    return uploadImageToCloudinary(buffer, 'products/images')
+    return uploadImage(buffer, 'products/images', file.name)
   } else {
-    return uploadPdfToCloudinary(buffer, 'products/pdfs')
+    return uploadPDF(buffer, 'products/pdfs', file.name)
   }
 }
 
@@ -282,8 +223,8 @@ export async function DELETE(request: NextRequest) {
 
     // Delete files from Cloudinary
     await Promise.all([
-      product.image?.publicId ? cloudinary.uploader.destroy(product.image.publicId) : null,
-      product.pdf?.publicId ? cloudinary.uploader.destroy(product.pdf.publicId, { resource_type: 'auto' }) : null
+      product.image?.publicId ? deleteFromCloudinary(product.image.publicId, 'image') : null,
+      product.pdf?.publicId ? deleteFromCloudinary(product.pdf.publicId, 'raw') : null
     ])
 
     // Delete product (relations will cascade)
@@ -575,7 +516,7 @@ export async function PUT(request: NextRequest) {
         // Delete old image from Cloudinary
         if (existingProduct.image?.publicId) {
           try {
-            await cloudinary.uploader.destroy(existingProduct.image.publicId)
+            await deleteFromCloudinary(existingProduct.image.publicId, 'image')
             
           } catch (error) {
             console.error('Failed to delete old image:', error)
@@ -605,7 +546,7 @@ export async function PUT(request: NextRequest) {
         // Delete old PDF from Cloudinary
         if (existingProduct.pdf?.publicId) {
           try {
-            await cloudinary.uploader.destroy(existingProduct.pdf.publicId, { resource_type: 'image' })
+            await deleteFromCloudinary(existingProduct.pdf.publicId, 'raw')
             
           } catch (error) {
             console.error('Failed to delete old PDF:', error)

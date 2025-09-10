@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from "@/lib/prisma";
-import { v2 as cloudinary } from 'cloudinary';
+import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary';
 import { PARTNER_TYPE_GROUPS, PartnerTypeGroup } from '@/lib/partner-constants';
 
 // Configure route to handle larger payloads for image uploads
@@ -10,11 +10,6 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // Zod schemas
 const genderEnum = ['MALE', 'FEMALE'] as const;
@@ -59,15 +54,17 @@ const updatePartnerSchema = createPartnerSchema
   .partial();
 
 async function handleImageUpload(image: string) {
-  const result = await cloudinary.uploader.upload(image, {
-    folder: 'partners',
-  });
+  // Convert base64 to buffer
+  const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+  const buffer = Buffer.from(base64Data, 'base64');
+  
+  const result = await uploadImage(buffer, 'partners');
   return { url: result.secure_url, publicId: result.public_id };
 }
 
 async function handleImageDelete(publicId: string) {
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await deleteFromCloudinary(publicId, 'image');
   } catch (error) {
     console.error('Error deleting image from Cloudinary:', error);
     // Don't throw error - continue with database operations

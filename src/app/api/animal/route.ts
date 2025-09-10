@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { v2 as cloudinary } from 'cloudinary'
+import { uploadImage, uploadRawFile } from '@/lib/cloudinary'
 import { Gender, SellStatus, AgeType, WeightType } from '@prisma/client'
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-async function uploadToCloudinary(buffer: Buffer, type: 'image' | 'video') {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'animals',
-        resource_type: type,
-      },
-      (error, result) => {
-        if (error) return reject(error)
-        resolve(result)
-      }
-    )
-    uploadStream.end(buffer)
-  })
+async function uploadToCloudinary(buffer: Buffer, type: 'image' | 'video', originalFileName?: string) {
+  if (type === 'image') {
+    return uploadImage(buffer, 'animals', originalFileName)
+  } else {
+    return uploadRawFile(buffer, 'animals', originalFileName)
+  }
 }
 
 export async function POST(request: NextRequest) {

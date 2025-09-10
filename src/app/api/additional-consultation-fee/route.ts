@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { v2 as cloudinary } from 'cloudinary';
+import { uploadImage } from '@/lib/cloudinary';
 
 const prisma = new PrismaClient();
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,19 +51,11 @@ export async function POST(request: NextRequest) {
         const bytes = await screenshotFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         
-        const uploadResult = await new Promise<any>((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            {
-              resource_type: 'image',
-              folder: 'additional-consultation-fees',
-              public_id: `additional_fee_${prescriptionId}_${Date.now()}`,
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(buffer);
-        });
+        const uploadResult = await uploadImage(
+          buffer,
+          'additional-consultation-fees',
+          `additional_fee_${prescriptionId}_${Date.now()}.${screenshotFile.name.split('.').pop()}`
+        );
 
         screenshotUrl = uploadResult.secure_url;
         screenshotPublicId = uploadResult.public_id;
