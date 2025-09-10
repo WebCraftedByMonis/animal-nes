@@ -140,23 +140,25 @@ export default function Navbar() {
             </div>
 
             {/* Cart Button with Badge */}
-            <Link href="/cart" className="relative p-2">
+            <Link href="/cart" className="relative p-2" aria-label={`Shopping cart${counts.productCount > 0 ? ` (${counts.productCount} items)` : ''}`}>
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
               {counts.productCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center" aria-hidden="true">
                   {counts.productCount > 99 ? '99+' : counts.productCount}
                 </span>
               )}
+              <span className="sr-only">View shopping cart</span>
             </Link>
 
             {/* Animal Cart with Badge */}
-            <Link href="/animalCart" className="relative p-2">
+            <Link href="/animalCart" className="relative p-2" aria-label={`Animal cart${counts.animalCount > 0 ? ` (${counts.animalCount} animals)` : ''}`}>
               <Cat className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
               {counts.animalCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center" aria-hidden="true">
                   {counts.animalCount > 99 ? '99+' : counts.animalCount}
                 </span>
               )}
+              <span className="sr-only">View animal cart</span>
             </Link>
 
             {/* User Menu / Sign In */}
@@ -201,7 +203,7 @@ export default function Navbar() {
               </DropdownMenu>
             ) : (
               <Button
-                className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9"
+                className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 font-semibold"
                 onClick={() => signIn("google")}
               >
                 <span className="hidden sm:inline">Sign up</span>
@@ -217,8 +219,10 @@ export default function Navbar() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 sm:h-9 sm:w-9"
+                    aria-label="Open navigation menu"
                   >
                     <MenuIcon className="h-5 w-5" />
+                    <span className="sr-only">Open navigation menu</span>
                   </Button>
                 </DrawerTrigger>
 

@@ -291,14 +291,15 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/hero-bg.webp" // Change this to your image path in public folder
+            src="/hero-bg.webp"
             alt="Hero Background"
             width={1920}
             height={1080}
-            className="w-full h-full object-cover"
-            quality={80}
             priority
+            fetchPriority="high"
+            className="w-full h-full object-cover"
             sizes="100vw"
+            quality={75}
           />
           {/* Dark overlay for better text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40"></div>
@@ -379,7 +380,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                       variant="outline"
                       className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 font-medium px-8 py-6 text-lg"
                     >
-                      Learn More
+                      Learn More About Us
                     </Button>
                   </Link>
                 </motion.div>
@@ -476,7 +477,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                     <p className="text-sm md:text-base text-gray-200 mb-4">{feature.description}</p>
                     <Link href={feature.link}>
                       <Button variant="link" className="px-0 text-emerald-400 hover:text-emerald-300 group p-0">
-                        Learn more
+                        Learn more about {feature.title}
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
