@@ -3,118 +3,211 @@ import { MetadataRoute } from "next";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.animalwellness.shop";
 
-  // helper to fetch JSON safely
-  async function fetchData<T>(url: string): Promise<T[]> {
+  async function fetchData<T>(endpoint: string): Promise<T[]> {
     try {
-      const res = await fetch(url, { next: { revalidate: 3600 } });
+      const res = await fetch(`${baseUrl}/api/${endpoint}`, { 
+        next: { revalidate: 3600 }
+      });
       if (!res.ok) return [];
       const json = await res.json();
-      return json.data || json; // adjust depending on your API shape
-    } catch (e) {
-      console.error("❌ Failed to fetch", url, e);
+      return json.data || json || [];
+    } catch (error) {
+      console.error(`Failed to fetch ${endpoint}:`, error);
       return [];
     }
   }
 
-  // fetch data from your APIs
+  // Fetch dynamic content
   const [
     products,
-    companies,
-    applicants,
-    vacancies,
-    news,
     partners,
+    companies,
+    news,
+    vacancies,
     jobPosts,
+    applicants,
   ] = await Promise.all([
-    fetchData<any>(`${baseUrl}/api/products`),
-    fetchData<any>(`${baseUrl}/api/companies`),
-    fetchData<any>(`${baseUrl}/api/jobApplicants`),
-    fetchData<any>(`${baseUrl}/api/vacancyForms`),
-    fetchData<any>(`${baseUrl}/api/animal-news`),
-    fetchData<any>(`${baseUrl}/api/partners`),
-    fetchData<any>(`${baseUrl}/api/traditionaljobposts`),
+    fetchData<any>("product"),
+    fetchData<any>("partner"), 
+    fetchData<any>("company"),
+    fetchData<any>("animal-news"),
+    fetchData<any>("vacancyForm"),
+    fetchData<any>("traditionaljobpost"),
+    fetchData<any>("jobApplicant"),
   ]);
 
-  // Static important pages
+  // High-priority static pages
   const staticPages: MetadataRoute.Sitemap = [
-    "",
-    "products",
-    "companies",
-    "jobvacancy",
-    "job-posts",
-    "applicant",
-    "Veternarians",
-    "sale",
-    "buy",
-    "findDoctor",
-    "about",
-    "contact",
-  ].map((path) => ({
-    url: `${baseUrl}/${path}`,
-    lastModified: new Date(),
-    changeFrequency: "daily" as const,
-    priority: path === "" ? 1.0 : 0.8,
-  }));
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/products`,
+      lastModified: new Date(),
+      changeFrequency: "daily", 
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/findDoctor`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/jobvacancy`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/traditionaljobposts`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/Veternarians`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/VeterinaryAssistants`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/Students`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/Sales`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/Companies`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/buy`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/animal-news`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/Applicants`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.5,
+    },
+  ];
 
-  // Dynamic pages
-const productPages = products.map((p: any) => ({
-  url: `${baseUrl}/products/${p.id}`,  // ✅ enforce ID
-  lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-  changeFrequency: "weekly" as const,
-  priority: 0.7,
-}));
+  // Dynamic product pages
+  const productPages: MetadataRoute.Sitemap = products
+    .filter((product: any) => product.id && product.isActive !== false)
+    .map((product: any) => ({
+      url: `${baseUrl}/products/${product.id}`,
+      lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
 
-const companyPages = companies.map((c: any) => ({
-  url: `${baseUrl}/companies/${c.id}`,  // ✅ enforce ID
-  lastModified: c.createdAt ? new Date(c.createdAt) : new Date(),
-  changeFrequency: "weekly" as const,
-  priority: 0.6,
-}));
+  // Veterinary partner pages  
+  const partnerPages: MetadataRoute.Sitemap = partners
+    .filter((partner: any) => partner.id)
+    .map((partner: any) => ({
+      url: `${baseUrl}/Veternarians/${partner.id}`,
+      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
 
-const applicantPages = applicants.map((a: any) => ({
-  url: `${baseUrl}/applicant/${a.id}`,  // ✅ enforce ID
-  lastModified: a.dateOfBirth ? new Date(a.dateOfBirth) : new Date(),
-  changeFrequency: "monthly" as const,
-  priority: 0.5,
-}));
+  // Company pages
+  const companyPages: MetadataRoute.Sitemap = companies
+    .filter((company: any) => company.id)
+    .map((company: any) => ({
+      url: `${baseUrl}/Companies/${company.id}`,
+      lastModified: company.updatedAt ? new Date(company.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    }));
 
-const vacancyPages = vacancies.map((v: any) => ({
-  url: `${baseUrl}/jobvacancy/${v.id}`,  // ✅ enforce ID
-  lastModified: v.updatedAt ? new Date(v.updatedAt) : new Date(),
-  changeFrequency: "weekly" as const,
-  priority: 0.7,
-}));
+  // Animal news pages
+  const newsPages: MetadataRoute.Sitemap = news
+    .filter((article: any) => article.id)
+    .map((article: any) => ({
+      url: `${baseUrl}/animal-news/${article.id}`,
+      lastModified: article.updatedAt ? new Date(article.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
 
-const newsPages = news.map((n: any) => ({
-  url: `${baseUrl}/animal-news/${n.id}`,  // ✅ enforce ID
-  lastModified: n.createdAt ? new Date(n.createdAt) : new Date(),
-  changeFrequency: "weekly" as const,
-  priority: 0.6,
-}));
+  // Job vacancy pages
+  const vacancyPages: MetadataRoute.Sitemap = vacancies
+    .filter((vacancy: any) => vacancy.id)
+    .map((vacancy: any) => ({
+      url: `${baseUrl}/jobvacancy/${vacancy.id}`,
+      lastModified: vacancy.updatedAt ? new Date(vacancy.updatedAt) : new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
 
-const partnerPages = partners.map((p: any) => ({
-  url: `${baseUrl}/veterinary-partners/${p.id}`,  // ✅ enforce ID
-  lastModified: p.createdAt ? new Date(p.createdAt) : new Date(),
-  changeFrequency: "weekly" as const,
-  priority: 0.6,
-}));
+  // Traditional job post pages
+  const jobPostPages: MetadataRoute.Sitemap = jobPosts
+    .filter((job: any) => job.id)
+    .map((job: any) => ({
+      url: `${baseUrl}/traditionaljobposts/${job.id}`,
+      lastModified: job.updatedAt ? new Date(job.updatedAt) : new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
 
-const jobPostPages = jobPosts.map((j: any) => ({
-  url: `${baseUrl}/job-posts/${j.id}`,  // ✅ enforce ID
-  lastModified: j.updatedAt ? new Date(j.updatedAt) : new Date(),
-  changeFrequency: "weekly" as const,
-  priority: 0.7,
-}));
-
+  // Buy/animal listing pages
+  const animalPages: MetadataRoute.Sitemap = products
+    .filter((product: any) => product.id && product.category === "animals")
+    .map((product: any) => ({
+      url: `${baseUrl}/buy/${product.id}`,
+      lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
 
   return [
     ...staticPages,
     ...productPages,
-    ...companyPages,
-    ...applicantPages,
-    ...vacancyPages,
-    ...newsPages,
     ...partnerPages,
+    ...companyPages,
+    ...newsPages,
+    ...vacancyPages,
     ...jobPostPages,
-  ];
+    ...animalPages,
+  ].sort((a, b) => (b.priority || 0) - (a.priority || 0));
 }

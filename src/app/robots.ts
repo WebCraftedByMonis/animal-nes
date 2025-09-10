@@ -1,22 +1,70 @@
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://www.animalwellness.shop";
-
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
         disallow: [
-          "/api/",       // don’t index raw API
-          "/dashboard/", // if you have admin dashboard
+          "/api/",
+          "/dashboard/",
+          "/_next/",
           "/admin/",
-          "/_next/",     // Next.js internals
+          "/login/",
+          "/checkout/",
+          "/cart/",
+          "/animalCart/",
+          "/orders/",
+          "/payment/",
+          "/profile/",
+          "/thankyou/",
+          "/thank-you-*",
+          "/prescriptionform/",
+          "/historyform/",
+          "/additional-consultation-fee/",
+          "/jobApplicantForm/",
+          "/jobvaccancyform/",
+          "/quickjobform/",
+          "/addProduct/",
+          "/addCompany/",
+          "/addPartner/",
+          "/sell/",
+          "/Privacy/",
+          "/*?*", // Block URLs with query parameters for cleaner indexing
         ],
       },
+      {
+        userAgent: "Googlebot",
+        allow: "/",
+        disallow: [
+          "/api/",
+          "/dashboard/",
+          "/_next/",
+          "/admin/",
+          "/login/",
+          "/checkout/",
+          "/cart/",
+          "/animalCart/",
+          "/orders/",
+          "/payment/",
+          "/profile/",
+          "/thankyou/",
+          "/thank-you-*",
+          "/prescriptionform/",
+          "/historyform/",
+          "/additional-consultation-fee/",
+          "/jobApplicantForm/",
+          "/jobvaccancyform/",
+          "/quickjobform/",
+          "/addProduct/",
+          "/addCompany/",
+          "/addPartner/",
+          "/sell/",
+        ],
+        crawlDelay: 1,
+      },
     ],
-    sitemap: [`${baseUrl}/sitemap.xml`],
-    host: baseUrl,
+    sitemap: "https://www.animalwellness.shop/sitemap.xml",
   };
 }
