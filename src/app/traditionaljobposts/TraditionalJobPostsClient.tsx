@@ -24,9 +24,10 @@ interface TraditionalJobPost {
 
 interface TraditionalJobPostsClientProps {
   initialJobPosts: TraditionalJobPost[]
+  initialTotal: number
 }
 
-export default function TraditionalJobPostsClient({ initialJobPosts }: TraditionalJobPostsClientProps) {
+export default function TraditionalJobPostsClient({ initialJobPosts, initialTotal }: TraditionalJobPostsClientProps) {
   const [jobPosts, setJobPosts] = useState<TraditionalJobPost[]>(initialJobPosts)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -34,7 +35,7 @@ export default function TraditionalJobPostsClient({ initialJobPosts }: Tradition
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [limit, setLimit] = useState(8)
   const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(initialJobPosts.length)
+  const [total, setTotal] = useState(initialTotal)
   const router = useRouter()
 
   const fetchJobPosts = useCallback(async () => {
@@ -66,9 +67,9 @@ export default function TraditionalJobPostsClient({ initialJobPosts }: Tradition
     } else {
       // Reset to initial data
       setJobPosts(initialJobPosts)
-      setTotal(initialJobPosts.length)
+      setTotal(initialTotal)
     }
-  }, [search, sortBy, sortOrder, page, limit, initialJobPosts, fetchJobPosts])
+  }, [search, sortBy, sortOrder, page, limit, initialJobPosts, initialTotal, fetchJobPosts])
 
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split('-')
@@ -209,7 +210,7 @@ export default function TraditionalJobPostsClient({ initialJobPosts }: Tradition
             </div>
           )}
 
-          {total > limit && (
+          {total >= limit && (
             <div className="mt-8 flex justify-center gap-2">
               <Button 
                 variant="outline" 

@@ -13,7 +13,7 @@ interface TraditionalJobPost {
   updatedAt: string
 }
 
-async function getInitialTraditionalJobPosts(): Promise<TraditionalJobPost[]> {
+async function getInitialTraditionalJobPosts(): Promise<{ jobPosts: TraditionalJobPost[], total: number }> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
     const response = await fetch(`${baseUrl}/api/traditionaljobpost?page=1&limit=8&sortBy=id&sortOrder=desc`, {
@@ -23,14 +23,14 @@ async function getInitialTraditionalJobPosts(): Promise<TraditionalJobPost[]> {
 
     if (!response.ok) {
       console.error('Failed to fetch traditional job posts:', response.status, response.statusText)
-      return []
+      return { jobPosts: [], total: 0 }
     }
 
     const data = await response.json()
-    return data.data || []
+    return { jobPosts: data.data || [], total: data.total || 0 }
   } catch (error) {
     console.error('Error fetching initial traditional job posts:', error)
-    return []
+    return { jobPosts: [], total: 0 }
   }
 }
 
@@ -90,8 +90,8 @@ interface TraditionalJobPost {
 }
 
 export default async function TraditionalJobPostsPage() {
-  const initialJobPosts = await getInitialTraditionalJobPosts()
+  const { jobPosts, total } = await getInitialTraditionalJobPosts()
   
-  return <TraditionalJobPostsClient initialJobPosts={initialJobPosts} />
+  return <TraditionalJobPostsClient initialJobPosts={jobPosts} initialTotal={total} />
 }
 
