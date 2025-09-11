@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import axios from "axios"
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-client"
 
 interface BannerImage {
   url: string
@@ -135,12 +136,19 @@ const containerClasses = "absolute inset-0 w-full h-full"
     return (
       <div className={containerClasses}>
         <Image
-          src={banners[0].image!.url}
+          src={optimizeCloudinaryUrl(banners[0].image!.url, { 
+            width: 1920, 
+            height: 1080, 
+            quality: 75,
+            format: 'auto',
+            crop: 'fill'
+          })}
           alt={banners[0].image!.alt}
           layout="fill"
           objectFit="cover"
           objectPosition="center"
           priority
+          sizes="100vw"
         />
       </div>
     )
@@ -158,14 +166,20 @@ const containerClasses = "absolute inset-0 w-full h-full"
         >
           {banner.image && (
             <Image
-              src={banner.image.url}
+              src={optimizeCloudinaryUrl(banner.image.url, { 
+                width: 1920, 
+                height: 1080, 
+                quality: 75,
+                format: 'auto',
+                crop: 'fill'
+              })}
               alt={banner.image.alt}
               layout="fill"
               objectFit="cover"
               objectPosition="center"
               className="transition-all duration-1000"
               priority={index === 0}
-              quality={90}
+              sizes="100vw"
             />
           )}
           
@@ -199,14 +213,20 @@ const containerClasses = "absolute inset-0 w-full h-full"
         {banners.map((_, idx) => (
           <button
             key={idx}
-            className={`h-2 sm:h-3 rounded-full transition-all ${
+            className={`h-6 w-6 sm:h-8 sm:w-8 p-2 rounded-full transition-all flex items-center justify-center ${
               idx === current 
-                ? "bg-white w-6 sm:w-8" 
-                : "bg-white/40 hover:bg-white/60 w-2 sm:w-3"
+                ? "bg-white/20" 
+                : "bg-white/10 hover:bg-white/20"
             }`}
             onClick={() => setCurrent(idx)}
             aria-label={`Go to slide ${idx + 1}`}
-          />
+          >
+            <div className={`rounded-full transition-all ${
+              idx === current 
+                ? "bg-white h-2 w-4 sm:h-3 sm:w-6" 
+                : "bg-white/60 h-1.5 w-1.5 sm:h-2 sm:w-2"
+            }`} />
+          </button>
         ))}
       </div>
 

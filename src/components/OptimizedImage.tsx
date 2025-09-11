@@ -2,7 +2,7 @@
 
 import Image, { ImageProps } from "next/image";
 import { useState, useMemo } from "react";
-import { optimizeCloudinaryUrl } from "@/lib/cloudinary-utils";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-client";
 
 interface OptimizedImageProps extends Omit<ImageProps, 'quality' | 'loading'> {
   quality?: 'auto' | number;

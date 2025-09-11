@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { optimizeCloudinaryUrl } from '@/lib/cloudinary-utils';
+import { optimizeCloudinaryUrl } from '@/lib/cloudinary-client';
 
 export function useImagePreloader(
   images: string[],

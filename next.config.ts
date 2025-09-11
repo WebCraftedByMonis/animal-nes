@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
     },
   },
 
+  // Target modern browsers to reduce polyfills
+  compiler: {
+    // Remove console.log in production
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Optimize for modern browsers
+  transpilePackages: [],
+
   images: {
     unoptimized: true, // Keep this for Cloudinary free plan to avoid bandwidth limits
     remotePatterns: [

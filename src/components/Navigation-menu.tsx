@@ -62,7 +62,7 @@ export function NavigationMenuDemo() {
 
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Join</span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">Join</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <li className="row-span-3 hidden md:block">
@@ -96,7 +96,7 @@ export function NavigationMenuDemo() {
 
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">View </span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">View </span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="flex flex-col gap-3 p-4 md:w-[300px] lg:w-[300px] lg:grid-cols-[.75fr_1fr]">
         {/* <li className="row-span-3 hidden md:block">
@@ -135,7 +135,7 @@ export function NavigationMenuDemo() {
 
 
           <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Find Doctor </span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">Find Doctor </span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="flex flex-col gap-3 p-4 md:w-[300px] lg:w-[300px] lg:grid-cols-[.75fr_1fr]">
         {/* <li className="row-span-3 hidden md:block">
@@ -167,7 +167,7 @@ export function NavigationMenuDemo() {
         </NavigationMenuItem>
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-500">Career Options</span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">Career Options</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
               {components.map((component) => (

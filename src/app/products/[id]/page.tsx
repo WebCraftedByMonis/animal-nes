@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
           height: 600,
           alt: data.image.alt ?? data.productName
         }] : [],
-        type: 'product',
+        type: 'website',
         siteName: 'Animal Wellness',
       },
       alternates: {
