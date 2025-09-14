@@ -127,6 +127,7 @@ export default function ProductsClient({
   const [subSubCategoryFilter, setSubSubCategoryFilter] = useState<string>('all')
   const [productTypeFilter, setProductTypeFilter] = useState<string>('all')
   const [priceRange, setPriceRange] = useState<number[]>([initialMinPrice, initialMaxPrice])
+  const [appliedPriceRange, setAppliedPriceRange] = useState<number[]>([initialMinPrice, initialMaxPrice])
   const [minPriceLimit, setMinPriceLimit] = useState(initialMinPrice)
   const [maxPriceLimit, setMaxPriceLimit] = useState(initialMaxPrice)
   const [showFilters, setShowFilters] = useState(false)
@@ -144,6 +145,11 @@ export default function ProductsClient({
     }
   }
 
+  const handlePriceFilter = () => {
+    setAppliedPriceRange([...priceRange])
+    setPage(1) // Reset to first page when filtering
+  }
+
   // Reset to page 1 whenever the search changes
   useEffect(() => {
     setPage(1)
@@ -154,8 +160,8 @@ export default function ProductsClient({
     // Skip initial fetch since we have server-side data
     if (page === 1 && !search && categoryFilter === 'all' && 
         subCategoryFilter === 'all' && subSubCategoryFilter === 'all' && 
-        productTypeFilter === 'all' && priceRange[0] === initialMinPrice && 
-        priceRange[1] === initialMaxPrice && sortBy === 'createdAt' && sortOrder === 'desc') {
+        productTypeFilter === 'all' && appliedPriceRange[0] === initialMinPrice && 
+        appliedPriceRange[1] === initialMaxPrice && sortBy === 'createdAt' && sortOrder === 'desc') {
       return
     }
 
@@ -170,8 +176,8 @@ export default function ProductsClient({
             subCategory: subCategoryFilter,
             subsubCategory: subSubCategoryFilter,
             productType: productTypeFilter,
-            minPrice: priceRange[0],
-            maxPrice: priceRange[1],
+            minPrice: appliedPriceRange[0],
+            maxPrice: appliedPriceRange[1],
           },
         })
 
@@ -194,13 +200,13 @@ export default function ProductsClient({
   }, [
     search, sortBy, sortOrder, page, limit,
     categoryFilter, subCategoryFilter, subSubCategoryFilter,
-    productTypeFilter, priceRange, initialMinPrice, initialMaxPrice
+    productTypeFilter, appliedPriceRange, initialMinPrice, initialMaxPrice
   ])
 
-  // Reset page when filters (not search) change
+  // Reset page when filters (not search or price range) change
   useEffect(() => {
     setPage(1)
-  }, [categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, priceRange])
+  }, [categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter])
 
   const handleSortChange = (value: string) => {
     const [field, order] = value.split('-')
@@ -217,6 +223,7 @@ export default function ProductsClient({
     setSubSubCategoryFilter('all')
     setProductTypeFilter('all')
     setPriceRange([minPriceLimit, maxPriceLimit])
+    setAppliedPriceRange([minPriceLimit, maxPriceLimit])
     setPage(1)
   }
 
@@ -282,6 +289,13 @@ export default function ProductsClient({
           step={100}
           className="w-full"
         />
+        <Button 
+          onClick={handlePriceFilter} 
+          size="sm" 
+          className="w-full bg-blue-500 hover:bg-blue-600"
+        >
+          Apply Price Filter
+        </Button>
       </div>
 
       <Button variant="outline" className="w-full" onClick={clearFilters}>
@@ -467,6 +481,13 @@ export default function ProductsClient({
             className="w-[300px]"
           />
           <span>PKR {priceRange[1].toLocaleString()}</span>
+          <Button 
+            onClick={handlePriceFilter} 
+            size="sm" 
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            Apply Price Filter
+          </Button>
         </div>
       </div>
 
@@ -484,7 +505,7 @@ export default function ProductsClient({
               initial="hidden"
               animate="show"
               exit="hidden"
-              key={`${search}-${page}-${sortBy}-${sortOrder}-${categoryFilter}-${subCategoryFilter}-${subSubCategoryFilter}-${productTypeFilter}-${priceRange.join('-')}`}
+              key={`${search}-${page}-${sortBy}-${sortOrder}-${categoryFilter}-${subCategoryFilter}-${subSubCategoryFilter}-${productTypeFilter}-${appliedPriceRange.join('-')}`}
             >
               {products.map((product) => {
                 const v = pickOneVariant(product)
