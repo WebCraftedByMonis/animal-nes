@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Building2, Mail, Phone, MapPin, Package } from 'lucide-react'
+import { Building2, Mail, Phone, MapPin, Package, Search } from 'lucide-react'
 
 interface Company {
   id: number
@@ -38,6 +38,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
   const [companies, setCompanies] = useState<Company[]>(initialCompanies)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'id' | 'companyName'>('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [limit, setLimit] = useState(8)
@@ -73,6 +74,17 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
     }
   }, [search, sortBy, sortOrder, page, limit, fetchCompanies])
 
+  const handleSearch = () => {
+    setSearch(searchTerm)
+    setPage(1) // Reset to first page when searching
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split('-')
     setSortBy(sortBy as 'id' | 'companyName')
@@ -89,12 +101,22 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
-          <Input
-            placeholder="Search companies..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 max-w-md"
-          />
+          <div className="flex gap-1">
+            <Input
+              placeholder="Search companies..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="focus:ring-green-500 max-w-md"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 px-3"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <Select 
             value={`${sortBy}-${sortOrder}`}
             onValueChange={handleSortChange}

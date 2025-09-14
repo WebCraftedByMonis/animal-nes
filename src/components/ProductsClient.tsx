@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
-import { Filter, X } from 'lucide-react'
+import { Filter, X, Search } from 'lucide-react'
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet"
@@ -113,7 +113,7 @@ export default function ProductsClient({
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 500)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [sortBy, setSortBy] = useState<'createdAt' | 'productName'>('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -133,15 +133,26 @@ export default function ProductsClient({
 
   const router = useRouter()
 
-  // Reset to page 1 whenever the debounced search changes
+  const handleSearch = () => {
+    setSearch(searchTerm)
+    setPage(1) // Reset to first page when searching
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
+  // Reset to page 1 whenever the search changes
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch])
+  }, [search])
 
-  // Fetch when debouncedSearch OR any filter/sort/page changes (only when not using initial data)
+  // Fetch when search OR any filter/sort/page changes (only when not using initial data)
   useEffect(() => {
     // Skip initial fetch since we have server-side data
-    if (page === 1 && !debouncedSearch && categoryFilter === 'all' && 
+    if (page === 1 && !search && categoryFilter === 'all' && 
         subCategoryFilter === 'all' && subSubCategoryFilter === 'all' && 
         productTypeFilter === 'all' && priceRange[0] === initialMinPrice && 
         priceRange[1] === initialMaxPrice && sortBy === 'createdAt' && sortOrder === 'desc') {
@@ -153,7 +164,7 @@ export default function ProductsClient({
         setLoading(true)
         const { data } = await axios.get('/api/product', {
           params: {
-            search: debouncedSearch,
+            search: search,
             sortBy, sortOrder, page, limit,
             category: categoryFilter,
             subCategory: subCategoryFilter,
@@ -181,7 +192,7 @@ export default function ProductsClient({
 
     fetchProducts()
   }, [
-    debouncedSearch, sortBy, sortOrder, page, limit,
+    search, sortBy, sortOrder, page, limit,
     categoryFilter, subCategoryFilter, subSubCategoryFilter,
     productTypeFilter, priceRange, initialMinPrice, initialMaxPrice
   ])
@@ -200,6 +211,7 @@ export default function ProductsClient({
 
   const clearFilters = () => {
     setSearch('')
+    setSearchTerm('')
     setCategoryFilter('all')
     setSubCategoryFilter('all')
     setSubSubCategoryFilter('all')
@@ -293,12 +305,22 @@ export default function ProductsClient({
     <div className="space-y-6">
       {/* Desktop Controls */}
       <div className="hidden lg:flex flex-wrap items-center gap-4">
-        <Input
-          placeholder="Search product (details)..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="focus:ring-green-500 w-[200px]"
-        />
+        <div className="flex gap-1">
+          <Input
+            placeholder="Search product (details)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="focus:ring-green-500 w-[200px]"
+          />
+          <Button
+            onClick={handleSearch}
+            size="sm"
+            className="bg-green-500 hover:bg-green-600 px-3"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
 
         <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
           <SelectTrigger className="w-[180px]">
@@ -373,12 +395,22 @@ export default function ProductsClient({
       {/* Mobile Controls */}
       <div className="lg:hidden flex flex-col gap-4">
         <div className="flex gap-2">
-          <Input
-            placeholder="Search product (details)..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 flex-1"
-          />
+          <div className="flex gap-1 flex-1">
+            <Input
+              placeholder="Search product (details)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="focus:ring-green-500 flex-1"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 px-3"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <Sheet open={showFilters} onOpenChange={setShowFilters}>
             <SheetTrigger asChild>
               <Button variant="outline">
@@ -452,7 +484,7 @@ export default function ProductsClient({
               initial="hidden"
               animate="show"
               exit="hidden"
-              key={`${debouncedSearch}-${page}-${sortBy}-${sortOrder}-${categoryFilter}-${subCategoryFilter}-${subSubCategoryFilter}-${productTypeFilter}-${priceRange.join('-')}`}
+              key={`${search}-${page}-${sortBy}-${sortOrder}-${categoryFilter}-${subCategoryFilter}-${subSubCategoryFilter}-${productTypeFilter}-${priceRange.join('-')}`}
             >
               {products.map((product) => {
                 const v = pickOneVariant(product)
