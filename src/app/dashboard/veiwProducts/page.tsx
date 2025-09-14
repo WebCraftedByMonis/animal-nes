@@ -441,6 +441,8 @@ export default function ViewProductsPage() {
                           customerPrice: v.customerPrice,
                           inventory: v.inventory
                         })))
+                        setEditProductImage(null)
+                        setEditProductPdf(null)
                         setOpen(true)
                       }}
                     >
@@ -496,7 +498,14 @@ export default function ViewProductsPage() {
 </div>
 
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(newOpen) => {
+  setOpen(newOpen)
+  if (!newOpen) {
+    setEditProductImage(null)
+    setEditProductPdf(null)
+    setEditProductImagePreview(null)
+  }
+}}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
