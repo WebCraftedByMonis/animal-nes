@@ -33,7 +33,7 @@ export async function generateMetadata({
     const res = await fetch(`${getApiUrl()}/api/company/${id}`, {
       next: { revalidate: 1800 },
     })
-
+console.log(getApiUrl())
     if (!res.ok) {
       return {
         title: 'Company Not Found | Animal Wellness',
