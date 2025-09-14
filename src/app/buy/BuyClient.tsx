@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import { Search } from 'lucide-react';
 
 interface SellAnimalRequest {
   id: number;
@@ -30,6 +31,7 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
   const [requests, setRequests] = useState<SellAnimalRequest[]>(initialAnimals);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(8);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialTotal);
@@ -80,18 +82,39 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
     }
   }, [search, page, limit, fetchRequests]);
 
+  const handleSearch = () => {
+    setSearch(searchTerm);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-center text-green-500">Animals For Sale</h1>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Search animals..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 max-w-md"
-          />
+          <div className="flex gap-1">
+            <Input
+              placeholder="Search animals..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="focus:ring-green-500 max-w-md"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 px-3"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
 
           <span>Show</span>
           <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>

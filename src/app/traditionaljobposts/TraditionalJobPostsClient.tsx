@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Calendar, Briefcase } from 'lucide-react'
+import { Calendar, Briefcase, Search } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 interface TraditionalJobPost {
@@ -31,6 +31,7 @@ export default function TraditionalJobPostsClient({ initialJobPosts, initialTota
   const [jobPosts, setJobPosts] = useState<TraditionalJobPost[]>(initialJobPosts)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'id' | 'title'>('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [limit, setLimit] = useState(8)
@@ -71,6 +72,17 @@ export default function TraditionalJobPostsClient({ initialJobPosts, initialTota
     }
   }, [search, sortBy, sortOrder, page, limit, initialJobPosts, initialTotal, fetchJobPosts])
 
+  const handleSearch = () => {
+    setSearch(searchTerm)
+    setPage(1) // Reset to first page when searching
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split('-')
     setSortBy(sortBy as 'id' | 'title')
@@ -96,12 +108,22 @@ export default function TraditionalJobPostsClient({ initialJobPosts, initialTota
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
-          <Input
-            placeholder="Search job posts..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 max-w-md"
-          />
+          <div className="flex gap-1">
+            <Input
+              placeholder="Search job posts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="focus:ring-green-500 max-w-md"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 px-3"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <Select 
             value={`${sortBy}-${sortOrder}`}
             onValueChange={handleSortChange}

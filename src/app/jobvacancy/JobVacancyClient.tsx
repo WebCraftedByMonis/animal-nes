@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'react-toastify';
-import { MapPin, Calendar, Users } from 'lucide-react';
+import { MapPin, Calendar, Users, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface JobFormImage {
@@ -46,6 +46,7 @@ export default function JobVacancyClient({ initialJobForms, initialTotal }: JobV
   const [jobForms, setJobForms] = useState<JobForm[]>(initialJobForms);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(12);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialTotal);
@@ -80,8 +81,20 @@ export default function JobVacancyClient({ initialJobForms, initialTotal }: JobV
     }
   }, [search, page, limit, fetchJobForms]);
 
+  const handleSearch = () => {
+    setSearch(searchTerm);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   const resetFilters = () => {
     setSearch('');
+    setSearchTerm('');
     setPage(1);
     setLimit(12);
     setJobForms(initialJobForms);
@@ -107,15 +120,22 @@ export default function JobVacancyClient({ initialJobForms, initialTotal }: JobV
 
       {/* Search and Filter Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Input
-          placeholder="Search positions or companies..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="max-w-md"
-        />
+        <div className="flex gap-1">
+          <Input
+            placeholder="Search positions or companies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="max-w-md"
+          />
+          <Button
+            onClick={handleSearch}
+            size="sm"
+            className="bg-green-500 hover:bg-green-600 px-3"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
         
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600">Show</span>

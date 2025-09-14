@@ -78,6 +78,8 @@ export default function ViewProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
   const [sortBy, setSortBy] = useState<'id' | 'productName'>('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [limit, setLimit] = useState(10)
@@ -113,8 +115,12 @@ export default function ViewProductsPage() {
 
   const fetchProducts = useCallback(async () => {
     try {
+      const params: any = { search, sortBy, sortOrder, page, limit, includeVariants: true }
+      if (minPrice) params.minPrice = parseFloat(minPrice)
+      if (maxPrice) params.maxPrice = parseFloat(maxPrice)
+      
       const { data } = await axios.get('/api/product', {
-        params: { search, sortBy, sortOrder, page, limit, includeVariants: true },
+        params,
       })
    
       setProducts(data.data)
@@ -124,7 +130,7 @@ export default function ViewProductsPage() {
       console.log(error)
       toast.error('Failed to fetch products')
     }
-  }, [search, sortBy, sortOrder, page, limit])
+  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice])
 
   const fetchCompaniesAndPartners = async () => {
     try {
@@ -234,6 +240,11 @@ export default function ViewProductsPage() {
     setPage(1) // Reset to first page when searching
   }
 
+  const handlePriceFilter = () => {
+    setPage(1) // Reset to first page when filtering
+    fetchProducts()
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch()
@@ -282,6 +293,29 @@ export default function ViewProductsPage() {
         className="bg-green-500 hover:bg-green-600 px-3"
       >
         <Search className="h-4 w-4" />
+      </Button>
+    </div>
+    <div className="flex gap-1 w-full sm:w-auto">
+      <Input
+        type="number"
+        placeholder="Min price"
+        value={minPrice}
+        onChange={(e) => setMinPrice(e.target.value)}
+        className="focus:ring-green-500 w-full sm:w-[120px]"
+      />
+      <Input
+        type="number"
+        placeholder="Max price"
+        value={maxPrice}
+        onChange={(e) => setMaxPrice(e.target.value)}
+        className="focus:ring-green-500 w-full sm:w-[120px]"
+      />
+      <Button
+        onClick={handlePriceFilter}
+        size="sm"
+        className="bg-blue-500 hover:bg-blue-600 px-3"
+      >
+        Filter
       </Button>
     </div>
     <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>

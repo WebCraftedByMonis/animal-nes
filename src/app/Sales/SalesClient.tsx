@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Store, MapPin, Phone, Mail, Package, User2, Calendar } from 'lucide-react'
+import { Store, MapPin, Phone, Mail, Package, User2, Calendar, Search } from 'lucide-react'
 
 interface Partner {
   id: number
@@ -61,6 +61,7 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
   const [filteredPartners, setFilteredPartners] = useState<Partner[]>(initialPartners)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<string>('createdAt')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
   const [limit, setLimit] = useState(8)
@@ -87,6 +88,17 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
       setLoading(false)
     }
   }, [sortBy, order])
+
+  const handleSearch = () => {
+    setSearch(searchTerm)
+    setPage(1) // Reset to first page when searching
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
 
   // Local Search Filter
   useEffect(() => {
@@ -209,12 +221,22 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex flex-wrap gap-2 items-center">
-          <Input
-            placeholder="Search partners, City, Shopname"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 max-w-md"
-          />
+          <div className="flex gap-1">
+            <Input
+              placeholder="Search partners, City, Shopname"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="focus:ring-green-500 max-w-md"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 px-3"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <Select
             value={`${sortBy}-${order}`}
             onValueChange={handleSortChange}

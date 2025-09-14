@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 
 type NewsItem = {
   id: number;
@@ -27,6 +28,7 @@ export default function AnimalNewsClient({
 }: AnimalNewsClientProps) {
   const [news, setNews] = useState<NewsItem[]>(initialNews);
   const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [total, setTotal] = useState(initialTotal);
@@ -58,18 +60,39 @@ export default function AnimalNewsClient({
     fetchNews();
   }, [fetchNews]);
 
+  const handleSearch = () => {
+    setSearch(searchTerm);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-green-600">Animal News</h1>
-        <Input
-          placeholder="Search news..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
+        <div className="flex gap-1">
+          <Input
+            placeholder="Search news..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="w-64"
+          />
+          <Button
+            onClick={handleSearch}
+            size="sm"
+            className="bg-green-500 hover:bg-green-600 px-3"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {isLoading && (

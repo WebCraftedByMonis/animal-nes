@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Loader2, FileDown } from 'lucide-react';
+import { Pencil, Trash2, Loader2, FileDown, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Applicant {
@@ -43,6 +43,7 @@ export default function ApplicantsClient({ initialApplicants, initialTotal }: Ap
   const [applicants, setApplicants] = useState<Applicant[]>(initialApplicants);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(8);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialTotal);
@@ -73,6 +74,17 @@ export default function ApplicantsClient({ initialApplicants, initialTotal }: Ap
     }
   }, [search, page, limit, fetchApplicants]);
 
+  const handleSearch = () => {
+    setSearch(searchTerm);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   const handleDelete = async (id: number) => {
     setIsDeleting(id);
     try {
@@ -88,6 +100,7 @@ export default function ApplicantsClient({ initialApplicants, initialTotal }: Ap
 
   const resetFilters = () => {
     setSearch('');
+    setSearchTerm('');
     setPage(1);
     setLimit(8);
     setApplicants(initialApplicants);
@@ -113,12 +126,22 @@ export default function ApplicantsClient({ initialApplicants, initialTotal }: Ap
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Search applicants..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="focus:ring-green-500 max-w-md"
-          />
+          <div className="flex gap-1">
+            <Input
+              placeholder="Search applicants..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="focus:ring-green-500 max-w-md"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 px-3"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <span>Show</span>
           <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
             <SelectTrigger className="w-[100px]">
