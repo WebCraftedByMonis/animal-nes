@@ -52,7 +52,7 @@ const updateProductSchema = productSchema.partial()
 
 // Helper function for file uploads
 async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
-  if (!file) return null
+    if (!file || file.size === 0) return null
 
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
