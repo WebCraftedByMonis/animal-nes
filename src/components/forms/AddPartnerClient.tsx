@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-hot-toast';
 import PartnerForm from '@/components/forms/PartnerForm';
 
 export default function AddPartnerClient() {

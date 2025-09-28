@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Dropzone from 'react-dropzone';
 import Image from 'next/image';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput';
 import { 
   partnerTypeOptions, 
@@ -99,7 +99,7 @@ export default function PartnerForm({
       zipcode: initialData?.zipcode || '',
       state: initialData?.state || '',
       areaTown: initialData?.areaTown || '',
-      password: initialData?.password || '1234566',
+      password: initialData?.password || 'AnimalWellness2024!',
       bloodGroup: initialData?.bloodGroup || undefined,
       availableDays: initialData?.availableDays || [],
       startTimeIds: initialData?.startTimeIds || [],
@@ -166,6 +166,7 @@ export default function PartnerForm({
   };
 
   const handleFormSubmit = async (data: FormData) => {
+    console.log('Form submission started with data:', data);
     try {
       await onSubmit(data);
       if (!initialData) {
@@ -174,6 +175,7 @@ export default function PartnerForm({
       }
     } catch (error) {
       console.error('Form submission error:', error);
+      toast.error('Form submission failed');
     }
   };
 
@@ -401,11 +403,17 @@ export default function PartnerForm({
         </div>
 
         <Input type="hidden" {...register('image')} />
+        <Input type="hidden" {...register('password')} />
 
         <Button
           type="submit"
           className="bg-green-500 hover:bg-green-600 text-white"
           disabled={isSubmitting}
+          onClick={() => {
+            console.log('Submit button clicked!');
+            console.log('Form errors:', errors);
+            console.log('Current form values:', watch());
+          }}
         >
           {isSubmitting ? 'Submitting...' : submitButtonText}
         </Button>
