@@ -81,12 +81,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {/* Home Page */}
               <SidebarMenuItem>
-                <Link href="/">
-                  <SidebarMenuButton className="w-full">
+                <SidebarMenuButton asChild>
+                  <Link href="/">
                     <Home className="w-4 h-4" />
                     <span className="hover:text-green-500">Go to Site</span>
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Divider */}

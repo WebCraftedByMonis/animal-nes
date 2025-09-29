@@ -61,14 +61,14 @@ export default function Navbar() {
 
 
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const user = session?.user;
+
   const hiddenRoutes = ["/login"];
   const shouldHideNavbar =
     pathname.startsWith("/dashboard") || hiddenRoutes.includes(pathname);
 
   if (shouldHideNavbar) return null;
-
-  const { data: session } = useSession();
-  const user = session?.user;
 
   return (
     <nav
