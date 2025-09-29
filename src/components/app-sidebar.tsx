@@ -8,10 +8,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
-import { 
-  Layers, 
-  Package, 
-  ShoppingCart, 
+import {
+  Layers,
+  Package,
+  ShoppingCart,
   ChevronDown,
   Users,
   Newspaper,
@@ -24,7 +24,8 @@ import {
   FileText,
   Pill,
   Hammer,
-  LogOut
+  LogOut,
+  Home
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -78,6 +79,19 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Home Page */}
+              <SidebarMenuItem>
+                <Link href="/">
+                  <SidebarMenuButton className="w-full">
+                    <Home className="w-4 h-4" />
+                    <span className="hover:text-green-500">Go to Site</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+
+              {/* Divider */}
+              <div className="my-2 border-t border-gray-300 dark:border-zinc-700" />
+
               {/* Categories/Companies */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenCategories(!openCategories)}>
