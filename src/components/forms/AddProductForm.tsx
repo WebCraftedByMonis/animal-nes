@@ -141,6 +141,8 @@ export default function AddProductForm() {
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
+    let success = false;
+
     try {
       const formData = new FormData();
 
@@ -165,46 +167,16 @@ export default function AddProductForm() {
         }
       });
 
-
       const response = await axios.post("/api/product", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-     if (response.status === 201) {
-  toast.success("Product created successfully");
-  
-  // Reset the form
-  form.reset({
-    isFeatured: false,
-    isActive: true,
-    outofstock: false,
-    productName: "",
-    genericName: "",
-    category: "",
-    subCategory: "",
-    subsubCategory: "",
-    productType: "",
-    companyId: "",
-    variants: [
-      {
-        packingVolume: "",
-        companyPrice: "",
-        dealerPrice: "",
-        customerPrice: "",
-        inventory: "",
-      },
-    ],
-    partnerId: "",
-    description: "",
-    dosage: "",
-    productLink: "",
-  });
-  
-  // Clear image and PDF previews
-  setImagePreview(null);
-  setPdfPreview(null);}
+      if (response.status === 201) {
+        toast.success("Product created successfully");
+        success = true;
+      }
 
     } catch (error: unknown) {
       console.error("Submission error:", error);
@@ -214,7 +186,40 @@ export default function AddProductForm() {
         toast.error("Network error. Please try again.");
       }
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
+
+      if (success) {
+        // Reset the form only on success
+        form.reset({
+          isFeatured: false,
+          isActive: true,
+          outofstock: false,
+          productName: "",
+          genericName: "",
+          category: "",
+          subCategory: "",
+          subsubCategory: "",
+          productType: "",
+          companyId: "",
+          variants: [
+            {
+              packingVolume: "",
+              companyPrice: "",
+              dealerPrice: "",
+              customerPrice: "",
+              inventory: "",
+            },
+          ],
+          partnerId: "",
+          description: "",
+          dosage: "",
+          productLink: "",
+        });
+
+        // Clear image and PDF previews
+        setImagePreview(null);
+        setPdfPreview(null);
+      }
     }
 
   };

@@ -58,7 +58,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 interface PartnerFormProps {
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: FormData) => Promise<boolean>;
   isSubmitting: boolean;
   initialData?: Partial<FormData>;
   title?: string;
@@ -168,14 +168,15 @@ export default function PartnerForm({
   const handleFormSubmit = async (data: FormData) => {
     console.log('Form submission started with data:', data);
     try {
-      await onSubmit(data);
-      if (!initialData) {
-        // Only reset form if it's a new partner (add mode)
+      const success = await onSubmit(data);
+      if (success && !initialData) {
+        // Only reset form if submission was successful and it's a new partner (add mode)
         resetFormCompletely();
       }
     } catch (error) {
       console.error('Form submission error:', error);
       toast.error('Form submission failed');
+      // Don't reset the form on error, just let the parent handle the error state
     }
   };
 

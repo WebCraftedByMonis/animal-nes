@@ -84,6 +84,8 @@ export default function AddCompanyClient() {
 
   async function onSubmit(data: FormValues) {
     setIsSubmitting(true);
+    let success = false;
+
     try {
       const formData = new FormData();
       formData.append("companyName", data.companyName);
@@ -99,10 +101,10 @@ export default function AddCompanyClient() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        
+
         if (response.status === 409 && errorData.duplicateFields) {
           form.clearErrors();
-          
+
           if (errorData.duplicateFields.includes('Company Name')) {
             form.setError("companyName", {
               type: "manual",
@@ -127,9 +129,9 @@ export default function AddCompanyClient() {
               message: "This address is already registered",
             });
           }
-          
+
           toast.error(errorData.error);
-        } 
+        }
         else if (errorData.error.includes("unique")) {
           if (errorData.error.includes("companyName")) {
             form.setError("companyName", {
@@ -143,22 +145,25 @@ export default function AddCompanyClient() {
             });
           }
           toast.error("Company with these details already exists");
-        } 
+        }
         else {
           toast.error(errorData.error || "Failed to create company");
         }
-        return;
+        // Don't return here, let it continue to finally block
+      } else {
+        toast.success("Company created successfully!");
+        success = true;
       }
 
-      toast.success("Company created successfully!");
-      form.reset();
-      setPreview(null);
-      
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
+      if (success) {
+        form.reset();
+        setPreview(null);
+      }
     }
   }
 

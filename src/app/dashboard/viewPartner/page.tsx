@@ -27,8 +27,9 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, ArrowUpDown, Loader2, Search } from 'lucide-react'
+import { Pencil, Trash2, ArrowUpDown, Loader2, Search, Cake } from 'lucide-react'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
+import BirthdayModal from '@/components/BirthdayModal'
 import {
   Select,
   SelectContent,
@@ -136,6 +137,9 @@ export default function ViewPartnersPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
   const [editAvailableDays, setEditAvailableDays] = useState<string[]>([])
+
+  // Birthday modal state
+  const [isBirthdayModalOpen, setIsBirthdayModalOpen] = useState(false)
 
 
 
@@ -337,6 +341,18 @@ useEffect(() => {
       </Select>
       <span>entries</span>
     </div>
+  </div>
+
+  {/* Birthday Button */}
+  <div className="flex gap-2">
+    <Button
+      onClick={() => setIsBirthdayModalOpen(true)}
+      className="bg-pink-500 hover:bg-pink-600 text-white flex items-center gap-2"
+      size="sm"
+    >
+      <Cake className="h-4 w-4" />
+      Today's Birthdays
+    </Button>
   </div>
 </div>
 
@@ -621,7 +637,11 @@ useEffect(() => {
               {/* Area Town */}
               <div className="col-span-1">
                 <label className="block text-sm font-medium mb-1">Date of birth</label>
-                <Input value={editAreaTown} onChange={(e) => setEditAreaTown(e.target.value)} />
+                <Input
+                  type="date"
+                  value={editAreaTown}
+                  onChange={(e) => setEditAreaTown(e.target.value)}
+                />
               </div>
 
               {/* Address */}
@@ -695,6 +715,12 @@ useEffect(() => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Birthday Modal */}
+        <BirthdayModal
+          isOpen={isBirthdayModalOpen}
+          onClose={() => setIsBirthdayModalOpen(false)}
+        />
 
       </div>
     </Suspense>
