@@ -98,10 +98,10 @@ export default function AnimalDetailClient() {
   if (!animal) {
   return (
     <div className="max-w-6xl mx-auto p-10 text-center bg-white  dark:bg-gray-900">
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 inline-block">
-        <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Animal not shown</h2>
-        <p className="text-red-500 dark:text-red-400">
-          You must be logged in to see the animal.
+      <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg p-6 inline-block">
+        <h2 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">Animal not found</h2>
+        <p className="text-gray-500 dark:text-gray-400">
+          The animal you're looking for may no longer be available.
         </p>
       </div>
     </div>

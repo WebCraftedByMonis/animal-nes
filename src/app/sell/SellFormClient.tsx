@@ -8,10 +8,20 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'react-hot-toast'
+import { useLoginModal } from '@/contexts/LoginModalContext'
 
 export default function SellFormClient() {
   const [loading, setLoading] = useState(false)
+  const [hasPromptedLogin, setHasPromptedLogin] = useState(false)
   const { data: session, status } = useSession()
+  const { openModal } = useLoginModal()
+
+  useEffect(() => {
+    if (status === 'unauthenticated' && !hasPromptedLogin) {
+      setHasPromptedLogin(true)
+      openModal('button')
+    }
+  }, [status, openModal, hasPromptedLogin])
 
   if (status === 'loading') {
     return (
@@ -23,8 +33,26 @@ export default function SellFormClient() {
 
   if (!session?.user?.email) {
     return (
-      <div className="text-center mt-20 text-lg font-medium text-gray-600">
-        Please log in to submit an animal for sale.
+      <div className="max-w-2xl mx-auto p-6 text-center space-y-6">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl p-8 border border-green-200 dark:border-green-800">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-7V6a3 3 0 00-3-3H7a3 3 0 00-3 3v1M5 10h14M5 10v8a2 2 0 002 2h10a2 2 0 002-2v-8" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Sell Your Animals
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Join thousands of sellers on our platform. Sign in to list your animals and reach potential buyers.
+          </p>
+          <button
+            onClick={() => openModal('button')}
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+          >
+            Sign In to Start Selling
+          </button>
+        </div>
       </div>
     )
   }

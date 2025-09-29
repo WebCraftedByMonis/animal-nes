@@ -15,6 +15,7 @@ import { useSession } from "next-auth/react"
 import { signIn } from "next-auth/react"
 import FullScreenSlider from "./FullScreenSlider"
 import SectionComponent, { SectionItem } from "./SectionComponent"
+import { useLoginModal } from "@/contexts/LoginModalContext"
 
 interface Testimonial {
   id: number
@@ -188,6 +189,7 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
 
 export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const { data: session, status } = useSession()
+  const { openModal } = useLoginModal()
   const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials?.data || [])
   const [newTestimonial, setNewTestimonial] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -241,8 +243,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
   const handleSubmitTestimonial = async () => {
     if (!session) {
-      toast("Please login first to post your testimonial")
-      signIn()
+      openModal('button')
       return
     }
 
@@ -267,8 +268,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       fetchTestimonials()
     } catch (error: any) {
       if (error.response?.status === 401) {
-        toast.error("Please login to post a testimonial")
-        signIn()
+        openModal('button')
       } else if (error.response?.data?.error) {
         toast.error(error.response.data.error)
       } else {
@@ -710,7 +710,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                   </div>
                   {!session && (
                     <p className="text-sm text-center text-muted-foreground">
-                      Please <button onClick={() => signIn()} className="text-emerald-600 hover:underline">login</button> to post your testimonial
+                      Please <button onClick={() => openModal('button')} className="text-emerald-600 hover:underline">login</button> to post your testimonial
                     </p>
                   )}
                 </div>

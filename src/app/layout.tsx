@@ -8,6 +8,8 @@ import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
+import { LoginModalProvider } from "@/contexts/LoginModalContext";
+import LoginModal from "@/components/LoginModal";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.animalwellness.shop"),
@@ -95,19 +97,22 @@ export default function RootLayout({
         >
           <SessionWrapper>
             <CartProvider>
-              <ProgressBar />
-              {/* Main layout container */}
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <Toaster position="top-center" />
-                
-                {/* Main content with padding-top to account for fixed navbar */}
-                <main className="flex-1 pt-14 sm:pt-16">
-                  {children}
-                </main>
+              <LoginModalProvider>
+                <ProgressBar />
+                {/* Main layout container */}
+                <div className="min-h-screen flex flex-col">
+                  <Navbar />
+                  <Toaster position="top-center" />
+                  <LoginModal />
 
-                <Footer />
-              </div>
+                  {/* Main content with padding-top to account for fixed navbar */}
+                  <main className="flex-1 pt-14 sm:pt-16">
+                    {children}
+                  </main>
+
+                  <Footer />
+                </div>
+              </LoginModalProvider>
             </CartProvider>
           </SessionWrapper>
         </ThemeProvider>

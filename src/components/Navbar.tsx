@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
+import { useLoginModal } from "@/contexts/LoginModalContext";
 
 import {
   Drawer,
@@ -45,6 +46,7 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { counts } = useCart();
+  const { openModal } = useLoginModal();
 
   // Handle scroll effect
   useEffect(() => {
@@ -204,7 +206,7 @@ export default function Navbar() {
             ) : (
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 font-semibold"
-                onClick={() => signIn("google")}
+                onClick={() => openModal('button')}
               >
                 <span className="hidden sm:inline">Sign up</span>
                 <span className="sm:hidden">Join</span>

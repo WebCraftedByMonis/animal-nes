@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { useCart } from '@/contexts/CartContext'
+import { useLoginModal } from '@/contexts/LoginModalContext'
 
 interface AddAnimalToCartButtonProps {
   animalId: number
@@ -14,12 +15,13 @@ export default function AddAnimalToCartButton({ animalId }: AddAnimalToCartButto
   const { data: session } = useSession()
   const router = useRouter()
   const { incrementAnimalCount } = useCart()
+  const { openModal } = useLoginModal()
   const [loading, setLoading] = useState(false)
 
   const handleAddToCart = async () => {
     if (loading) return  // Prevent double clicks
     if (!session?.user) {
-      toast.error('Please login to add items to your cart.')
+      openModal('cart')
       return
     }
 
