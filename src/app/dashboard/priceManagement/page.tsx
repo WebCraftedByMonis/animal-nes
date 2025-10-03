@@ -433,7 +433,7 @@ export default function PriceManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>Price Type</Label>
               <Select value={priceType} onValueChange={(value: any) => setPriceType(value)}>
@@ -474,27 +474,29 @@ export default function PriceManagementPage() {
                 placeholder={updateType === 'percentage' ? 'e.g., 10 for +10%' : 'e.g., 100'}
               />
             </div>
+          </div>
 
-            <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
+            {!updateAllProducts && (
               <Button
                 onClick={() => setShowPreview(!showPreview)}
                 variant="outline"
-                disabled={!updateValue || updateAllProducts || (!updateAllProducts && products.length === 0)}
+                disabled={!updateValue || products.length === 0}
               >
-                {updateAllProducts ? 'Preview Disabled (Global Mode)' : 'Preview Changes'}
+                Preview Changes
               </Button>
-              <Button
-                onClick={handleBulkPriceUpdate}
-                disabled={isUpdating || !updateValue || (!updateAllProducts && products.length === 0)}
-                className="bg-green-500 hover:bg-green-600"
-              >
-                {isUpdating ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
-                ) : (
-                  'Apply Changes'
-                )}
-              </Button>
-            </div>
+            )}
+            <Button
+              onClick={handleBulkPriceUpdate}
+              disabled={isUpdating || !updateValue || (!updateAllProducts && products.length === 0)}
+              className="bg-green-500 hover:bg-green-600"
+            >
+              {isUpdating ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
+              ) : (
+                'Apply Changes'
+              )}
+            </Button>
           </div>
 
           {updateValue && (
