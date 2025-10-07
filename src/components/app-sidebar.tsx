@@ -25,7 +25,8 @@ import {
   Pill,
   Hammer,
   LogOut,
-  Home
+  Home,
+  Share2
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -323,6 +324,16 @@ export function AppSidebar() {
                     <Link href="/dashboard/viewtraditionaljob" className="block text-sm text-muted-foreground hover:underline">View traditional</Link>
                   </div>
                 )}
+              </SidebarMenuItem>
+
+              {/* Cross Poster */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/cross-poster">
+                    <Share2 className="w-4 h-4" />
+                    <span className="hover:text-green-500">Cross Poster</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Divider */}

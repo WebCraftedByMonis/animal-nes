@@ -4,7 +4,8 @@
       "Bash(npm run dev:*)",
       "Read(//c/Users/as/downloads/animal-nes-main/animal-nes-main/src/app/buy/[id]/**)",
       "Read(//c/Users/as/downloads/animal-nes-main/animal-nes-main/src/app/sell/**)",
-      "Read(//c/Users/as/Pictures/Screenshots/**)"
+      "Read(//c/Users/as/Pictures/Screenshots/**)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
