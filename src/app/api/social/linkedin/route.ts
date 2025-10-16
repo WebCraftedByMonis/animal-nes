@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
     // Validate environment variables
     const accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
     const personId = process.env.LINKEDIN_PERSON_ID;
-    const organizationId = process.env.LINKEDIN_ORGANIZATION_ID;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -19,9 +18,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!personId && !organizationId) {
+    if (!personId) {
       return NextResponse.json(
-        { success: false, error: "LinkedIn person ID or organization ID not configured" },
+        { success: false, error: "LinkedIn person ID not configured. Only personal profile posting is supported." },
         { status: 500 }
       );
     }
@@ -34,10 +33,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine the author URN (use person if available, otherwise organization)
-    const author = personId
-      ? `urn:li:person:${personId}`
-      : `urn:li:organization:${organizationId}`;
+    // Set the author URN to personal profile only
+    const author = `urn:li:person:${personId}`;
 
     let postData: any;
 
