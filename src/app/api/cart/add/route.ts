@@ -20,6 +20,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 })
     }
 
+    // Validate that the variant exists
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+      include: { product: true },
+    })
+
+    if (!variant) {
+      return NextResponse.json({ message: 'Product variant not found' }, { status: 404 })
+    }
+
+    // Verify the variant belongs to the specified product
+    if (variant.productId !== productId) {
+      return NextResponse.json({ message: 'Invalid product-variant combination' }, { status: 400 })
+    }
+
     await prisma.cartItem.upsert({
   where: {
     userId_productId_variantId: {
