@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -42,53 +43,75 @@ interface Partner {
   createdAt: string
 }
 
-interface VeterinariansClientProps {
-  initialPartners: Partner[]
-}
-
-export default function VeterinariansClient({ initialPartners }: VeterinariansClientProps) {
-  const [allPartners, setAllPartners] = useState<Partner[]>(initialPartners)
-  const [filteredPartners, setFilteredPartners] = useState<Partner[]>(initialPartners)
-  const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState<string>('createdAt')
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
-  const [limit, setLimit] = useState(8)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(Math.ceil(initialPartners.length / 8))
+export default function VeterinariansClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Initialize state from URL params
+  const [partners, setPartners] = useState<Partner[]>([])
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '')
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt')
+  const [order, setOrder] = useState<'asc' | 'desc'>((searchParams.get('order') as 'asc' | 'desc') || 'desc')
+  const [limit, setLimit] = useState(Number(searchParams.get('limit')) || 8)
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  // Update URL params when filters change
+  const updateURL = useCallback((newPage: number, newSearch: string, newSortBy: string, newOrder: string, newLimit: number) => {
+    const params = new URLSearchParams()
+    if (newPage > 1) params.set('page', String(newPage))
+    if (newSearch) params.set('search', newSearch)
+    if (newSortBy !== 'createdAt') params.set('sortBy', newSortBy)
+    if (newOrder !== 'desc') params.set('order', newOrder)
+    if (newLimit !== 8) params.set('limit', String(newLimit))
+
+    const queryString = params.toString()
+    router.push(queryString ? `/Veternarians?${queryString}` : '/Veternarians', { scroll: false })
+  }, [router])
 
   const fetchPartners = useCallback(async () => {
+    setLoading(true)
     try {
-      setLoading(true)
       const { data } = await axios.get('/api/partner', {
         params: {
+          search: search || undefined,
           sortBy,
           order,
           partnerTypeGroup: 'veterinarian',
-          _t: Date.now()
-        },
+          page,
+          limit
+        }
       })
-      setAllPartners(data.data)
+
+      setPartners(data.data || [])
+      setTotal(data.meta?.total || 0)
     } catch (error) {
       console.error('Error fetching partners:', error)
       toast.error('Failed to fetch veterinary partners')
+      setPartners([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
-  }, [sortBy, order])
+  }, [page, limit, search, sortBy, order])
 
-  // Only fetch if we need to change sorting from the initial load
+  // Fetch data when dependencies change
   useEffect(() => {
-    if (sortBy !== 'createdAt' || order !== 'desc') {
-      fetchPartners()
-    }
-  }, [sortBy, order, fetchPartners])
+    fetchPartners()
+  }, [fetchPartners])
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    updateURL(newPage, search, sortBy, order, limit)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleSearch = () => {
-    setSearch(searchTerm)
-    setPage(1) // Reset to first page when searching
+    setSearch(searchInput)
+    setPage(1)
+    updateURL(1, searchInput, sortBy, order, limit)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -97,55 +120,19 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
     }
   }
 
-  // Local Search Filter
-  useEffect(() => {
-    let filtered = allPartners
-
-    if (search.trim() !== '') {
-      filtered = filtered.filter((partner) => {
-        const searchLower = search.toLowerCase()
-        return (
-          partner.partnerName.toLowerCase().includes(searchLower) ||
-          (partner.shopName && partner.shopName.toLowerCase().includes(searchLower)) ||
-          (partner.cityName && partner.cityName.toLowerCase().includes(searchLower)) ||
-          (partner.state && partner.state.toLowerCase().includes(searchLower))
-        )
-      })
-    }
-
-    // Apply Sorting
-    filtered = filtered.sort((a, b) => {
-      const aValue = a[sortBy as keyof Partner]
-      const bValue = b[sortBy as keyof Partner]
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        if (order === 'asc') return aValue.localeCompare(bValue)
-        else return bValue.localeCompare(aValue)
-      }
-
-      if (aValue instanceof Date && bValue instanceof Date) {
-        if (order === 'asc') return aValue.getTime() - bValue.getTime()
-        else return bValue.getTime() - aValue.getTime()
-      }
-
-      return 0
-    })
-
-    setFilteredPartners(filtered)
-
-    const pages = Math.ceil(filtered.length / limit)
-    setTotalPages(pages)
-    setPage(1) // reset to page 1 on every search/filter change
-  }, [search, allPartners, sortBy, order, limit])
-
   const handleSortChange = (value: string) => {
     const [newSortBy, newOrder] = value.split('-')
     setSortBy(newSortBy)
     setOrder(newOrder as 'asc' | 'desc')
+    setPage(1)
+    updateURL(1, search, newSortBy, newOrder, limit)
   }
 
-  const navigateToPartner = (partner: Partner) => {
-    router.push(`/Veternarians/${partner.id}`)
+  const handleLimitChange = (value: string) => {
+    const newLimit = Number(value)
+    setLimit(newLimit)
+    setPage(1)
+    updateURL(1, search, sortBy, order, newLimit)
   }
 
   const getDaysAbbreviation = (days: { day: string }[]) => {
@@ -154,12 +141,17 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
     return days.map(d => d.day.slice(0, 3)).join(', ')
   }
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+  const getPartnerSubcategory = (partnerType?: string) => {
+    if (!partnerType) return null
+    const match = partnerType.match(/\((.*?)\)/)
+    if (match && match[1]) {
+      const subcategories = match[1].split(',').map(s => s.trim())
+      return subcategories[0]
     }
+    return null
   }
+
+  const totalPages = Math.ceil(total / limit)
 
   const renderPaginationButtons = () => {
     const buttons = []
@@ -196,18 +188,6 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
     return buttons
   }
 
-  const getPartnerSubcategory = (partnerType?: string) => {
-    if (!partnerType) return null
-    const match = partnerType.match(/\((.*?)\)/)
-    if (match && match[1]) {
-      const subcategories = match[1].split(',').map(s => s.trim())
-      return subcategories[0]
-    }
-    return null
-  }
-
-  const paginatedPartners = filteredPartners.slice((page - 1) * limit, page * limit)
-
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
       <div className="text-center space-y-2">
@@ -220,8 +200,8 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
           <div className="flex gap-1">
             <Input
               placeholder="Search veterinarians, City, Shopname"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               onKeyPress={handleKeyPress}
               className="focus:ring-green-500 max-w-md"
             />
@@ -249,7 +229,7 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
           </Select>
           <div className="flex items-center gap-2">
             <span className="text-sm">Show</span>
-            <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+            <Select value={String(limit)} onValueChange={handleLimitChange}>
               <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Show" />
               </SelectTrigger>
@@ -265,9 +245,9 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
           </div>
         </div>
 
-        {!loading && filteredPartners.length > 0 && (
+        {!loading && total > 0 && (
           <div className="text-sm text-muted-foreground">
-            Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, filteredPartners.length)} of {filteredPartners.length} entries
+            Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} entries
           </div>
         )}
       </div>
@@ -281,81 +261,79 @@ export default function VeterinariansClient({ initialPartners }: VeterinariansCl
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {paginatedPartners.map((partner) => {
+            {partners.map((partner) => {
               const subcategory = getPartnerSubcategory(partner.partnerType)
 
               return (
-                <div
-                  key={partner.id}
-                  className="bg-white dark:bg-zinc-900 rounded-lg shadow-md border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigateToPartner(partner)}
-                >
-                  <div className="bg-white dark:bg-zinc-900 aspect-square w-full rounded-md overflow-hidden mb-3">
-                    {partner.partnerImage ? (
-                      <Image
-                        src={partner.partnerImage.url}
-                        alt={partner.partnerName}
-                        width={300}
-                        height={300}
-                        className="w-full h-full object-contain"
-                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <User2 className="h-20 w-20 text-gray-400 dark:text-zinc-600" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="font-bold text-lg line-clamp-1">{partner.partnerName}</h3>
-
-                    {subcategory && (
-                      <Badge variant="secondary" className="text-xs">
-                        {subcategory}
-                      </Badge>
-                    )}
-
-                    {partner.specialization && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Stethoscope className="h-3 w-3 flex-shrink-0" />
-                        <span className="line-clamp-1">{partner.specialization}</span>
-                      </div>
-                    )}
-
-                    {partner.qualificationDegree && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <GraduationCap className="h-3 w-3 flex-shrink-0" />
-                        <span className="line-clamp-1">{partner.qualificationDegree}</span>
-                      </div>
-                    )}
-
-                    {partner.cityName && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3 flex-shrink-0" />
-                        <span className="line-clamp-1">{partner.cityName}{partner.state ? `, ${partner.state}` : ''}</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2">
-                      <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {getDaysAbbreviation(partner.availableDaysOfWeek)}
-                      </Badge>
-                      {partner.products.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Package className="h-3 w-3 mr-1" />
-                          {partner.products.length}
-                        </Badge>
+                <Link key={partner.id} href={`/Veternarians/${partner.id}`}>
+                  <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 hover:shadow-lg transition-shadow cursor-pointer">
+                    <div className="bg-white dark:bg-zinc-900 aspect-square w-full rounded-md overflow-hidden mb-3">
+                      {partner.partnerImage ? (
+                        <Image
+                          src={partner.partnerImage.url}
+                          alt={partner.partnerName}
+                          width={300}
+                          height={300}
+                          className="w-full h-full object-contain"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <User2 className="h-20 w-20 text-gray-400 dark:text-zinc-600" />
+                        </div>
                       )}
                     </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg line-clamp-1">{partner.partnerName}</h3>
+
+                      {subcategory && (
+                        <Badge variant="secondary" className="text-xs">
+                          {subcategory}
+                        </Badge>
+                      )}
+
+                      {partner.specialization && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Stethoscope className="h-3 w-3 flex-shrink-0" />
+                          <span className="line-clamp-1">{partner.specialization}</span>
+                        </div>
+                      )}
+
+                      {partner.qualificationDegree && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <GraduationCap className="h-3 w-3 flex-shrink-0" />
+                          <span className="line-clamp-1">{partner.qualificationDegree}</span>
+                        </div>
+                      )}
+
+                      {partner.cityName && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="line-clamp-1">{partner.cityName}{partner.state ? `, ${partner.state}` : ''}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2">
+                        <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {getDaysAbbreviation(partner.availableDaysOfWeek)}
+                        </Badge>
+                        {partner.products.length > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Package className="h-3 w-3 mr-1" />
+                            {partner.products.length}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
 
-          {filteredPartners.length === 0 && (
+          {partners.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No veterinary partners found</p>
             </div>

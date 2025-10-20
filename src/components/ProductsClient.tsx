@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -42,23 +42,6 @@ interface Product {
   partner: { partnerName: string } | null
   image: { url: string; alt: string; publicId: string | null } | null
   variants: { packingVolume: string | null; customerPrice: number | null; companyPrice?: number | null; dealerPrice?: number | null; inventory: number | null }[]
-}
-
-interface ProductsClientProps {
-  initialProducts: Product[]
-  initialTotal: number
-  initialMinPrice: number
-  initialMaxPrice: number
-}
-
-// ----- Reusable debounce hook -----
-function useDebounce<T>(value: T, delay = 500) {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(t)
-  }, [value, delay])
-  return debounced
 }
 
 const categories = [
@@ -104,39 +87,128 @@ const cardVariants = {
   }
 }
 
-export default function ProductsClient({ 
-  initialProducts, 
-  initialTotal, 
-  initialMinPrice, 
-  initialMaxPrice 
-}: ProductsClientProps) {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
-  const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
+export default function ProductsClient() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-  const [sortBy, setSortBy] = useState<'createdAt' | 'productName'>('createdAt')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [limit, setLimit] = useState(16)
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(initialTotal)
+  // Initialize state from URL params
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '')
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+
+  const [sortBy, setSortBy] = useState<'createdAt' | 'productName'>((searchParams.get('sortBy') as 'createdAt' | 'productName') || 'createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc')
+  const [limit, setLimit] = useState(Number(searchParams.get('limit')) || 16)
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
+  const [total, setTotal] = useState(0)
 
   // Filters
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [subCategoryFilter, setSubCategoryFilter] = useState<string>('all')
-  const [subSubCategoryFilter, setSubSubCategoryFilter] = useState<string>('all')
-  const [productTypeFilter, setProductTypeFilter] = useState<string>('all')
-  const [priceRange, setPriceRange] = useState<number[]>([initialMinPrice, initialMaxPrice])
-  const [appliedPriceRange, setAppliedPriceRange] = useState<number[]>([initialMinPrice, initialMaxPrice])
-  const [minPriceLimit, setMinPriceLimit] = useState(initialMinPrice)
-  const [maxPriceLimit, setMaxPriceLimit] = useState(initialMaxPrice)
+  const [categoryFilter, setCategoryFilter] = useState<string>(searchParams.get('category') || 'all')
+  const [subCategoryFilter, setSubCategoryFilter] = useState<string>(searchParams.get('subCategory') || 'all')
+  const [subSubCategoryFilter, setSubSubCategoryFilter] = useState<string>(searchParams.get('subsubCategory') || 'all')
+  const [productTypeFilter, setProductTypeFilter] = useState<string>(searchParams.get('productType') || 'all')
+  const [priceRange, setPriceRange] = useState<number[]>([
+    Number(searchParams.get('minPrice')) || 0,
+    Number(searchParams.get('maxPrice')) || 100000
+  ])
+  const [appliedPriceRange, setAppliedPriceRange] = useState<number[]>([
+    Number(searchParams.get('minPrice')) || 0,
+    Number(searchParams.get('maxPrice')) || 100000
+  ])
+  const [minPriceLimit, setMinPriceLimit] = useState(0)
+  const [maxPriceLimit, setMaxPriceLimit] = useState(100000)
   const [showFilters, setShowFilters] = useState(false)
 
-  const router = useRouter()
+  // Update URL params when filters change
+  const updateURL = useCallback((params: {
+    page?: number
+    search?: string
+    sortBy?: string
+    sortOrder?: string
+    limit?: number
+    category?: string
+    subCategory?: string
+    subsubCategory?: string
+    productType?: string
+    minPrice?: number
+    maxPrice?: number
+  }) => {
+    const urlParams = new URLSearchParams()
+
+    const p = params.page ?? page
+    const s = params.search ?? search
+    const sb = params.sortBy ?? sortBy
+    const so = params.sortOrder ?? sortOrder
+    const l = params.limit ?? limit
+    const cat = params.category ?? categoryFilter
+    const subCat = params.subCategory ?? subCategoryFilter
+    const subSubCat = params.subsubCategory ?? subSubCategoryFilter
+    const pt = params.productType ?? productTypeFilter
+    const minP = params.minPrice ?? appliedPriceRange[0]
+    const maxP = params.maxPrice ?? appliedPriceRange[1]
+
+    if (p > 1) urlParams.set('page', String(p))
+    if (s) urlParams.set('search', s)
+    if (sb !== 'createdAt') urlParams.set('sortBy', sb)
+    if (so !== 'desc') urlParams.set('sortOrder', so)
+    if (l !== 16) urlParams.set('limit', String(l))
+    if (cat !== 'all') urlParams.set('category', cat)
+    if (subCat !== 'all') urlParams.set('subCategory', subCat)
+    if (subSubCat !== 'all') urlParams.set('subsubCategory', subSubCat)
+    if (pt !== 'all') urlParams.set('productType', pt)
+    if (minP !== minPriceLimit) urlParams.set('minPrice', String(minP))
+    if (maxP !== maxPriceLimit) urlParams.set('maxPrice', String(maxP))
+
+    const queryString = urlParams.toString()
+    router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false })
+  }, [router, page, search, sortBy, sortOrder, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange, minPriceLimit, maxPriceLimit])
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await axios.get('/api/product', {
+        params: {
+          search: search || undefined,
+          sortBy,
+          sortOrder,
+          page,
+          limit,
+          category: categoryFilter === 'all' ? undefined : categoryFilter,
+          subCategory: subCategoryFilter === 'all' ? undefined : subCategoryFilter,
+          subsubCategory: subSubCategoryFilter === 'all' ? undefined : subSubCategoryFilter,
+          productType: productTypeFilter === 'all' ? undefined : productTypeFilter,
+          minPrice: appliedPriceRange[0],
+          maxPrice: appliedPriceRange[1],
+        },
+      })
+
+      setProducts(data.data || [])
+      setTotal(data.total || 0)
+
+      if (data.minPrice !== undefined && data.maxPrice !== undefined) {
+        setMinPriceLimit(data.minPrice)
+        setMaxPriceLimit(data.maxPrice)
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to fetch products')
+      setProducts([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange])
+
+  // Fetch data when dependencies change
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   const handleSearch = () => {
-    setSearch(searchTerm)
-    setPage(1) // Reset to first page when searching
+    setSearch(searchInput)
+    setPage(1)
+    updateURL({ page: 1, search: searchInput })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -147,77 +219,58 @@ export default function ProductsClient({
 
   const handlePriceFilter = () => {
     setAppliedPriceRange([...priceRange])
-    setPage(1) // Reset to first page when filtering
+    setPage(1)
+    updateURL({ page: 1, minPrice: priceRange[0], maxPrice: priceRange[1] })
   }
-
-  // Reset to page 1 whenever the search changes
-  useEffect(() => {
-    setPage(1)
-  }, [search])
-
-  // Fetch when search OR any filter/sort/page changes (only when not using initial data)
-  useEffect(() => {
-    // Skip initial fetch since we have server-side data
-    if (page === 1 && !search && categoryFilter === 'all' && 
-        subCategoryFilter === 'all' && subSubCategoryFilter === 'all' && 
-        productTypeFilter === 'all' && appliedPriceRange[0] === initialMinPrice && 
-        appliedPriceRange[1] === initialMaxPrice && sortBy === 'createdAt' && sortOrder === 'desc') {
-      return
-    }
-
-    const fetchProducts = async () => {
-      try {
-        setLoading(true)
-        const { data } = await axios.get('/api/product', {
-          params: {
-            search: search,
-            sortBy, sortOrder, page, limit,
-            category: categoryFilter,
-            subCategory: subCategoryFilter,
-            subsubCategory: subSubCategoryFilter,
-            productType: productTypeFilter,
-            minPrice: appliedPriceRange[0],
-            maxPrice: appliedPriceRange[1],
-          },
-        })
-
-        setProducts(data.data)
-        setTotal(data.total)
-
-        if (data.minPrice !== undefined && data.maxPrice !== undefined) {
-          setMinPriceLimit(data.minPrice)
-          setMaxPriceLimit(data.maxPrice)
-        }
-      } catch (err) {
-        console.error(err)
-        toast.error('Failed to fetch products')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProducts()
-  }, [
-    search, sortBy, sortOrder, page, limit,
-    categoryFilter, subCategoryFilter, subSubCategoryFilter,
-    productTypeFilter, appliedPriceRange, initialMinPrice, initialMaxPrice
-  ])
-
-  // Reset page when filters (not search or price range) change
-  useEffect(() => {
-    setPage(1)
-  }, [categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter])
 
   const handleSortChange = (value: string) => {
     const [field, order] = value.split('-')
     setSortBy(field as 'createdAt' | 'productName')
     setSortOrder(order as 'asc' | 'desc')
     setPage(1)
+    updateURL({ page: 1, sortBy: field, sortOrder: order })
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value)
+    setPage(1)
+    updateURL({ page: 1, category: value })
+  }
+
+  const handleSubCategoryChange = (value: string) => {
+    setSubCategoryFilter(value)
+    setPage(1)
+    updateURL({ page: 1, subCategory: value })
+  }
+
+  const handleSubSubCategoryChange = (value: string) => {
+    setSubSubCategoryFilter(value)
+    setPage(1)
+    updateURL({ page: 1, subsubCategory: value })
+  }
+
+  const handleProductTypeChange = (value: string) => {
+    setProductTypeFilter(value)
+    setPage(1)
+    updateURL({ page: 1, productType: value })
+  }
+
+  const handleLimitChange = (value: string) => {
+    const newLimit = Number(value)
+    setLimit(newLimit)
+    setPage(1)
+    updateURL({ page: 1, limit: newLimit })
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    updateURL({ page: newPage })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const clearFilters = () => {
+    setSearchInput('')
     setSearch('')
-    setSearchTerm('')
     setCategoryFilter('all')
     setSubCategoryFilter('all')
     setSubSubCategoryFilter('all')
@@ -225,6 +278,7 @@ export default function ProductsClient({
     setPriceRange([minPriceLimit, maxPriceLimit])
     setAppliedPriceRange([minPriceLimit, maxPriceLimit])
     setPage(1)
+    router.push('/products', { scroll: false })
   }
 
   const navigateToProduct = (p: Product) => {
@@ -237,7 +291,7 @@ export default function ProductsClient({
     <div className="space-y-4">
       <div className="space-y-2">
         <Label>Category</Label>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={handleCategoryChange}>
           <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
@@ -248,7 +302,7 @@ export default function ProductsClient({
 
       <div className="space-y-2">
         <Label>Sub Category</Label>
-        <Select value={subCategoryFilter} onValueChange={setSubCategoryFilter}>
+        <Select value={subCategoryFilter} onValueChange={handleSubCategoryChange}>
           <SelectTrigger><SelectValue placeholder="All Sub Categories" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sub Categories</SelectItem>
@@ -259,7 +313,7 @@ export default function ProductsClient({
 
       <div className="space-y-2">
         <Label>Sub-Sub Category</Label>
-        <Select value={subSubCategoryFilter} onValueChange={setSubSubCategoryFilter}>
+        <Select value={subSubCategoryFilter} onValueChange={handleSubSubCategoryChange}>
           <SelectTrigger><SelectValue placeholder="All Sub-Sub Categories" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sub-Sub Categories</SelectItem>
@@ -270,7 +324,7 @@ export default function ProductsClient({
 
       <div className="space-y-2">
         <Label>Product Type</Label>
-        <Select value={productTypeFilter} onValueChange={setProductTypeFilter}>
+        <Select value={productTypeFilter} onValueChange={handleProductTypeChange}>
           <SelectTrigger><SelectValue placeholder="All Product Types" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Product Types</SelectItem>
@@ -289,9 +343,9 @@ export default function ProductsClient({
           step={100}
           className="w-full"
         />
-        <Button 
-          onClick={handlePriceFilter} 
-          size="sm" 
+        <Button
+          onClick={handlePriceFilter}
+          size="sm"
           className="w-full bg-blue-500 hover:bg-blue-600"
         >
           Apply Price Filter
@@ -322,8 +376,8 @@ export default function ProductsClient({
         <div className="flex gap-1">
           <Input
             placeholder="Search product (details)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             onKeyPress={handleKeyPress}
             className="focus:ring-green-500 w-[200px]"
           />
@@ -348,7 +402,7 @@ export default function ProductsClient({
           </SelectContent>
         </Select>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
@@ -358,7 +412,7 @@ export default function ProductsClient({
           </SelectContent>
         </Select>
 
-        <Select value={subCategoryFilter} onValueChange={setSubCategoryFilter}>
+        <Select value={subCategoryFilter} onValueChange={handleSubCategoryChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Sub Categories" />
           </SelectTrigger>
@@ -368,7 +422,7 @@ export default function ProductsClient({
           </SelectContent>
         </Select>
 
-        <Select value={subSubCategoryFilter} onValueChange={setSubSubCategoryFilter}>
+        <Select value={subSubCategoryFilter} onValueChange={handleSubSubCategoryChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sub-Sub Category" />
           </SelectTrigger>
@@ -378,7 +432,7 @@ export default function ProductsClient({
           </SelectContent>
         </Select>
 
-        <Select value={productTypeFilter} onValueChange={setProductTypeFilter}>
+        <Select value={productTypeFilter} onValueChange={handleProductTypeChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Product Types" />
           </SelectTrigger>
@@ -390,7 +444,7 @@ export default function ProductsClient({
 
         <div className="flex items-center gap-2">
           <span className="text-sm">Show</span>
-          <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+          <Select value={String(limit)} onValueChange={handleLimitChange}>
             <SelectTrigger className="w-[80px]">
               <SelectValue />
             </SelectTrigger>
@@ -412,8 +466,8 @@ export default function ProductsClient({
           <div className="flex gap-1 flex-1">
             <Input
               placeholder="Search product (details)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               onKeyPress={handleKeyPress}
               className="focus:ring-green-500 flex-1"
             />
@@ -456,7 +510,7 @@ export default function ProductsClient({
             </SelectContent>
           </Select>
 
-          <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+          <Select value={String(limit)} onValueChange={handleLimitChange}>
             <SelectTrigger className="w-[100px]">
               <SelectValue />
             </SelectTrigger>
@@ -574,7 +628,7 @@ export default function ProductsClient({
 
           {totalPages > 1 && (
             <div className="mt-6 flex justify-center gap-2">
-              <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>
+              <Button variant="outline" disabled={page === 1} onClick={() => handlePageChange(page - 1)}>Previous</Button>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum
                 if (totalPages <= 5) pageNum = i + 1
@@ -585,14 +639,14 @@ export default function ProductsClient({
                   <Button
                     key={pageNum}
                     variant={pageNum === page ? 'default' : 'outline'}
-                    onClick={() => setPage(pageNum)}
+                    onClick={() => handlePageChange(pageNum)}
                     className={pageNum === page ? 'bg-green-500 hover:bg-green-600' : ''}
                   >
                     {pageNum}
                   </Button>
                 )
               })}
-              <Button variant="outline" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</Button>
+              <Button variant="outline" disabled={page === totalPages} onClick={() => handlePageChange(page + 1)}>Next</Button>
             </div>
           )}
         </>
