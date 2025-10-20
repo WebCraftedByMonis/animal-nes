@@ -60,3 +60,6 @@ import*.js
 
 aiven-backup.sql
 backup.sh
+
+# Ignore feeds folder
+/feeds/

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { formatDistanceToNow } from 'date-fns'
@@ -19,9 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  User2, Mail, Phone, MapPin, Calendar, 
+  User2, Mail, Phone, MapPin, Calendar,
   GraduationCap, BookOpen, Award, Building2,
-  Search, ExternalLink, Filter, Users
+  Search, Filter, Users
 } from 'lucide-react'
 
 interface Partner {
@@ -46,32 +47,44 @@ interface Partner {
   createdAt: string
 }
 
-interface StudentsClientProps {
-  initialPartners: Partner[]
-}
+export default function StudentsClient() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-export default function StudentsClient({ initialPartners }: StudentsClientProps) {
-  const [partners, setPartners] = useState<Partner[]>(initialPartners)
-  const [search, setSearch] = useState('')
-  const [specialization, setSpecialization] = useState('all')
-  const [isLoading, setIsLoading] = useState(false)
-  const [page, setPage] = useState(1)
+  // Initialize state from URL params
+  const [partners, setPartners] = useState<Partner[]>([])
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '') // Input field value
+  const [search, setSearch] = useState(searchParams.get('search') || '') // Actual search query
+  const [specialization, setSpecialization] = useState(searchParams.get('specialization') || 'all')
+  const [isLoading, setIsLoading] = useState(true)
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [limit] = useState(12) // Show 12 cards per page
-  const [total, setTotal] = useState(initialPartners.length)
+  const [total, setTotal] = useState(0)
 
-  const fetchPartners = useCallback(async (searchTerm = search, spec = specialization) => {
+  // Update URL params when filters change
+  const updateURL = useCallback((newPage: number, newSearch: string, newSpec: string) => {
+    const params = new URLSearchParams()
+    if (newPage > 1) params.set('page', String(newPage))
+    if (newSearch) params.set('search', newSearch)
+    if (newSpec !== 'all') params.set('specialization', newSpec)
+
+    const queryString = params.toString()
+    router.push(queryString ? `/Students?${queryString}` : '/Students', { scroll: false })
+  }, [router])
+
+  const fetchPartners = useCallback(async () => {
     setIsLoading(true)
     try {
       const { data } = await axios.get('/api/partner', {
-        params: { 
-          search: searchTerm, 
-          specialization: spec === 'all' ? '' : spec,
+        params: {
+          search: search || undefined,
+          specialization: specialization === 'all' ? undefined : specialization,
           partnerTypeGroup: 'student',
-          page, 
-          limit 
+          page,
+          limit
         }
       })
-      
+
       setPartners(data.data || [])
       setTotal(data.meta?.total || 0)
     } catch (error) {
@@ -82,27 +95,37 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
     } finally {
       setIsLoading(false)
     }
-  }, [page, limit])
+  }, [page, limit, search, specialization])
 
-  // Handle page changes - maintain current search/filter
+  // Fetch data when dependencies change
   useEffect(() => {
-    if (page > 1) {
-      fetchPartners(search, specialization)
-    }
-  }, [page])
+    fetchPartners()
+  }, [fetchPartners])
 
-  const resetFilters = () => {
-    setSearch('')
-    setSpecialization('all')
-    setPage(1)
-    // Reset to initial data
-    setPartners(initialPartners)
-    setTotal(initialPartners.length)
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    updateURL(newPage, search, specialization)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSearch = () => {
+    setSearch(searchInput) // Update the actual search query
     setPage(1)
-    fetchPartners(search, specialization)
+    updateURL(1, searchInput, specialization)
+  }
+
+  const handleSpecializationChange = (value: string) => {
+    setSpecialization(value)
+    setPage(1)
+    updateURL(1, search, value)
+  }
+
+  const resetFilters = () => {
+    setSearchInput('')
+    setSearch('')
+    setSpecialization('all')
+    setPage(1)
+    updateURL(1, '', 'all')
   }
 
   if (isLoading && partners.length === 0) {
@@ -146,14 +169,14 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search by name or location..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10 focus:border-green-500 focus:ring-green-500"
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
           
-          <Select value={specialization} onValueChange={setSpecialization}>
+          <Select value={specialization} onValueChange={handleSpecializationChange}>
             <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
               <SelectValue placeholder="Filter by specialization" />
             </SelectTrigger>
@@ -205,8 +228,9 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {partners.map((partner) => (
-            <Card key={partner.id} className="hover:shadow-lg transition-shadow overflow-hidden group">
-              <CardContent className="p-0">
+            <Link key={partner.id} href={`/Students/${partner.id}`}>
+              <Card className="hover:shadow-lg transition-shadow overflow-hidden group cursor-pointer">
+                <CardContent className="p-0">
                 {/* Partner Image */}
                 <div className="h-48 bg-gray-100 dark:bg-zinc-800">
                   {partner.partnerImage?.url ? (
@@ -306,17 +330,6 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
                     </div>
                   )}
 
-                  {/* View Profile Button */}
-                  <div className="pt-2">
-                    <Link 
-                      href={`/Students/${partner.id}`}
-                      className="inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors group"
-                    >
-                      View Profile
-                      <ExternalLink className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
-
                   {/* Join Date */}
                   <div className="flex items-center justify-center pt-2 border-t border-gray-100 dark:border-zinc-700">
                     <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
@@ -327,6 +340,7 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
                 </div>
               </CardContent>
             </Card>
+            </Link>
           ))}
         </div>
       )}
@@ -336,13 +350,13 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
         <div className="flex justify-center items-center space-x-2 pt-6">
           <Button
             variant="outline"
-            onClick={() => setPage(page - 1)}
+            onClick={() => handlePageChange(page - 1)}
             disabled={page === 1}
             className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
           >
             Previous
           </Button>
-          
+
           <div className="flex items-center space-x-1">
             {[...Array(Math.min(5, Math.ceil(total / limit)))].map((_, i) => {
               const pageNum = i + 1
@@ -350,9 +364,9 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
                 <Button
                   key={pageNum}
                   variant={page === pageNum ? "default" : "outline"}
-                  onClick={() => setPage(pageNum)}
-                  className={page === pageNum 
-                    ? "bg-green-600 hover:bg-green-700" 
+                  onClick={() => handlePageChange(pageNum)}
+                  className={page === pageNum
+                    ? "bg-green-600 hover:bg-green-700"
                     : "border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
                   }
                 >
@@ -361,10 +375,10 @@ export default function StudentsClient({ initialPartners }: StudentsClientProps)
               )
             })}
           </div>
-          
+
           <Button
             variant="outline"
-            onClick={() => setPage(page + 1)}
+            onClick={() => handlePageChange(page + 1)}
             disabled={page >= Math.ceil(total / limit)}
             className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
           >
