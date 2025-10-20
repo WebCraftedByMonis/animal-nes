@@ -7,7 +7,22 @@ import type { NextAuthConfig } from "next-auth";
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
   trustHost: true,
+  session: {
+    strategy: "database" as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    updateAge: 24 * 60 * 60, // Update session in DB every 24 hours
+  },
   cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
+      }
+    },
     pkceCodeVerifier: {
       name: `next-auth.pkce.code_verifier`,
       options: {
