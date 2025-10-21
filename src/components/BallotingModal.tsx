@@ -17,15 +17,15 @@ export default function BallotingModal() {
   const router = useRouter();
 
   useEffect(() => {
-    // Show modal after 20 seconds initially
+    // Show modal after 1 minute initially
     const initialTimer = setTimeout(() => {
       setIsOpen(true);
-    }, 20000); // 20 seconds
+    }, 60000); // 1 minute (60 seconds)
 
     // Set up recurring timer
     const recurringTimer = setInterval(() => {
       setIsOpen(true);
-    }, 20000); // Every 20 seconds
+    }, 60000); // Every 1 minute (60 seconds)
 
     // Cleanup timers on unmount
     return () => {
