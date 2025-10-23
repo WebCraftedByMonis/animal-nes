@@ -747,12 +747,21 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             className="flex flex-col sm:flex-row justify-center gap-4"
           >
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button size="lg" className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
+              <Button
+                size="lg"
+                className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto"
+                onClick={() => openModal('button')}
+              >
                 Sign Up Free
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto"
+                onClick={() => window.open('https://wa.me/923354145431', '_blank')}
+              >
                 Contact Sales
               </Button>
             </motion.div>
