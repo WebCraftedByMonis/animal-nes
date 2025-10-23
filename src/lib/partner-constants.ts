@@ -1,7 +1,7 @@
 // Partner Types and Specializations Constants
 
 export const partnerTypeOptions = [
-  'Veterinarian (Clinic, Hospital, Consultant)', 
+  'Veterinarian (Clinic, Hospital, Consultant)',
   'Sales and Marketing (Dealer, Distributor, Sales Person)',
   'Veterinary Assistant',
   'Student'

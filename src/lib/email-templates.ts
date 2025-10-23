@@ -353,3 +353,252 @@ export function getPatientDoctorAssignmentEmail(appointment: any, doctor: any) {
     text: `Great news! Dr. ${doctor.partnerName} has been assigned to your ${appointment.species}. The doctor will contact you at ${appointment.doctor}. Please keep your phone available.`
   };
 }
+
+// Welcome email for new users
+export function getUserWelcomeEmail(user: any) {
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #22c55e; color: white; padding: 30px 20px; border-radius: 10px 10px 0 0; text-align: center; }
+    .content { background: #f9f9f9; padding: 30px 20px; border: 1px solid #ddd; border-radius: 0 0 10px 10px; }
+    .info-box { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #22c55e; }
+    .features { background: #e8f5e9; padding: 20px; margin: 20px 0; border-radius: 8px; }
+    .footer { background: #f8f9fa; padding: 20px; margin-top: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 5px; }
+    .feature-item { margin: 10px 0; padding-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 32px;">🎉 Welcome to Animal Wellness!</h1>
+      <p style="margin: 10px 0 0 0; font-size: 18px;">We're thrilled to have you join our community</p>
+    </div>
+
+    <div class="content">
+      <p style="font-size: 16px;">Dear ${user.name || 'Valued Member'},</p>
+
+      <p>Thank you for joining <strong>AnimalWellness.shop</strong> - Pakistan's premier platform for comprehensive animal care and wellness services!</p>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #22c55e;">🐾 Your Account is Ready!</h3>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${user.name || 'Not provided'}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
+        <p style="margin: 5px 0;"><strong>Account Created:</strong> ${new Date(user.createdAt).toLocaleDateString('en-PK', {
+          dateStyle: 'long',
+          timeZone: 'Asia/Karachi'
+        })}</p>
+      </div>
+
+      <div class="features">
+        <h3 style="margin-top: 0; color: #22c55e; text-align: center;">🌟 What You Can Do on Animal Wellness</h3>
+
+        <div class="feature-item">
+          <strong>🩺 Book Veterinary Consultations</strong><br>
+          <span style="color: #666;">Connect with qualified veterinarians for physical, virtual, or emergency consultations</span>
+        </div>
+
+        <div class="feature-item">
+          <strong>🛒 Shop Premium Products</strong><br>
+          <span style="color: #666;">Browse and purchase quality animal food, accessories, and healthcare products</span>
+        </div>
+
+        <div class="feature-item">
+          <strong>🐕 Buy & Sell Animals</strong><br>
+          <span style="color: #666;">Find your perfect pet or find loving homes for animals responsibly</span>
+        </div>
+
+        <div class="feature-item">
+          <strong>🤝 Free Consultations for Needy</strong><br>
+          <span style="color: #666;">Access free veterinary care if you need assistance with animal welfare</span>
+        </div>
+
+        <div class="feature-item">
+          <strong>📱 24/7 Emergency Services</strong><br>
+          <span style="color: #666;">Get urgent veterinary help when you need it most</span>
+        </div>
+      </div>
+
+      <div style="background: #fff3cd; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #ffc107;">
+        <h4 style="margin-top: 0;">🚀 Get Started Now:</h4>
+        <ol style="margin: 10px 0; padding-left: 20px; line-height: 2;">
+          <li>Complete your profile with contact information</li>
+          <li>Browse our services and products</li>
+          <li>Book your first veterinary consultation</li>
+          <li>Explore our marketplace for animals and products</li>
+          <li>Join our community of animal lovers!</li>
+        </ol>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <p style="font-size: 18px; color: #22c55e; font-weight: bold;">We're here to help your animals thrive! 🐾</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p><strong>Need Help?</strong></p>
+      <p>If you have any questions or need assistance, our support team is here to help!</p>
+      <p style="margin-top: 15px;">
+        <strong>Animal Wellness</strong><br>
+        Your Partner in Animal Care<br>
+        www.animalwellness.shop
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return {
+    subject: '🎉 Welcome to Animal Wellness - Your Journey Begins!',
+    html: emailHtml,
+    text: `Welcome to Animal Wellness, ${user.name || 'Valued Member'}! Thank you for joining our platform. You can now book veterinary consultations, shop for animal products, and access our comprehensive animal care services. Visit www.animalwellness.shop to get started!`
+  };
+}
+
+// Welcome email for new partners with ID/balloting number
+export function getPartnerWelcomeEmail(partner: any) {
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 30px 20px; border-radius: 10px 10px 0 0; text-align: center; }
+    .content { background: #f9f9f9; padding: 30px 20px; border: 1px solid #ddd; border-radius: 0 0 10px 10px; }
+    .id-box { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 25px; margin: 25px 0; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .info-box { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #22c55e; }
+    .benefits { background: #e8f5e9; padding: 20px; margin: 20px 0; border-radius: 8px; }
+    .footer { background: #f8f9fa; padding: 20px; margin-top: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 5px; }
+    .benefit-item { margin: 12px 0; padding-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 36px;">🎊 Welcome Aboard!</h1>
+      <p style="margin: 10px 0 0 0; font-size: 20px;">You're Now Part of the Animal Wellness Team</p>
+    </div>
+
+    <div class="content">
+      <p style="font-size: 16px;">Dear ${partner.partnerName},</p>
+
+      <p>Congratulations and welcome to <strong>Animal Wellness</strong>! We are delighted to have you join our network of dedicated professionals committed to animal care and welfare.</p>
+
+      <div class="id-box">
+        <h2 style="margin: 0 0 10px 0; font-size: 24px;">Your Partner ID</h2>
+        <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h1 style="margin: 0; font-size: 48px; font-weight: bold; letter-spacing: 2px;">#${partner.id}</h1>
+        </div>
+        <p style="margin: 10px 0 0 0; font-size: 16px;">🎟️ This is also your <strong>Balloting Number</strong> for all prize draws and incentives!</p>
+      </div>
+
+      <div style="background: #fff3cd; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #ffc107;">
+        <h4 style="margin-top: 0;">⚠️ Important - Save Your Partner ID:</h4>
+        <p style="margin: 10px 0;">Your Partner ID <strong>#${partner.id}</strong> is unique and will be used for:</p>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li><strong>Balloting & Prize Draws</strong> - Participate in monthly and special incentive programs</li>
+          <li><strong>Case Assignments</strong> - Track your appointment history</li>
+          <li><strong>Commission & Payments</strong> - Manage your earnings</li>
+          <li><strong>Performance Reports</strong> - View your statistics and achievements</li>
+          <li><strong>Partner Portal Access</strong> - Your unique identifier in the system</li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #22c55e;">👤 Your Profile Summary</h3>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${partner.partnerName}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${partner.partnerEmail}</p>
+        ${partner.partnerMobileNumber ? `<p style="margin: 5px 0;"><strong>Mobile:</strong> ${partner.partnerMobileNumber}</p>` : ''}
+        ${partner.cityName ? `<p style="margin: 5px 0;"><strong>Location:</strong> ${partner.cityName}${partner.state ? `, ${partner.state}` : ''}</p>` : ''}
+        <p style="margin: 5px 0;"><strong>Partner Type:</strong> ${partner.partnerType || 'Professional'}</p>
+        ${partner.specialization ? `<p style="margin: 5px 0;"><strong>Specialization:</strong> ${partner.specialization}</p>` : ''}
+        <p style="margin: 5px 0;"><strong>Registration Date:</strong> ${new Date(partner.createdAt).toLocaleDateString('en-PK', {
+          dateStyle: 'long',
+          timeZone: 'Asia/Karachi'
+        })}</p>
+      </div>
+
+      <div class="benefits">
+        <h3 style="margin-top: 0; color: #22c55e; text-align: center;">🌟 Partner Benefits & Opportunities</h3>
+
+        <div class="benefit-item">
+          <strong>📋 Case Assignments</strong><br>
+          <span style="color: #666;">Receive veterinary consultation requests in your area via email</span>
+        </div>
+
+        <div class="benefit-item">
+          <strong>💰 Competitive Earnings</strong><br>
+          <span style="color: #666;">Earn consultation fees and commissions on products and services</span>
+        </div>
+
+        <div class="benefit-item">
+          <strong>🎟️ Monthly Balloting</strong><br>
+          <span style="color: #666;">Your ID #${partner.id} enters you in monthly prize draws and incentive programs</span>
+        </div>
+
+        <div class="benefit-item">
+          <strong>📱 Digital Platform</strong><br>
+          <span style="color: #666;">Access to our complete digital system for appointments, forms, and records</span>
+        </div>
+
+        <div class="benefit-item">
+          <strong>🤝 Professional Network</strong><br>
+          <span style="color: #666;">Connect with fellow veterinarians and animal care professionals</span>
+        </div>
+
+        <div class="benefit-item">
+          <strong>📊 Performance Dashboard</strong><br>
+          <span style="color: #666;">Track your cases, earnings, and performance metrics</span>
+        </div>
+      </div>
+
+      <div style="background: #dbeafe; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #3b82f6;">
+        <h4 style="margin-top: 0; color: #1e40af;">🚀 Next Steps to Get Started:</h4>
+        <ol style="margin: 10px 0; padding-left: 20px; line-height: 2;">
+          <li><strong>Keep Your Partner ID Safe:</strong> Note down #${partner.id} for all future reference</li>
+          <li><strong>Check Your Email:</strong> You'll receive case notifications in your area</li>
+          <li><strong>Complete Your Profile:</strong> Add your available days and consultation hours</li>
+          <li><strong>Set Up Products:</strong> List any products or services you offer</li>
+          <li><strong>Wait for Cases:</strong> Accept appointments through email notifications</li>
+          <li><strong>Fill Required Forms:</strong> Complete history and prescription forms for each case</li>
+        </ol>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0; padding: 20px; background: white; border-radius: 8px; border: 2px dashed #22c55e;">
+        <p style="font-size: 20px; color: #22c55e; font-weight: bold; margin: 10px 0;">🎯 Your Balloting Number: #${partner.id}</p>
+        <p style="color: #666; margin: 10px 0;">Participate in monthly draws - Good Luck! 🍀</p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <p style="font-size: 18px; color: #22c55e; font-weight: bold;">Welcome to the team! Let's make a difference together! 🐾</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p><strong>Need Help Getting Started?</strong></p>
+      <p>If you have any questions about your account, case assignments, or the balloting system,<br>our support team is here to assist you!</p>
+      <p style="margin-top: 15px;">
+        <strong>Animal Wellness Partner Program</strong><br>
+        Empowering Professionals in Animal Care<br>
+        www.animalwellness.shop
+      </p>
+      <p style="margin-top: 10px; font-size: 10px; color: #999;">
+        Partner ID: #${partner.id} | Registered: ${new Date(partner.createdAt).toLocaleDateString('en-PK')}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return {
+    subject: `🎊 Welcome to Animal Wellness - Your Partner ID: #${partner.id} (Balloting Number)`,
+    html: emailHtml,
+    text: `Welcome to Animal Wellness, ${partner.partnerName}! Your Partner ID is #${partner.id} - this is also your balloting number for monthly prize draws. You'll receive case assignments via email. Thank you for joining our team!`
+  };
+}

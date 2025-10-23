@@ -6,9 +6,9 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
-import { 
-  partnerTypeOptions, 
-  getSpecializationsByPartnerType 
+import {
+  partnerTypeOptions,
+  getSpecializationsByPartnerType
 } from '@/lib/partner-constants'
 import {
   Table,

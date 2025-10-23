@@ -20,12 +20,14 @@ export function SuggestiveInput({ suggestions, value, onChange, placeholder }: S
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="justify-between w-full">
-          {value ? value : placeholder}
-          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+        <Button variant="outline" role="combobox" className="justify-between w-full overflow-hidden">
+          <span className="truncate text-left flex-1">
+            {value ? value : placeholder}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0">
+      <PopoverContent className="p-0 w-full">
         <Command>
           <CommandInput
             placeholder={`Type or search ${placeholder.toLowerCase()}...`}
@@ -33,7 +35,7 @@ export function SuggestiveInput({ suggestions, value, onChange, placeholder }: S
             onValueChange={onChange}
           />
           <CommandEmpty>No match found.</CommandEmpty>
-          <CommandGroup>
+          <CommandGroup className="max-h-64 overflow-auto">
             {suggestions.map((item) => (
               <CommandItem
                 key={item}
@@ -42,10 +44,11 @@ export function SuggestiveInput({ suggestions, value, onChange, placeholder }: S
                   onChange(currentValue);
                   setOpen(false);
                 }}
+                className="text-sm"
               >
-                {item}
+                <span className="flex-1">{item}</span>
                 {value === item && (
-                  <Check className="ml-auto h-4 w-4" />
+                  <Check className="ml-2 h-4 w-4 flex-shrink-0" />
                 )}
               </CommandItem>
             ))}

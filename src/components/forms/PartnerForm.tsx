@@ -14,9 +14,9 @@ import Image from 'next/image';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'react-hot-toast';
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput';
-import { 
-  partnerTypeOptions, 
-  getSpecializationsByPartnerType 
+import {
+  partnerTypeOptions,
+  getSpecializationsByPartnerType
 } from '@/lib/partner-constants';
 
 const genderOptions = ['MALE', 'FEMALE'] as const;
@@ -231,12 +231,14 @@ export default function PartnerForm({
               name="partnerType"
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
-                    <SelectValue placeholder="Select partner type" />
+                  <SelectTrigger className="focus:border-green-500 focus:ring-green-500 w-full">
+                    <SelectValue placeholder="Select partner type" className="truncate" />
                   </SelectTrigger>
                   <SelectContent>
                     {partnerTypeOptions.map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                      <SelectItem key={type} value={type} className="text-sm">
+                        {type}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

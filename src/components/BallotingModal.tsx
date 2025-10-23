@@ -12,26 +12,30 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+const MODAL_STORAGE_KEY = 'ballotingModalShown';
+
 export default function BallotingModal() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // Show modal after 1 minute initially
-    const initialTimer = setTimeout(() => {
-      setIsOpen(true);
-    }, 60000); // 1 minute (60 seconds)
+    // Check if modal has been shown before
+    const hasSeenModal = localStorage.getItem(MODAL_STORAGE_KEY);
 
-    // Set up recurring timer
-    const recurringTimer = setInterval(() => {
-      setIsOpen(true);
-    }, 60000); // Every 1 minute (60 seconds)
+    // Only show modal if user hasn't seen it before
+    if (!hasSeenModal) {
+      // Show modal after 1 minute
+      const initialTimer = setTimeout(() => {
+        setIsOpen(true);
+        // Mark modal as shown in localStorage
+        localStorage.setItem(MODAL_STORAGE_KEY, 'true');
+      }, 60000); // 1 minute (60 seconds)
 
-    // Cleanup timers on unmount
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(recurringTimer);
-    };
+      // Cleanup timer on unmount
+      return () => {
+        clearTimeout(initialTimer);
+      };
+    }
   }, []);
 
   const handleRegister = () => {

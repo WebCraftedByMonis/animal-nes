@@ -185,8 +185,20 @@ async function POST(request: NextRequest) {
     });
 
     console.log('🎉 Transaction completed successfully');
+
+    // Send welcome email to new partner with their ID/balloting number
+    if (newPartner.partnerEmail) {
+      console.log('📧 Sending welcome email to new partner...');
+      const { sendPartnerWelcomeEmail } = await import('@/lib/email-service');
+
+      // Send email in background (non-blocking)
+      sendPartnerWelcomeEmail(newPartner).catch((error) => {
+        console.error('Failed to send welcome email to partner:', error);
+      });
+    }
+
     console.log('📤 Returning partner data...');
-    
+
     return NextResponse.json(newPartner, { status: 201 });
     
   } catch (error: unknown) {

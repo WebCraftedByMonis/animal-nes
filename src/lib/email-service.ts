@@ -250,26 +250,72 @@ export async function sendCaseTakenNotification(
 export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
   const baseUrl = 'http://www.animalwellness.shop';
   const results = [];
-  
+
   for (const vet of veterinarians) {
     if (vet.partnerEmail) {
       // Create unique accept/decline links for each doctor
       const acceptLink = `${baseUrl}/api/appointments/accept?appointmentId=${appointment.id}&doctorId=${vet.id}&action=accept`;
       const declineLink = `${baseUrl}/api/appointments/accept?appointmentId=${appointment.id}&doctorId=${vet.id}&action=decline`;
-      
+
       // Send only basic info (Phase 1)
       const result = await sendInitialNotification(vet, appointment, acceptLink, declineLink);
-      
+
       results.push({
         veterinarian: vet.partnerName,
         email: vet.partnerEmail,
         ...result
       });
-      
+
       // Small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
-  
+
   return results;
+}
+
+// Send welcome email to new users
+export async function sendUserWelcomeEmail(user: any) {
+  try {
+    const { getUserWelcomeEmail } = await import('./email-templates');
+    const emailContent = getUserWelcomeEmail(user);
+
+    const mailOptions = {
+      from: `"Animal Wellness" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ Welcome email sent to user: ${user.email} (${user.name})`);
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('❌ Error sending user welcome email:', error);
+    return { success: false, error };
+  }
+}
+
+// Send welcome email to new partners with ID/balloting number
+export async function sendPartnerWelcomeEmail(partner: any) {
+  try {
+    const { getPartnerWelcomeEmail } = await import('./email-templates');
+    const emailContent = getPartnerWelcomeEmail(partner);
+
+    const mailOptions = {
+      from: `"Animal Wellness Partner Program" <${process.env.EMAIL_USER}>`,
+      to: partner.partnerEmail,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ Welcome email sent to partner: ${partner.partnerEmail} (${partner.partnerName}) - ID: #${partner.id}`);
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('❌ Error sending partner welcome email:', error);
+    return { success: false, error };
+  }
 }

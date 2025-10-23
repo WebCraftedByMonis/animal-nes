@@ -49,6 +49,20 @@ export const authConfig = {
       return session;
     },
   },
+  events: {
+    async createUser({ user }: { user: any }) {
+      // Send welcome email when a new user signs up for the first time
+      console.log('🎉 New user created:', user.email);
+
+      // Import the email service
+      const { sendUserWelcomeEmail } = await import('./email-service');
+
+      // Send welcome email in the background (non-blocking)
+      sendUserWelcomeEmail(user).catch((error) => {
+        console.error('Failed to send welcome email to user:', error);
+      });
+    },
+  },
   pages: {
     signIn: "/login",
   },
