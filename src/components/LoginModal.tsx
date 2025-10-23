@@ -29,7 +29,8 @@ function LoginModalContent({ isOpen, onClose, trigger = 'button' }: Required<Log
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn('google')
+      // Sign in with Google and redirect back to the current page (not /login)
+      await signIn('google', { callbackUrl: window.location.pathname })
     } catch (error) {
       console.error('Sign in error:', error)
     } finally {

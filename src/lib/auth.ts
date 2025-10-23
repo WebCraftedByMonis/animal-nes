@@ -63,9 +63,8 @@ export const authConfig = {
       });
     },
   },
-  pages: {
-    signIn: "/login",
-  },
+  // Note: No custom signIn page for regular users (Google OAuth)
+  // The /login page is reserved for admin authentication only
 } satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
