@@ -10,7 +10,6 @@ import Footer from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
 import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import LoginModal from "@/components/LoginModal";
-import BallotingModal from "@/components/BallotingModal";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.animalwellness.shop"),
@@ -105,7 +104,6 @@ export default function RootLayout({
                   <Navbar />
                   <Toaster position="top-center" />
                   <LoginModal />
-                  <BallotingModal />
 
                   {/* Main content with padding-top to account for fixed navbar */}
                   <main className="flex-1 pt-14 sm:pt-16">
