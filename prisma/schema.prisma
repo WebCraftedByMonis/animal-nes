@@ -851,10 +851,3 @@ model PartnerDistribution {
   updatedAt       DateTime  @updatedAt
 }
 
-model PartnerToStartTime {
-  A Int
-  B Int
-
-  @@id([A, B])
-  @@map("_PartnerToStartTime")
-}
