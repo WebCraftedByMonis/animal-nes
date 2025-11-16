@@ -26,7 +26,8 @@ import {
   Hammer,
   LogOut,
   Home,
-  Share2
+  Share2,
+  DollarSign
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -51,6 +52,7 @@ export function AppSidebar() {
   const [openPrescriptionForm, setOpenPrescriptionForm] = useState(false)
   const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
   const [openAdditionalFees, setOpenAdditionalFees] = useState(false)
+  const [openFinance, setOpenFinance] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -334,6 +336,24 @@ export function AppSidebar() {
                     <span className="hover:text-green-500">Cross Poster</span>
                   </Link>
                 </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Finance / Accounting */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenFinance(!openFinance)}>
+                  <DollarSign className="w-4 h-4" />
+                  <span className="hover:text-green-500">Finance & Accounting</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openFinance ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openFinance && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/finance" className="block text-sm text-muted-foreground hover:underline">Financial Overview</Link>
+                    <Link href="/dashboard/finance/partners" className="block text-sm text-muted-foreground hover:underline">Business Partners</Link>
+                    <Link href="/dashboard/finance/transactions" className="block text-sm text-muted-foreground hover:underline">Income & Transactions</Link>
+                    <Link href="/dashboard/finance/expenses" className="block text-sm text-muted-foreground hover:underline">Expenses</Link>
+                    <Link href="/dashboard/finance/distributions" className="block text-sm text-muted-foreground hover:underline">Partner Distributions</Link>
+                  </div>
+                )}
               </SidebarMenuItem>
 
               {/* Divider */}

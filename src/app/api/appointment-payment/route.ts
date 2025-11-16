@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { uploadImage } from '@/lib/cloudinary';
 import { z } from 'zod';
+import { createConsultationFeeTransaction } from '@/lib/autoTransaction';
 
 // Validation schema
 const paymentSchema = z.object({
@@ -147,12 +148,24 @@ export async function POST(request: NextRequest) {
         include: {
           appointment: {
             include: {
-              customer: true
+              customer: true,
+              acceptedPartner: true
             }
           }
         }
       });
-      
+
+      // ✅ Auto-create CNS transaction for consultation fee (skip for needy/free consultations)
+      if (validatedConsultationType !== 'needy' && validation.data.consultationFee > 0) {
+        const doctorName = paymentInfo.appointment.acceptedPartner?.partnerName || 'Doctor';
+        await createConsultationFeeTransaction(
+          appointmentIdNum,
+          validation.data.consultationFee,
+          doctorName,
+          validatedPaymentMethod || undefined
+        );
+      }
+
       // TODO: Trigger WhatsApp notification to doctors here
       // This will be implemented in the WhatsApp integration phase
       // For now, just log it

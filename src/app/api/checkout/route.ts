@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { createProductSaleTransaction, createAnimalSaleTransaction } from '@/lib/autoTransaction'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -84,8 +85,33 @@ export async function POST(req: NextRequest) {
       where: { user: { email: session.user.email } },
     })
 
-    return NextResponse.json({ 
-      success: true, 
+    // ✅ Auto-create CNS transactions for each item sold
+    // Create transactions for products
+    for (const item of cart) {
+      if (item.product) {
+        const productAmount = item.quantity * item.variant.customerPrice
+        await createProductSaleTransaction(
+          order.id,
+          productAmount,
+          `${item.product.productName} (${item.variant.variant})`,
+          paymentMethod
+        )
+      }
+    }
+
+    // Create transactions for animals
+    for (const item of animalCart) {
+      const animalAmount = item.quantity * item.animal.totalPrice
+      await createAnimalSaleTransaction(
+        order.id,
+        animalAmount,
+        `${item.animal.specie} - ${item.animal.breed}`,
+        paymentMethod
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
       orderId: order.id,
       total: calculatedTotal,
       shippingCharges: validatedShippingCharge

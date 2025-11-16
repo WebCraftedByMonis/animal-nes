@@ -5,7 +5,8 @@
       "Read(//c/Users/as/downloads/animal-nes-main/animal-nes-main/src/app/buy/[id]/**)",
       "Read(//c/Users/as/downloads/animal-nes-main/animal-nes-main/src/app/sell/**)",
       "Read(//c/Users/as/Pictures/Screenshots/**)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

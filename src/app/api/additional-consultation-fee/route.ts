@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { uploadImage } from '@/lib/cloudinary';
+import { createAdditionalConsultationTransaction } from '@/lib/autoTransaction';
 
 const prisma = new PrismaClient();
 
@@ -80,6 +81,18 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
       },
     });
+
+    // ✅ Auto-create CNS transaction for additional consultation fee
+    const appointmentId = prescription.historyForm?.appointment?.id;
+    if (appointmentId) {
+      await createAdditionalConsultationTransaction(
+        additionalFee.id,
+        appointmentId,
+        consultationFee,
+        feeDescription,
+        paymentMethod
+      );
+    }
 
     return NextResponse.json({
       success: true,
