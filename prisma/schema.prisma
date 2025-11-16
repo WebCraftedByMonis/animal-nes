@@ -850,3 +850,12 @@ model PartnerDistribution {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
+
+model _PartnerToStartTime {
+  A Int
+  B Int
+
+  @@id([A, B])
+
+  @@map("_PartnerToStartTime")
+}
