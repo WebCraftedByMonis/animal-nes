@@ -43,6 +43,13 @@ interface Company {
   createdAt: string
 }
 
+const formatWhatsAppNumber = (number: string) => {
+  if (number.startsWith('03')) {
+    return '+92' + number.slice(1);
+  }
+  return number.startsWith('+') ? number : '+' + number;
+};
+
 export default function CompanyDetailClient() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -157,8 +164,10 @@ export default function CompanyDetailClient() {
                   <Phone className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
-                    <a 
-                      href={`https://wa.me/${company.mobileNumber}`}
+                    <a
+                      href={`https://wa.me/${formatWhatsAppNumber(company.mobileNumber).replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors"
                     >
                       {company.mobileNumber}
