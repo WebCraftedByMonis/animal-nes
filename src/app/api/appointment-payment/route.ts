@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
           appointment: {
             include: {
               customer: true,
-              acceptedPartner: true
+              assignedDoctor: true
             }
           }
         }
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
 
       // ✅ Auto-create CNS transaction for consultation fee (skip for needy/free consultations)
       if (validatedConsultationType !== 'needy' && validation.data.consultationFee > 0) {
-        const doctorName = paymentInfo.appointment.acceptedPartner?.partnerName || 'Doctor';
+        const doctorName = paymentInfo.appointment.assignedDoctor?.partnerName || 'Doctor';
         await createConsultationFeeTransaction(
           appointmentIdNum,
           validation.data.consultationFee,
