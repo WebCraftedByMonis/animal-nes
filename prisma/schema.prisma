@@ -24,6 +24,8 @@ model DeliveryCharge {
   notes     String?  @db.Text
   city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@index([cityId])
 }
 
 model Product {
@@ -51,6 +53,9 @@ model Product {
   variants       ProductVariant[]
   cartItems      CartItem[]
   checkoutItems  CheckoutItem[]
+
+  @@index([companyId])
+  @@index([partnerId])
 }
 
 model ProductVariant {
@@ -64,6 +69,8 @@ model ProductVariant {
   productId      Int
   cartItems      CartItem[]
   checkoutItems  CheckoutItem[]
+
+  @@index([productId])
 }
 
 model ProductPdf {
@@ -74,6 +81,8 @@ model ProductPdf {
   productId Int?     @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model ProductImage {
@@ -85,6 +94,8 @@ model ProductImage {
   productId Int      @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model Company {
@@ -108,6 +119,8 @@ model CompanyImage {
   companyId Int?      @unique
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
+
+  @@index([companyId])
 }
 
 enum Gender {
@@ -151,6 +164,8 @@ model PartnerImage {
   partnerId Int?     @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([partnerId])
 }
 
 model StartTime {
@@ -198,6 +213,7 @@ model PartnerAvailableDay {
   partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   partnerId Int
   @@unique([day, partnerId])
+  @@index([partnerId])
 }
 
 model User {
@@ -235,6 +251,7 @@ model Account {
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -244,6 +261,8 @@ model Session {
   expires      DateTime
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -264,6 +283,8 @@ model CartItem {
   createdAt DateTime       @default(now())
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   @@unique([userId, productId, variantId])
+  @@index([productId])
+  @@index([variantId])
 }
 
 model Checkout {
@@ -280,6 +301,8 @@ model Checkout {
   status           String
   createdAt        DateTime        @default(now())
   items            CheckoutItem[]  @relation("CheckoutToItems")
+
+  @@index([userId])
 }
 
 model CheckoutItem {
@@ -294,6 +317,11 @@ model CheckoutItem {
   animal      SellAnimal?     @relation(fields: [animalId], references: [id], onDelete: Cascade)
   quantity    Int
   price       Float
+
+  @@index([checkoutId])
+  @@index([productId])
+  @@index([variantId])
+  @@index([animalId])
 }
 
 
@@ -308,6 +336,9 @@ model AnimalNews {
   isActive    Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([imageId])
+  @@index([pdfId])
 }
 
 model newsImage {
@@ -350,6 +381,8 @@ model SellAnimal {
   checkout        CheckoutItem[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
 }
 
 model SellAnimalImage {
@@ -360,6 +393,8 @@ model SellAnimalImage {
   sellAnimalId Int
   sellAnimal   SellAnimal @relation(fields: [sellAnimalId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+
+  @@index([sellAnimalId])
 }
 
 model SellAnimalVideo {
@@ -370,6 +405,8 @@ model SellAnimalVideo {
   sellAnimalId Int
   sellAnimal   SellAnimal @relation(fields: [sellAnimalId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+
+  @@index([sellAnimalId])
 }
 
 model AnimalCart {
@@ -379,6 +416,9 @@ model AnimalCart {
   animal    SellAnimal @relation(fields: [animalId], references: [id], onDelete: Cascade)
   animalId  Int
   quantity  Int        @default(1)
+
+  @@index([userId])
+  @@index([animalId])
 }
 
 model JobApplicant {
@@ -407,6 +447,10 @@ model JobApplicant {
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+
+  @@index([imageId])
+  @@index([cvId])
+  @@index([userId])
 }
 
 model ApplicantImage {
@@ -444,6 +488,8 @@ jobFormImageId Int?
   deadline       String       @db.Text
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+  @@index([jobFormImageId])
 }
 
 model JobFormImage {
@@ -478,6 +524,8 @@ model BannerImage {
   bannerId  Int      @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([bannerId])
 }
 
 model Testimonial {
@@ -489,6 +537,8 @@ model Testimonial {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model TraditionalJobPost {
@@ -503,12 +553,14 @@ model TraditionalJobPost {
 model TraditionalJobPostImage {
   id        Int                  @id @default(autoincrement())
   url       String               @db.Text
-  alt       String              
+  alt       String
   publicId  String?              @unique
   jobPost   TraditionalJobPost   @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
   jobPostId Int                  @unique
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
+
+  @@index([jobPostId])
 }
 
 enum AppointmentStatus {
@@ -547,17 +599,19 @@ model PaymentInfo {
   id                Int      @id @default(autoincrement())
   appointmentId     Int      @unique
   appointment       AppointmentRequest @relation(fields: [appointmentId], references: [id])
-  
+
   consultationType  String   // "needy", "virtual", "physical"
   consultationFee   Float    // 0, 500, 1000
   paymentMethod     String?  // "jazzcash", "easypaisa", "bank", "cod" - null for needy
-  
+
   // Payment screenshot (optional - not needed for COD)
   screenshotUrl     String?  @db.Text
   screenshotPublicId String? @db.Text
-  
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([appointmentId])
 }
 
 
@@ -581,25 +635,28 @@ model AppointmentRequest {
    assignedDoctorId    Int?
   assignedDoctor      Partner?  @relation(fields: [assignedDoctorId], references: [id])
   assignedAt          DateTime?
-  
+
   createdAt     DateTime          @default(now())
   status        AppointmentStatus @default(PENDING)
+
+  @@index([customerId])
+  @@index([assignedDoctorId])
 }
 
 
 
 model HistoryForm {
   id                    Int                @id @default(autoincrement())
-  
+
   // Owner/Contact Information
   name                  String             @db.Text
   contact               String             @db.Text
   address               String             @db.Text
-  
+
 
 appointmentId        Int?                 @unique
   appointment          AppointmentRequest?  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  
+
 
   // Animal Information
   animalSpecie          String             @db.Text
@@ -608,7 +665,7 @@ appointmentId        Int?                 @unique
   sex                   String             @db.Text
   tag                   String?            @db.Text
   use                   String?            @db.Text
-  
+
   // Medical History
   mainIssue             String             @db.Text
   duration              String             @db.Text
@@ -616,50 +673,52 @@ appointmentId        Int?                 @unique
   pastTreatment         String?            @db.Text
   allergies             String?            @db.Text
   surgeries             String?            @db.Text
-  
+
   // Reproductive Information
   reproductiveStatus    String?            @db.Text
   lastEvent             String?            @db.Text
-  
+
   // Management Information
   diet                  String?            @db.Text
   water                 String?            @db.Text
   housing               String?            @db.Text
-  
+
   // Production Data
   milkPerDay            String?            @db.Text
   eggPerDay             String?            @db.Text
   weightGain            String?            @db.Text
-  
+
   // Vaccination/Deworming
   vaccinationDeworming  Boolean?           @default(false)
   lastGiven             String?            @db.Text
   nextDue               String?            @db.Text
-  
+
   // Exposure History
   newAnimalContact      Boolean?           @default(false)
   transport             Boolean?           @default(false)
   outbreakNearby        Boolean?           @default(false)
   wildlife              Boolean?           @default(false)
   parasites             Boolean?           @default(false)
-  
+
   // Examination Details
   examinedBy            String?            @db.Text
   examinationDate       DateTime?
   referalNo             String?            @db.Text
-  
+
   // Relation
   prescriptionForm      PrescriptionForm?
-  
+
   // Timestamps
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+
+  @@index([appointmentId])
 }
 
 model PrescriptionForm {
   id                    Int                @id @default(autoincrement())
-  prescriptionNo        String?               
-  
+  prescriptionNo        String?
+
 
   // Doctor/Vet Information
   doctorName            String             @db.Text
@@ -668,58 +727,62 @@ model PrescriptionForm {
   clinicAddress         String?            @db.Text
   clinicPhone           String?            @db.Text
   clinicEmail           String?            @db.Text
-  
+
   // Owner Information
   ownerName             String             @db.Text
   ownerContact          String             @db.Text
-  
+
   // Animal Information
   animalSpecies         String             @db.Text
   breed                 String?            @db.Text
   age                   String?            @db.Text
   sex                   String?            @db.Text
-  
+
   // Clinical Information
   clinicalDiagnosis     String?            @db.Text
   labDiagnosis          String?            @db.Text
-  
+
   // Instructions
   continuePrevMedicine  Boolean            @default(false)
   followUpDate          DateTime?
   monitorSideEffects    Boolean            @default(false)
   maintainHygiene       Boolean            @default(false)
-  
+
   // Prescription Items
   prescriptionItems     PrescriptionItem[]
-  
+
   // Additional consultation fees
   additionalFees        AdditionalConsultationFee[]
-  
+
   // Relation
   historyForm           HistoryForm        @relation(fields: [historyFormId], references: [id], onDelete: Cascade)
   historyFormId         Int                @unique
-  
+
   // Timestamps
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+
+  @@index([historyFormId])
 }
 
 model PrescriptionItem {
   id                    Int                @id @default(autoincrement())
-  
+
   // Medicine Details
   medicineName          String             @db.Text
   strength              String?            @db.Text
   dosage                String             @db.Text
   duration              String             @db.Text
   notes                 String?            @db.Text
-  
+
   // Relations
   prescription          PrescriptionForm   @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
   prescriptionId        Int
-  
+
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+
+  @@index([prescriptionId])
 }
 model Admin {
   id        String   @id @default(cuid())
@@ -737,6 +800,8 @@ model AdminSession {
   admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([adminId])
 }
 
 enum AdditionalFeeStatus {
@@ -747,26 +812,28 @@ enum AdditionalFeeStatus {
 
 model AdditionalConsultationFee {
   id                Int                   @id @default(autoincrement())
-  
+
   // Link to prescription
   prescriptionId    Int
   prescription      PrescriptionForm      @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
-  
+
   // Fee details
   consultationFee   Float
   feeDescription    String                @db.Text
-  
+
   // Payment information
   paymentMethod     String                // "jazzcash", "easypaisa", "bank", "cod"
   screenshotUrl     String?               @db.Text
   screenshotPublicId String?              @db.Text
-  
+
   // Status
   status            AdditionalFeeStatus   @default(PENDING)
-  
+
   // Timestamps
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
+
+  @@index([prescriptionId])
 }
 
 // ============================================
@@ -830,6 +897,8 @@ model Expense {
   notes           String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([partnerId])
 }
 
 model PartnerDistribution {
@@ -849,5 +918,21 @@ model PartnerDistribution {
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([partnerId])
+}
+
+model MasterTrainerRegistration {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.Text
+  email           String
+  whatsappNumber  String
+  address         String   @db.Text
+  paymentConfirmed Boolean @default(false)
+  approved        Boolean  @default(false)
+  screenshotUrl   String?  @db.Text
+  screenshotPublicId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 

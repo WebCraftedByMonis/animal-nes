@@ -27,7 +27,8 @@ import {
   LogOut,
   Home,
   Share2,
-  DollarSign
+  DollarSign,
+  GraduationCap
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -48,6 +49,7 @@ export function AppSidebar() {
   const [openWebBanner, setOpenWebBanner] = useState(false)
   const [openTestomonials, setOpenTestomonials] = useState(false)
   const [openAdmins, setOpenAdmins] = useState(false)
+  const [openMasterTrainer, setOpenMasterTrainer] = useState(false)
   const [openHistoryForm, setOpenHistoryForm] = useState(false)
   const [openPrescriptionForm, setOpenPrescriptionForm] = useState(false)
   const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
@@ -281,6 +283,20 @@ export function AppSidebar() {
                 {openAdmins && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/admins" className="block text-sm text-muted-foreground hover:underline">Manage Admins</Link>
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+              {/* Master Trainer */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenMasterTrainer(!openMasterTrainer)}>
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="hover:text-green-500">Master Trainer</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openMasterTrainer ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openMasterTrainer && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/master-trainer-registrations" className="block text-sm text-muted-foreground hover:underline">View Registrations</Link>
                   </div>
                 )}
               </SidebarMenuItem>

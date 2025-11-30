@@ -250,26 +250,116 @@ export async function sendCaseTakenNotification(
 export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
   const baseUrl = 'http://www.animalwellness.shop';
   const results = [];
-  
+
   for (const vet of veterinarians) {
     if (vet.partnerEmail) {
       // Create unique accept/decline links for each doctor
       const acceptLink = `${baseUrl}/api/appointments/accept?appointmentId=${appointment.id}&doctorId=${vet.id}&action=accept`;
       const declineLink = `${baseUrl}/api/appointments/accept?appointmentId=${appointment.id}&doctorId=${vet.id}&action=decline`;
-      
+
       // Send only basic info (Phase 1)
       const result = await sendInitialNotification(vet, appointment, acceptLink, declineLink);
-      
+
       results.push({
         veterinarian: vet.partnerName,
         email: vet.partnerEmail,
         ...result
       });
-      
+
       // Small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
-  
+
   return results;
+}
+
+// Master Trainer Program - Approval Email
+export async function sendMasterTrainerApproval(registration: any) {
+  try {
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+    .header { background-color: #22c55e; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .info-box { background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; }
+    .warning-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
+    .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 28px;">🎉 Congratulations!</h1>
+      <p style="margin: 10px 0 0 0; font-size: 16px;">Your Registration has been Approved</p>
+    </div>
+
+    <div class="content">
+      <p style="font-size: 16px; color: #333;">Dear <strong>${registration.name}</strong>,</p>
+
+      <p style="font-size: 14px; color: #555; line-height: 1.6;">
+        We are pleased to inform you that your registration for the <strong>Master Trainer Program</strong> has been approved!
+      </p>
+
+      <div class="info-box">
+        <h3 style="margin: 0 0 10px 0; color: #166534; font-size: 16px;">Program Details</h3>
+        <p style="margin: 5px 0; color: #555;"><strong>Event Timing:</strong> November 29 - December 14, 2025</p>
+        <p style="margin: 5px 0; color: #555;"><strong>Zoom Link:</strong></p>
+        <a href="https://us05web.zoom.us/j/82580834219?pwd=wHuWFJ7oZCnsHcuiRykOiCOrXbCdjn.1"
+           style="color: #2563eb; word-break: break-all; font-size: 13px;">
+           https://us05web.zoom.us/j/82580834219?pwd=wHuWFJ7oZCnsHcuiRykOiCOrXbCdjn.1
+        </a>
+      </div>
+
+      <div class="warning-box">
+        <h3 style="margin: 0 0 10px 0; color: #92400e; font-size: 16px;">Important Information</h3>
+        <ul style="margin: 10px 0; padding-left: 20px; color: #555;">
+          <li style="margin: 5px 0;">Please join the Zoom meeting 10 minutes before the session starts</li>
+          <li style="margin: 5px 0;">Keep your camera on during the sessions</li>
+          <li style="margin: 5px 0;">Prepare notebooks and materials for taking notes</li>
+          <li style="margin: 5px 0;">Active participation is encouraged</li>
+        </ul>
+      </div>
+
+      <p style="font-size: 14px; color: #555; line-height: 1.6;">
+        If you have any questions or need further assistance, please don't hesitate to contact us.
+      </p>
+
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 5px 0; color: #666; font-size: 14px;"><strong>Contact Us:</strong></p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📞 Phone: (+92) 335-4145431</p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📧 Email: animalwellnessshop@gmail.com</p>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <p style="color: #22c55e; font-size: 16px; font-weight: bold;">We look forward to seeing you in the program!</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This is an automated email. Please do not reply to this message.</p>
+      <p>Animal Wellness Shop © 2025. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Animal Wellness Shop" <${process.env.EMAIL_USER}>`,
+      to: registration.email,
+      subject: 'Master Trainer Program - Registration Approved ✅',
+      html: emailHtml,
+      text: `Dear ${registration.name}, Your registration for the Master Trainer Program has been approved! Event Timing: November 29 - December 14, 2025. Zoom Link: https://us05web.zoom.us/j/82580834219?pwd=wHuWFJ7oZCnsHcuiRykOiCOrXbCdjn.1`
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error sending master trainer approval:', error);
+    return { success: false, error };
+  }
 }

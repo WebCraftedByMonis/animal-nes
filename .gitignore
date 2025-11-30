@@ -63,3 +63,4 @@ backup.sh
 
 # Ignore feeds folder
 /feeds/
+nul
