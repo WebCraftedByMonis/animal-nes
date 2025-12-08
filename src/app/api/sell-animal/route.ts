@@ -121,17 +121,18 @@ export async function GET(request: NextRequest) {
       ? rawStatus as SellStatus
       : undefined
 
-    // Auto-delete animals older than 30 days
+    // Auto-delete animals older than 30 days (only if autoDelete is enabled)
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
+
     try {
-      // Find expired animals
+      // Find expired animals with autoDelete enabled
       const expiredAnimals = await prisma.sellAnimal.findMany({
         where: {
           createdAt: {
             lt: thirtyDaysAgo
-          }
+          },
+          autoDelete: true
         },
         include: {
           images: true,
@@ -261,6 +262,7 @@ export async function PUT(request: NextRequest) {
     const purchasePrice = formData.get('purchasePrice') as string
     const referredBy = formData.get('referredBy') as string
     const status = formData.get('status') as string
+    const autoDelete = formData.get('autoDelete') as string
 
     if (specie) updateData.specie = specie
     if (breed) updateData.breed = breed
@@ -275,7 +277,8 @@ export async function PUT(request: NextRequest) {
     if (totalPrice) updateData.totalPrice = parseFloat(totalPrice)
     if (purchasePrice) updateData.purchasePrice = parseFloat(purchasePrice)
     if (referredBy !== undefined) updateData.referredBy = referredBy || null
-    
+    if (autoDelete !== undefined) updateData.autoDelete = autoDelete === 'true'
+
     if (status) {
       const statusUpper = status.toUpperCase()
       if (['PENDING', 'ACCEPTED', 'REJECTED'].includes(statusUpper)) {

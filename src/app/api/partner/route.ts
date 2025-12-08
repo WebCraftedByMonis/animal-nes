@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from "@/lib/prisma";
 import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary';
 import { PARTNER_TYPE_GROUPS, PartnerTypeGroup } from '@/lib/partner-constants';
+import { hashPassword } from '@/lib/auth/partner-auth';
 
 // Configure route to handle larger payloads for image uploads
 export const runtime = 'nodejs'
@@ -43,6 +44,7 @@ const createPartnerSchema = z.object({
   partnerType: z.string().optional(),
   productIds: z.array(z.number().int().positive()).optional(),
   image: z.string().min(1, 'Image is required'),
+  referralCode: z.string().optional(),
 });
 
 const updatePartnerSchema = createPartnerSchema
@@ -93,14 +95,22 @@ async function POST(request: NextRequest) {
     }
     console.log('✅ Validation passed');
 
-    const { image, availableDays, startTimeIds, productIds, ...partnerData } = validation.data;
+    const { image, availableDays, startTimeIds, productIds, referralCode, ...partnerData } = validation.data;
     console.log('📊 Extracted data:');
     console.log('  - Partner data keys:', Object.keys(partnerData));
     console.log('  - Available days:', availableDays);
     console.log('  - Start time IDs:', startTimeIds);
     console.log('  - Product IDs:', productIds);
+    console.log('  - Referral Code:', referralCode);
     console.log('  - Has image:', !!image);
-    
+
+    // Hash password if provided
+    if (partnerData.password) {
+      console.log('🔐 Hashing password...');
+      partnerData.password = await hashPassword(partnerData.password);
+      console.log('✅ Password hashed successfully');
+    }
+
     // Check for existing email before proceeding
     if (partnerData.partnerEmail) {
       console.log('🔍 Checking for existing email:', partnerData.partnerEmail);
@@ -120,6 +130,25 @@ async function POST(request: NextRequest) {
       console.log('✅ Email is unique');
     }
 
+    // Referral code is now optional - partners can generate it later from their dashboard
+    console.log('🔗 Referral code will be generated when partner requests it from dashboard');
+
+    // Find referrer if referral code was provided
+    let referrerId = null;
+    if (referralCode) {
+      console.log('🔍 Looking up referrer with code:', referralCode);
+      const referrer = await prisma.partner.findUnique({
+        where: { referralCode },
+        select: { id: true, partnerName: true }
+      });
+      if (referrer) {
+        referrerId = referrer.id;
+        console.log('✅ Found referrer:', referrer.partnerName, '(ID:', referrer.id, ')');
+      } else {
+        console.log('⚠️ Referral code not found, proceeding without referrer');
+      }
+    }
+
     // Handle image upload OUTSIDE transaction
     console.log('🖼️ Starting image upload to Cloudinary...');
     const imageResult = await handleImageUpload(image);
@@ -134,6 +163,7 @@ async function POST(request: NextRequest) {
       
       const partnerCreateData = {
         ...partnerData,
+        referredById: referrerId,
         partnerImage: {
           create: {
             url: imageResult.url,

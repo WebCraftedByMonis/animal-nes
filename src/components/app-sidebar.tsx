@@ -144,10 +144,8 @@ export function AppSidebar() {
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addPartner" className="block text-sm text-muted-foreground hover:underline">Add Partner</Link>
                     <Link href="/dashboard/viewPartner" className="block text-sm text-muted-foreground hover:underline">View Partner</Link>
-                    <Link href="/dashboard/partnertypes" className="block text-sm text-muted-foreground hover:underline">Partner Types</Link>
-                    <Link href="/dashboard/specialization" className="block text-sm text-muted-foreground hover:underline">Specialization</Link>
-                    <Link href="/dashboard/species" className="block text-sm text-muted-foreground hover:underline">Species</Link>
-                    <Link href="/dashboard/changePassword" className="block text-sm text-muted-foreground hover:underline">Change Password</Link>
+                    <Link href="/dashboard/premium-requests" className="block text-sm text-muted-foreground hover:underline">Premium Requests</Link>
+                    <Link href="/dashboard/withdrawal-requests" className="block text-sm text-muted-foreground hover:underline">Withdrawal Requests</Link>
                   </div>
                 )}
               </SidebarMenuItem>

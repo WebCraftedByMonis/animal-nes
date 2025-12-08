@@ -201,10 +201,32 @@ model Partner {
   specialization      String?               @db.Text
   species             String?
   partnerType         String?
+  isPremium           Boolean               @default(false)
+  referralCode        String?               @unique
+  walletBalance       Float                 @default(0)
+  referredById        Int?
+  referredBy          Partner?              @relation("PartnerReferrals", fields: [referredById], references: [id])
+  referrals           Partner[]             @relation("PartnerReferrals")
   assignedAppointments  AppointmentRequest[]
   products            Product[]
+  sessions            PartnerSession[]
+  premiumRequests     PremiumPartnershipRequest[]
+  withdrawalRequests  WithdrawalRequest[]
   createdAt           DateTime?              @default(now())
   updatedAt           DateTime?              @updatedAt
+
+  @@index([referredById])
+}
+
+model PartnerSession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  partnerId Int
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([partnerId])
 }
 
 model PartnerAvailableDay {
@@ -214,6 +236,39 @@ model PartnerAvailableDay {
   partnerId Int
   @@unique([day, partnerId])
   @@index([partnerId])
+}
+
+model PremiumPartnershipRequest {
+  id                String   @id @default(cuid())
+  partnerId         Int
+  partner           Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  paymentMethod     String
+  paymentScreenshot String   // Cloudinary URL
+  status            String   @default("pending") // pending, approved, rejected
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([partnerId])
+  @@index([status])
+}
+
+model WithdrawalRequest {
+  id            String   @id @default(cuid())
+  partnerId     Int
+  partner       Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  amount        Float
+  accountTitle  String
+  accountNumber String
+  bankName      String   // JazzCash, EasyPaisa, Bank Name
+  paymentMethod String   // jazzcash, easypaisa, bank_transfer
+  status        String   @default("pending") // pending, approved, rejected
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([partnerId])
+  @@index([status])
 }
 
 model User {
@@ -373,6 +428,7 @@ model SellAnimal {
   purchasePrice   Float
   referredBy      String?           @db.Text
   status          SellStatus        @default(PENDING)
+  autoDelete      Boolean           @default(true)
   userId          String
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   images          SellAnimalImage[]

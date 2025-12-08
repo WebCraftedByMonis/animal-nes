@@ -53,6 +53,18 @@ const formSchema = z.object({
   partnerType: z.string().optional(),
   productIds: z.array(z.number()).optional(),
   image: z.string().min(1, "Image is required"),
+  requestPremium: z.boolean().optional(),
+  premiumPaymentScreenshot: z.string().optional(),
+  referralCode: z.string().optional(),
+}).refine((data) => {
+  // If premium is requested, payment screenshot is required
+  if (data.requestPremium && !data.premiumPaymentScreenshot) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Payment screenshot is required when requesting premium partnership",
+  path: ["premiumPaymentScreenshot"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -73,6 +85,10 @@ export default function PartnerForm({
   submitButtonText = "Submit"
 }: PartnerFormProps) {
   const [uploadedImage, setUploadedImage] = useState<string>(initialData?.image || '');
+  const [premiumPaymentImage, setPremiumPaymentImage] = useState<string>(initialData?.premiumPaymentScreenshot || '');
+
+  // Get referral code from URL if present
+  const [urlReferralCode, setUrlReferralCode] = useState<string>('');
   
   const {
     register,
@@ -99,7 +115,7 @@ export default function PartnerForm({
       zipcode: initialData?.zipcode || '',
       state: initialData?.state || '',
       areaTown: initialData?.areaTown || '',
-      password: initialData?.password || 'AnimalWellness2024!',
+      password: initialData?.password || '',
       bloodGroup: initialData?.bloodGroup || undefined,
       availableDays: initialData?.availableDays || [],
       startTimeIds: initialData?.startTimeIds || [],
@@ -108,8 +124,23 @@ export default function PartnerForm({
       partnerType: initialData?.partnerType || undefined,
       productIds: initialData?.productIds || [],
       image: initialData?.image || '',
+      requestPremium: initialData?.requestPremium || false,
+      premiumPaymentScreenshot: initialData?.premiumPaymentScreenshot || '',
+      referralCode: initialData?.referralCode || '',
     },
   });
+
+  // Get referral code from URL on mount
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const refCode = params.get('ref');
+      if (refCode) {
+        setUrlReferralCode(refCode);
+        setValue('referralCode', refCode);
+      }
+    }
+  }, [setValue]);
 
   // Watch partner type to determine specialization options
   const partnerType = watch('partnerType');
@@ -130,6 +161,18 @@ export default function PartnerForm({
       if (reader.result) {
         setUploadedImage(reader.result as string);
         setValue('image', reader.result as string);
+      }
+    };
+    reader.readAsDataURL(acceptedFiles[0]);
+  };
+
+  const onPremiumPaymentDrop = (acceptedFiles: File[]) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        setPremiumPaymentImage(reader.result as string);
+        setValue('premiumPaymentScreenshot', reader.result as string);
+        clearErrors('premiumPaymentScreenshot');
       }
     };
     reader.readAsDataURL(acceptedFiles[0]);
@@ -160,8 +203,13 @@ export default function PartnerForm({
       partnerType: undefined,
       productIds: [],
       image: '',
+      requestPremium: false,
+      premiumPaymentScreenshot: '',
+      referralCode: '',
     });
     setUploadedImage('');
+    setPremiumPaymentImage('');
+    setUrlReferralCode('');
     clearErrors();
   };
 
@@ -347,6 +395,33 @@ export default function PartnerForm({
             />
             {errors.bloodGroup && <p className="text-red-500 text-sm">{errors.bloodGroup.message}</p>}
           </div>
+
+          <div>
+            <Label htmlFor="password">Password* (min. 6 characters)</Label>
+            <Input
+              id="password"
+              type="password"
+              {...register('password')}
+              className="focus:border-green-500 focus:ring-green-500"
+              placeholder="Enter partner password"
+            />
+            {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+            <Input
+              id="referralCode"
+              {...register('referralCode')}
+              className="focus:border-green-500 focus:ring-green-500"
+              placeholder="Enter referral code"
+              readOnly={!!urlReferralCode}
+            />
+            {urlReferralCode && (
+              <p className="text-sm text-green-600 mt-1">✓ Referred by partner</p>
+            )}
+            {errors.referralCode && <p className="text-red-500 text-sm">{errors.referralCode.message}</p>}
+          </div>
         </div>
 
         <div>
@@ -403,8 +478,157 @@ export default function PartnerForm({
           {errors.image && <p className="text-red-500 text-sm">{errors.image.message}</p>}
         </div>
 
+        {/* Premium Partnership Section */}
+        <div className="border-t pt-6 mt-6">
+          <div className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-lg mb-4 border-2 border-green-200">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <h3 className="text-xl font-bold text-green-800">Premium Partnership - 5000 PKR</h3>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg mb-4">
+              <h4 className="font-semibold text-green-700 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Premium Benefits:
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span><strong>Priority Listing:</strong> Your profile appears at the top of search results</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span><strong>Verified Badge:</strong> Get a premium badge on your profile</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span><strong>Enhanced Visibility:</strong> Featured on homepage and category pages</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span><strong>Priority Support:</strong> Get faster response from our support team</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span><strong>Analytics Dashboard:</strong> Track views and inquiries on your profile</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span><strong>Marketing Benefits:</strong> Featured in promotional emails and newsletters</span>
+                </li>
+              </ul>
+            </div>
+
+            <label className="flex items-center space-x-3 cursor-pointer bg-white p-3 rounded-lg border-2 border-green-300 hover:bg-green-50 transition">
+              <Checkbox
+                checked={watch('requestPremium')}
+                onCheckedChange={(checked) => {
+                  setValue('requestPremium', !!checked);
+                  if (!checked) {
+                    setPremiumPaymentImage('');
+                    setValue('premiumPaymentScreenshot', '');
+                  }
+                }}
+              />
+              <span className="font-semibold text-green-800">✅ I want to request Premium Partnership (5000 PKR)</span>
+            </label>
+          </div>
+
+          {watch('requestPremium') && (
+            <div className="space-y-4">
+              {/* Payment Details Section - Shows when checkbox is checked */}
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-4 flex items-center gap-2 text-lg">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Payment Details (5000 PKR):
+                </h4>
+                <div className="space-y-3 text-sm">
+                  <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
+                    <p className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                      📱 Jazz Cash:
+                    </p>
+                    <p className="text-gray-700"><strong>Account Title:</strong> Muhammad Fiaz Qamar</p>
+                    <p className="text-gray-700"><strong>Mobile Number:</strong> 0300-8424741</p>
+                  </div>
+
+                  <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
+                    <p className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                      💳 Easypaisa:
+                    </p>
+                    <p className="text-gray-700"><strong>Account Title:</strong> Ghazala Yasmeen</p>
+                    <p className="text-gray-700"><strong>Mobile Number:</strong> 03354145431</p>
+                  </div>
+
+                  <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
+                    <p className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                      🏦 Bank Alfalah:
+                    </p>
+                    <p className="text-gray-700"><strong>Account Title:</strong> ZAIDIS INTERNATIONAL</p>
+                    <p className="text-gray-700"><strong>Account Number:</strong> 01531002450497</p>
+                    <p className="text-gray-700"><strong>IBAN:</strong> PK82ALFH0153001002450497</p>
+                    <p className="text-gray-700"><strong>Swift Code:</strong> ALFHPKKAXXX</p>
+                    <p className="text-gray-700"><strong>Branch:</strong> Chauburji Branch, Lahore (Code: 0153)</p>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                  <p className="text-xs text-yellow-800 font-medium">
+                    ⚠️ Please make sure to upload the payment screenshot after transferring the amount of 5000 PKR to any of the above accounts.
+                  </p>
+                </div>
+              </div>
+
+              {/* Upload Screenshot Section */}
+              <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-300">
+                <div className="flex items-start gap-2 mb-3">
+                  <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 mb-1">Important: Upload Payment Screenshot</h4>
+                    <p className="text-sm text-yellow-700">
+                      After making the payment via Jazz Cash, Easypaisa, or Bank Alfalah, please upload a clear screenshot/photo of the payment receipt below.
+                    </p>
+                  </div>
+                </div>
+
+                <Label className="text-base font-semibold text-gray-800">Payment Screenshot*</Label>
+                <Dropzone onDrop={onPremiumPaymentDrop} accept={{ 'image/*': [] }} multiple={false}>
+                  {({ getRootProps, getInputProps }) => (
+                    <div {...getRootProps()} className="border-2 border-dashed border-green-500 bg-white p-6 text-center cursor-pointer rounded-lg hover:bg-green-50 transition">
+                      <input {...getInputProps()} />
+                      {premiumPaymentImage ? (
+                        <div>
+                          <Image src={premiumPaymentImage} alt="Payment Screenshot" width={200} height={200} className="mx-auto rounded-lg shadow-md" />
+                          <p className="text-sm text-green-600 mt-2 font-medium">✓ Screenshot uploaded successfully</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <p className="text-gray-600 font-medium">📸 Click or drag to upload payment screenshot</p>
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 10MB</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Dropzone>
+                {errors.premiumPaymentScreenshot && (
+                  <p className="text-red-500 text-sm font-medium mt-2">⚠️ {errors.premiumPaymentScreenshot.message}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         <Input type="hidden" {...register('image')} />
-        <Input type="hidden" {...register('password')} />
+        <Input type="hidden" {...register('premiumPaymentScreenshot')} />
 
         <Button
           type="submit"

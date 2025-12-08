@@ -106,11 +106,9 @@ export default function Navbar() {
               <NavigationMenu>
                 <NavigationMenuList >
                   {[
-                    ["Home", "/"],
                     ["Products", "/products"],
                     ["Nexus News", "/animal-news"],
-                    ["Sell Animal", "/sell"],
-                    ["Buy Animal", "/buy"],
+                    ["Find Doctor", "/findDoctor"],
                   ].map(([label, href]) => (
                     <NavigationMenuItem key={label}>
                       <NavigationMenuLink
@@ -237,11 +235,8 @@ export default function Navbar() {
                     {/* Mobile Navigation Links */}
                     <div className="space-y-1">
                       {[
-                        ["Home", "/"],
                         ["Products", "/products"],
                         ["Nexus News", "/animal-news"],
-                        ["Sell Animal", "/sell"],
-                        ["Buy Animal", "/buy"],
                         ["Find Doctor", "/findDoctor"],
                       ].map(([label, href]) => (
                         <DrawerClose asChild key={label}>

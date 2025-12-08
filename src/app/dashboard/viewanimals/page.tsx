@@ -33,6 +33,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface Animal {
   id: number
@@ -50,6 +52,7 @@ interface Animal {
   purchasePrice: number
   referredBy: string | null
   status: string
+  autoDelete: boolean
   images: { url: string; alt: string; publicId: string | null }[]
   videos: { url: string; alt: string; publicId: string | null }[]
   createdAt: string
@@ -81,6 +84,7 @@ export default function ViewAnimalsPage() {
   const [editPurchasePrice, setEditPurchasePrice] = useState('')
   const [editReferredBy, setEditReferredBy] = useState('')
   const [editStatus, setEditStatus] = useState('PENDING')
+  const [editAutoDelete, setEditAutoDelete] = useState(true)
   const [editAnimalImage, setEditAnimalImage] = useState<File | null>(null)
   const [editAnimalImagePreview, setEditAnimalImagePreview] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
@@ -121,13 +125,13 @@ export default function ViewAnimalsPage() {
     fetchAnimals()
   }, [fetchAnimals])
 
-  // Auto-delete animals older than 30 days
+  // Auto-delete animals older than 30 days (only if autoDelete is enabled)
   const autoDeleteOldAnimals = async (animalsList: Animal[]) => {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
-    const oldAnimals = animalsList.filter(animal => 
-      new Date(animal.createdAt) < thirtyDaysAgo
+
+    const oldAnimals = animalsList.filter(animal =>
+      new Date(animal.createdAt) < thirtyDaysAgo && animal.autoDelete
     )
     
     if (oldAnimals.length > 0 && !isAutoDeleting) {
@@ -166,6 +170,7 @@ export default function ViewAnimalsPage() {
       formData.append('totalPrice', editTotalPrice)
       formData.append('purchasePrice', editPurchasePrice)
       formData.append('status', editStatus)
+      formData.append('autoDelete', editAutoDelete.toString())
       if (editReferredBy) formData.append('referredBy', editReferredBy)
       if (editAnimalImage) formData.append('image', editAnimalImage)
 
@@ -351,19 +356,26 @@ export default function ViewAnimalsPage() {
                       {formatDistanceToNow(new Date(animal.createdAt), { addSuffix: true })}
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      {isExpired ? (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Expired
-                        </Badge>
-                      ) : isExpiringSoon ? (
-                        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {daysRemaining}d left
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{daysRemaining}d left</span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {isExpired ? (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Expired
+                          </Badge>
+                        ) : isExpiringSoon ? (
+                          <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {daysRemaining}d left
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{daysRemaining}d left</span>
+                        )}
+                        {!animal.autoDelete && (
+                          <Badge variant="secondary" className="text-xs">
+                            Manual delete
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
                       <div className="flex gap-2">
@@ -386,6 +398,7 @@ export default function ViewAnimalsPage() {
                             setEditPurchasePrice(animal.purchasePrice.toString())
                             setEditReferredBy(animal.referredBy || '')
                             setEditStatus(animal.status)
+                            setEditAutoDelete(animal.autoDelete)
                             setEditAnimalImagePreview(animal.images?.[0]?.url || null)
                             setOpen(true)
                           }}
@@ -606,6 +619,16 @@ export default function ViewAnimalsPage() {
                       <SelectItem value="REJECTED">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="autoDelete"
+                    checked={editAutoDelete}
+                    onCheckedChange={setEditAutoDelete}
+                  />
+                  <Label htmlFor="autoDelete" className="text-sm font-medium cursor-pointer">
+                    Auto-delete after 30 days
+                  </Label>
                 </div>
               </div>
               
