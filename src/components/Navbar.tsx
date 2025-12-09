@@ -109,6 +109,7 @@ export default function Navbar() {
                     ["Products", "/products"],
                     ["Nexus News", "/animal-news"],
                     ["Find Doctor", "/findDoctor"],
+                    ["Dashboard", "/dashboard"],
                   ].map(([label, href]) => (
                     <NavigationMenuItem key={label}>
                       <NavigationMenuLink
@@ -238,6 +239,7 @@ export default function Navbar() {
                         ["Products", "/products"],
                         ["Nexus News", "/animal-news"],
                         ["Find Doctor", "/findDoctor"],
+                        ["Dashboard", "/dashboard"],
                       ].map(([label, href]) => (
                         <DrawerClose asChild key={label}>
                           <Link
