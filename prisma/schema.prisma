@@ -992,3 +992,82 @@ model MasterTrainerRegistration {
   updatedAt       DateTime @updatedAt
 }
 
+// Dynamic Form System
+model DynamicForm {
+  id                  String             @id @default(cuid())
+  title               String             // Form title
+  description         String?            @db.Text // Form description
+  slug                String             @unique // URL-friendly identifier
+  headerTitle         String?            @db.Text // Optional custom header (can be in multiple languages)
+  headerSubtitle      String?            @db.Text // Optional custom subtitle
+  paymentRequired     Boolean            @default(false) // Does this form require payment?
+  paymentAmount       Float?             // Payment amount if required
+  paymentAccount      String?            @db.Text // Payment account details
+  thankYouMessage     String?            @db.Text // Custom thank you message
+  thankYouButtonText  String?            // Custom button text (e.g., "Download Certificate")
+  thankYouButtonUrl   String?            @db.Text // Custom button URL
+  thankYouLinks       String?            @db.Text // JSON string for additional links
+  isActive            Boolean            @default(true) // Is form accepting submissions?
+  fields              FormField[]        // Form fields
+  submissions         FormSubmission[]   // Form submissions
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model FormField {
+  id                  String                    @id @default(cuid())
+  form                DynamicForm               @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formId              String
+  label               String                    // Field label
+  fieldType           String                    // text, email, tel, textarea, file, checkbox, select, radio
+  placeholder         String?                   // Placeholder text
+  helpText            String?                   @db.Text // Additional help text
+  isRequired          Boolean                   @default(false) // Is field required?
+  orderIndex          Int                       // Order of field in form (0-based)
+  options             String?                   @db.Text // JSON string for select/radio options
+  validation          String?                   @db.Text // JSON string for validation rules
+  fileAcceptTypes     String?                   // Accepted file types (for file inputs)
+  maxFileSize         Int?                      // Max file size in bytes
+  submissionValues    FormSubmissionValue[]     // Values from submissions
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@index([formId])
+  @@index([orderIndex])
+}
+
+model FormSubmission {
+  id                  String                    @id @default(cuid())
+  form                DynamicForm               @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formId              String
+  approved            Boolean                   @default(false) // Admin approval status
+  paymentScreenshotUrl String?                  @db.Text // Payment screenshot if required
+  paymentScreenshotPublicId String?             // Cloudinary public ID
+  fieldValues         FormSubmissionValue[]     // Individual field values
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@index([formId])
+  @@index([approved])
+  @@index([createdAt])
+}
+
+model FormSubmissionValue {
+  id                  String             @id @default(cuid())
+  submission          FormSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId        String
+  field               FormField          @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  fieldId             String
+  value               String             @db.Text // Field value (stored as text, can be JSON for complex types)
+  fileUrl             String?            @db.Text // For file uploads
+  filePublicId        String?            // Cloudinary public ID for files
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([submissionId])
+  @@index([fieldId])
+}
+
