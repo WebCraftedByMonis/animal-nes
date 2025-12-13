@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 import fs from 'fs/promises';
 import path from 'path';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Await the params object first
+  const { id } = await params;
   const url = new URL(req.url);
   const branded = url.searchParams.get('branded') === 'true';
   const numericOrderId = Number(id);

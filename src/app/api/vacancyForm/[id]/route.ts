@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const numericId = Number(params.id);
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Await the params object first
+  const { id } = await params;
+  const numericId = Number(id);
 
   if (isNaN(numericId)) {
     return NextResponse.json({ error: 'Invalid job ID' }, { status: 400 });

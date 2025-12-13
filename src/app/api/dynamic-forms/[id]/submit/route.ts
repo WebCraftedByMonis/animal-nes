@@ -5,14 +5,16 @@ import { uploadImage } from '@/lib/cloudinary';
 // POST - Submit form
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const formData = await request.formData();
 
     // Fetch form with fields
     const form = await prisma.dynamicForm.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         fields: {
           orderBy: {

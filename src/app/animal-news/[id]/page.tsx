@@ -15,11 +15,13 @@ type NewsItem = {
 };
 
 type PageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const res = await fetch(`${getApiUrl()}/api/animal-news/${params.id}`, {
+  // Await the params object first
+  const { id } = await params;
+  const res = await fetch(`${getApiUrl()}/api/animal-news/${id}`, {
     cache: "no-store",
   });
 
@@ -43,6 +45,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function NewsPage({ params }: PageProps) {
-  return <NewsDetailPage id={params.id} />;
+export default async function NewsPage({ params }: PageProps) {
+  // Await the params object first
+  const { id } = await params;
+  return <NewsDetailPage id={id} />;
 }

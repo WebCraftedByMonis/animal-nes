@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Await the params object first
+  const { id } = await params;
   const body = await req.json();
 
   // Add shipmentcharges to the destructured body

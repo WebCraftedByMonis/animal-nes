@@ -2,8 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-    const id = Number(params.id); // Convert string to number
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    // Await the params object first
+    const { id: idString } = await params;
+    const id = Number(idString); // Convert string to number
   
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });

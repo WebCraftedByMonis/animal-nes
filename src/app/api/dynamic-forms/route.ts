@@ -5,28 +5,28 @@ import { z } from 'zod';
 // Validation schema for creating/updating forms
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
+  description: z.string().nullable().optional().transform(val => val || null),
   slug: z.string().min(1, 'Slug is required'),
-  headerTitle: z.string().optional(),
-  headerSubtitle: z.string().optional(),
+  headerTitle: z.string().nullable().optional().transform(val => val || null),
+  headerSubtitle: z.string().nullable().optional().transform(val => val || null),
   paymentRequired: z.boolean().default(false),
-  paymentAmount: z.number().optional(),
-  paymentAccount: z.string().optional(),
-  thankYouMessage: z.string().optional(),
-  thankYouButtonText: z.string().optional(),
-  thankYouButtonUrl: z.string().optional(),
+  paymentAmount: z.number().nullable().optional(),
+  paymentAccount: z.string().nullable().optional().transform(val => val || null),
+  thankYouMessage: z.string().nullable().optional().transform(val => val || null),
+  thankYouButtonText: z.string().nullable().optional().transform(val => val || null),
+  thankYouButtonUrl: z.string().nullable().optional().transform(val => val || null),
   isActive: z.boolean().default(true),
   fields: z.array(z.object({
     label: z.string().min(1, 'Field label is required'),
     fieldType: z.enum(['text', 'email', 'tel', 'textarea', 'file', 'checkbox', 'select', 'radio']),
-    placeholder: z.string().optional(),
-    helpText: z.string().optional(),
+    placeholder: z.string().nullable().optional().transform(val => val || null),
+    helpText: z.string().nullable().optional().transform(val => val || null),
     isRequired: z.boolean().default(false),
     orderIndex: z.number(),
-    options: z.string().optional(), // JSON string
-    validation: z.string().optional(), // JSON string
-    fileAcceptTypes: z.string().optional(),
-    maxFileSize: z.number().optional(),
+    options: z.string().nullable().optional().transform(val => val || null), // JSON string
+    validation: z.string().nullable().optional().transform(val => val || null), // JSON string
+    fileAcceptTypes: z.string().nullable().optional().transform(val => val || null),
+    maxFileSize: z.number().nullable().optional(),
   })).optional(),
 });
 

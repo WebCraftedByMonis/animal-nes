@@ -5,40 +5,42 @@ import { z } from 'zod';
 // Validation schema for updating forms
 const updateFormSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional().transform(val => val || null),
   slug: z.string().min(1, 'Slug is required').optional(),
-  headerTitle: z.string().optional(),
-  headerSubtitle: z.string().optional(),
+  headerTitle: z.string().nullable().optional().transform(val => val || null),
+  headerSubtitle: z.string().nullable().optional().transform(val => val || null),
   paymentRequired: z.boolean().optional(),
-  paymentAmount: z.number().optional(),
-  paymentAccount: z.string().optional(),
-  thankYouMessage: z.string().optional(),
-  thankYouButtonText: z.string().optional(),
-  thankYouButtonUrl: z.string().optional(),
+  paymentAmount: z.number().nullable().optional(),
+  paymentAccount: z.string().nullable().optional().transform(val => val || null),
+  thankYouMessage: z.string().nullable().optional().transform(val => val || null),
+  thankYouButtonText: z.string().nullable().optional().transform(val => val || null),
+  thankYouButtonUrl: z.string().nullable().optional().transform(val => val || null),
   isActive: z.boolean().optional(),
   fields: z.array(z.object({
     id: z.string().optional(), // If present, update existing field
     label: z.string().min(1, 'Field label is required'),
     fieldType: z.enum(['text', 'email', 'tel', 'textarea', 'file', 'checkbox', 'select', 'radio']),
-    placeholder: z.string().optional(),
-    helpText: z.string().optional(),
+    placeholder: z.string().nullable().optional().transform(val => val || null),
+    helpText: z.string().nullable().optional().transform(val => val || null),
     isRequired: z.boolean().default(false),
     orderIndex: z.number(),
-    options: z.string().optional(),
-    validation: z.string().optional(),
-    fileAcceptTypes: z.string().optional(),
-    maxFileSize: z.number().optional(),
+    options: z.string().nullable().optional().transform(val => val || null),
+    validation: z.string().nullable().optional().transform(val => val || null),
+    fileAcceptTypes: z.string().nullable().optional().transform(val => val || null),
+    maxFileSize: z.number().nullable().optional(),
   })).optional(),
 });
 
 // GET - Fetch single form by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const form = await prisma.dynamicForm.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         fields: {
           orderBy: {
@@ -74,9 +76,11 @@ export async function GET(
 // PUT - Update form
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const body = await request.json();
 
     // Validate request body
@@ -92,7 +96,7 @@ export async function PUT(
 
     // Check if form exists
     const existingForm = await prisma.dynamicForm.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingForm) {
@@ -118,7 +122,7 @@ export async function PUT(
 
     // Update form
     const updatedForm = await prisma.dynamicForm.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...formData,
         ...(slug && { slug }),
@@ -171,7 +175,7 @@ export async function PUT(
           // Create new field
           await prisma.formField.create({
             data: {
-              formId: params.id,
+              formId: id,
               label: field.label,
               fieldType: field.fieldType,
               placeholder: field.placeholder,
@@ -190,7 +194,7 @@ export async function PUT(
 
     // Fetch updated form with fields
     const finalForm = await prisma.dynamicForm.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         fields: {
           orderBy: {
@@ -218,12 +222,14 @@ export async function PUT(
 // DELETE - Delete form
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     // Check if form exists
     const form = await prisma.dynamicForm.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -242,7 +248,7 @@ export async function DELETE(
 
     // Delete form (cascade will handle fields and submissions)
     await prisma.dynamicForm.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({

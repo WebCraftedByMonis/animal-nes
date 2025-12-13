@@ -5,10 +5,12 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const prescriptionId = parseInt(params.id);
+    // Await the params object first
+    const { id } = await params;
+    const prescriptionId = parseInt(id);
 
     const prescription = await prisma.prescriptionForm.findUnique({
       where: { id: prescriptionId },

@@ -4,14 +4,16 @@ import { prisma } from '@/lib/prisma';
 // GET - Fetch form submissions
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const approved = searchParams.get('approved');
 
     const where: any = {
-      formId: params.id
+      formId: id
     };
 
     if (approved === 'true') {
@@ -64,9 +66,11 @@ export async function GET(
 // PATCH - Approve/reject submission
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const { submissionId, approved } = await request.json();
 
     if (!submissionId) {
@@ -119,9 +123,11 @@ export async function PATCH(
 // DELETE - Delete submission
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const submissionId = searchParams.get('submissionId');
 

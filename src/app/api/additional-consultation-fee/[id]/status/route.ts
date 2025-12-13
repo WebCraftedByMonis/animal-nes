@@ -5,11 +5,13 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await the params object first
+    const { id } = await params;
     const { status } = await request.json();
-    const feeId = parseInt(params.id);
+    const feeId = parseInt(id);
 
     if (!status || !['PENDING', 'PAID', 'CANCELLED'].includes(status)) {
       return NextResponse.json(

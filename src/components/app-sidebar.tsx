@@ -50,10 +50,7 @@ export function AppSidebar() {
   const [openWebBanner, setOpenWebBanner] = useState(false)
   const [openTestomonials, setOpenTestomonials] = useState(false)
   const [openAdmins, setOpenAdmins] = useState(false)
-  const [openMasterTrainer, setOpenMasterTrainer] = useState(false)
   const [openDynamicForms, setOpenDynamicForms] = useState(false)
-  const [openHistoryForm, setOpenHistoryForm] = useState(false)
-  const [openPrescriptionForm, setOpenPrescriptionForm] = useState(false)
   const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
   const [openAdditionalFees, setOpenAdditionalFees] = useState(false)
   const [openFinance, setOpenFinance] = useState(false)
@@ -215,17 +212,19 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-              {/* Appointments */}
+              {/* Doctor Appointments */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenPendingAppointments(!openPendingAppointments)}>
                   <Calendar className="w-4 h-4" />
-                  <span className="hover:text-green-500">Appointments</span>
+                  <span className="hover:text-green-500">Doctor Appointments</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPendingAppointments ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openPendingAppointments && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/pendingAppointments" className="block text-sm text-muted-foreground hover:underline">Pending Appointments</Link>
                     <Link href="/dashboard/additional-consultation-fees" className="block text-sm text-muted-foreground hover:underline">Additional Consultation Fees</Link>
+                    <Link href="/dashboard/managehistoryform" className="block text-sm text-muted-foreground hover:underline">History Forms</Link>
+                    <Link href="/dashboard/manageprescriptionfrom" className="block text-sm text-muted-foreground hover:underline">Prescription Forms</Link>
                   </div>
                 )}
               </SidebarMenuItem>
@@ -287,58 +286,17 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-              {/* Master Trainer */}
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setOpenMasterTrainer(!openMasterTrainer)}>
-                  <GraduationCap className="w-4 h-4" />
-                  <span className="hover:text-green-500">Master Trainer</span>
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openMasterTrainer ? "rotate-180" : "rotate-0"}`} />
-                </SidebarMenuButton>
-                {openMasterTrainer && (
-                  <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/master-trainer-registrations" className="block text-sm text-muted-foreground hover:underline">View Registrations</Link>
-                  </div>
-                )}
-              </SidebarMenuItem>
-
-              {/* Dynamic Forms */}
+              {/* Master Training Forms */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenDynamicForms(!openDynamicForms)}>
-                  <FormInput className="w-4 h-4" />
-                  <span className="hover:text-green-500">Dynamic Forms</span>
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="hover:text-green-500">Master Training Forms</span>
                   <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openDynamicForms ? "rotate-180" : "rotate-0"}`} />
                 </SidebarMenuButton>
                 {openDynamicForms && (
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/dynamic-forms" className="block text-sm text-muted-foreground hover:underline">Manage Forms</Link>
-                  </div>
-                )}
-              </SidebarMenuItem>
-
-              {/* History Forms */}
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setOpenHistoryForm(!openHistoryForm)}>
-                  <FileText className="w-4 h-4" />
-                  <span className="hover:text-green-500">History Forms</span>
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openHistoryForm ? "rotate-180" : "rotate-0"}`} />
-                </SidebarMenuButton>
-                {openHistoryForm && (
-                  <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/managehistoryform" className="block text-sm text-muted-foreground hover:underline">Manage History Forms</Link>
-                  </div>
-                )}
-              </SidebarMenuItem>
-
-              {/* Prescription form */}
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setOpenPrescriptionForm(!openPrescriptionForm)}>
-                  <Pill className="w-4 h-4" />
-                  <span className="hover:text-green-500">Prescription Forms</span>  
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openPrescriptionForm ? "rotate-180" : "rotate-0"}`} />
-                </SidebarMenuButton>
-                {openPrescriptionForm && (
-                  <div className="ml-6 mt-2 space-y-1">
-                    <Link href="/dashboard/manageprescriptionfrom" className="block text-sm text-muted-foreground hover:underline">Manage Prescription Forms</Link>
+                    <Link href="/dashboard/master-trainer-registrations" className="block text-sm text-muted-foreground hover:underline">Registrations of Master-Training</Link>
                   </div>
                 )}
               </SidebarMenuItem>
