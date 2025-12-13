@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
-import { Eye, Crown, X } from 'lucide-react';
+import { Eye, Crown, X, Pencil, Trash2 } from 'lucide-react';
 
 interface ProductVariant {
   id: number;
@@ -68,6 +68,28 @@ export default function PartnerDashboard() {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Profile edit state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    partnerName: '',
+    partnerEmail: '',
+    shopName: '',
+    partnerMobileNumber: '',
+    cityName: '',
+    state: '',
+    fullAddress: '',
+    specialization: '',
+    partnerType: '',
+    gender: '',
+    qualificationDegree: '',
+    rvmpNumber: '',
+    zipcode: '',
+    areaTown: '',
+  });
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
   // Premium upgrade state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradePaymentMethod, setUpgradePaymentMethod] = useState('');
@@ -87,9 +109,46 @@ export default function PartnerDashboard() {
   });
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
 
+  // Product edit/delete state
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
+  const [productLoading, setProductLoading] = useState(false);
+  const [editProductData, setEditProductData] = useState({
+    productName: '',
+    genericName: '',
+    description: '',
+    dosage: '',
+    isActive: true,
+    outofstock: false,
+  });
+  const [editVariants, setEditVariants] = useState<ProductVariant[]>([]);
+
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (partner) {
+      setProfileData({
+        partnerName: partner.partnerName || '',
+        partnerEmail: partner.partnerEmail || '',
+        shopName: partner.shopName || '',
+        partnerMobileNumber: partner.partnerMobileNumber || '',
+        cityName: partner.cityName || '',
+        state: partner.state || '',
+        fullAddress: partner.fullAddress || '',
+        specialization: partner.specialization || '',
+        partnerType: partner.partnerType || '',
+        gender: (partner as any).gender || '',
+        qualificationDegree: (partner as any).qualificationDegree || '',
+        rvmpNumber: (partner as any).rvmpNumber || '',
+        zipcode: (partner as any).zipcode || '',
+        areaTown: (partner as any).areaTown || '',
+      });
+    }
+  }, [partner]);
 
   const checkAuth = async () => {
     try {
@@ -292,6 +351,179 @@ export default function PartnerDashboard() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileLoading(true);
+
+    try {
+      const updateData: any = { ...profileData };
+
+      // Handle image if selected
+      if (profileImage) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            updateData.image = reader.result as string;
+            await sendProfileUpdate(updateData);
+          } catch (error) {
+            toast.error('Failed to update profile');
+            setProfileLoading(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error('Failed to read image file');
+          setProfileLoading(false);
+        };
+        reader.readAsDataURL(profileImage);
+      } else {
+        await sendProfileUpdate(updateData);
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+      setProfileLoading(false);
+    }
+  };
+
+  const sendProfileUpdate = async (updateData: any) => {
+    try {
+      const response = await fetch('/api/partner/update-profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Profile updated successfully!');
+        setIsEditingProfile(false);
+        setProfileImage(null);
+        setProfileImagePreview(null);
+        // Refresh partner data
+        checkAuth();
+      } else {
+        toast.error(data.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setEditProductData({
+      productName: product.productName || '',
+      genericName: product.genericName || '',
+      description: product.description || '',
+      dosage: product.dosage || '',
+      isActive: product.isActive,
+      outofstock: product.outofstock,
+    });
+    setEditVariants(product.variants || []);
+    setShowEditProductModal(true);
+  };
+
+  const handleProductUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+
+    setProductLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('productName', editProductData.productName);
+      formData.append('genericName', editProductData.genericName);
+      formData.append('description', editProductData.description);
+      formData.append('dosage', editProductData.dosage);
+      formData.append('isActive', String(editProductData.isActive));
+      formData.append('outofstock', String(editProductData.outofstock));
+
+      // Add variants
+      editVariants.forEach((variant, index) => {
+        formData.append(`variants[${index}][packingVolume]`, variant.packingVolume);
+        formData.append(`variants[${index}][customerPrice]`, String(variant.customerPrice));
+        formData.append(`variants[${index}][inventory]`, String(variant.inventory));
+        if (variant.companyPrice !== null && variant.companyPrice !== undefined) {
+          formData.append(`variants[${index}][companyPrice]`, String(variant.companyPrice));
+        }
+        if (variant.dealerPrice !== null && variant.dealerPrice !== undefined) {
+          formData.append(`variants[${index}][dealerPrice]`, String(variant.dealerPrice));
+        }
+      });
+
+      const response = await fetch(`/api/product?id=${editingProduct.id}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success('Product updated successfully!');
+        setShowEditProductModal(false);
+        setEditingProduct(null);
+        checkAuth(); // Refresh data
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to update product');
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setProductLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deletingProductId) return;
+
+    setProductLoading(true);
+
+    try {
+      const response = await fetch(`/api/product?id=${deletingProductId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Product deleted successfully!');
+        setShowDeleteConfirm(false);
+        setDeletingProductId(null);
+        checkAuth(); // Refresh data
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to delete product');
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setProductLoading(false);
+    }
+  };
+
+  const handleVariantChange = (index: number, field: keyof ProductVariant, value: any) => {
+    const newVariants = [...editVariants];
+    newVariants[index] = { ...newVariants[index], [field]: value };
+    setEditVariants(newVariants);
+  };
+
+  const addVariant = () => {
+    setEditVariants([...editVariants, {
+      id: Date.now(),
+      packingVolume: '',
+      companyPrice: null,
+      dealerPrice: null,
+      customerPrice: 0,
+      inventory: 0,
+    }]);
+  };
+
+  const removeVariant = (index: number) => {
+    const newVariants = editVariants.filter((_, i) => i !== index);
+    setEditVariants(newVariants);
   };
 
   if (loading) {
@@ -498,10 +730,28 @@ export default function PartnerDashboard() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:text-blue-900"
+                                    title="View Product"
                                   >
                                     <Eye className="h-4 w-4" />
                                   </a>
                                 )}
+                                <button
+                                  onClick={() => handleEditProduct(product)}
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Edit Product"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setDeletingProductId(product.id);
+                                    setShowDeleteConfirm(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Delete Product"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -523,48 +773,278 @@ export default function PartnerDashboard() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold text-green-600">Profile Information</h2>
+                  {!isEditingProfile && (
+                    <button
+                      onClick={() => setIsEditingProfile(true)}
+                      className="px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+                    >
+                      Edit Profile
+                    </button>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.partnerName || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.partnerEmail || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Shop Name</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.shopName || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.partnerMobileNumber || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Partner Type</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.partnerType || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Specialization</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.specialization || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">City</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.cityName || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">State</label>
-                    <p className="mt-1 text-sm text-gray-900">{partner.state || '-'}</p>
-                  </div>
-                </div>
+                {isEditingProfile ? (
+                  <form onSubmit={handleProfileSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="partnerName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="partnerName"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.partnerName}
+                          onChange={(e) => setProfileData({ ...profileData, partnerName: e.target.value })}
+                        />
+                      </div>
 
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    To update your profile information, please contact the administrator.
-                  </p>
-                </div>
+                      <div>
+                        <label htmlFor="partnerEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          id="partnerEmail"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.partnerEmail}
+                          onChange={(e) => setProfileData({ ...profileData, partnerEmail: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Shop Name
+                        </label>
+                        <input
+                          type="text"
+                          id="shopName"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.shopName}
+                          onChange={(e) => setProfileData({ ...profileData, shopName: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="partnerMobileNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                          Mobile Number
+                        </label>
+                        <input
+                          type="tel"
+                          id="partnerMobileNumber"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.partnerMobileNumber}
+                          onChange={(e) => setProfileData({ ...profileData, partnerMobileNumber: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="partnerType" className="block text-sm font-medium text-gray-700 mb-1">
+                          Partner Type
+                        </label>
+                        <input
+                          type="text"
+                          id="partnerType"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.partnerType}
+                          onChange={(e) => setProfileData({ ...profileData, partnerType: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="specialization" className="block text-sm font-medium text-gray-700 mb-1">
+                          Specialization
+                        </label>
+                        <input
+                          type="text"
+                          id="specialization"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.specialization}
+                          onChange={(e) => setProfileData({ ...profileData, specialization: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="qualificationDegree" className="block text-sm font-medium text-gray-700 mb-1">
+                          Qualification Degree
+                        </label>
+                        <input
+                          type="text"
+                          id="qualificationDegree"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.qualificationDegree}
+                          onChange={(e) => setProfileData({ ...profileData, qualificationDegree: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="rvmpNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                          RVMP/License/Registration No.
+                        </label>
+                        <input
+                          type="text"
+                          id="rvmpNumber"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.rvmpNumber}
+                          onChange={(e) => setProfileData({ ...profileData, rvmpNumber: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="cityName" className="block text-sm font-medium text-gray-700 mb-1">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          id="cityName"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.cityName}
+                          onChange={(e) => setProfileData({ ...profileData, cityName: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          id="state"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.state}
+                          onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="zipcode" className="block text-sm font-medium text-gray-700 mb-1">
+                          Zipcode
+                        </label>
+                        <input
+                          type="text"
+                          id="zipcode"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.zipcode}
+                          onChange={(e) => setProfileData({ ...profileData, zipcode: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="areaTown" className="block text-sm font-medium text-gray-700 mb-1">
+                          Date of Birth
+                        </label>
+                        <input
+                          type="date"
+                          id="areaTown"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.areaTown}
+                          onChange={(e) => setProfileData({ ...profileData, areaTown: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label htmlFor="fullAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                          Address/Map Link
+                        </label>
+                        <input
+                          type="text"
+                          id="fullAddress"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          value={profileData.fullAddress}
+                          onChange={(e) => setProfileData({ ...profileData, fullAddress: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-1">
+                          Profile Image
+                        </label>
+                        <input
+                          type="file"
+                          id="profileImage"
+                          accept="image/*"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setProfileImage(file);
+                            if (file) {
+                              setProfileImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                        {profileImagePreview && (
+                          <div className="mt-3">
+                            <Image
+                              src={profileImagePreview}
+                              alt="Profile Preview"
+                              width={100}
+                              height={100}
+                              className="rounded-lg border border-gray-300 object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          setProfileImage(null);
+                          setProfileImagePreview(null);
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={profileLoading}
+                        className="px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {profileLoading ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Name</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.partnerName || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Email</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.partnerEmail || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Shop Name</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.shopName || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.partnerMobileNumber || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Partner Type</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.partnerType || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Specialization</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.specialization || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">City</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.cityName || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">State</label>
+                      <p className="mt-1 text-sm text-gray-900">{partner.state || '-'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -971,6 +1451,272 @@ export default function PartnerDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {showEditProductModal && editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Edit Product</h3>
+              <button
+                onClick={() => {
+                  setShowEditProductModal(false);
+                  setEditingProduct(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleProductUpdate} className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Product Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    value={editProductData.productName}
+                    onChange={(e) => setEditProductData({ ...editProductData, productName: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Generic Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    value={editProductData.genericName}
+                    onChange={(e) => setEditProductData({ ...editProductData, genericName: e.target.value })}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    value={editProductData.description}
+                    onChange={(e) => setEditProductData({ ...editProductData, description: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dosage
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    value={editProductData.dosage}
+                    onChange={(e) => setEditProductData({ ...editProductData, dosage: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editProductData.isActive}
+                      onChange={(e) => setEditProductData({ ...editProductData, isActive: e.target.checked })}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Active</span>
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editProductData.outofstock}
+                      onChange={(e) => setEditProductData({ ...editProductData, outofstock: e.target.checked })}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Out of Stock</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Variants Section */}
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-md font-semibold text-gray-900">Product Variants</h4>
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    className="px-3 py-1 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg"
+                  >
+                    Add Variant
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {editVariants.map((variant, index) => (
+                    <div key={variant.id || index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <h5 className="text-sm font-medium text-gray-700">Variant {index + 1}</h5>
+                        {editVariants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeVariant(index)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Packing Volume *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={variant.packingVolume}
+                            onChange={(e) => handleVariantChange(index, 'packingVolume', e.target.value)}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Customer Price (PKR) *
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            step="0.01"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={variant.customerPrice}
+                            onChange={(e) => handleVariantChange(index, 'customerPrice', parseFloat(e.target.value))}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Inventory *
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={variant.inventory}
+                            onChange={(e) => handleVariantChange(index, 'inventory', parseInt(e.target.value))}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Company Price (PKR)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={variant.companyPrice || ''}
+                            onChange={(e) => handleVariantChange(index, 'companyPrice', e.target.value ? parseFloat(e.target.value) : null)}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Dealer Price (PKR)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={variant.dealerPrice || ''}
+                            onChange={(e) => handleVariantChange(index, 'dealerPrice', e.target.value ? parseFloat(e.target.value) : null)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditProductModal(false);
+                    setEditingProduct(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={productLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {productLoading ? 'Updating...' : 'Update Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Confirm Delete</h3>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingProductId(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete this product? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingProductId(null);
+                }}
+                disabled={productLoading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                disabled={productLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {productLoading ? 'Deleting...' : 'Delete Product'}
+              </button>
+            </div>
           </div>
         </div>
       )}
