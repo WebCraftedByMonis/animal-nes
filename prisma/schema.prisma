@@ -103,9 +103,10 @@ model Company {
   companyName String?        @unique
   mobileNumber String?      @unique
   products    Product[]
-  address     String?      @db.Text 
+  address     String?      @db.Text
   email       String?       @unique
   image       CompanyImage?
+  stickyLogo  StickyLogo[]
   createdAt   DateTime?      @default(now())
   updatedAt   DateTime?      @updatedAt
 }
@@ -1071,3 +1072,14 @@ model FormSubmissionValue {
   @@index([fieldId])
 }
 
+// Sticky Logo Configuration
+model StickyLogo {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}

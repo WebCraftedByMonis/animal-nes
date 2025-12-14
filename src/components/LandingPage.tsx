@@ -16,6 +16,7 @@ import { signIn } from "next-auth/react"
 import FullScreenSlider from "./FullScreenSlider"
 import SectionComponent, { SectionItem } from "./SectionComponent"
 import { useLoginModal } from "@/contexts/LoginModalContext"
+import StickyLogo from "./StickyLogo"
 
 interface Testimonial {
   id: number
@@ -759,6 +760,9 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           </motion.div>
         </div>
       </motion.section>
+
+      {/* Sticky Logo Component */}
+      <StickyLogo />
     </div>
   )
 }
