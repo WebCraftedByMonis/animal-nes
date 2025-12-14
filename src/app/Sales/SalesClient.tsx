@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -57,17 +57,58 @@ interface SalesClientProps {
 }
 
 export default function SalesClient({ initialPartners }: SalesClientProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // Initialize state from URL params
   const [allPartners, setAllPartners] = useState<Partner[]>(initialPartners)
   const [filteredPartners, setFilteredPartners] = useState<Partner[]>(initialPartners)
-  const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState<string>('createdAt')
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
-  const [limit, setLimit] = useState(8)
-  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(initialPartners.length === 0)
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+  const [sortBy, setSortBy] = useState<string>(searchParams.get('sortBy') || 'createdAt')
+  const [order, setOrder] = useState<'asc' | 'desc'>((searchParams.get('order') as 'asc' | 'desc') || 'desc')
+  const [limit, setLimit] = useState(Number(searchParams.get('limit')) || 8)
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [totalPages, setTotalPages] = useState(0)
-  const router = useRouter()
+
+  // Update URL when filters change
+  const updateURL = useCallback((params: {
+    search?: string
+    sortBy?: string
+    order?: string
+    page?: number
+    limit?: number
+  }) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()))
+
+    if (params.search !== undefined) {
+      if (params.search) {
+        current.set('search', params.search)
+      } else {
+        current.delete('search')
+      }
+    }
+
+    if (params.sortBy) current.set('sortBy', params.sortBy)
+    if (params.order) current.set('order', params.order)
+    if (params.page && params.page > 1) {
+      current.set('page', params.page.toString())
+    } else {
+      current.delete('page')
+    }
+    if (params.limit && params.limit !== 8) {
+      current.set('limit', params.limit.toString())
+    } else {
+      current.delete('limit')
+    }
+
+    const search = current.toString()
+    const query = search ? `?${search}` : ''
+
+    router.push(`${pathname}${query}`, { scroll: false })
+  }, [pathname, router, searchParams])
 
   const fetchPartners = useCallback(async () => {
     try {
@@ -89,9 +130,15 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
     }
   }, [sortBy, order])
 
+  // Fetch partners on mount or when sort changes
+  useEffect(() => {
+    fetchPartners()
+  }, [fetchPartners])
+
   const handleSearch = () => {
     setSearch(searchTerm)
-    setPage(1) // Reset to first page when searching
+    setPage(1)
+    updateURL({ search: searchTerm, page: 1 })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -145,7 +192,13 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
     const [newSortBy, newOrder] = value.split('-')
     setSortBy(newSortBy)
     setOrder(newOrder as 'asc' | 'desc')
-    fetchPartners()
+    updateURL({ sortBy: newSortBy, order: newOrder })
+  }
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit)
+    setPage(1)
+    updateURL({ limit: newLimit, page: 1 })
   }
 
   const navigateToPartner = (partner: Partner) => {
@@ -161,6 +214,7 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage)
+      updateURL({ page: newPage })
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
@@ -253,7 +307,7 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
           </Select>
           <div className="flex items-center gap-2">
             <span className="text-sm">Show</span>
-            <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+            <Select value={String(limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
               <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Show" />
               </SelectTrigger>

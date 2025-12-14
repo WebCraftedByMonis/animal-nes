@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -35,26 +35,59 @@ interface CompaniesClientProps {
 }
 
 export default function CompaniesClient({ initialCompanies, initialTotal }: CompaniesClientProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // Initialize state from URL params
   const [companies, setCompanies] = useState<Company[]>(initialCompanies)
   const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState<'id' | 'companyName'>('id')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [limit, setLimit] = useState(8)
-  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+  const [sortBy, setSortBy] = useState<'id' | 'companyName'>((searchParams.get('sortBy') as 'id' | 'companyName') || 'id')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc')
+  const [limit, setLimit] = useState(Number(searchParams.get('limit')) || 8)
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [total, setTotal] = useState(initialTotal)
-  const router = useRouter()
+
+  // Update URL when filters change
+  const updateURL = useCallback((params: {
+    search?: string
+    sortBy?: string
+    sortOrder?: string
+    page?: number
+    limit?: number
+  }) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()))
+
+    if (params.search !== undefined) {
+      if (params.search) {
+        current.set('search', params.search)
+      } else {
+        current.delete('search')
+      }
+    }
+
+    if (params.sortBy) current.set('sortBy', params.sortBy)
+    if (params.sortOrder) current.set('sortOrder', params.sortOrder)
+    if (params.page) current.set('page', params.page.toString())
+    if (params.limit) current.set('limit', params.limit.toString())
+
+    const search = current.toString()
+    const query = search ? `?${search}` : ''
+
+    router.push(`${pathname}${query}`)
+  }, [pathname, router, searchParams])
 
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true)
       const { data } = await axios.get('/api/company', {
-        params: { 
-          search, 
-          sortBy, 
-          sortOrder, 
-          page, 
+        params: {
+          search,
+          sortBy,
+          sortOrder,
+          page,
           limit
         },
       })
@@ -77,7 +110,8 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
 
   const handleSearch = () => {
     setSearch(searchTerm)
-    setPage(1) // Reset to first page when searching
+    setPage(1)
+    updateURL({ search: searchTerm, page: 1 })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -87,9 +121,21 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
   }
 
   const handleSortChange = (value: string) => {
-    const [sortBy, sortOrder] = value.split('-')
-    setSortBy(sortBy as 'id' | 'companyName')
-    setSortOrder(sortOrder as 'asc' | 'desc')
+    const [newSortBy, newSortOrder] = value.split('-')
+    setSortBy(newSortBy as 'id' | 'companyName')
+    setSortOrder(newSortOrder as 'asc' | 'desc')
+    updateURL({ sortBy: newSortBy, sortOrder: newSortOrder })
+  }
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit)
+    setPage(1)
+    updateURL({ limit: newLimit, page: 1 })
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    updateURL({ page: newPage })
   }
 
   const navigateToCompany = (company: Company) => {
@@ -133,7 +179,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
             </SelectContent>
           </Select>
           <span>Show</span>
-          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+          <Select value={String(limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Show" />
             </SelectTrigger>
@@ -226,10 +272,10 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
 
           {total > limit && (
             <div className="mt-6 flex justify-center gap-2">
-              <Button 
-                variant="outline" 
-                disabled={page === 1} 
-                onClick={() => setPage(page - 1)}
+              <Button
+                variant="outline"
+                disabled={page === 1}
+                onClick={() => handlePageChange(page - 1)}
               >
                 Previous
               </Button>
@@ -248,7 +294,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
                   <Button
                     key={pageNum}
                     variant={pageNum === page ? 'default' : 'outline'}
-                    onClick={() => setPage(pageNum)}
+                    onClick={() => handlePageChange(pageNum)}
                     className={pageNum === page ? 'bg-green-500 hover:bg-green-600' : ''}
                   >
                     {pageNum}
@@ -258,7 +304,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
               <Button
                 variant="outline"
                 disabled={page * limit >= total}
-                onClick={() => setPage(page + 1)}
+                onClick={() => handlePageChange(page + 1)}
               >
                 Next
               </Button>
