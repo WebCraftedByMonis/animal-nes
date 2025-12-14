@@ -69,10 +69,11 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
   }, [search, sortBy, sortOrder, page, limit])
 
   useEffect(() => {
-    if (search || page > 1 || limit !== 8 || sortBy !== 'id' || sortOrder !== 'asc') {
+    // Fetch on mount if no initial data, or when filters change
+    if (initialCompanies.length === 0 || search || page > 1 || limit !== 8 || sortBy !== 'id' || sortOrder !== 'asc') {
       fetchCompanies()
     }
-  }, [search, sortBy, sortOrder, page, limit, fetchCompanies])
+  }, [search, sortBy, sortOrder, page, limit, fetchCompanies, initialCompanies.length])
 
   const handleSearch = () => {
     setSearch(searchTerm)

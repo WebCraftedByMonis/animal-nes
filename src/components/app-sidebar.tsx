@@ -29,7 +29,8 @@ import {
   Share2,
   DollarSign,
   GraduationCap,
-  FormInput
+  FormInput,
+  Pin
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -256,6 +257,16 @@ export function AppSidebar() {
                     <Link href="/dashboard/viewwebbanner" className="block text-sm text-muted-foreground hover:underline">View Web Banner</Link>
                   </div>
                 )}
+              </SidebarMenuItem>
+
+              {/* Sticky Logo */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/sticky-logo">
+                    <Pin className="w-4 h-4" />
+                    <span className="hover:text-green-500">Sticky Logo</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Testimonials */}
