@@ -51,9 +51,13 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
+    // Check if we're on localhost to allow non-secure cookies in production build for testing
+    const isLocalhost = request.headers.get('host')?.includes('localhost') ||
+                       request.headers.get('host')?.includes('127.0.0.1');
+
     response.cookies.set('partner-token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' && !isLocalhost,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24, // 24 hours
       path: '/',

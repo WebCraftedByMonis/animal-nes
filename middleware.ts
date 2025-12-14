@@ -2,16 +2,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Use a constant secret key since you don't want to modify .env
-const ADMIN_SECRET = 'your-super-secret-admin-key-change-this-in-production-2024';
-
-// Simple JWT verification without importing external libraries
+// Simple token format verification
+// The session tokens are 32-character hex strings, not JWTs
 function verifyToken(token: string): boolean {
   try {
-    // For middleware, we'll do a simple check
-    // The actual validation will happen in the API routes
-    const parts = token.split('.');
-    return parts.length === 3; // Basic JWT format check
+    // Check if token is a valid hex string of expected length (32 characters)
+    // The actual validation against the database will happen in the API routes
+    return typeof token === 'string' && token.length === 32 && /^[a-f0-9]+$/i.test(token);
   } catch {
     return false;
   }
