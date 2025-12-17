@@ -1083,3 +1083,34 @@ model StickyLogo {
 
   @@index([companyId])
 }
+
+// Social Media Token Management
+model SocialMediaToken {
+  id            Int      @id @default(autoincrement())
+  platform      String   @unique // facebook, instagram, twitter, linkedin, etc.
+  accessToken   String   @db.Text // Encrypted access token
+  refreshToken  String?  @db.Text // Encrypted refresh token (if applicable)
+  tokenType     String   @default("Bearer")
+  expiresAt     DateTime? // When the token expires
+  lastRefreshed DateTime @default(now())
+
+  // Platform-specific metadata
+  pageId        String?  // For Facebook/Instagram Page ID
+  accountId     String?  // For any account-specific identifier
+
+  // Status tracking
+  isActive      Boolean  @default(true)
+  lastError     String?  @db.Text
+  errorCount    Int      @default(0)
+
+  // Auto-refresh settings
+  autoRefresh   Boolean  @default(true)
+  refreshBeforeDays Int   @default(5) // Refresh 5 days before expiration
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([platform])
+  @@index([expiresAt])
+  @@index([isActive])
+}

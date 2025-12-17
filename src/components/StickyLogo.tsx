@@ -19,50 +19,94 @@ interface StickyLogo {
 }
 
 export default function StickyLogo() {
-  const [stickyLogo, setStickyLogo] = useState<StickyLogo | null>(null)
+  const [stickyLogos, setStickyLogos] = useState<StickyLogo[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchStickyLogo = async () => {
+    const fetchStickyLogos = async () => {
       try {
         const { data } = await axios.get('/api/sticky-logo')
-        setStickyLogo(data.data)
+        setStickyLogos(data.data || [])
       } catch (error) {
-        console.log('Error fetching sticky logo:', error)
+        console.log('Error fetching sticky logos:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchStickyLogo()
+    fetchStickyLogos()
   }, [])
 
-  if (isLoading || !stickyLogo || !stickyLogo.company.image) {
+  if (isLoading || stickyLogos.length === 0) {
     return null
   }
 
+  // Filter logos that have images
+  const validLogos = stickyLogos.filter(logo => logo.company.image)
+
+  if (validLogos.length === 0) {
+    return null
+  }
+
+  // Calculate dynamic size based on number of logos
+  const getLogoSize = () => {
+    const count = validLogos.length
+    if (count === 1) return 'w-16 h-16 md:w-20 md:h-20'
+    if (count === 2) return 'w-14 h-14 md:w-16 md:h-16'
+    if (count <= 4) return 'w-12 h-12 md:w-14 md:h-14'
+    if (count <= 7) return 'w-10 h-10 md:w-12 md:h-12'
+    return 'w-8 h-8 md:w-10 md:h-10'
+  }
+
+  const getPadding = () => {
+    const count = validLogos.length
+    if (count <= 2) return 'p-3'
+    if (count <= 5) return 'p-2'
+    return 'p-1.5'
+  }
+
+  const getGap = () => {
+    const count = validLogos.length
+    if (count <= 3) return 'gap-4'
+    if (count <= 6) return 'gap-3'
+    return 'gap-2'
+  }
+
+  const getBadgeSize = () => {
+    const count = validLogos.length
+    if (count <= 3) return 'text-xs px-2 py-1'
+    if (count <= 7) return 'text-[10px] px-1.5 py-0.5'
+    return 'text-[8px] px-1 py-0.5'
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Link
-        href={`/Companies/${stickyLogo.companyId}`}
-        className="block group"
-        aria-label={`Visit ${stickyLogo.company.companyName}`}
-      >
-        <div className="relative bg-white dark:bg-zinc-800 rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-500 hover:border-green-600 group-hover:scale-110">
-          <div className="relative w-16 h-16 md:w-20 md:h-20">
-            <Image
-              src={stickyLogo.company.image.url}
-              alt={stickyLogo.company.image.alt}
-              fill
-              className="object-contain rounded-full"
-              priority
-            />
+    <div className={`fixed bottom-6 right-6 z-50 flex flex-col ${getGap()} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+      {validLogos.map((logo, index) => (
+        <Link
+          key={logo.id}
+          href={`/Companies/${logo.companyId}`}
+          className="block group"
+          aria-label={`Visit ${logo.company.companyName}`}
+          style={{
+            animationDelay: `${index * 100}ms`,
+          }}
+        >
+          <div className={`relative bg-white dark:bg-zinc-800 rounded-full ${getPadding()} shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-500 hover:border-green-600 group-hover:scale-110`}>
+            <div className={`relative ${getLogoSize()}`}>
+              <Image
+                src={logo.company.image!.url}
+                alt={logo.company.image!.alt}
+                fill
+                className="object-contain rounded-full"
+                priority={index === 0}
+              />
+            </div>
+            <div className={`absolute -top-1 -right-1 bg-green-500 text-white ${getBadgeSize()} rounded-full shadow-md`}>
+              Partner
+            </div>
           </div>
-          <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-md">
-            Partner
-          </div>
-        </div>
-      </Link>
+        </Link>
+      ))}
     </div>
   )
 }

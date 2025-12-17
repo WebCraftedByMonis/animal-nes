@@ -34,22 +34,22 @@ interface StickyLogo {
 }
 
 export default function StickyLogoPage() {
-  const [stickyLogo, setStickyLogo] = useState<StickyLogo | null>(null)
+  const [stickyLogos, setStickyLogos] = useState<StickyLogo[]>([])
   const [companyId, setCompanyId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isRemoving, setIsRemoving] = useState(false)
+  const [removingId, setRemovingId] = useState<number | null>(null)
   const [companyPreview, setCompanyPreview] = useState<Company | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
 
-  const fetchStickyLogo = async () => {
+  const fetchStickyLogos = async () => {
     setIsLoading(true)
     try {
       const { data } = await axios.get('/api/sticky-logo')
-      setStickyLogo(data.data)
+      setStickyLogos(data.data || [])
     } catch (error) {
       console.log(error)
-      toast.error('Failed to fetch sticky logo configuration')
+      toast.error('Failed to fetch sticky logos')
     } finally {
       setIsLoading(false)
     }
@@ -75,7 +75,7 @@ export default function StickyLogoPage() {
   }
 
   useEffect(() => {
-    fetchStickyLogo()
+    fetchStickyLogos()
   }, [])
 
   useEffect(() => {
@@ -96,32 +96,54 @@ export default function StickyLogoPage() {
       return
     }
 
+    if (stickyLogos.length >= 10) {
+      toast.error('Maximum of 10 sticky logos reached. Please remove one before adding a new one.')
+      return
+    }
+
     setIsSaving(true)
     try {
-      const { data } = await axios.post('/api/sticky-logo', {
+      await axios.post('/api/sticky-logo', {
         companyId: Number(companyId),
       })
-      setStickyLogo(data.data)
+      await fetchStickyLogos()
       setCompanyId('')
       setCompanyPreview(null)
-      toast.success('Sticky logo updated successfully')
+      toast.success('Sticky logo added successfully')
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to update sticky logo')
+      toast.error(error.response?.data?.error || 'Failed to add sticky logo')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleRemove = async () => {
-    setIsRemoving(true)
+  const handleRemove = async (id: number) => {
+    setRemovingId(id)
     try {
-      await axios.delete('/api/sticky-logo')
-      setStickyLogo(null)
+      await axios.delete(`/api/sticky-logo?id=${id}`)
+      await fetchStickyLogos()
       toast.success('Sticky logo removed successfully')
     } catch (error) {
       toast.error('Failed to remove sticky logo')
     } finally {
-      setIsRemoving(false)
+      setRemovingId(null)
+    }
+  }
+
+  const handleRemoveAll = async () => {
+    if (!confirm('Are you sure you want to remove all sticky logos?')) {
+      return
+    }
+
+    setRemovingId(-1)
+    try {
+      await axios.delete('/api/sticky-logo')
+      await fetchStickyLogos()
+      toast.success('All sticky logos removed successfully')
+    } catch (error) {
+      toast.error('Failed to remove sticky logos')
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -135,62 +157,88 @@ export default function StickyLogoPage() {
 
   return (
     <div className="p-6 space-y-6 w-full max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-center text-green-500">
-        Sticky Logo Management
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-green-500">
+          Sticky Logo Management
+        </h1>
+        <div className="text-sm text-muted-foreground">
+          {stickyLogos.length} / 10 logos active
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Current Sticky Logo</CardTitle>
-          <CardDescription>
-            The company logo displayed on the homepage that redirects to the company detail page
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Active Sticky Logos</CardTitle>
+              <CardDescription>
+                Company logos displayed on the homepage (up to 10 logos)
+              </CardDescription>
+            </div>
+            {stickyLogos.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveAll}
+                disabled={removingId === -1}
+                className="text-red-600 hover:text-red-700 border-red-200"
+              >
+                {removingId === -1 ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Remove All'
+                )}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          {stickyLogo ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 border rounded-lg">
-                {stickyLogo.company.image && (
-                  <Image
-                    src={stickyLogo.company.image.url}
-                    alt={stickyLogo.company.image.alt}
-                    width={80}
-                    height={80}
-                    className="rounded object-contain"
-                  />
-                )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">
-                    {stickyLogo.company.companyName}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Company ID: {stickyLogo.companyId}
-                  </p>
-                  <Link
-                    href={`/Companies/${stickyLogo.companyId}`}
-                    className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1 mt-1"
-                    target="_blank"
-                  >
-                    View company page <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleRemove}
-                  disabled={isRemoving}
-                >
-                  {isRemoving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <X className="h-4 w-4" />
+          {stickyLogos.length > 0 ? (
+            <div className="space-y-3">
+              {stickyLogos.map((logo) => (
+                <div key={logo.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  {logo.company.image && (
+                    <Image
+                      src={logo.company.image.url}
+                      alt={logo.company.image.alt}
+                      width={60}
+                      height={60}
+                      className="rounded object-contain"
+                    />
                   )}
-                </Button>
-              </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">
+                      {logo.company.companyName}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Company ID: {logo.companyId}
+                    </p>
+                    <Link
+                      href={`/Companies/${logo.companyId}`}
+                      className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1 mt-1"
+                      target="_blank"
+                    >
+                      View company page <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleRemove(logo.id)}
+                    disabled={removingId === logo.id}
+                  >
+                    {removingId === logo.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">
-              No sticky logo configured
+              No sticky logos configured
             </p>
           )}
         </CardContent>
@@ -198,9 +246,9 @@ export default function StickyLogoPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Set Sticky Logo</CardTitle>
+          <CardTitle>Add Sticky Logo</CardTitle>
           <CardDescription>
-            Enter a company ID to set or update the sticky logo
+            Enter a company ID to add a new sticky logo (max 10)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -211,25 +259,32 @@ export default function StickyLogoPage() {
               value={companyId}
               onChange={(e) => setCompanyId(e.target.value)}
               className="flex-1"
+              disabled={stickyLogos.length >= 10}
             />
             <Button
               onClick={handleSave}
-              disabled={isSaving || !companyId || !companyPreview}
+              disabled={isSaving || !companyId || !companyPreview || stickyLogos.length >= 10}
               className="bg-green-500 hover:bg-green-600"
             >
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  Adding...
                 </>
               ) : (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
-                  Set Logo
+                  Add Logo
                 </>
               )}
             </Button>
           </div>
+
+          {stickyLogos.length >= 10 && (
+            <p className="text-sm text-orange-600 dark:text-orange-500">
+              Maximum limit reached (10/10). Remove a logo to add a new one.
+            </p>
+          )}
 
           {isLoadingPreview && (
             <div className="flex items-center justify-center py-4">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getFacebookToken } from "@/lib/social-media/facebook-token";
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,15 +8,30 @@ export async function POST(request: NextRequest) {
     const link = formData.get("link") as string | null;
     const image = formData.get("image") as File | null;
 
-    // Validate environment variables
-    const pageId = process.env.FACEBOOK_PAGE_ID;
-    const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+    // Get token from database (with fallback to environment variables)
+    let pageId: string;
+    let accessToken: string;
 
-    if (!pageId || !accessToken) {
-      return NextResponse.json(
-        { success: false, error: "Facebook API credentials not configured" },
-        { status: 500 }
-      );
+    const dbToken = await getFacebookToken();
+
+    if (dbToken && dbToken.accessToken && dbToken.pageId) {
+      // Use token from database
+      pageId = dbToken.pageId;
+      accessToken = dbToken.accessToken;
+    } else {
+      // Fallback to environment variables
+      const envPageId = process.env.FACEBOOK_PAGE_ID;
+      const envAccessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+
+      if (!envPageId || !envAccessToken) {
+        return NextResponse.json(
+          { success: false, error: "Facebook API credentials not configured. Please set up tokens in admin dashboard." },
+          { status: 500 }
+        );
+      }
+
+      pageId = envPageId;
+      accessToken = envAccessToken;
     }
 
     // Validate content
