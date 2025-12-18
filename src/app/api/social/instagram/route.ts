@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink } from "fs/promises";
-import { join } from "path";
+import { prisma } from "@/lib/prisma";
+import { decryptToken } from "@/lib/social-media/encryption";
+import { uploadImage } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
-  let tempFilePath: string | null = null;
-
   try {
     const formData = await request.formData();
     const content = formData.get("content") as string;
-    const image = formData.get("image") as File | null;
+    const mediaCount = parseInt(formData.get("mediaCount") as string) || 0;
 
-    // Validate environment variables
-    const businessAccountId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
-    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    // Get the first media file (Instagram API route currently handles single image)
+    const image = formData.get("media_0") as File | null;
+
+    // Fetch Instagram credentials from database
+    const instagramToken = await prisma.socialMediaToken.findUnique({
+      where: { platform: "instagram" },
+    });
+
+    if (!instagramToken || !instagramToken.isActive) {
+      return NextResponse.json(
+        { success: false, error: "Instagram credentials not configured or inactive" },
+        { status: 500 }
+      );
+    }
+
+    const businessAccountId = instagramToken.accountId;
+    const accessToken = decryptToken(instagramToken.accessToken);
 
     if (!businessAccountId || !accessToken) {
       return NextResponse.json(
@@ -22,30 +35,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Instagram requires an image
-    if (!image) {
+    if (!image || mediaCount === 0) {
       return NextResponse.json(
         { success: false, error: "Instagram requires an image to post" },
         { status: 400 }
       );
     }
 
-    // Step 1: Save image temporarily and create a publicly accessible URL
-    // Note: In production, you should use a proper file hosting service (S3, Cloudinary, etc.)
-    // This is a simplified approach using the Next.js public folder
+    // Step 1: Upload image to Cloudinary
     const arrayBuffer = await image.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const filename = `instagram-${timestamp}-${image.name}`;
-    tempFilePath = join(process.cwd(), "public", "temp", filename);
+    const cloudinaryResult = await uploadImage(
+      buffer,
+      "social-media/instagram",
+      image.name
+    );
 
-    // Ensure temp directory exists and save file
-    await writeFile(tempFilePath, buffer);
-
-    // Construct public URL (you'll need to update this with your actual domain)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const imageUrl = `${baseUrl}/temp/${filename}`;
+    const imageUrl = cloudinaryResult.secure_url;
 
     // Step 2: Create media container
     const containerParams = new URLSearchParams({
@@ -109,14 +116,5 @@ export async function POST(request: NextRequest) {
       { success: false, error: error.message || "Internal server error" },
       { status: 500 }
     );
-  } finally {
-    // Clean up temporary file
-    if (tempFilePath) {
-      try {
-        await unlink(tempFilePath);
-      } catch (err) {
-        console.error("Failed to delete temporary file:", err);
-      }
-    }
   }
 }
