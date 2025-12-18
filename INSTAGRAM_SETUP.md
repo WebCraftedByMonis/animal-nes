@@ -52,7 +52,7 @@ SSH into your production server and run:
 cd /path/to/your/project
 
 # Run the setup script with your Instagram Account ID
-node scripts/setup-instagram-token.js 17841469005860042
+node setup-instagram-token.js 17841469005860042
 ```
 
 Replace `17841469005860042` with your actual Instagram Business Account ID.

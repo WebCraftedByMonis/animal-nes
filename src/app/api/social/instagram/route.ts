@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decryptToken } from "@/lib/social-media/encryption";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage, deleteFromCloudinary } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
+  let cloudinaryPublicId: string | null = null;
+
   try {
     const formData = await request.formData();
     const content = formData.get("content") as string;
@@ -53,6 +55,7 @@ export async function POST(request: NextRequest) {
     );
 
     const imageUrl = cloudinaryResult.secure_url;
+    cloudinaryPublicId = cloudinaryResult.public_id;
 
     // Step 2: Create media container
     const containerParams = new URLSearchParams({
@@ -105,6 +108,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Step 4: Clean up - Delete image from Cloudinary after successful posting
+    if (cloudinaryPublicId) {
+      try {
+        await deleteFromCloudinary(cloudinaryPublicId, "image");
+        console.log(`✅ Deleted temporary image from Cloudinary: ${cloudinaryPublicId}`);
+      } catch (deleteError) {
+        console.error("⚠️  Failed to delete image from Cloudinary:", deleteError);
+        // Don't fail the request if cleanup fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       postId: publishData.id,
@@ -112,6 +126,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Instagram API error:", error);
+
+    // Clean up Cloudinary image if posting failed
+    if (cloudinaryPublicId) {
+      try {
+        await deleteFromCloudinary(cloudinaryPublicId, "image");
+        console.log(`🧹 Cleaned up Cloudinary image after error: ${cloudinaryPublicId}`);
+      } catch (deleteError) {
+        console.error("⚠️  Failed to delete image from Cloudinary:", deleteError);
+      }
+    }
+
     return NextResponse.json(
       { success: false, error: error.message || "Internal server error" },
       { status: 500 }
