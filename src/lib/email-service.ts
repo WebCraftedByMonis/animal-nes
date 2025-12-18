@@ -1,5 +1,7 @@
 // lib/email-service.ts
 import nodemailer from 'nodemailer';
+import { prisma } from '@/lib/prisma';
+import { EmailType, EmailStatus } from '@prisma/client';
 
 // Create transporter
 const transporter = nodemailer.createTransport({
@@ -9,6 +11,41 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_APP_PASSWORD,
   },
 });
+
+// Email logging function
+async function logEmail(params: {
+  recipientEmail: string;
+  recipientName?: string;
+  recipientType: string;
+  subject: string;
+  emailType: EmailType;
+  status: EmailStatus;
+  errorMessage?: string;
+  appointmentId?: number;
+  partnerId?: number;
+  metadata?: any;
+}) {
+  try {
+    await prisma.emailLog.create({
+      data: {
+        recipientEmail: params.recipientEmail,
+        recipientName: params.recipientName,
+        recipientType: params.recipientType,
+        subject: params.subject,
+        emailType: params.emailType,
+        status: params.status,
+        errorMessage: params.errorMessage,
+        appointmentId: params.appointmentId,
+        partnerId: params.partnerId,
+        metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+        sentAt: params.status === 'SENT' ? new Date() : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error logging email:', error);
+    // Don't throw - we don't want logging failures to stop email sending
+  }
+}
 
 // PHASE 1: Initial notification - LIMITED INFO (no phone/address)
 export async function sendInitialNotification(
@@ -92,9 +129,42 @@ export async function sendInitialNotification(
     };
 
     const result = await transporter.sendMail(mailOptions);
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: mailOptions.subject,
+      emailType: 'INITIAL_NOTIFICATION',
+      status: 'SENT',
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+      metadata: {
+        consultationType: appointment.paymentInfo?.consultationType,
+        isEmergency: appointment.isEmergency,
+        species: appointment.species,
+        city: appointment.city,
+      },
+    });
+
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending initial notification:', error);
+
+    // Log failed email
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: mailOptions.subject,
+      emailType: 'INITIAL_NOTIFICATION',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+    });
+
     return { success: false, error };
   }
 }
@@ -191,9 +261,41 @@ export async function sendAcceptanceConfirmation(
     };
 
     const result = await transporter.sendMail(mailOptions);
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: mailOptions.subject,
+      emailType: 'ACCEPTANCE_CONFIRMATION',
+      status: 'SENT',
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+      metadata: {
+        ownerPhone: appointment.doctor,
+        species: appointment.species,
+        city: appointment.city,
+      },
+    });
+
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending confirmation:', error);
+
+    // Log failed email
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: mailOptions.subject,
+      emailType: 'ACCEPTANCE_CONFIRMATION',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+    });
+
     return { success: false, error };
   }
 }
@@ -239,9 +341,41 @@ export async function sendCaseTakenNotification(
     };
 
     await transporter.sendMail(mailOptions);
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: mailOptions.subject,
+      emailType: 'CASE_TAKEN',
+      status: 'SENT',
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+      metadata: {
+        acceptedByDoctor,
+        species: appointment.species,
+        city: appointment.city,
+      },
+    });
+
     return { success: true };
   } catch (error) {
     console.error('Error sending case taken notification:', error);
+
+    // Log failed email
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: mailOptions.subject,
+      emailType: 'CASE_TAKEN',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+    });
+
     return { success: false, error };
   }
 }
@@ -357,9 +491,36 @@ export async function sendMasterTrainerApproval(registration: any) {
     };
 
     const result = await transporter.sendMail(mailOptions);
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: registration.email,
+      recipientName: registration.name,
+      recipientType: 'MASTER_TRAINER',
+      subject: mailOptions.subject,
+      emailType: 'MASTER_TRAINER_APPROVAL',
+      status: 'SENT',
+      metadata: {
+        whatsappNumber: registration.whatsappNumber,
+        address: registration.address,
+      },
+    });
+
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending master trainer approval:', error);
+
+    // Log failed email
+    await logEmail({
+      recipientEmail: registration.email,
+      recipientName: registration.name,
+      recipientType: 'MASTER_TRAINER',
+      subject: mailOptions.subject,
+      emailType: 'MASTER_TRAINER_APPROVAL',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+
     return { success: false, error };
   }
 }

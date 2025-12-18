@@ -4,6 +4,40 @@ import { prisma } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
 import { getAcceptanceConfirmationEmail, getCaseTakenEmail, getPatientDoctorAssignmentEmail } from '@/lib/email-templates';
 
+// Email logging helper
+async function logEmail(params: {
+  recipientEmail: string;
+  recipientName?: string;
+  recipientType: string;
+  subject: string;
+  emailType: 'INITIAL_NOTIFICATION' | 'ACCEPTANCE_CONFIRMATION' | 'CASE_TAKEN' | 'PATIENT_ASSIGNMENT' | 'MASTER_TRAINER_APPROVAL' | 'OTHER';
+  status: 'SENT' | 'FAILED' | 'PENDING';
+  errorMessage?: string;
+  appointmentId?: number;
+  partnerId?: number;
+  metadata?: any;
+}) {
+  try {
+    await prisma.emailLog.create({
+      data: {
+        recipientEmail: params.recipientEmail,
+        recipientName: params.recipientName,
+        recipientType: params.recipientType,
+        subject: params.subject,
+        emailType: params.emailType,
+        status: params.status,
+        errorMessage: params.errorMessage,
+        appointmentId: params.appointmentId,
+        partnerId: params.partnerId,
+        metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+        sentAt: params.status === 'SENT' ? new Date() : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error logging email:', error);
+  }
+}
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -99,12 +133,47 @@ export async function GET(request: NextRequest) {
       
       // Send full details email with both form links to doctor
       const confirmationEmail = getAcceptanceConfirmationEmail(doctor, appointment, links);
-      
-      await transporter.sendMail({
-        from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
-        to: doctor.partnerEmail,
-        ...confirmationEmail
-      });
+
+      try {
+        await transporter.sendMail({
+          from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
+          to: doctor.partnerEmail,
+          ...confirmationEmail
+        });
+
+        // Log successful confirmation email
+        await logEmail({
+          recipientEmail: doctor.partnerEmail!,
+          recipientName: doctor.partnerName,
+          recipientType: 'VET',
+          subject: confirmationEmail.subject,
+          emailType: 'ACCEPTANCE_CONFIRMATION',
+          status: 'SENT',
+          appointmentId: appointment.id,
+          partnerId: parseInt(doctorId),
+          metadata: {
+            ownerPhone: appointment.doctor,
+            species: appointment.species,
+            city: appointment.city,
+          },
+        });
+      } catch (error: any) {
+        console.error('Failed to send confirmation email:', error);
+
+        // Log failed confirmation email
+        await logEmail({
+          recipientEmail: doctor.partnerEmail!,
+          recipientName: doctor.partnerName,
+          recipientType: 'VET',
+          subject: confirmationEmail.subject,
+          emailType: 'ACCEPTANCE_CONFIRMATION',
+          status: 'FAILED',
+          errorMessage: error.message || String(error),
+          appointmentId: appointment.id,
+          partnerId: parseInt(doctorId),
+        });
+        throw error;
+      }
       
       // Send notification email to patient
       console.log('=== PATIENT EMAIL DEBUG ===');
@@ -133,15 +202,46 @@ export async function GET(request: NextRequest) {
             to: appointment.customer.email,
             ...patientEmail
           });
-          
+
           console.log(`✅ Patient notification sent successfully!`);
           console.log('Email result:', emailResult);
-        } catch (patientEmailError) {
+
+          // Log successful patient email
+          await logEmail({
+            recipientEmail: appointment.customer.email,
+            recipientName: appointment.customer.name || undefined,
+            recipientType: 'PATIENT',
+            subject: patientEmail.subject,
+            emailType: 'PATIENT_ASSIGNMENT',
+            status: 'SENT',
+            appointmentId: appointment.id,
+            partnerId: parseInt(doctorId),
+            metadata: {
+              doctorName: doctor.partnerName,
+              doctorEmail: doctor.partnerEmail,
+              species: appointment.species,
+              city: appointment.city,
+            },
+          });
+        } catch (patientEmailError: any) {
           console.error('❌ Failed to send patient notification email:', patientEmailError);
           console.error('Error details:', {
             message: patientEmailError.message,
             code: patientEmailError.code,
             stack: patientEmailError.stack
+          });
+
+          // Log failed patient email
+          await logEmail({
+            recipientEmail: appointment.customer.email,
+            recipientName: appointment.customer.name || undefined,
+            recipientType: 'PATIENT',
+            subject: patientEmail.subject,
+            emailType: 'PATIENT_ASSIGNMENT',
+            status: 'FAILED',
+            errorMessage: patientEmailError.message || String(patientEmailError),
+            appointmentId: appointment.id,
+            partnerId: parseInt(doctorId),
           });
           // Don't fail the entire process if patient email fails
         }
@@ -162,11 +262,46 @@ export async function GET(request: NextRequest) {
       
       for (const otherDoc of otherDoctors) {
         const caseTakenEmail = getCaseTakenEmail(otherDoc, appointment, doctor.partnerName);
-        await transporter.sendMail({
-          from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
-          to: otherDoc.partnerEmail,
-          ...caseTakenEmail
-        });
+        try {
+          await transporter.sendMail({
+            from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
+            to: otherDoc.partnerEmail,
+            ...caseTakenEmail
+          });
+
+          // Log successful case taken email
+          await logEmail({
+            recipientEmail: otherDoc.partnerEmail!,
+            recipientName: otherDoc.partnerName,
+            recipientType: 'VET',
+            subject: caseTakenEmail.subject,
+            emailType: 'CASE_TAKEN',
+            status: 'SENT',
+            appointmentId: appointment.id,
+            partnerId: otherDoc.id,
+            metadata: {
+              acceptedByDoctor: doctor.partnerName,
+              species: appointment.species,
+              city: appointment.city,
+            },
+          });
+        } catch (error: any) {
+          console.error(`Failed to send case taken email to ${otherDoc.partnerEmail}:`, error);
+
+          // Log failed case taken email
+          await logEmail({
+            recipientEmail: otherDoc.partnerEmail!,
+            recipientName: otherDoc.partnerName,
+            recipientType: 'VET',
+            subject: caseTakenEmail.subject,
+            emailType: 'CASE_TAKEN',
+            status: 'FAILED',
+            errorMessage: error.message || String(error),
+            appointmentId: appointment.id,
+            partnerId: otherDoc.id,
+          });
+          // Continue sending to other doctors even if one fails
+        }
       }
       
       // Return success page

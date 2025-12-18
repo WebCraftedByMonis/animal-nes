@@ -1114,3 +1114,56 @@ model SocialMediaToken {
   @@index([expiresAt])
   @@index([isActive])
 }
+
+// Email Logging System
+enum EmailType {
+  INITIAL_NOTIFICATION
+  ACCEPTANCE_CONFIRMATION
+  CASE_TAKEN
+  PATIENT_ASSIGNMENT
+  MASTER_TRAINER_APPROVAL
+  OTHER
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+model EmailLog {
+  id              Int          @id @default(autoincrement())
+
+  // Recipient information
+  recipientEmail  String
+  recipientName   String?
+  recipientType   String       // VET, PATIENT, ADMIN, MASTER_TRAINER, etc.
+
+  // Email details
+  subject         String       @db.Text
+  emailType       EmailType
+  status          EmailStatus  @default(PENDING)
+
+  // Error tracking
+  errorMessage    String?      @db.Text
+  attemptCount    Int          @default(1)
+
+  // Relations
+  appointmentId   Int?         // Link to appointment if applicable
+  partnerId       Int?         // Link to vet/partner if applicable
+
+  // Additional metadata (JSON)
+  metadata        String?      @db.Text // Store additional info as JSON
+
+  // Timestamps
+  sentAt          DateTime?    // When email was successfully sent
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([appointmentId])
+  @@index([partnerId])
+  @@index([recipientEmail])
+  @@index([emailType])
+  @@index([status])
+  @@index([createdAt])
+}
