@@ -2,11 +2,12 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import CheckoutClient from './CheckoutClient'
+import CheckoutLoginPrompt from './CheckoutLoginPrompt'
 
 export default async function CheckoutPage() {
   const session = await auth()
   if (!session?.user?.email) {
-    return <p className="text-center mt-10">Please login to proceed with checkout.</p>
+    return <CheckoutLoginPrompt />
   }
 
   const user = await prisma.user.findUnique({

@@ -8,6 +8,7 @@ import ProgressBar from "@/components/ProgressBar";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import LoginModal from "@/components/LoginModal";
 
@@ -97,22 +98,24 @@ export default function RootLayout({
         >
           <SessionWrapper>
             <CartProvider>
-              <LoginModalProvider>
-                <ProgressBar />
-                {/* Main layout container */}
-                <div className="min-h-screen flex flex-col">
-                  <Navbar />
-                  <Toaster position="top-center" />
-                  <LoginModal />
+              <WishlistProvider>
+                <LoginModalProvider>
+                  <ProgressBar />
+                  {/* Main layout container */}
+                  <div className="min-h-screen flex flex-col">
+                    <Navbar />
+                    <Toaster position="top-center" />
+                    <LoginModal />
 
-                  {/* Main content with padding-top to account for fixed navbar */}
-                  <main className="flex-1 pt-14 sm:pt-16">
-                    {children}
-                  </main>
+                    {/* Main content with padding-top to account for fixed navbar */}
+                    <main className="flex-1 pt-14 sm:pt-16">
+                      {children}
+                    </main>
 
-                  <Footer />
-                </div>
-              </LoginModalProvider>
+                    <Footer />
+                  </div>
+                </LoginModalProvider>
+              </WishlistProvider>
             </CartProvider>
           </SessionWrapper>
         </ThemeProvider>

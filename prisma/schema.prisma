@@ -53,6 +53,7 @@ model Product {
   variants       ProductVariant[]
   cartItems      CartItem[]
   checkoutItems  CheckoutItem[]
+  wishlistItems  WishlistItem[]
 
   @@index([companyId])
   @@index([partnerId])
@@ -288,6 +289,7 @@ model User {
   animalCart    AnimalCart[]
   jobApplicants JobApplicant[]
   testimonials  Testimonial[]
+  wishlist      WishlistItem[]
   createdAt DateTime? @default(now())
 
 }
@@ -341,6 +343,19 @@ model CartItem {
   @@unique([userId, productId, variantId])
   @@index([productId])
   @@index([variantId])
+}
+
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }
 
 model Checkout {

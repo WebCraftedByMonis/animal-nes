@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Cat, MenuIcon } from "lucide-react";
+import { Cat, MenuIcon, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signIn, signOut, useSession } from "next-auth/react";
@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useLoginModal } from "@/contexts/LoginModalContext";
 
 import {
@@ -46,6 +47,7 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { counts } = useCart();
+  const { wishlist } = useWishlist();
   const { openModal } = useLoginModal();
 
   // Handle scroll effect
@@ -139,6 +141,17 @@ export default function Navbar() {
             <div className="hidden sm:block">
               <ModeToggle />
             </div>
+
+            {/* Wishlist Button with Badge */}
+            <Link href="/wishlist" className="relative p-2" aria-label={`Wishlist${wishlist.length > 0 ? ` (${wishlist.length} items)` : ''}`}>
+              <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center" aria-hidden="true">
+                  {wishlist.length > 99 ? '99+' : wishlist.length}
+                </span>
+              )}
+              <span className="sr-only">View wishlist</span>
+            </Link>
 
             {/* Cart Button with Badge */}
             <Link href="/cart" className="relative p-2" aria-label={`Shopping cart${counts.productCount > 0 ? ` (${counts.productCount} items)` : ''}`}>

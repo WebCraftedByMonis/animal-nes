@@ -1,10 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { toast } from 'react-hot-toast'
-import { Loader2 } from 'lucide-react'  // <-- Spinner Icon (Lucide)
+import { Loader2 } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 
 interface AddToCartButtonProps {
@@ -14,38 +12,19 @@ interface AddToCartButtonProps {
 }
 
 export default function AddToCartButton({ productId, isActive, variantId }: AddToCartButtonProps) {
-  const { data: session } = useSession()
   const router = useRouter()
-  const { incrementProductCount } = useCart()
+  const { addToCart } = useCart()
 
   const [loading, setLoading] = useState(false)
 
   const handleAddToCart = async () => {
-    if (!session?.user) {
-      toast.error('Please login to add items to your cart.')
-      return
-    }
-
     setLoading(true)
 
     try {
-      const res = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, variantId }),
-      })
-
-      if (res.ok) {
-        toast.success('Product added to cart.')
-        incrementProductCount() // Update cart count immediately
-        router.refresh()  // Optional: Refresh page to reflect cart state
-      } else {
-        const err = await res.json()
-        toast.error(err.message || 'Error adding to cart')
-      }
+      await addToCart(productId, variantId)
+      router.refresh()  // Optional: Refresh page to reflect cart state
     } catch (error) {
       console.error('Error adding to cart:', error)
-      toast.error('Something went wrong.')
     } finally {
       setLoading(false)
     }

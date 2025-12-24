@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
+import WishlistButton from '@/components/WishlistButton';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Product {
@@ -46,16 +47,19 @@ export default function ProductClient({ product }: { product: Product }) {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Product Image Section */}
         <div className="md:w-1/2">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md overflow-hidden relative">
             {product.image ? (
-              <Image
-                src={product.image.url}
-                alt={product.image.alt || product.productName}
-                width={600}
-                height={600}
-                className="w-full h-auto object-contain"
-                priority
-              />
+              <>
+                <Image
+                  src={product.image.url}
+                  alt={product.image.alt || product.productName}
+                  width={600}
+                  height={600}
+                  className="w-full h-auto object-contain"
+                  priority
+                />
+                <WishlistButton productId={product.id} />
+              </>
             ) : (
               <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
                 <span className="text-gray-400 dark:text-gray-600">No Image Available</span>

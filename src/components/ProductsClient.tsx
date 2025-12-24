@@ -19,6 +19,8 @@ import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from 'framer-motion'
+import WishlistButton from './WishlistButton'
+import QuickAddToCartButton from './QuickAddToCartButton'
 
 interface Product {
   id: number
@@ -590,6 +592,12 @@ export default function ProductsClient() {
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                           priority={false}
+                        />
+                        <WishlistButton productId={product.id} />
+                        <QuickAddToCartButton
+                          productId={product.id}
+                          variantId={v?.id}
+                          className="absolute bottom-3 right-3 z-10"
                         />
                       </div>
                     )}

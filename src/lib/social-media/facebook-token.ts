@@ -85,6 +85,7 @@ export async function debugToken(
 
 /**
  * Store or update Facebook token in database
+ * Also updates Instagram token since they use the same token
  */
 export async function saveFacebookToken(
   accessToken: string,
@@ -98,6 +99,7 @@ export async function saveFacebookToken(
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expirationDays);
 
+  // Update Facebook token
   await prisma.socialMediaToken.upsert({
     where: { platform: "facebook" },
     update: {
@@ -120,6 +122,26 @@ export async function saveFacebookToken(
       refreshBeforeDays: 5,
     },
   });
+
+  // Also update Instagram token if it exists (Instagram uses same token as Facebook)
+  const instagramToken = await prisma.socialMediaToken.findUnique({
+    where: { platform: "instagram" },
+  });
+
+  if (instagramToken) {
+    await prisma.socialMediaToken.update({
+      where: { platform: "instagram" },
+      data: {
+        accessToken: encryptedToken,
+        expiresAt: expiresAt,
+        lastRefreshed: new Date(),
+        isActive: true,
+        errorCount: 0,
+        lastError: null,
+      },
+    });
+    console.log("✅ Instagram token also updated with new Facebook token");
+  }
 }
 
 /**
