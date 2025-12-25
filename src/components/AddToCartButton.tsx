@@ -34,7 +34,7 @@ export default function AddToCartButton({ productId, isActive, variantId }: AddT
     <button
       onClick={handleAddToCart}
       disabled={loading || !isActive}
-      className="flex items-center justify-center gap-2 flex-1 bg-green-500 border border-green-500 text-white hover:bg-green-600 py-3 px-6 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-zinc-900 border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 py-3 px-6 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {loading ? (
         <>

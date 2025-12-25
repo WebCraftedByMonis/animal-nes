@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
-import { Eye, Crown, X, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Crown, X, Pencil, Trash2, MessageSquare } from 'lucide-react';
 
 interface ProductVariant {
   id: number;
@@ -640,6 +640,13 @@ export default function PartnerDashboard() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold text-green-600">My Products</h2>
+                  <button
+                    onClick={() => router.push('/partner/dashboard/reviews')}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Manage Reviews
+                  </button>
                 </div>
 
                 {partner.products && partner.products.length > 0 ? (

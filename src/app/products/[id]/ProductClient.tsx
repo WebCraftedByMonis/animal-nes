@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
+import BuyNowButton from '@/components/BuyNowButton';
 import WishlistButton from '@/components/WishlistButton';
+import ProductReviewForm from '@/components/ProductReviewForm';
+import ProductReviews from '@/components/ProductReviews';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Product {
@@ -38,7 +41,8 @@ export default function ProductClient({ product }: { product: Product }) {
   const [selectedVariantId, setSelectedVariantId] = useState<number>(product.variants[0]?.id || 0);
   const [showDescription, setShowDescription] = useState(false);
   const [showDosage, setShowDosage] = useState(false);
-  
+  const [refreshReviews, setRefreshReviews] = useState(0);
+
   const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
   const isOutOfStock = product.outofstock || !product.isActive;
 
@@ -202,15 +206,20 @@ export default function ProductClient({ product }: { product: Product }) {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              {!isOutOfStock && selectedVariantId && selectedVariant && selectedVariant.inventory > 0 && (
-                <AddToCartClientWrapper 
-                  productId={product.id} 
-                  variantId={selectedVariantId} 
-                  isActive={product.isActive && !product.outofstock} 
-                />
-              )}
-              
-              {(isOutOfStock || (selectedVariant && selectedVariant.inventory === 0)) && (
+              {!isOutOfStock && selectedVariantId && selectedVariant && selectedVariant.inventory > 0 ? (
+                <>
+                  <AddToCartClientWrapper
+                    productId={product.id}
+                    variantId={selectedVariantId}
+                    isActive={product.isActive && !product.outofstock}
+                  />
+                  <BuyNowButton
+                    productId={product.id}
+                    variantId={selectedVariantId}
+                    isActive={product.isActive && !product.outofstock}
+                  />
+                </>
+              ) : (
                 <button
                   disabled
                   className="flex-1 bg-gray-300 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 py-3 px-6 rounded-lg font-medium cursor-not-allowed"
@@ -300,6 +309,15 @@ export default function ProductClient({ product }: { product: Product }) {
           <p className="font-medium text-gray-500 dark:text-gray-400">Sub-Sub Category</p>
           <p className="mt-1 text-gray-900 dark:text-gray-100">{product.subsubCategory}</p>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-12 space-y-8">
+        <ProductReviews productId={product.id} refreshTrigger={refreshReviews} />
+        <ProductReviewForm
+          productId={product.id}
+          onReviewSubmitted={() => setRefreshReviews(prev => prev + 1)}
+        />
       </div>
     </div>
   )

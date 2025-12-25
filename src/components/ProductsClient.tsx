@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import WishlistButton from './WishlistButton'
 import QuickAddToCartButton from './QuickAddToCartButton'
+import QuickBuyNowButton from './QuickBuyNowButton'
 
 interface Product {
   id: number
@@ -594,11 +595,16 @@ export default function ProductsClient() {
                           priority={false}
                         />
                         <WishlistButton productId={product.id} />
-                        <QuickAddToCartButton
-                          productId={product.id}
-                          variantId={v?.id}
-                          className="absolute bottom-3 right-3 z-10"
-                        />
+                        <div className="absolute bottom-3 right-3 z-10 flex gap-2">
+                          <QuickAddToCartButton
+                            productId={product.id}
+                            variantId={v?.id}
+                          />
+                          <QuickBuyNowButton
+                            productId={product.id}
+                            variantId={v?.id}
+                          />
+                        </div>
                       </div>
                     )}
 
