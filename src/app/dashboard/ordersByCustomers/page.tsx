@@ -59,6 +59,7 @@ interface Item {
   variantId: number | null;
   quantity: number;
   price: number;
+  purchasedPrice: number | null;
   product: Product | null;
   variant: ProductVariant | null;
   animal: Animal | null;
@@ -92,6 +93,7 @@ interface EditedItem {
   id: number;
   quantity: number;
   price: number;
+  purchasedPrice: number | null;
 }
 
 export default function AdminOrdersPage() {
@@ -139,7 +141,8 @@ export default function AdminOrdersPage() {
     setEditedItems(order.items.map(item => ({
       id: item.id,
       quantity: item.quantity,
-      price: item.price
+      price: item.price,
+      purchasedPrice: (item as any).purchasedPrice || null
     })))
     setEditDialogOpen(true)
   }
@@ -165,7 +168,12 @@ export default function AdminOrdersPage() {
             items: order.items.map((item) => {
               const editedItem = editedItems.find((ei) => ei.id === item.id)
               if (editedItem) {
-                return { ...item, quantity: editedItem.quantity, price: editedItem.price }
+                return {
+                  ...item,
+                  quantity: editedItem.quantity,
+                  price: editedItem.price,
+                  purchasedPrice: editedItem.purchasedPrice
+                }
               }
               return item
             }),
@@ -185,7 +193,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  const updateItemField = (itemId: number, field: 'quantity' | 'price', value: number) => {
+  const updateItemField = (itemId: number, field: 'quantity' | 'price' | 'purchasedPrice', value: number) => {
     setEditedItems((prev) => prev.map((item) =>
       item.id === itemId ? { ...item, [field]: value } : item
     ))
@@ -600,7 +608,7 @@ export default function AdminOrdersPage() {
                       <div className="font-medium">
                         Item {index + 1}: {item.animal ? `${item.animal.specie} - ${item.animal.breed}` : `${item.product?.productName} - ${item.variant?.packingVolume}`}
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
                           <Input
@@ -613,12 +621,24 @@ export default function AdminOrdersPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`price-${item.id}`}>Price (PKR)</Label>
+                          <Label htmlFor={`price-${item.id}`}>Selling Price (PKR)</Label>
                           <Input
                             id={`price-${item.id}`}
                             type="number"
                             value={editedItem.price}
                             onChange={(e) => updateItemField(item.id, 'price', Number(e.target.value))}
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`purchased-price-${item.id}`}>Purchased Price (PKR)</Label>
+                          <Input
+                            id={`purchased-price-${item.id}`}
+                            type="number"
+                            value={editedItem.purchasedPrice || 0}
+                            onChange={(e) => updateItemField(item.id, 'purchasedPrice', Number(e.target.value))}
                             min="0"
                             step="0.01"
                           />

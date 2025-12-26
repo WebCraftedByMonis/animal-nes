@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { updateTransactionProfit } from '@/lib/autoTransaction';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   // Await the params object first
@@ -10,15 +11,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { paymentMethod, items, shipmentcharges } = body;
 
   try {
-    // First, update all items
+    // First, update all items and their profit in transactions
     for (const item of items) {
       await prisma.checkoutItem.update({
         where: { id: item.id },
         data: {
           quantity: item.quantity,
           price: item.price,
+          purchasedPrice: item.purchasedPrice !== undefined ? item.purchasedPrice : undefined,
         },
       });
+
+      // Update profit in finance transactions
+      const totalPrice = item.price * item.quantity;
+      const totalCost = item.purchasedPrice !== undefined && item.purchasedPrice !== null
+        ? item.purchasedPrice * item.quantity
+        : null;
+
+      await updateTransactionProfit(item.id, totalPrice, totalCost);
     }
 
     // Calculate the new total including shipment charges

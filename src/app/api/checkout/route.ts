@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
                   variant: { connect: { id: item.variant.id } },
                   quantity: item.quantity,
                   price: item.variant.customerPrice,
+                  purchasedPrice: item.variant.dealerPrice || item.variant.companyPrice || null,
                 }
               }
               throw new Error('Unknown item type in cart')
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
               animal: { connect: { id: item.animal.id } },
               quantity: item.quantity,
               price: item.animal.totalPrice,
+              purchasedPrice: item.animal.purchasePrice || null,
             }))
           ]
         }
@@ -85,29 +87,51 @@ export async function POST(req: NextRequest) {
       where: { user: { email: session.user.email } },
     })
 
-    // ✅ Auto-create CNS transactions for each item sold
-    // Create transactions for products
-    for (const item of cart) {
-      if (item.product) {
-        const productAmount = item.quantity * item.variant.customerPrice
-        await createProductSaleTransaction(
-          order.id,
-          productAmount,
-          `${item.product.productName} (${item.variant.variant})`,
-          paymentMethod
-        )
-      }
-    }
+    // ✅ Auto-create CNS transactions for each item sold with profit tracking
+    // Fetch created order items to get their IDs
+    const createdOrder = await prisma.checkout.findUnique({
+      where: { id: order.id },
+      include: { items: true }
+    })
 
-    // Create transactions for animals
-    for (const item of animalCart) {
-      const animalAmount = item.quantity * item.animal.totalPrice
-      await createAnimalSaleTransaction(
-        order.id,
-        animalAmount,
-        `${item.animal.specie} - ${item.animal.breed}`,
-        paymentMethod
-      )
+    if (createdOrder) {
+      // Create transactions for products
+      for (const item of cart) {
+        if (item.product) {
+          const createdItem = createdOrder.items.find(i => i.productId === item.product.id && i.variantId === item.variant.id)
+          if (createdItem) {
+            const productAmount = item.quantity * item.variant.customerPrice
+            const purchasedPrice = item.variant.dealerPrice || item.variant.companyPrice || null
+
+            await createProductSaleTransaction(
+              order.id,
+              createdItem.id,
+              productAmount,
+              purchasedPrice,
+              `${item.product.productName} (${item.variant.packingVolume || 'N/A'})`,
+              paymentMethod
+            )
+          }
+        }
+      }
+
+      // Create transactions for animals
+      for (const item of animalCart) {
+        const createdItem = createdOrder.items.find(i => i.animalId === item.animal.id)
+        if (createdItem) {
+          const animalAmount = item.quantity * item.animal.totalPrice
+          const purchasedPrice = item.animal.purchasePrice || null
+
+          await createAnimalSaleTransaction(
+            order.id,
+            createdItem.id,
+            animalAmount,
+            purchasedPrice,
+            `${item.animal.specie} - ${item.animal.breed}`,
+            paymentMethod
+          )
+        }
+      }
     }
 
     return NextResponse.json({

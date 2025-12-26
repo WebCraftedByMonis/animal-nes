@@ -22,7 +22,7 @@ model DeliveryCharge {
   amount    Float
   cityId    Int
   notes     String?  @db.Text
-  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade, map: "DeliveryCharge_city_fkey")
   createdAt DateTime @default(now())
 
   @@index([cityId])
@@ -397,17 +397,18 @@ model Checkout {
 }
 
 model CheckoutItem {
-  id          Int             @id @default(autoincrement())
-  checkout    Checkout        @relation(name: "CheckoutToItems", fields: [checkoutId], references: [id], onDelete: Cascade)
-  checkoutId  Int
-  product     Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId   Int?
-  variantId   Int?
-  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  animalId    Int?
-  animal      SellAnimal?     @relation(fields: [animalId], references: [id], onDelete: Cascade)
-  quantity    Int
-  price       Float
+  id            Int             @id @default(autoincrement())
+  checkout      Checkout        @relation(name: "CheckoutToItems", fields: [checkoutId], references: [id], onDelete: Cascade)
+  checkoutId    Int
+  product       Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId     Int?
+  variantId     Int?
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  animalId      Int?
+  animal        SellAnimal?     @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  quantity      Int
+  price         Float
+  purchasedPrice Float?         // Price purchased from vendor/partner (editable)
 
   @@index([checkoutId])
   @@index([productId])
@@ -954,7 +955,9 @@ model BusinessPartner {
 model Transaction {
   id              Int       @id @default(autoincrement())
   type            String    // PRODUCT_SALE, ANIMAL_SALE, CONSULTATION_FEE, ADDITIONAL_CONSULTATION, OTHER_INCOME
-  amount          Float
+  amount          Float     // Revenue/Selling Price
+  costPrice       Float?    // Purchase/Cost Price (for products and animals)
+  profit          Float?    // Calculated profit (amount - costPrice)
   description     String    @db.Text
   transactionDate DateTime
   paymentMethod   String?
@@ -963,6 +966,7 @@ model Transaction {
 
   // References to existing models
   checkoutId      Int?      // Link to Checkout (orders)
+  checkoutItemId  Int?      // Link to specific CheckoutItem for profit tracking
   appointmentId   Int?      // Link to AppointmentRequest
   additionalFeeId Int?      // Link to AdditionalConsultationFee
 
