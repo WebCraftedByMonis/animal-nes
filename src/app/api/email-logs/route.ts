@@ -57,3 +57,36 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// DELETE - Bulk delete email logs
+export async function DELETE(request: NextRequest) {
+  try {
+    const { ids } = await request.json();
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: 'No email log IDs provided' },
+        { status: 400 }
+      );
+    }
+
+    // Delete the email logs
+    const result = await prisma.emailLog.deleteMany({
+      where: {
+        id: { in: ids }
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted ${result.count} email log(s)`,
+      deletedCount: result.count
+    });
+  } catch (error) {
+    console.error('Error deleting email logs:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete email logs' },
+      { status: 500 }
+    );
+  }
+}

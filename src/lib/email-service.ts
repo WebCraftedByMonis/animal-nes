@@ -3,6 +3,37 @@ import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { EmailType, EmailStatus } from '@prisma/client';
 
+// Validate environment variables
+if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+  console.error('CRITICAL: EMAIL_USER and EMAIL_APP_PASSWORD must be set in environment variables');
+  console.error('Email service will not function without these credentials');
+}
+
+// Gmail rate limiting (500/day for free accounts, 2000/day for paid)
+const GMAIL_DAILY_LIMIT = parseInt(process.env.GMAIL_DAILY_LIMIT || '500');
+let emailsSentToday = 0;
+let lastResetDate = new Date().toDateString();
+
+function checkRateLimit(): { allowed: boolean; remaining: number } {
+  const today = new Date().toDateString();
+
+  // Reset counter if it's a new day
+  if (today !== lastResetDate) {
+    emailsSentToday = 0;
+    lastResetDate = today;
+  }
+
+  const remaining = GMAIL_DAILY_LIMIT - emailsSentToday;
+  return {
+    allowed: emailsSentToday < GMAIL_DAILY_LIMIT,
+    remaining: Math.max(0, remaining)
+  };
+}
+
+function incrementEmailCount() {
+  emailsSentToday++;
+}
+
 // Create transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -54,14 +85,36 @@ export async function sendInitialNotification(
   acceptLink: string,
   declineLink: string
 ) {
+  const emailSubject = `${appointment.isEmergency ? '🚨 URGENT: ' : ''}New Case - ${appointment.species} in ${appointment.city}`;
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day). ${rateLimit.remaining} emails remaining today.`);
+
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'INITIAL_NOTIFICATION',
+      status: 'FAILED',
+      errorMessage: `Rate limit exceeded: ${GMAIL_DAILY_LIMIT} emails/day limit reached`,
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+    });
+
+    return { success: false, error: 'Rate limit exceeded', remaining: rateLimit.remaining };
+  }
+
   try {
-    const consultationType = 
+    const consultationType =
       appointment.paymentInfo?.consultationType === 'physical' ? '🏥 Physical Visit' :
       appointment.paymentInfo?.consultationType === 'virtual' ? '💻 Virtual Consultation' :
       appointment.paymentInfo?.consultationType === 'needy' ? '🤝 Free Consultation (Needy)' :
       '📋 Consultation';
 
-    const urgencyTag = appointment.isEmergency ? 
+    const urgencyTag = appointment.isEmergency ?
       '<div style="background: #ff4444; color: white; padding: 10px; text-align: center; font-weight: bold;">⚠️ EMERGENCY CASE ⚠️</div>' : '';
 
     const emailHtml = `
@@ -119,7 +172,7 @@ export async function sendInitialNotification(
     const mailOptions = {
       from: `"Veterinary Cases" <${process.env.EMAIL_USER}>`,
       to: vet.partnerEmail,
-      subject: `${appointment.isEmergency ? '🚨 URGENT: ' : ''}New Case - ${appointment.species} in ${appointment.city}`,
+      subject: emailSubject,
       html: emailHtml,
       text: `New case: ${appointment.species} with ${appointment.description} in ${appointment.city}. Click to accept or decline.`,
       ...(appointment.isEmergency && {
@@ -130,12 +183,15 @@ export async function sendInitialNotification(
 
     const result = await transporter.sendMail(mailOptions);
 
+    // Increment email count
+    incrementEmailCount();
+
     // Log successful email
     await logEmail({
       recipientEmail: vet.partnerEmail,
       recipientName: vet.partnerName,
       recipientType: 'VET',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'INITIAL_NOTIFICATION',
       status: 'SENT',
       appointmentId: appointment.id,
@@ -157,7 +213,7 @@ export async function sendInitialNotification(
       recipientEmail: vet.partnerEmail,
       recipientName: vet.partnerName,
       recipientType: 'VET',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'INITIAL_NOTIFICATION',
       status: 'FAILED',
       errorMessage: error instanceof Error ? error.message : String(error),
@@ -175,6 +231,26 @@ export async function sendAcceptanceConfirmation(
   appointment: any,
   links: { historyForm: string; prescriptionForm: string | null }
 ) {
+  const emailSubject = `✅ Case Assigned - ${appointment.species} - Contact: ${appointment.doctor}`;
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day).`);
+    await logEmail({
+      recipientEmail: vet.partnerEmail,
+      recipientName: vet.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'ACCEPTANCE_CONFIRMATION',
+      status: 'FAILED',
+      errorMessage: `Rate limit exceeded: ${GMAIL_DAILY_LIMIT} emails/day limit reached`,
+      appointmentId: appointment.id,
+      partnerId: vet.id,
+    });
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
   try {
     const emailHtml = `
 <!DOCTYPE html>
@@ -255,19 +331,22 @@ export async function sendAcceptanceConfirmation(
     const mailOptions = {
       from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
       to: vet.partnerEmail,
-      subject: `✅ Case Assigned - ${appointment.species} - Contact: ${appointment.doctor}`,
+      subject: emailSubject,
       html: emailHtml,
       text: `Case assigned. Owner contact: ${appointment.doctor}. Check email for full details.`
     };
 
     const result = await transporter.sendMail(mailOptions);
 
+    // Increment email count
+    incrementEmailCount();
+
     // Log successful email
     await logEmail({
       recipientEmail: vet.partnerEmail,
       recipientName: vet.partnerName,
       recipientType: 'VET',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'ACCEPTANCE_CONFIRMATION',
       status: 'SENT',
       appointmentId: appointment.id,
@@ -288,7 +367,7 @@ export async function sendAcceptanceConfirmation(
       recipientEmail: vet.partnerEmail,
       recipientName: vet.partnerName,
       recipientType: 'VET',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'ACCEPTANCE_CONFIRMATION',
       status: 'FAILED',
       errorMessage: error instanceof Error ? error.message : String(error),
@@ -306,6 +385,15 @@ export async function sendCaseTakenNotification(
   appointment: any,
   acceptedByDoctor: string
 ) {
+  const emailSubject = `Case Taken - ${appointment.species} in ${appointment.city}`;
+
+  // Check rate limit (less critical, so just log warning and skip)
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.warn(`Gmail rate limit reached. Skipping case-taken notification to ${vet.partnerEmail}`);
+    return { success: false, error: 'Rate limit exceeded', skipped: true };
+  }
+
   try {
     const emailHtml = `
 <!DOCTYPE html>
@@ -335,19 +423,22 @@ export async function sendCaseTakenNotification(
     const mailOptions = {
       from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
       to: vet.partnerEmail,
-      subject: `Case Taken - ${appointment.species} in ${appointment.city}`,
+      subject: emailSubject,
       html: emailHtml,
       text: `The case has been accepted by Dr. ${acceptedByDoctor}. Thank you for your availability.`
     };
 
     await transporter.sendMail(mailOptions);
 
+    // Increment email count
+    incrementEmailCount();
+
     // Log successful email
     await logEmail({
       recipientEmail: vet.partnerEmail,
       recipientName: vet.partnerName,
       recipientType: 'VET',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'CASE_TAKEN',
       status: 'SENT',
       appointmentId: appointment.id,
@@ -368,7 +459,7 @@ export async function sendCaseTakenNotification(
       recipientEmail: vet.partnerEmail,
       recipientName: vet.partnerName,
       recipientType: 'VET',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'CASE_TAKEN',
       status: 'FAILED',
       errorMessage: error instanceof Error ? error.message : String(error),
@@ -382,7 +473,7 @@ export async function sendCaseTakenNotification(
 
 // Main function to notify all veterinarians (PHASE 1 only)
 export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
-  const baseUrl = 'http://www.animalwellness.shop';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
   const results = [];
 
   for (const vet of veterinarians) {
@@ -410,6 +501,24 @@ export async function notifyVeterinarians(appointment: any, veterinarians: any[]
 
 // Master Trainer Program - Approval Email
 export async function sendMasterTrainerApproval(registration: any) {
+  const emailSubject = 'Master Trainer Program - Registration Approved ✅';
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day).`);
+    await logEmail({
+      recipientEmail: registration.email,
+      recipientName: registration.name,
+      recipientType: 'MASTER_TRAINER',
+      subject: emailSubject,
+      emailType: 'MASTER_TRAINER_APPROVAL',
+      status: 'FAILED',
+      errorMessage: `Rate limit exceeded: ${GMAIL_DAILY_LIMIT} emails/day limit reached`,
+    });
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
   try {
     const emailHtml = `
 <!DOCTYPE html>
@@ -485,19 +594,22 @@ export async function sendMasterTrainerApproval(registration: any) {
     const mailOptions = {
       from: `"Animal Wellness Shop" <${process.env.EMAIL_USER}>`,
       to: registration.email,
-      subject: 'Master Trainer Program - Registration Approved ✅',
+      subject: emailSubject,
       html: emailHtml,
       text: `Dear ${registration.name}, Your registration for the Master Trainer Program has been approved! Event Timing: November 29 - December 14, 2025. Zoom Link: https://us05web.zoom.us/j/82580834219?pwd=wHuWFJ7oZCnsHcuiRykOiCOrXbCdjn.1`
     };
 
     const result = await transporter.sendMail(mailOptions);
 
+    // Increment email count
+    incrementEmailCount();
+
     // Log successful email
     await logEmail({
       recipientEmail: registration.email,
       recipientName: registration.name,
       recipientType: 'MASTER_TRAINER',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'MASTER_TRAINER_APPROVAL',
       status: 'SENT',
       metadata: {
@@ -515,7 +627,7 @@ export async function sendMasterTrainerApproval(registration: any) {
       recipientEmail: registration.email,
       recipientName: registration.name,
       recipientType: 'MASTER_TRAINER',
-      subject: mailOptions.subject,
+      subject: emailSubject,
       emailType: 'MASTER_TRAINER_APPROVAL',
       status: 'FAILED',
       errorMessage: error instanceof Error ? error.message : String(error),

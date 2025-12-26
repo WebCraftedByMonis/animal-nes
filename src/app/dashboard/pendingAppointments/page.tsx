@@ -88,6 +88,8 @@ export default function DashboardPage() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [deleting, setDeleting] = useState(false);
 
     const fetchData = useCallback(async (searchTerm = '', pageNum = page, limitNum = limit, sortF = sortField, sortO = sortOrder) => {
         try {
@@ -214,6 +216,93 @@ export default function DashboardPage() {
         fetchData('', 1, limit, sortField, sortOrder);
     };
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(appointments.map(a => a.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectOne = (id: number, checked: boolean) => {
+        if (checked) {
+            setSelectedIds([...selectedIds, id]);
+        } else {
+            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.length === 0) {
+            toast.error('Please select at least one appointment to delete');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to delete ${selectedIds.length} appointment(s)? This will also delete related payment info, history forms, and transactions. This action cannot be undone.`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        setDeleting(true);
+        const toastId = toast.loading(`Deleting ${selectedIds.length} appointment(s)...`);
+
+        try {
+            const response = await fetch('/api/appointments', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids: selectedIds }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data.message || 'Appointments deleted successfully', { id: toastId });
+                setSelectedIds([]);
+                fetchData();
+            } else {
+                toast.error(data.error || 'Failed to delete appointments', { id: toastId });
+            }
+        } catch (error) {
+            console.error('Error deleting appointments:', error);
+            toast.error('An error occurred while deleting appointments', { id: toastId });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const handleDeleteSingle = async (id: number) => {
+        const confirmMessage = 'Are you sure you want to delete this appointment? This will also delete related payment info, history form, and transactions. This action cannot be undone.';
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        setDeleting(true);
+        const toastId = toast.loading('Deleting appointment...');
+
+        try {
+            const response = await fetch(`/api/appointments/${id}`, {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data.message || 'Appointment deleted successfully', { id: toastId });
+                setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+                fetchData();
+            } else {
+                toast.error(data.error || 'Failed to delete appointment', { id: toastId });
+            }
+        } catch (error) {
+            console.error('Error deleting appointment:', error);
+            toast.error('An error occurred while deleting the appointment', { id: toastId });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     // Load initial data on component mount
     useEffect(() => {
         fetchData('', 1, limit, sortField, sortOrder);
@@ -257,15 +346,15 @@ export default function DashboardPage() {
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         />
                     </div>
-                    <Button 
-                        onClick={handleSearch} 
+                    <Button
+                        onClick={handleSearch}
                         className="bg-green-600 hover:bg-green-700"
                         disabled={loading}
                     >
                         <Search className="w-4 h-4" />
                     </Button>
-                    <Button 
-                        onClick={resetFilters} 
+                    <Button
+                        onClick={resetFilters}
                         variant="outline"
                         className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
                         disabled={loading}
@@ -274,21 +363,36 @@ export default function DashboardPage() {
                     </Button>
                 </div>
 
-                <Select value={limit.toString()} onValueChange={(val) => {
-                    const newLimit = Number(val);
-                    setLimit(newLimit);
-                    setPage(1);
-                    fetchData(search, 1, newLimit, sortField, sortOrder);
-                }}>
-                    <SelectTrigger className="w-32 focus:border-green-500 focus:ring-green-500">
-                        <SelectValue placeholder="Entries" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {[10, 25, 50].map((n) => (
-                            <SelectItem key={n} value={n.toString()}>{n} entries</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                    {selectedIds.length > 0 && (
+                        <Button
+                            onClick={handleDeleteSelected}
+                            disabled={deleting}
+                            variant="destructive"
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {deleting ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : null}
+                            Delete Selected ({selectedIds.length})
+                        </Button>
+                    )}
+                    <Select value={limit.toString()} onValueChange={(val) => {
+                        const newLimit = Number(val);
+                        setLimit(newLimit);
+                        setPage(1);
+                        fetchData(search, 1, newLimit, sortField, sortOrder);
+                    }}>
+                        <SelectTrigger className="w-32 focus:border-green-500 focus:ring-green-500">
+                            <SelectValue placeholder="Entries" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[10, 25, 50].map((n) => (
+                                <SelectItem key={n} value={n.toString()}>{n} entries</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div className="rounded-xl overflow-x-auto border bg-white">
@@ -309,6 +413,14 @@ export default function DashboardPage() {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-green-100">
+                            <TableHead className="font-semibold w-12">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.length === appointments.length && appointments.length > 0}
+                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                />
+                            </TableHead>
                             <TableHead className="font-semibold">Customer</TableHead>
                             <TableHead className="font-semibold">Contact</TableHead>
                             <TableHead className="font-semibold">Location</TableHead>
@@ -330,13 +442,23 @@ export default function DashboardPage() {
                         {loading
                             ? Array(limit).fill(null).map((_, i) => (
                                 <TableRow key={i}>
-                                    {[...Array(11)].map((_, j) => (
+                                    {[...Array(12)].map((_, j) => (
                                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                                     ))}
                                 </TableRow>
                             ))
                             : appointments?.map((a) => (
                                 <TableRow key={a.id} className="hover:bg-gray-50">
+                                    {/* Checkbox */}
+                                    <TableCell>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(a.id)}
+                                            onChange={(e) => handleSelectOne(a.id, e.target.checked)}
+                                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                        />
+                                    </TableCell>
+
                                     {/* Customer Info */}
                                     <TableCell>
                                         <div>
@@ -490,6 +612,19 @@ export default function DashboardPage() {
                                                 disabled={!a.historyForm}
                                             >
                                                 <Link className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDeleteSingle(a.id)}
+                                                disabled={deleting}
+                                                title="Delete Appointment"
+                                            >
+                                                {deleting ? (
+                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                ) : (
+                                                    <XCircle className="h-3 w-3" />
+                                                )}
                                             </Button>
                                         </div>
                                     </TableCell>

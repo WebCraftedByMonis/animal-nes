@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 // Define form schema
 const formSchema = z.object({
@@ -90,6 +90,7 @@ export  function AddHistoryFormContent() {
   const [hasValues, setHasValues] = useState(false);
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -146,8 +147,12 @@ export  function AddHistoryFormContent() {
         if (appointment.customer?.name) {
           form.setValue('name', appointment.customer.name);
         }
-        
-        const contactNumber = appointment.customer?.contact || appointment.customer?.phone || appointment.doctor || '';
+
+        // Check multiple possible field names for phone number
+        const contactNumber = appointment.customer?.contact ||
+                             appointment.customer?.phone ||
+                             appointment.customer?.PhoneNumber ||
+                             appointment.doctor || '';
         if (contactNumber) {
           form.setValue('contact', contactNumber);
         }
@@ -251,18 +256,15 @@ export  function AddHistoryFormContent() {
       
       if (response.status === 201) {
         const historyFormId = response.data.id;
-        toast.success(`History form created successfully! Reference No: ${historyFormId}`);
-        
-        // Show success message with prescription form link
-        toast.success(
-          <div>
-            <p>History form submitted successfully!</p>
-            <p>You can now <a href={`/prescriptionform?historyFormId=${historyFormId}`} style={{color: '#3b82f6', textDecoration: 'underline'}}>create prescription form</a></p>
-          </div>,
-           // Show for 10 seconds
-        );
-        
+        toast.success(`History form created successfully! Redirecting to prescription form...`);
+
+        // Reset form
         form.reset();
+
+        // Redirect to prescription form after a short delay to show the success message
+        setTimeout(() => {
+          router.push(`/prescriptionform?historyFormId=${historyFormId}`);
+        }, 1500);
       }
     } catch (error: any) {
       console.error("Error submitting form:", error);

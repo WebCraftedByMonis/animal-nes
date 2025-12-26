@@ -67,18 +67,7 @@ export async function GET(request: NextRequest) {
         assignedDoctor: true
       }
     });
-    
-    console.log('=== APPOINTMENT FETCH DEBUG ===');
-    console.log('appointmentId:', appointmentId);
-    console.log('appointment found:', !!appointment);
-    if (appointment) {
-      console.log('customer included:', {
-        hasCustomer: !!appointment.customer,
-        customerEmail: appointment.customer?.email,
-        customerName: appointment.customer?.name
-      });
-    }
-    
+
     if (!appointment) {
       return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     }
@@ -86,10 +75,26 @@ export async function GET(request: NextRequest) {
     // Check if already assigned
     if (appointment.assignedDoctorId) {
       return new NextResponse(
-        `<html><body style="font-family: Arial; padding: 50px; text-align: center;">
-          <h2>Case Already Assigned</h2>
-          <p>This case has already been accepted by Dr. ${appointment.assignedDoctor?.partnerName}.</p>
-        </body></html>`,
+        `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Case Already Assigned</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 500px; margin: 20px; text-align: center;">
+            <div style="background: #fbbf24; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 40px;">
+              <span style="color: white;">⚠</span>
+            </div>
+            <h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 24px;">Case Already Assigned</h2>
+            <p style="color: #6b7280; line-height: 1.6; margin: 0; font-size: 16px;">This case has already been accepted by Dr. ${appointment.assignedDoctor?.partnerName}.</p>
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 14px; margin: 0;">Thank you for your interest in this case.</p>
+            </div>
+          </div>
+        </body>
+        </html>`,
         { headers: { 'Content-Type': 'text/html' } }
       );
     }
@@ -104,28 +109,66 @@ export async function GET(request: NextRequest) {
     }
     
     if (action === 'accept') {
-      // Start a transaction to ensure data consistency
-      const result = await prisma.$transaction(async (tx) => {
-        // 1. Assign doctor to appointment
-        const updatedAppointment = await tx.appointmentRequest.update({
-          where: { id: parseInt(appointmentId) },
+      // Use atomic update to prevent race condition - only update if not already assigned
+      let updatedAppointment;
+      try {
+        updatedAppointment = await prisma.appointmentRequest.update({
+          where: {
+            id: parseInt(appointmentId),
+            assignedDoctorId: null // Only update if not already assigned
+          },
           data: {
             assignedDoctorId: parseInt(doctorId),
             assignedAt: new Date()
           },
           include: {
             customer: true,
-            assignedDoctor: true
+            assignedDoctor: true,
+            paymentInfo: true
           }
         });
-        
-        // Note: History form will be created manually by the doctor
-        
-        return { updatedAppointment, historyFormId: appointment.historyForm?.id || null };
-      });
+      } catch (error) {
+        // If update fails, appointment was already assigned - show already taken page
+        const currentAppointment = await prisma.appointmentRequest.findUnique({
+          where: { id: parseInt(appointmentId) },
+          include: { assignedDoctor: true }
+        });
+
+        return new NextResponse(
+          `<!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Case Already Assigned</title>
+          </head>
+          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 500px; margin: 20px; text-align: center;">
+              <div style="background: #fbbf24; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 40px;">
+                <span style="color: white;">⚠</span>
+              </div>
+              <h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 24px;">Case Already Assigned</h2>
+              <p style="color: #6b7280; line-height: 1.6; margin: 0; font-size: 16px;">This case has already been accepted by Dr. ${currentAppointment?.assignedDoctor?.partnerName || 'another doctor'}.</p>
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #9ca3af; font-size: 14px; margin: 0;">Thank you for your interest in this case.</p>
+              </div>
+            </div>
+          </body>
+          </html>`,
+          { headers: { 'Content-Type': 'text/html' } }
+        );
+      }
+
+      // Note: Payment distribution (70% to doctor, 30% to revenue) happens when prescription is submitted
+      // Note: History form will be created manually by the doctor
+
+      const result = {
+        updatedAppointment,
+        historyFormId: appointment.historyForm?.id || null
+      };
       
       // Prepare links - prescription form will only be available after history form is submitted
-      const baseUrl = 'https://www.animalwellness.shop';
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
       const links = {
         historyForm: `${baseUrl}/historyform?appointmentId=${appointmentId}`,
         prescriptionForm: result.historyFormId ? `${baseUrl}/prescriptionform?historyFormId=${result.historyFormId}` : null
@@ -176,35 +219,15 @@ export async function GET(request: NextRequest) {
       }
       
       // Send notification email to patient
-      console.log('=== PATIENT EMAIL DEBUG ===');
-      console.log('appointment.customer:', appointment.customer);
-      console.log('appointment.customer?.email:', appointment.customer?.email);
-      console.log('appointmentId:', appointmentId);
-      console.log('doctor:', {
-        name: doctor.partnerName,
-        email: doctor.partnerEmail
-      });
-      
       if (appointment.customer?.email) {
         try {
-          console.log(`Attempting to send patient email to: ${appointment.customer.email}`);
-          
           const patientEmail = getPatientDoctorAssignmentEmail(appointment, doctor);
-          
-          console.log('Email template generated:', {
-            subject: patientEmail.subject,
-            to: appointment.customer.email,
-            from: `"Animal Wellness Service" <${process.env.EMAIL_USER}>`
-          });
-          
-          const emailResult = await transporter.sendMail({
+
+          await transporter.sendMail({
             from: `"Animal Wellness Service" <${process.env.EMAIL_USER}>`,
             to: appointment.customer.email,
             ...patientEmail
           });
-
-          console.log(`✅ Patient notification sent successfully!`);
-          console.log('Email result:', emailResult);
 
           // Log successful patient email
           await logEmail({
@@ -224,12 +247,7 @@ export async function GET(request: NextRequest) {
             },
           });
         } catch (patientEmailError: any) {
-          console.error('❌ Failed to send patient notification email:', patientEmailError);
-          console.error('Error details:', {
-            message: patientEmailError.message,
-            code: patientEmailError.code,
-            stack: patientEmailError.stack
-          });
+          console.error('Failed to send patient notification email:', patientEmailError);
 
           // Log failed patient email
           await logEmail({
@@ -245,9 +263,6 @@ export async function GET(request: NextRequest) {
           });
           // Don't fail the entire process if patient email fails
         }
-      } else {
-        console.log('❌ No patient email available for notification');
-        console.log('Customer data:', appointment.customer);
       }
       
       // Notify other doctors that case is taken
@@ -306,28 +321,81 @@ export async function GET(request: NextRequest) {
       
       // Return success page
       return new NextResponse(
-        `<html><body style="font-family: Arial; padding: 50px; text-align: center;">
-          <h2 style="color: #22c55e;">✅ Case Accepted Successfully!</h2>
-          <p>Thank you, Dr. ${doctor.partnerName}!</p>
-          <p>Patient details have been sent to your email:</p>
-          <ul style="text-align: left; display: inline-block;">
-            <li>📝 History Form - Please complete first for patient examination</li>
-            <li>💊 Prescription Form - Available after history form submission</li>
-          </ul>
-          <p><strong>Owner Contact:</strong> ${appointment.doctor}</p>
-          <p style="margin-top: 30px; color: #666;">Please start with the History Form. The Prescription Form link will be provided after the history form is completed.</p>
-        </body></html>`,
+        `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Case Accepted Successfully</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #10b981 0%, #059669 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 600px; margin: 20px;">
+            <div style="background: #10b981; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 40px;">
+              <svg style="width: 48px; height: 48px;" fill="white" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+            </div>
+            <h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 28px; text-align: center;">Case Accepted Successfully</h2>
+            <p style="color: #6b7280; line-height: 1.6; margin: 0 0 24px 0; font-size: 16px; text-align: center;">Thank you, <strong>Dr. ${doctor.partnerName}</strong>!</p>
+
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+              <p style="color: #374151; margin: 0 0 16px 0; font-weight: 600;">Patient details have been sent to your email:</p>
+              <div style="margin: 12px 0;">
+                <div style="display: flex; align-items: start; margin-bottom: 12px;">
+                  <div style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; font-weight: bold; font-size: 12px;">1</div>
+                  <div>
+                    <strong style="color: #1f2937;">History Form</strong>
+                    <p style="color: #6b7280; margin: 4px 0 0 0; font-size: 14px;">Please complete first for patient examination</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: start;">
+                  <div style="background: #8b5cf6; color: white; width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; font-weight: bold; font-size: 12px;">2</div>
+                  <div>
+                    <strong style="color: #1f2937;">Prescription Form</strong>
+                    <p style="color: #6b7280; margin: 4px 0 0 0; font-size: 14px;">Available after history form submission</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 4px; margin-bottom: 24px;">
+              <p style="color: #1e40af; margin: 0; font-size: 14px;"><strong>Owner Contact:</strong> ${appointment.doctor}</p>
+            </div>
+
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">Please start with the History Form. The Prescription Form link will be provided after the history form is completed.</p>
+            </div>
+          </div>
+        </body>
+        </html>`,
         { headers: { 'Content-Type': 'text/html' } }
       );
       
     } else {
       // Doctor declined
       return new NextResponse(
-        `<html><body style="font-family: Arial; padding: 50px; text-align: center;">
-          <h2>Thank You</h2>
-          <p>We've noted that you're not available for this case.</p>
-          <p>We'll notify you of future cases in your area.</p>
-        </body></html>`,
+        `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Response Noted</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 500px; margin: 20px; text-align: center;">
+            <div style="background: #6366f1; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+              <svg style="width: 48px; height: 48px;" fill="white" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+            </div>
+            <h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 24px;">Thank You</h2>
+            <p style="color: #6b7280; line-height: 1.6; margin: 0 0 24px 0; font-size: 16px;">We've noted that you're not available for this case.</p>
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px;">
+              <p style="color: #374151; margin: 0; font-size: 14px;">We'll notify you of future cases in your area.</p>
+            </div>
+          </div>
+        </body>
+        </html>`,
         { headers: { 'Content-Type': 'text/html' } }
       );
     }

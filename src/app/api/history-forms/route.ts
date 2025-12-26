@@ -70,6 +70,13 @@ export async function GET(req: NextRequest) {
             { referalNo: { contains: search } },
           ],
         },
+        include: {
+          appointment: {
+            include: {
+              assignedDoctor: true
+            }
+          }
+        },
         orderBy: {
           [sortBy]: sortOrder,
         },

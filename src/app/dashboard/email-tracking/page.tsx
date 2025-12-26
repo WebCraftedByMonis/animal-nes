@@ -22,6 +22,8 @@ export default function EmailTrackingPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchEmailLogs();
@@ -73,6 +75,88 @@ export default function EmailTrackingPage() {
 
   const formatEmailType = (type: string) => {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(emailLogs.map(log => log.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds([...selectedIds, id]);
+    } else {
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) {
+      alert('Please select at least one email log to delete');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete ${selectedIds.length} email log(s)? This action cannot be undone.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch('/api/email-logs', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message || 'Email logs deleted successfully');
+        setSelectedIds([]);
+        fetchEmailLogs();
+      } else {
+        alert(data.error || 'Failed to delete email logs');
+      }
+    } catch (error) {
+      console.error('Error deleting email logs:', error);
+      alert('An error occurred while deleting email logs');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSingle = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this email log? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/email-logs/${id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message || 'Email log deleted successfully');
+        setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        fetchEmailLogs();
+      } else {
+        alert(data.error || 'Failed to delete email log');
+      }
+    } catch (error) {
+      console.error('Error deleting email log:', error);
+      alert('An error occurred while deleting the email log');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -143,15 +227,34 @@ export default function EmailTrackingPage() {
           {/* Stats */}
           <div className="p-6 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Total Emails: <span className="font-semibold text-gray-900">{total}</span>
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  Total Emails: <span className="font-semibold text-gray-900">{total}</span>
+                </div>
+                {selectedIds.length > 0 && (
+                  <div className="text-sm text-blue-600">
+                    Selected: <span className="font-semibold">{selectedIds.length}</span>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={fetchEmailLogs}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-              >
-                Refresh
-              </button>
+              <div className="flex gap-2">
+                {selectedIds.length > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleting ? 'Deleting...' : `Delete Selected (${selectedIds.length})`}
+                  </button>
+                )}
+                <button
+                  onClick={fetchEmailLogs}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors disabled:opacity-50"
+                >
+                  Refresh
+                </button>
+              </div>
             </div>
           </div>
 
@@ -169,6 +272,14 @@ export default function EmailTrackingPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-100">
                   <tr>
+                    <th className="px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.length === emailLogs.length && emailLogs.length > 0}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Recipient
                     </th>
@@ -187,11 +298,22 @@ export default function EmailTrackingPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Details
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {emailLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(log.id)}
+                          onChange={(e) => handleSelectOne(log.id, e.target.checked)}
+                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
                           {log.recipientName || 'N/A'}
@@ -245,6 +367,15 @@ export default function EmailTrackingPage() {
                             Error: {log.errorMessage}
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleDeleteSingle(log.id)}
+                          disabled={deleting}
+                          className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}

@@ -14,6 +14,13 @@ export async function GET(
 
   const history = await prisma.historyForm.findUnique({
     where: { id },
+    include: {
+      appointment: {
+        include: {
+          assignedDoctor: true
+        }
+      }
+    }
   });
 
   if (!history) {

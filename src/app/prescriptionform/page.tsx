@@ -139,10 +139,10 @@ useEffect(() => {
       }
       
       const history = await historyRes.json();
-      
+
       // Set the historyFormId
       setValue('historyFormId', parseInt(historyFormId));
-      
+
       // Auto-fill from history form
       setValue('ownerName', history.name || '');
       setValue('ownerContact', history.contact || '');
@@ -150,8 +150,23 @@ useEffect(() => {
       setValue('breed', history.breed || '');
       setValue('age', history.age || '');
       setValue('sex', history.sex || '');
-      
-      toast.success('History form data loaded successfully');
+
+      // Auto-fill doctor/partner information if available
+      if (history.appointment?.assignedDoctor) {
+        const doctor = history.appointment.assignedDoctor;
+        setValue('doctorName', doctor.partnerName || '');
+        setValue('qualification', doctor.qualificationDegree || '');
+        setValue('clinicName', doctor.shopName || '');
+        setValue('clinicPhone', doctor.partnerMobileNumber || '');
+        setValue('clinicEmail', doctor.partnerEmail || '');
+
+        // Combine full address with city and state if available
+        const clinicAddress = doctor.fullAddress ||
+                            [doctor.cityName, doctor.state].filter(Boolean).join(', ') || '';
+        setValue('clinicAddress', clinicAddress);
+      }
+
+      toast.success('History form and doctor details loaded successfully');
       
     } catch (err: any) {
       console.error(err);
@@ -207,16 +222,21 @@ useEffect(() => {
       console.log('Successful API response:', result);
 
       toast.success('Prescription created successfully')
-      
+
       // Check if additional fee should be charged
       if (chargeAdditionalFee) {
         toast.success('Redirecting to additional consultation fee form...')
         router.push(`/additional-consultation-fee?prescriptionId=${result.id}`)
         return
       }
-      
+
       // Reset the form to defaults
       reset()
+
+      // Redirect to thank you page after a short delay
+      setTimeout(() => {
+        router.push('/thank-you-prescription')
+      }, 1500)
       
     } catch (err: any) {
       console.error(err)
@@ -262,6 +282,10 @@ useEffect(() => {
       {/* Only show form if no history form error */}
       {!historyFormError && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Doctor Information Section */}
+        <div className="bg-blue-50 p-4 rounded-lg space-y-4">
+          <h3 className="text-sm font-semibold text-blue-700">Doctor / Veterinarian Information (Auto-filled)</h3>
+
         {/* Top row: Doctor, Qualification, Prescription No. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -300,10 +324,11 @@ useEffect(() => {
             <Input {...register('clinicEmail')} placeholder="Clinic email (optional)" />
           </div>
         </div>
+        </div>
 
-        {/* Owner & Animal (auto-filled from appointment) */}
+        {/* Owner & Animal (auto-filled from history form) */}
         <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700">Patient Information (Auto-filled from appointment)</h3>
+          <h3 className="text-sm font-semibold text-gray-700">Patient Information (Auto-filled from history form)</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
