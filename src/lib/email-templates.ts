@@ -81,7 +81,7 @@ export function getInitialNotificationEmail(
 export function getAcceptanceConfirmationEmail(
   vet: any,
   appointment: any,
-  links: { historyForm: string; prescriptionForm: string | null }
+  historyFormLink: string
 ) {
   const emailHtml = `
 <!DOCTYPE html>
@@ -95,7 +95,6 @@ export function getAcceptanceConfirmationEmail(
     .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #22c55e; }
     .button { display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 5px; font-weight: bold; }
     .btn-form { background: #3b82f6; color: white; }
-    .btn-prescription { background: #9333ea; color: white; }
     .success { background: #d4edda; border-color: #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; }
     .forms-container { background: #fff3cd; padding: 20px; border-radius: 10px; margin: 30px 0; }
   </style>
@@ -105,27 +104,27 @@ export function getAcceptanceConfirmationEmail(
     <div class="header">
       <h2>✅ Case Assigned to You</h2>
     </div>
-    
+
     <div class="content">
       <div class="success">
         <strong>Thank you, Dr. ${vet.partnerName}!</strong><br>
         You have been assigned this case. Full patient details are below.
       </div>
-      
+
       <div class="info-box" style="background: #fff3cd; border-color: #ff9800;">
         <h3>📱 OWNER CONTACT (Private Information)</h3>
         <strong style="font-size: 18px; color: #d32f2f;">Phone: ${appointment.doctor}</strong><br>
         <strong>Name:</strong> ${appointment.customer?.name || 'Not provided'}<br>
         <strong>Email:</strong> ${appointment.customer?.email || 'Not provided'}
       </div>
-      
+
       <div class="info-box">
         <h3>📍 Full Location Details</h3>
         <strong>City:</strong> ${appointment.city}<br>
         ${appointment.state ? `<strong>State:</strong> ${appointment.state}<br>` : ''}
         ${appointment.fullAddress ? `<strong>Full Address:</strong> ${appointment.fullAddress}<br>` : ''}
       </div>
-      
+
       <div class="info-box">
         <h3>🐾 Complete Patient Information</h3>
         <strong>Animal:</strong> ${appointment.species}<br>
@@ -138,45 +137,40 @@ export function getAcceptanceConfirmationEmail(
         })}<br>
         ${appointment.isEmergency ? '<strong style="color: red;">⚠️ EMERGENCY - Immediate attention required</strong><br>' : ''}
       </div>
-      
+
       <div class="info-box">
         <h3>💰 Payment Information</h3>
         <strong>Consultation Type:</strong> ${appointment.paymentInfo?.consultationType || 'Standard'}<br>
         ${appointment.paymentInfo?.consultationFee ? `<strong>Fee:</strong> Rs. ${appointment.paymentInfo.consultationFee}<br>` : ''}
         <strong>Payment Method:</strong> ${appointment.paymentInfo?.paymentMethod || 'Not specified'}
       </div>
-      
+
       <div class="forms-container">
-        <h3 style="text-align: center; margin-top: 0;">📋 PATIENT FORMS - PLEASE COMPLETE BOTH</h3>
-        <p style="text-align: center;">Please fill these forms for proper record keeping and treatment documentation:</p>
-        
+        <h3 style="text-align: center; margin-top: 0;">📋 Next Step: Fill History Form</h3>
+        <p style="text-align: center; color: #666; margin-bottom: 10px;">
+          After completing the history form, you'll receive a link to the prescription form.
+        </p>
+
         <div style="text-align: center; margin: 20px 0;">
-          <h4>Step 1: Complete History Form</h4>
-          <p style="font-size: 14px; color: #666;">Document the examination findings and patient history</p>
-          <a href="${links.historyForm}" class="button btn-form">📝 Fill History Form</a>
+          <a href="${historyFormLink}" class="button btn-form">📝 Fill History Form Now</a>
         </div>
-        
-        <div style="text-align: center; margin: 20px 0;">
-          <h4>Step 2: Create Prescription</h4>
-          <p style="font-size: 14px; color: #666;">Provide treatment plan and medication details</p>
-          <a href="${links.prescriptionForm}" class="button btn-prescription">💊 Fill Prescription Form</a>
-        </div>
-        
+
         <p style="text-align: center; font-size: 12px; color: #666; margin-top: 15px;">
-          <em>Both forms are pre-filled with appointment data for your convenience</em>
+          <em>The form is pre-filled with appointment data for your convenience</em>
         </p>
       </div>
-      
+
       <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
         <strong>✅ Next Steps:</strong>
         <ol style="margin: 10px 0;">
           <li>Contact the owner immediately at <strong>${appointment.doctor}</strong></li>
           <li>Complete the <strong>History Form</strong> with examination findings</li>
-          <li>Fill the <strong>Prescription Form</strong> with treatment details</li>
+          <li>After submitting the history form, you'll receive the <strong>Prescription Form link</strong> via email</li>
+          <li>Complete the prescription form with treatment details</li>
           <li>Schedule follow-up if needed</li>
         </ol>
       </div>
-      
+
       <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; text-align: center;">
         <p style="color: #666; font-size: 14px;">
           <strong>Important:</strong> This information is confidential. Please handle with care.<br>
@@ -191,7 +185,7 @@ export function getAcceptanceConfirmationEmail(
   return {
     subject: `✅ Case Assigned - ${appointment.species} - Contact: ${appointment.doctor}`,
     html: emailHtml,
-    text: `Case assigned. Owner contact: ${appointment.doctor}. Please check email for full details and both forms (History & Prescription).`
+    text: `Case assigned. Owner contact: ${appointment.doctor}. Please check email for full details and fill the History Form. The Prescription Form link will be sent after you complete the history form.`
   };
 }
 
@@ -245,7 +239,11 @@ export function getPatientDoctorAssignmentEmail(appointment: any, doctor: any) {
     email: doctor.partnerEmail,
     city: doctor.cityName
   });
-  const consultationType = 
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
+
+  const consultationType =
     appointment.paymentInfo?.consultationType === 'physical' ? '🏥 Physical Visit' :
     appointment.paymentInfo?.consultationType === 'virtual' ? '💻 Virtual Consultation' :
     appointment.paymentInfo?.consultationType === 'needy' ? '🤝 Free Consultation' :
@@ -284,6 +282,15 @@ export function getPatientDoctorAssignmentEmail(appointment: any, doctor: any) {
         ${doctor.specialization ? `<p><strong>Specialization:</strong> ${doctor.specialization}</p>` : ''}
         <p><strong>Location:</strong> ${doctor.cityName}${doctor.state ? `, ${doctor.state}` : ''}</p>
         ${doctor.partnerMobileNumber ? `<p><strong>Contact:</strong> ${doctor.partnerMobileNumber}</p>` : ''}
+
+        <div style="margin-top: 20px;">
+          <a href="${vetProfileLink}" style="display: inline-block; padding: 12px 30px; background-color: #22c55e; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            👨‍⚕️ View Doctor's Full Profile
+          </a>
+        </div>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+          See qualifications, reviews, and more information about your doctor
+        </p>
       </div>
       
       <div class="info-box">

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
-import { getAcceptanceConfirmationEmail, getCaseTakenEmail, getPatientDoctorAssignmentEmail } from '@/lib/email-templates';
+import { getAcceptanceConfirmationEmail, getPatientDoctorAssignmentEmail } from '@/lib/email-templates';
 
 // Email logging helper
 async function logEmail(params: {
@@ -167,15 +167,12 @@ export async function GET(request: NextRequest) {
         historyFormId: appointment.historyForm?.id || null
       };
       
-      // Prepare links - prescription form will only be available after history form is submitted
+      // Prepare history form link - prescription form link will be sent after history submission
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
-      const links = {
-        historyForm: `${baseUrl}/historyform?appointmentId=${appointmentId}`,
-        prescriptionForm: result.historyFormId ? `${baseUrl}/prescriptionform?historyFormId=${result.historyFormId}` : null
-      };
-      
-      // Send full details email with both form links to doctor
-      const confirmationEmail = getAcceptanceConfirmationEmail(doctor, appointment, links);
+      const historyFormLink = `${baseUrl}/historyform?appointmentId=${appointmentId}`;
+
+      // Send full details email with history form link to doctor
+      const confirmationEmail = getAcceptanceConfirmationEmail(doctor, appointment, historyFormLink);
 
       try {
         await transporter.sendMail({
@@ -264,61 +261,7 @@ export async function GET(request: NextRequest) {
           // Don't fail the entire process if patient email fails
         }
       }
-      
-      // Notify other doctors that case is taken
-      const otherDoctors = await prisma.partner.findMany({
-        where: {
-          partnerType: 'Veterinarian (Clinic, Hospital, Consultant)',
-          cityName: appointment.city,
-          id: { not: parseInt(doctorId) },
-          partnerEmail: { not: null }
-        }
-      });
-      
-      for (const otherDoc of otherDoctors) {
-        const caseTakenEmail = getCaseTakenEmail(otherDoc, appointment, doctor.partnerName);
-        try {
-          await transporter.sendMail({
-            from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
-            to: otherDoc.partnerEmail,
-            ...caseTakenEmail
-          });
 
-          // Log successful case taken email
-          await logEmail({
-            recipientEmail: otherDoc.partnerEmail!,
-            recipientName: otherDoc.partnerName,
-            recipientType: 'VET',
-            subject: caseTakenEmail.subject,
-            emailType: 'CASE_TAKEN',
-            status: 'SENT',
-            appointmentId: appointment.id,
-            partnerId: otherDoc.id,
-            metadata: {
-              acceptedByDoctor: doctor.partnerName,
-              species: appointment.species,
-              city: appointment.city,
-            },
-          });
-        } catch (error: any) {
-          console.error(`Failed to send case taken email to ${otherDoc.partnerEmail}:`, error);
-
-          // Log failed case taken email
-          await logEmail({
-            recipientEmail: otherDoc.partnerEmail!,
-            recipientName: otherDoc.partnerName,
-            recipientType: 'VET',
-            subject: caseTakenEmail.subject,
-            emailType: 'CASE_TAKEN',
-            status: 'FAILED',
-            errorMessage: error.message || String(error),
-            appointmentId: appointment.id,
-            partnerId: otherDoc.id,
-          });
-          // Continue sending to other doctors even if one fails
-        }
-      }
-      
       // Return success page
       return new NextResponse(
         `<!DOCTYPE html>

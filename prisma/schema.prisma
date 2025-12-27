@@ -215,6 +215,7 @@ model Partner {
   sessions            PartnerSession[]
   premiumRequests     PremiumPartnershipRequest[]
   withdrawalRequests  WithdrawalRequest[]
+  reviews             VetReview[]
   createdAt           DateTime?              @default(now())
   updatedAt           DateTime?              @updatedAt
 
@@ -292,6 +293,7 @@ model User {
   testimonials  Testimonial[]
   wishlist      WishlistItem[]
   reviews       ProductReview[]
+  vetReviews    VetReview[]
   createdAt DateTime? @default(now())
 
 }
@@ -375,6 +377,24 @@ model ProductReview {
   @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
+  @@index([isApproved])
+}
+
+model VetReview {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  partner    Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId  Int
+  rating     Int      // 1-5 star rating
+  comment    String   @db.Text
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, partnerId])
+  @@index([userId])
+  @@index([partnerId])
   @@index([isApproved])
 }
 

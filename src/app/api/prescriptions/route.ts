@@ -134,7 +134,8 @@ export async function POST(request: NextRequest) {
         appointment: {
           include: {
             paymentInfo: true,
-            assignedDoctor: true
+            assignedDoctor: true,
+            customer: true
           }
         }
       }
@@ -256,6 +257,29 @@ export async function POST(request: NextRequest) {
       } else {
         console.log(`  ⚠️ Doctor not found with name: ${data.doctorName}`);
       }
+    }
+
+    // Send prescription completion email to patient with vet profile link
+    if (history.appointment?.customer?.email && history.appointment?.assignedDoctor) {
+      try {
+        const { sendPrescriptionCompletionToPatient } = await import('@/lib/email-service');
+        await sendPrescriptionCompletionToPatient(
+          {
+            email: history.appointment.customer.email,
+            name: history.appointment.customer.name || prescription.ownerName
+          },
+          history.appointment.assignedDoctor,
+          prescription
+        );
+        console.log(`  ✅ Prescription completion email sent to ${history.appointment.customer.email}`);
+      } catch (emailError) {
+        console.error('  ⚠️ Error sending prescription completion email to patient:', emailError);
+        // Don't fail prescription creation if email fails
+      }
+    } else {
+      console.log('  ⚠️ Cannot send prescription email - Missing customer email or assigned doctor');
+      console.log('  Customer email:', history.appointment?.customer?.email);
+      console.log('  Assigned doctor:', history.appointment?.assignedDoctor?.partnerName);
     }
 
     return NextResponse.json(prescription, { status: 201 })

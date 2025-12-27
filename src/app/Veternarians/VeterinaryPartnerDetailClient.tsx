@@ -7,12 +7,17 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import {
   User2, Mail, Phone, MapPin, Package, Calendar,
   Stethoscope, GraduationCap, Award, Droplet, Clock,
-  Building2, ExternalLink
+  Building2, ExternalLink, Star
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useSession } from 'next-auth/react'
+import { toast } from 'react-hot-toast'
+import { useLoginModal } from '@/contexts/LoginModalContext'
 
 interface Product {
   id: number
@@ -65,11 +70,29 @@ const formatWhatsAppNumber = (number: string) => {
   return number.startsWith('+') ? number : '+' + number;
 };
 
+interface VetReview {
+  id: number
+  rating: number
+  comment: string
+  createdAt: string
+  user: {
+    name: string | null
+    image: string | null
+  }
+}
+
 export default function VeterinaryPartnerDetailClient() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const { data: session } = useSession()
+  const { openModal } = useLoginModal()
   const [partner, setPartner] = useState<Partner | null>(null)
   const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<VetReview[]>([])
+  const [averageRating, setAverageRating] = useState<number>(0)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '' })
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -89,6 +112,62 @@ export default function VeterinaryPartnerDetailClient() {
 
     fetchPartner()
   }, [id])
+
+  useEffect(() => {
+    if (!id) return
+
+    const fetchReviews = async () => {
+      try {
+        const numericId = parseInt(id)
+        if (isNaN(numericId)) return
+        const { data } = await axios.get(`/api/vet-reviews?partnerId=${numericId}&limit=all`)
+        setReviews(data.data || [])
+        setAverageRating(data.averageRating || 0)
+      } catch (error) {
+        console.error('Error fetching reviews', error)
+      } finally {
+        setReviewsLoading(false)
+      }
+    }
+
+    fetchReviews()
+  }, [id])
+
+  const handleSubmitReview = async () => {
+    if (!session) {
+      openModal('button')
+      return
+    }
+
+    if (!newReview.comment.trim()) {
+      toast.error('Please write a comment')
+      return
+    }
+
+    setSubmittingReview(true)
+    try {
+      const numericId = parseInt(id)
+      await axios.post('/api/vet-reviews', {
+        partnerId: numericId,
+        rating: newReview.rating,
+        comment: newReview.comment
+      })
+      toast.success('Review submitted successfully!')
+      setNewReview({ rating: 5, comment: '' })
+      // Refresh reviews
+      const { data } = await axios.get(`/api/vet-reviews?partnerId=${numericId}&limit=all`)
+      setReviews(data.data || [])
+      setAverageRating(data.averageRating || 0)
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error)
+      } else {
+        toast.error('Failed to submit review')
+      }
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
 
   const navigateToProduct = (product: Product) => {
     router.push(`/products/${product.id}`)
@@ -391,6 +470,160 @@ export default function VeterinaryPartnerDetailClient() {
               <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-12 text-center">
                 <Package className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                 <p className="text-gray-600 dark:text-gray-400">No products associated with this partner yet.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Reviews Section */}
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-gray-200 dark:border-zinc-800 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Patient Reviews
+              </h2>
+              {!reviewsLoading && reviews.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-5 h-5 ${
+                          star <= Math.round(averageRating)
+                            ? 'fill-yellow-400 stroke-yellow-400'
+                            : 'fill-none stroke-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    {averageRating.toFixed(1)} / 5.0
+                  </span>
+                  <span className="text-sm text-gray-500">({reviews.length} reviews)</span>
+                </div>
+              )}
+            </div>
+
+            {/* Write a Review Form */}
+            <Card className="mb-6 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                  Share Your Experience
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Rating
+                    </label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setNewReview({ ...newReview, rating: star })}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`w-8 h-8 cursor-pointer ${
+                              star <= newReview.rating
+                                ? 'fill-yellow-400 stroke-yellow-400'
+                                : 'fill-none stroke-gray-300'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Your Review
+                    </label>
+                    <Textarea
+                      placeholder="Share your experience with this veterinarian..."
+                      value={newReview.comment}
+                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                      rows={4}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSubmitReview}
+                    disabled={submittingReview || !newReview.comment.trim()}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </Button>
+                  {!session && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Please <button onClick={() => openModal('button')} className="text-green-600 hover:underline">login</button> to leave a review
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Reviews List */}
+            {reviewsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            ) : reviews.length > 0 ? (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <Card key={review.id} className="border border-gray-200 dark:border-zinc-800">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          {review.user.image ? (
+                            <Image
+                              src={review.user.image}
+                              alt={review.user.name || 'User'}
+                              width={48}
+                              height={48}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 dark:bg-zinc-700 rounded-full flex items-center justify-center">
+                              <User2 className="w-6 h-6 text-gray-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                {review.user.name || 'Anonymous'}
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                            <div className="flex items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-4 h-4 ${
+                                    star <= review.rating
+                                      ? 'fill-yellow-400 stroke-yellow-400'
+                                      : 'fill-none stroke-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {review.comment}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-12 text-center">
+                <Star className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">No reviews yet. Be the first to review!</p>
               </div>
             )}
           </div>

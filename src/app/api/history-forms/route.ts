@@ -167,7 +167,7 @@ const appointmentId = validation.data.appointmentId || null;
     const historyForm = await prisma.historyForm.create({
       data: {
         // Required fields
-         appointmentId: appointmentId, 
+         appointmentId: appointmentId,
         name: data.name,
         contact: data.contact,
         address: data.address,
@@ -177,7 +177,7 @@ const appointmentId = validation.data.appointmentId || null;
         sex: data.sex,
         mainIssue: data.mainIssue,
         duration: data.duration,
-        
+
         // Optional fields
         tag: data.tag || null,
         use: data.use || null,
@@ -206,6 +206,31 @@ const appointmentId = validation.data.appointmentId || null;
         referalNo: data.referalNo || null,
       },
     })
+
+    // Send prescription form link email to doctor
+    if (appointmentId) {
+      try {
+        const appointment = await prisma.appointmentRequest.findUnique({
+          where: { id: appointmentId },
+          include: {
+            assignedDoctor: true
+          }
+        });
+
+        if (appointment?.assignedDoctor?.partnerEmail) {
+          const { sendPrescriptionFormLink } = await import('@/lib/email-service');
+          await sendPrescriptionFormLink(
+            appointment.assignedDoctor,
+            historyForm.id,
+            appointment.id
+          );
+          console.log(`Prescription form link sent to Dr. ${appointment.assignedDoctor.partnerName}`);
+        }
+      } catch (emailError) {
+        console.error('Error sending prescription form link email:', emailError);
+        // Don't fail the history form creation if email fails
+      }
+    }
 
     return NextResponse.json(historyForm, { status: 201 })
   } catch (error) {

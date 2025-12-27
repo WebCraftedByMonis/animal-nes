@@ -31,7 +31,8 @@ import {
   GraduationCap,
   FormInput,
   Pin,
-  Mail
+  Mail,
+  Star
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -228,6 +229,7 @@ export function AppSidebar() {
                     <Link href="/dashboard/additional-consultation-fees" className="block text-sm text-muted-foreground hover:underline">Additional Consultation Fees</Link>
                     <Link href="/dashboard/managehistoryform" className="block text-sm text-muted-foreground hover:underline">History Forms</Link>
                     <Link href="/dashboard/manageprescriptionfrom" className="block text-sm text-muted-foreground hover:underline">Prescription Forms</Link>
+                    <Link href="/dashboard/viewVetReviews" className="block text-sm text-muted-foreground hover:underline">Vet Reviews</Link>
                     <Link href="/dashboard/email-tracking" className="block text-sm text-muted-foreground hover:underline">Email Tracking</Link>
                   </div>
                 )}

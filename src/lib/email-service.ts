@@ -229,7 +229,7 @@ export async function sendInitialNotification(
 export async function sendAcceptanceConfirmation(
   vet: any,
   appointment: any,
-  links: { historyForm: string; prescriptionForm: string | null }
+  historyFormLink: string
 ) {
   const emailSubject = `✅ Case Assigned - ${appointment.species} - Contact: ${appointment.doctor}`;
 
@@ -307,20 +307,17 @@ export async function sendAcceptanceConfirmation(
       </div>
       
       <div style="text-align: center; margin: 30px 0; padding: 20px; background: #fff3cd; border-radius: 10px;">
-        <h3>📋 Patient Forms</h3>
-        <a href="${links.historyForm}" class="button btn-form">📝 Fill History Form</a>
-        ${links.prescriptionForm ? 
-          `<a href="${links.prescriptionForm}" class="button btn-form">💊 Fill Prescription Form</a>` : 
-          '<p style="color: #666;">Prescription form available after history form</p>'
-        }
+        <h3>📋 Next Step: Fill History Form</h3>
+        <p style="color: #666; margin: 10px 0;">After completing the history form, you'll receive a link to the prescription form.</p>
+        <a href="${historyFormLink}" class="button btn-form">📝 Fill History Form Now</a>
       </div>
-      
+
       <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
         <strong>Next Steps:</strong>
         <ol>
           <li>Contact owner at <strong>${appointment.doctor}</strong></li>
           <li>Fill history form with examination details</li>
-          <li>Provide prescription if needed</li>
+          <li>Complete prescription form (link will be sent after history form)</li>
         </ol>
       </div>
     </div>
@@ -465,6 +462,246 @@ export async function sendCaseTakenNotification(
       errorMessage: error instanceof Error ? error.message : String(error),
       appointmentId: appointment.id,
       partnerId: vet.id,
+    });
+
+    return { success: false, error };
+  }
+}
+
+// Send prescription form link after history form submission
+export async function sendPrescriptionFormLink(
+  doctor: any,
+  historyFormId: number,
+  appointmentId: number
+) {
+  const emailSubject = 'History Form Completed - Please Fill Prescription';
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day).`);
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+    const prescriptionLink = `${baseUrl}/prescriptionform?historyFormId=${historyFormId}`;
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #3b82f6; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+    .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+    .button { display: inline-block; padding: 12px 30px; margin: 20px 5px; text-decoration: none; border-radius: 5px; font-weight: bold; background: #9333ea; color: white; }
+    .success { background: #d4edda; border-color: #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 15px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>✅ History Form Completed</h2>
+    </div>
+
+    <div class="content">
+      <div class="success">
+        <strong>Great job, Dr. ${doctor.partnerName}!</strong><br>
+        The history form has been successfully submitted.
+      </div>
+
+      <h3>📋 Next Step: Complete Prescription Form</h3>
+      <p>Please provide the prescription details for this patient to complete the treatment plan.</p>
+
+      <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f3e8ff; border-radius: 10px;">
+        <a href="${prescriptionLink}" class="button">💊 Fill Prescription Form</a>
+      </div>
+
+      <p style="color: #666; font-size: 14px;">
+        This link will take you directly to the prescription form with pre-filled patient information.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Veterinary System" <${process.env.EMAIL_USER}>`,
+      to: doctor.partnerEmail,
+      subject: emailSubject,
+      html: emailHtml,
+      text: `History form completed! Please fill the prescription form: ${prescriptionLink}`
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    // Increment email count
+    incrementEmailCount();
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: doctor.partnerEmail,
+      recipientName: doctor.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'SENT',
+      appointmentId: appointmentId,
+      partnerId: doctor.id,
+      metadata: {
+        historyFormId,
+        prescriptionLink
+      },
+    });
+
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error sending prescription form link:', error);
+
+    await logEmail({
+      recipientEmail: doctor.partnerEmail,
+      recipientName: doctor.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      appointmentId: appointmentId,
+      partnerId: doctor.id,
+    });
+
+    return { success: false, error };
+  }
+}
+
+// Send prescription completion email to patient with vet profile link
+export async function sendPrescriptionCompletionToPatient(
+  patient: { email: string; name: string },
+  doctor: any,
+  prescription: any
+) {
+  const emailSubject = `✅ Prescription Ready - Treatment Plan from Dr. ${doctor.partnerName}`;
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day).`);
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+    const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #22c55e; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+    .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+    .doctor-box { background: white; padding: 20px; margin: 20px 0; border-radius: 10px; border-left: 4px solid #22c55e; }
+    .button { display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 5px; font-weight: bold; background: #22c55e; color: white; }
+    .review-box { background: #fff3cd; padding: 20px; margin: 20px 0; border-radius: 10px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>🩺 Your Prescription is Ready!</h2>
+    </div>
+
+    <div class="content">
+      <p>Dear ${patient.name},</p>
+
+      <p>Great news! Dr. ${doctor.partnerName} has completed your prescription and treatment plan for your ${prescription.animalSpecies}.</p>
+
+      <div class="doctor-box">
+        <h3 style="margin-top: 0; color: #22c55e;">👨‍⚕️ Your Veterinarian</h3>
+        <h4 style="margin: 10px 0;">Dr. ${doctor.partnerName}</h4>
+        ${doctor.qualificationDegree ? `<p style="margin: 5px 0; color: #666;">${doctor.qualificationDegree}</p>` : ''}
+        ${doctor.specialization ? `<p style="margin: 5px 0;"><strong>Specialization:</strong> ${doctor.specialization}</p>` : ''}
+        <p style="margin: 5px 0;"><strong>Clinic:</strong> ${doctor.shopName || 'N/A'}</p>
+        <p style="margin: 5px 0;"><strong>Location:</strong> ${doctor.cityName}${doctor.state ? `, ${doctor.state}` : ''}</p>
+        ${doctor.partnerMobileNumber ? `<p style="margin: 5px 0;"><strong>Contact:</strong> ${doctor.partnerMobileNumber}</p>` : ''}
+
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="${vetProfileLink}" class="button">View Doctor's Full Profile</a>
+        </div>
+      </div>
+
+      <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h4 style="margin-top: 0;">📋 Prescription Details</h4>
+        <p><strong>Animal:</strong> ${prescription.animalSpecies}</p>
+        <p><strong>Owner:</strong> ${prescription.ownerName}</p>
+        ${prescription.diagnosis ? `<p><strong>Diagnosis:</strong> ${prescription.diagnosis}</p>` : ''}
+        <p style="font-size: 14px; color: #666; margin-top: 15px;">
+          Please follow the prescribed treatment plan carefully. If you have any questions, contact Dr. ${doctor.partnerName} directly.
+        </p>
+      </div>
+
+      <div class="review-box">
+        <h4 style="margin-top: 0; color: #d97706;">⭐ How was your experience?</h4>
+        <p>After your animal's treatment, we'd love to hear your feedback! Your review helps other pet owners find quality veterinary care.</p>
+        <p style="font-size: 14px; color: #666; margin-top: 10px;">
+          <em>You can leave a review on the doctor's profile page within the next few days.</em>
+        </p>
+      </div>
+
+      <p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">
+        Wishing your animal a speedy recovery! 🐾
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Animal Wellness Service" <${process.env.EMAIL_USER}>`,
+      to: patient.email,
+      subject: emailSubject,
+      html: emailHtml,
+      text: `Your prescription is ready from Dr. ${doctor.partnerName}. View the doctor's profile: ${vetProfileLink}`
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    // Increment email count
+    incrementEmailCount();
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: patient.email,
+      recipientName: patient.name,
+      recipientType: 'PATIENT',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'SENT',
+      partnerId: doctor.id,
+      metadata: {
+        prescriptionId: prescription.id,
+        doctorName: doctor.partnerName,
+        vetProfileLink
+      },
+    });
+
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error sending prescription completion email to patient:', error);
+
+    await logEmail({
+      recipientEmail: patient.email,
+      recipientName: patient.name,
+      recipientType: 'PATIENT',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      partnerId: doctor.id,
     });
 
     return { success: false, error };
@@ -631,6 +868,296 @@ export async function sendMasterTrainerApproval(registration: any) {
       emailType: 'MASTER_TRAINER_APPROVAL',
       status: 'FAILED',
       errorMessage: error instanceof Error ? error.message : String(error),
+    });
+
+    return { success: false, error };
+  }
+}
+
+// Send review notification to doctor when they receive a review
+export async function sendReviewNotificationToDoctor(
+  doctor: any,
+  review: any
+) {
+  const emailSubject = `New Review Received - ${review.rating} Star${review.rating > 1 ? 's' : ''}`;
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day).`);
+    await logEmail({
+      recipientEmail: doctor.partnerEmail,
+      recipientName: doctor.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: `Rate limit exceeded: ${GMAIL_DAILY_LIMIT} emails/day limit reached`,
+      partnerId: doctor.id,
+    });
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const dashboardLink = `${baseUrl}/partner/dashboard`;
+
+  // Create star rating display
+  const stars = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+
+  try {
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+    .header { background-color: #7c3aed; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .review-box { background-color: #f3f4f6; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #7c3aed; }
+    .button { display: inline-block; padding: 12px 30px; background-color: #7c3aed; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px 0; }
+    .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 28px;">New Review Received</h1>
+      <p style="margin: 10px 0 0 0; font-size: 16px;">You have a new patient review!</p>
+    </div>
+
+    <div class="content">
+      <p style="font-size: 16px; color: #333;">Dear <strong>Dr. ${doctor.partnerName}</strong>,</p>
+
+      <p style="font-size: 14px; color: #555; line-height: 1.6;">
+        Great news! You've received a new review from a patient.
+      </p>
+
+      <div class="review-box">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <div style="font-size: 32px; margin-bottom: 10px;">${stars}</div>
+          <div style="font-size: 18px; color: #7c3aed; font-weight: bold;">${review.rating} out of 5 stars</div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <p style="margin: 5px 0; color: #666;"><strong>From:</strong> ${review.user?.name || 'Anonymous'}</p>
+          <p style="margin: 5px 0; color: #666;"><strong>Date:</strong> ${new Date(review.createdAt).toLocaleDateString()}</p>
+        </div>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+          <p style="margin: 0 0 10px 0; color: #666; font-weight: bold;">Review:</p>
+          <p style="margin: 0; color: #333; font-style: italic; line-height: 1.6;">
+            "${review.comment}"
+          </p>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${dashboardLink}" class="button">View All Reviews</a>
+      </div>
+
+      <p style="font-size: 14px; color: #555; line-height: 1.6;">
+        Patient reviews help build trust and attract more clients. Keep up the excellent work!
+      </p>
+
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 5px 0; color: #666; font-size: 14px;"><strong>Contact Us:</strong></p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📞 Phone: (+92) 335-4145431</p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📧 Email: animalwellnessshop@gmail.com</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This is an automated email. Please do not reply to this message.</p>
+      <p>Animal Wellness Shop © 2025. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Animal Wellness Shop" <${process.env.EMAIL_USER}>`,
+      to: doctor.partnerEmail,
+      subject: emailSubject,
+      html: emailHtml,
+      text: `Dear Dr. ${doctor.partnerName}, You received a new ${review.rating}-star review from ${review.user?.name || 'a patient'}. Review: "${review.comment}". View all your reviews at ${dashboardLink}`
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    // Increment email count
+    incrementEmailCount();
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: doctor.partnerEmail,
+      recipientName: doctor.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'SENT',
+      partnerId: doctor.id,
+      metadata: {
+        reviewId: review.id,
+        rating: review.rating,
+      },
+    });
+
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error sending review notification:', error);
+
+    // Log failed email
+    await logEmail({
+      recipientEmail: doctor.partnerEmail,
+      recipientName: doctor.partnerName,
+      recipientType: 'VET',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      partnerId: doctor.id,
+    });
+
+    return { success: false, error };
+  }
+}
+
+// Send review request to patient 2 days after prescription completion
+export async function sendReviewRequestToPatient(
+  patient: { email: string; name: string },
+  doctor: any,
+  appointmentId: number
+) {
+  const emailSubject = `Share Your Experience - Dr. ${doctor.partnerName}`;
+
+  // Check rate limit
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached (${GMAIL_DAILY_LIMIT}/day).`);
+    await logEmail({
+      recipientEmail: patient.email,
+      recipientName: patient.name,
+      recipientType: 'PATIENT',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: `Rate limit exceeded: ${GMAIL_DAILY_LIMIT} emails/day limit reached`,
+      appointmentId: appointmentId,
+    });
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
+
+  try {
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+    .header { background-color: #3b82f6; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .button { display: inline-block; padding: 12px 30px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px 0; }
+    .info-box { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 28px;">How was your experience?</h1>
+      <p style="margin: 10px 0 0 0; font-size: 16px;">Help others find great veterinary care</p>
+    </div>
+
+    <div class="content">
+      <p style="font-size: 16px; color: #333;">Dear <strong>${patient.name}</strong>,</p>
+
+      <p style="font-size: 14px; color: #555; line-height: 1.6;">
+        We hope your pet is feeling better after the recent consultation with <strong>Dr. ${doctor.partnerName}</strong>.
+      </p>
+
+      <p style="font-size: 14px; color: #555; line-height: 1.6;">
+        Your feedback is invaluable and helps other pet owners make informed decisions. Would you take a moment to share your experience?
+      </p>
+
+      <div class="info-box">
+        <p style="margin: 0 0 10px 0; font-weight: bold; color: #1e40af;">Your review will help:</p>
+        <ul style="margin: 10px 0; padding-left: 20px; color: #555;">
+          <li style="margin: 5px 0;">Other pet owners find quality veterinary care</li>
+          <li style="margin: 5px 0;">Dr. ${doctor.partnerName} improve their services</li>
+          <li style="margin: 5px 0;">Build a trusted community of pet caregivers</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${vetProfileLink}" class="button">Write a Review</a>
+      </div>
+
+      <p style="font-size: 13px; color: #666; text-align: center; line-height: 1.6;">
+        It only takes a minute and means the world to us and other pet owners.
+      </p>
+
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 5px 0; color: #666; font-size: 14px;"><strong>Contact Us:</strong></p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📞 Phone: (+92) 335-4145431</p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📧 Email: animalwellnessshop@gmail.com</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This is an automated email. Please do not reply to this message.</p>
+      <p>Animal Wellness Shop © 2025. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Animal Wellness Shop" <${process.env.EMAIL_USER}>`,
+      to: patient.email,
+      subject: emailSubject,
+      html: emailHtml,
+      text: `Dear ${patient.name}, We hope your pet is feeling better after the recent consultation with Dr. ${doctor.partnerName}. Please take a moment to share your experience by leaving a review. Your feedback helps other pet owners make informed decisions. Visit ${vetProfileLink} to write a review.`
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    // Increment email count
+    incrementEmailCount();
+
+    // Log successful email
+    await logEmail({
+      recipientEmail: patient.email,
+      recipientName: patient.name,
+      recipientType: 'PATIENT',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'SENT',
+      appointmentId: appointmentId,
+      metadata: {
+        doctorId: doctor.id,
+        doctorName: doctor.partnerName,
+      },
+    });
+
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error sending review request:', error);
+
+    // Log failed email
+    await logEmail({
+      recipientEmail: patient.email,
+      recipientName: patient.name,
+      recipientType: 'PATIENT',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      appointmentId: appointmentId,
     });
 
     return { success: false, error };
