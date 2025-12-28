@@ -587,6 +587,66 @@ export default function PartnerDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Product Sales & Orders Section */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Product Sales & Orders</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Product Sales Orders Card */}
+            <button
+              onClick={() => router.push('/partner/dashboard/orders')}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:border-green-500 text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-500 transition-colors">
+                  <svg className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600 transition-colors">Product Orders</h3>
+                  <p className="text-sm text-gray-500">View sales and earnings</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Wallet Card */}
+            <button
+              onClick={() => setActiveTab('wallet')}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:border-blue-500 text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-500 transition-colors">
+                  <svg className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">Wallet</h3>
+                  <p className="text-sm text-gray-500">PKR {partner?.walletBalance?.toFixed(2) || '0.00'}</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Product Reviews Card */}
+            <button
+              onClick={() => router.push('/partner/dashboard/reviews')}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:border-yellow-500 text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-yellow-100 rounded-lg group-hover:bg-yellow-500 transition-colors">
+                  <svg className="w-6 h-6 text-yellow-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-yellow-600 transition-colors">Product Reviews</h3>
+                  <p className="text-sm text-gray-500">Manage customer reviews</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Medical Records Section */}
         {partner.partnerType === 'Veterinarian (Clinic, Hospital, Consultant)' && (
           <div className="mb-6">
@@ -718,16 +778,7 @@ export default function PartnerDashboard() {
             {/* Products Tab */}
             {activeTab === 'products' && (
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-green-600">My Products</h2>
-                  <button
-                    onClick={() => router.push('/partner/dashboard/reviews')}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Manage Reviews
-                  </button>
-                </div>
+                <h2 className="text-2xl font-bold text-green-600">My Products</h2>
 
                 {partner.products && partner.products.length > 0 ? (
                   <div className="overflow-x-auto">
@@ -1213,6 +1264,20 @@ export default function PartnerDashboard() {
                   >
                     Request Withdrawal
                   </button>
+                </div>
+
+                {/* Wallet Information */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-900 mb-2">How Your Wallet Gets Credited:</h4>
+                  <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                    <li><strong>Product Sales:</strong> Earn 50% of the profit when your products are sold (Selling Price - Purchased Price)</li>
+                    <li><strong>Appointment Fees:</strong> Consultation fees from patient appointments are added to your wallet</li>
+                    <li><strong>Additional Fees:</strong> Extra consultation charges and services are credited here</li>
+                    <li><strong>Referral Commissions:</strong> Earn 500 PKR (normal) or 1000 PKR (premium) when referred partners upgrade</li>
+                  </ul>
+                  <p className="text-sm text-blue-800 mt-3">
+                    <strong>Note:</strong> All earnings are automatically credited to your wallet and can be withdrawn using the "Request Withdrawal" button above.
+                  </p>
                 </div>
 
                 {/* Referral Section */}
