@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary';
 
 // Validation schema for creating/updating forms
 const formSchema = z.object({
@@ -74,7 +75,12 @@ export async function GET(request: NextRequest) {
 // POST - Create new form
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const formData = await request.formData();
+    const dataString = formData.get('data') as string;
+    const thumbnailFile = formData.get('thumbnail') as File | null;
+
+    // Parse JSON data
+    const body = JSON.parse(dataString);
 
     // Validate request body
     const validation = formSchema.safeParse(body);
@@ -85,11 +91,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { fields, ...formData } = validation.data;
+    const { fields, ...formInfo } = validation.data;
 
     // Check if slug already exists
     const existingForm = await prisma.dynamicForm.findUnique({
-      where: { slug: formData.slug }
+      where: { slug: formInfo.slug }
     });
 
     if (existingForm) {
@@ -99,10 +105,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Upload thumbnail to Cloudinary if provided
+    let thumbnailUrl = null;
+    let thumbnailPublicId = null;
+
+    if (thumbnailFile && thumbnailFile.size > 0) {
+      const arrayBuffer = await thumbnailFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const uploadResult = await uploadImage(buffer, 'forms/thumbnails', thumbnailFile.name);
+      thumbnailUrl = uploadResult.secure_url;
+      thumbnailPublicId = uploadResult.public_id;
+    }
+
     // Create form with fields
     const form = await prisma.dynamicForm.create({
       data: {
-        ...formData,
+        ...formInfo,
+        thumbnailUrl,
+        thumbnailPublicId,
         fields: fields ? {
           create: fields
         } : undefined

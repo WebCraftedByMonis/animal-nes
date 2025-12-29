@@ -22,7 +22,7 @@ model DeliveryCharge {
   amount    Float
   cityId    Int
   notes     String?  @db.Text
-  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade, map: "DeliveryCharge_city_fkey")
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@index([cityId])
@@ -1058,6 +1058,8 @@ model DynamicForm {
   title               String             // Form title
   description         String?            @db.Text // Form description
   slug                String             @unique // URL-friendly identifier
+  thumbnailUrl        String?            @db.Text // Thumbnail image URL for listing
+  thumbnailPublicId   String?            // Cloudinary public ID for thumbnail
   headerTitle         String?            @db.Text // Optional custom header (can be in multiple languages)
   headerSubtitle      String?            @db.Text // Optional custom subtitle
   paymentRequired     Boolean            @default(false) // Does this form require payment?

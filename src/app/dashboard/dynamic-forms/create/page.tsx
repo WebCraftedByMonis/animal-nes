@@ -32,6 +32,8 @@ const FIELD_TYPES = [
 export default function CreateFormPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -65,6 +67,29 @@ export default function CreateFormPage() {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
       setFormData(prev => ({ ...prev, slug }));
+    }
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      setThumbnail(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -146,10 +171,18 @@ export default function CreateFormPage() {
         fields: fields.map(({ id, ...field }) => field), // Remove id for new fields
       };
 
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('data', JSON.stringify(payload));
+
+      // Add thumbnail if present
+      if (thumbnail) {
+        formDataToSend.append('thumbnail', thumbnail);
+      }
+
       const res = await fetch("/api/dynamic-forms", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formDataToSend,
       });
 
       if (res.ok) {
@@ -236,6 +269,30 @@ export default function CreateFormPage() {
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="Brief description of this form"
             />
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Thumbnail Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Upload a thumbnail image for the forms listing page (max 5MB, recommended size: 800x600px)
+            </p>
+            {thumbnailPreview && (
+              <div className="mt-3">
+                <img
+                  src={thumbnailPreview}
+                  alt="Thumbnail preview"
+                  className="w-48 h-36 object-cover rounded-lg border border-gray-200"
+                />
+              </div>
+            )}
           </div>
 
           <div className="mt-4">

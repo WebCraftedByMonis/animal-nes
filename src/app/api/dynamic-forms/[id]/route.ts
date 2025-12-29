@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary';
 
 // Validation schema for updating forms
 const updateFormSchema = z.object({
@@ -81,7 +82,14 @@ export async function PUT(
   try {
     // Await the params object first
     const { id } = await params;
-    const body = await request.json();
+
+    const formData = await request.formData();
+    const dataString = formData.get('data') as string;
+    const thumbnailFile = formData.get('thumbnail') as File | null;
+    const removeThumbnail = formData.get('removeThumbnail') === 'true';
+
+    // Parse JSON data
+    const body = JSON.parse(dataString);
 
     // Validate request body
     const validation = updateFormSchema.safeParse(body);
@@ -92,7 +100,7 @@ export async function PUT(
       );
     }
 
-    const { fields, slug, ...formData } = validation.data;
+    const { fields, slug, ...formInfo } = validation.data;
 
     // Check if form exists
     const existingForm = await prisma.dynamicForm.findUnique({
@@ -120,12 +128,36 @@ export async function PUT(
       }
     }
 
+    // Handle thumbnail upload
+    let thumbnailUrl = existingForm.thumbnailUrl;
+    let thumbnailPublicId = existingForm.thumbnailPublicId;
+
+    if (removeThumbnail && existingForm.thumbnailPublicId) {
+      // Delete old thumbnail from Cloudinary
+      await deleteFromCloudinary(existingForm.thumbnailPublicId);
+      thumbnailUrl = null;
+      thumbnailPublicId = null;
+    } else if (thumbnailFile && thumbnailFile.size > 0) {
+      // Delete old thumbnail if exists
+      if (existingForm.thumbnailPublicId) {
+        await deleteFromCloudinary(existingForm.thumbnailPublicId);
+      }
+      // Upload new thumbnail
+      const arrayBuffer = await thumbnailFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const uploadResult = await uploadImage(buffer, 'forms/thumbnails', thumbnailFile.name);
+      thumbnailUrl = uploadResult.secure_url;
+      thumbnailPublicId = uploadResult.public_id;
+    }
+
     // Update form
     const updatedForm = await prisma.dynamicForm.update({
       where: { id },
       data: {
-        ...formData,
+        ...formInfo,
         ...(slug && { slug }),
+        thumbnailUrl,
+        thumbnailPublicId,
       },
       include: {
         fields: {

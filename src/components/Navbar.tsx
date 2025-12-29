@@ -104,11 +104,12 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation - Only on large screens (lg:1024px+) */}
-            <div className="hidden lg:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-0.5">
               <NavigationMenu>
-                <NavigationMenuList >
+                <NavigationMenuList className="gap-0.5">
                   {[
                     ["Products", "/products"],
+                    ["Master Trainings", "/forms"],
                     ["Nexus News", "/animal-news"],
                     ["Find Doctor", "/findDoctor"],
                     ["Dashboard", "/partner/dashboard"],
@@ -118,7 +119,7 @@ export default function Navbar() {
                         asChild
                         className={cn(
                           navigationMenuTriggerStyle(),
-                          "text-sm font-medium hover:text-green-500 transition-colors"
+                          "text-xs font-medium hover:text-green-500 transition-colors px-2 py-1.5"
                         )}
                       >
                         <Link href={href}>{label}</Link>
@@ -250,6 +251,7 @@ export default function Navbar() {
                     <div className="space-y-1">
                       {[
                         ["Products", "/products"],
+                        ["Master Trainings", "/forms"],
                         ["Nexus News", "/animal-news"],
                         ["Find Doctor", "/findDoctor"],
                         ["Dashboard", "/partner/dashboard"],
