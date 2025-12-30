@@ -110,6 +110,7 @@ export function AppSidebar() {
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addCompany" className="block text-sm text-muted-foreground hover:underline">Add Company</Link>
                     <Link href="/dashboard/viewCompanies" className="block text-sm text-muted-foreground hover:underline">View Companies</Link>
+                    <Link href="/dashboard/scrapeCompanies" className="block text-sm text-muted-foreground hover:underline">Scrape from Google Maps</Link>
                   </div>
                 )}
               </SidebarMenuItem>

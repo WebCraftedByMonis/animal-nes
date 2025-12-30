@@ -109,6 +109,13 @@ model Company {
   email       String?       @unique
   image       CompanyImage?
   stickyLogo  StickyLogo[]
+
+  // Google Maps scraped data
+  rating      Float?
+  reviews     Int?
+  website     String?       @db.Text
+  city        String?
+
   createdAt   DateTime?      @default(now())
   updatedAt   DateTime?      @updatedAt
 }
