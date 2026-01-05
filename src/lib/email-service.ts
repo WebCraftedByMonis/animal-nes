@@ -207,6 +207,11 @@ export async function sendInitialNotification(
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending initial notification:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     // Log failed email
     await logEmail({
@@ -216,7 +221,7 @@ export async function sendInitialNotification(
       subject: emailSubject,
       emailType: 'INITIAL_NOTIFICATION',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       appointmentId: appointment.id,
       partnerId: vet.id,
     });
@@ -358,6 +363,11 @@ export async function sendAcceptanceConfirmation(
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending confirmation:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     // Log failed email
     await logEmail({
@@ -367,7 +377,7 @@ export async function sendAcceptanceConfirmation(
       subject: emailSubject,
       emailType: 'ACCEPTANCE_CONFIRMATION',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       appointmentId: appointment.id,
       partnerId: vet.id,
     });
@@ -450,6 +460,11 @@ export async function sendCaseTakenNotification(
     return { success: true };
   } catch (error) {
     console.error('Error sending case taken notification:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     // Log failed email
     await logEmail({
@@ -459,7 +474,7 @@ export async function sendCaseTakenNotification(
       subject: emailSubject,
       emailType: 'CASE_TAKEN',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       appointmentId: appointment.id,
       partnerId: vet.id,
     });
@@ -559,6 +574,11 @@ export async function sendPrescriptionFormLink(
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending prescription form link:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     await logEmail({
       recipientEmail: doctor.partnerEmail,
@@ -567,7 +587,7 @@ export async function sendPrescriptionFormLink(
       subject: emailSubject,
       emailType: 'OTHER',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       appointmentId: appointmentId,
       partnerId: doctor.id,
     });
@@ -692,6 +712,11 @@ export async function sendPrescriptionCompletionToPatient(
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending prescription completion email to patient:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     await logEmail({
       recipientEmail: patient.email,
@@ -700,7 +725,7 @@ export async function sendPrescriptionCompletionToPatient(
       subject: emailSubject,
       emailType: 'OTHER',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       partnerId: doctor.id,
     });
 
@@ -858,6 +883,11 @@ export async function sendMasterTrainerApproval(registration: any) {
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending master trainer approval:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     // Log failed email
     await logEmail({
@@ -867,7 +897,7 @@ export async function sendMasterTrainerApproval(registration: any) {
       subject: emailSubject,
       emailType: 'MASTER_TRAINER_APPROVAL',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
     });
 
     return { success: false, error };
@@ -1006,6 +1036,11 @@ export async function sendReviewNotificationToDoctor(
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending review notification:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     // Log failed email
     await logEmail({
@@ -1015,7 +1050,7 @@ export async function sendReviewNotificationToDoctor(
       subject: emailSubject,
       emailType: 'OTHER',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       partnerId: doctor.id,
     });
 
@@ -1147,6 +1182,11 @@ export async function sendReviewRequestToPatient(
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending review request:', error);
+    // Log full error stack for debugging
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    }
 
     // Log failed email
     await logEmail({
@@ -1156,7 +1196,7 @@ export async function sendReviewRequestToPatient(
       subject: emailSubject,
       emailType: 'OTHER',
       status: 'FAILED',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       appointmentId: appointmentId,
     });
 
