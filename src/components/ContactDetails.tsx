@@ -19,7 +19,7 @@ import { RiMessage2Line } from "react-icons/ri";
 const contactItems = [
   {
     icon: <BsFillHouseDoorFill className="text-green-500" />,
-    label: "Address: 9 Zubair St, Islamia Park, Poonch Road, Chaburji Lahore",
+    label: "Address: 67-K Block, Commercial Market, DHA Phase-1, Lahore",
   },
   {
     icon: <FaGlobe className="text-green-600" />,

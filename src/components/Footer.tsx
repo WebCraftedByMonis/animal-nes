@@ -92,7 +92,7 @@ export default function Footer( ) {
                 </li>
 
                 <li>
-                  Address : Address: 9 Zubair St, Islamia Park, Lahore, 54000
+                  Address: 67-K Block, Commercial Market, DHA Phase-1, Lahore
 
                 </li>
             

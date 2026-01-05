@@ -211,7 +211,7 @@ export default function ViewHistoryFormsPage() {
         <div class="header">
           <img src="${window.location.origin}/logo.jpg" class="logo" /><br/>
           <strong>Animal Wellness Shop</strong><br/>
-          9-Zubair Street, Islamia Park, Poonch Road, Chauburji, Lahore<br/>
+          67-K Block, Commercial Market, DHA Phase-1, Lahore<br/>
           Phone: 03334145431; Email: animalwellnessshop@gmail.com
         </div>
 
