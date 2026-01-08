@@ -111,14 +111,14 @@ export default function DynamicFormsPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dynamic Forms</h1>
           <p className="text-gray-600 mt-1">Create and manage custom forms</p>
         </div>
         <button
           onClick={() => router.push("/dashboard/dynamic-forms/create")}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-semibold shadow-md hover:shadow-lg transition"
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-semibold shadow-md hover:shadow-lg transition w-full sm:w-auto justify-center"
         >
           <Plus className="w-5 h-5" />
           Create New Form
@@ -161,8 +161,8 @@ export default function DynamicFormsPage() {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-max">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

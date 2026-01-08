@@ -176,7 +176,7 @@ export default function FormSubmissionsPage() {
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilter("all")}
             className={`px-4 py-2 rounded-lg font-medium transition ${
@@ -216,8 +216,8 @@ export default function FormSubmissionsPage() {
           <p className="text-gray-500">No submissions found.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-max">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">

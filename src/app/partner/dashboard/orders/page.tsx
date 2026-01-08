@@ -46,26 +46,45 @@ export default function PartnerOrdersPage() {
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [totalEarnings, setTotalEarnings] = useState(0)
+  const [selectedCity, setSelectedCity] = useState<string>('')
+  const [availableCities, setAvailableCities] = useState<string[]>([])
+  const [partnerCity, setPartnerCity] = useState<string>('')
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   const handleSearch = () => {
     setPage(1)
-    fetchOrders(search, 1, limit)
+    fetchOrders(search, 1, limit, selectedCity)
   }
 
   const resetFilters = () => {
     setSearch('')
+    setSelectedCity(partnerCity)
     setPage(1)
-    fetchOrders('', 1, limit)
+    fetchOrders('', 1, limit, partnerCity)
   }
 
-  const fetchOrders = useCallback(async (searchTerm = '', pageNum = page, limitNum = limit) => {
+  const fetchOrders = useCallback(async (searchTerm = '', pageNum = page, limitNum = limit, cityFilter = selectedCity) => {
     setIsLoading(true)
     try {
       const response = await axios.get('/api/partner/orders', {
-        params: { search: searchTerm, page: pageNum, limit: limitNum },
+        params: { search: searchTerm, page: pageNum, limit: limitNum, city: cityFilter },
       })
       setOrders(response.data.orders)
       setTotal(response.data.total)
+
+      // Set available cities and partner city on first load
+      if (response.data.availableCities) {
+        setAvailableCities(response.data.availableCities)
+      }
+
+      // On first load, set partner city
+      if (response.data.partnerCity && partnerCity === '') {
+        setPartnerCity(response.data.partnerCity)
+        if (isFirstLoad && cityFilter === '') {
+          setSelectedCity(response.data.partnerCity)
+          setIsFirstLoad(false)
+        }
+      }
 
       // Calculate total earnings from all orders
       const earnings = response.data.orders.reduce((sum: number, order: PartnerOrder) => {
@@ -79,7 +98,7 @@ export default function PartnerOrdersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, limit])
+  }, [page, limit, selectedCity, partnerCity, isFirstLoad])
 
   useEffect(() => {
     fetchOrders('', 1, limit)
@@ -87,9 +106,22 @@ export default function PartnerOrdersPage() {
 
   useEffect(() => {
     if (page > 1) {
-      fetchOrders(search, page, limit)
+      fetchOrders(search, page, limit, selectedCity)
     }
   }, [page])
+
+  // Refetch when selectedCity changes after initial load
+  useEffect(() => {
+    if (!isFirstLoad) {
+      fetchOrders(search, 1, limit, selectedCity)
+      setPage(1)
+    }
+  }, [selectedCity])
+
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city)
+    setPage(1)
+  }
 
   const totalPages = Math.ceil(total / limit)
 
@@ -135,51 +167,84 @@ export default function PartnerOrdersPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h1 className="text-3xl font-bold text-green-500 mb-4">Product Sales Orders</h1>
 
-          <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search by order ID, customer name, email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 focus:border-green-500 focus:ring-green-500"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
+          <div className="space-y-4 mb-6">
+            {/* Search and Actions Row */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2 flex-1 max-w-md">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search by order ID, customer name, email..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-10 focus:border-green-500 focus:ring-green-500"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={isLoading}
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
+                <Button
+                  onClick={resetFilters}
+                  variant="outline"
+                  className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                  disabled={isLoading}
+                >
+                  Clear
+                </Button>
               </div>
-              <Button
-                onClick={handleSearch}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={isLoading}
+
+              <select
+                className="border p-2 rounded focus:border-green-500 focus:ring-green-500"
+                value={limit}
+                onChange={(e) => {
+                  const newLimit = Number(e.target.value)
+                  setLimit(newLimit)
+                  setPage(1)
+                  fetchOrders(search, 1, newLimit, selectedCity)
+                }}
               >
-                <Search className="w-4 h-4" />
-              </Button>
-              <Button
-                onClick={resetFilters}
-                variant="outline"
-                className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-                disabled={isLoading}
-              >
-                Clear
-              </Button>
+                {[10, 25, 50].map((n) => (
+                  <option key={n} value={n}>
+                    Show {n}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <select
-              className="border p-2 rounded focus:border-green-500 focus:ring-green-500"
-              value={limit}
-              onChange={(e) => {
-                const newLimit = Number(e.target.value)
-                setLimit(newLimit)
-                setPage(1)
-                fetchOrders(search, 1, newLimit)
-              }}
-            >
-              {[10, 25, 50].map((n) => (
-                <option key={n} value={n}>
-                  Show {n}
-                </option>
-              ))}
-            </select>
+            {/* City Filter Row */}
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700">Filter by City/Region:</label>
+              <select
+                className="border p-2 rounded focus:border-green-500 focus:ring-green-500 min-w-[200px]"
+                value={selectedCity}
+                onChange={(e) => handleCityChange(e.target.value)}
+                disabled={isLoading}
+              >
+                <option value="">All Regions</option>
+                {partnerCity && (
+                  <option value={partnerCity}>
+                    {partnerCity} (Your City)
+                  </option>
+                )}
+                {availableCities
+                  .filter(city => city !== partnerCity)
+                  .map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+              </select>
+              {selectedCity && (
+                <span className="text-sm text-gray-600">
+                  Showing orders for: <span className="font-semibold text-green-600">{selectedCity}</span>
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">

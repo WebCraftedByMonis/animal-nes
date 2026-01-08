@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const page = parseInt(searchParams.get('page') || '1');
     const search = searchParams.get('search') || '';
+    const cityFilter = searchParams.get('city') || '';
 
     // Fetch all orders that contain this partner's products
     const where: any = {
@@ -39,6 +40,11 @@ export async function GET(request: NextRequest) {
         }
       }
     };
+
+    // Add city filter if provided
+    if (cityFilter) {
+      where.city = { contains: cityFilter };
+    }
 
     // Add search filter if provided
     if (search) {
@@ -118,9 +124,33 @@ export async function GET(request: NextRequest) {
       }),
     }));
 
+    // Get unique cities from all partner orders (for filter dropdown)
+    const allOrdersForCities = await prisma.checkout.findMany({
+      where: {
+        items: {
+          some: {
+            product: {
+              partnerId: partner.id
+            }
+          }
+        }
+      },
+      select: {
+        city: true,
+      },
+      distinct: ['city'],
+    });
+
+    const uniqueCities = allOrdersForCities
+      .map(order => order.city)
+      .filter(city => city && city.trim() !== '')
+      .sort();
+
     return NextResponse.json({
       orders: partnerOrders,
       total,
+      partnerCity: partner.cityName || '',
+      availableCities: uniqueCities,
     });
 
   } catch (error) {
