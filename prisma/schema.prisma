@@ -101,16 +101,18 @@ model ProductImage {
 }
 
 model Company {
-  id          Int           @id @default(autoincrement())
-  companyName String?        @unique
-  mobileNumber String?      @unique
+  id          Int              @id @default(autoincrement())
+  companyName String?          @unique
+  mobileNumber String?         @unique
   products    Product[]
-  address     String?      @db.Text
-  email       String?       @unique
+  address     String?          @db.Text
+  email       String?          @unique
+  password    String?
   image       CompanyImage?
   stickyLogo  StickyLogo[]
-  createdAt   DateTime?      @default(now())
-  updatedAt   DateTime?      @updatedAt
+  sessions    CompanySession[]
+  createdAt   DateTime?        @default(now())
+  updatedAt   DateTime?        @updatedAt
 }
 
 model CompanyImage {
@@ -231,6 +233,17 @@ model PartnerSession {
   createdAt DateTime @default(now())
 
   @@index([partnerId])
+}
+
+model CompanySession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
 }
 
 model PartnerAvailableDay {

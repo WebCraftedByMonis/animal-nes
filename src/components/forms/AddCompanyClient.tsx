@@ -19,6 +19,7 @@ const formSchema = z.object({
   mobileNumber: z.string().optional(),
   address: z.string().optional(),
   email: z.string().email("Invalid email address").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
   image: z.instanceof(File).refine((file) => file.size > 0, {
     message: "Company image is required",
   }),
@@ -39,16 +40,18 @@ export default function AddCompanyClient() {
       mobileNumber: "",
       address: "",
       email: "",
+      password: "",
     },
   });
 
   useEffect(() => {
     const subscription = form.watch((value) => {
-      const hasValues = 
+      const hasValues =
         value.companyName?.trim() !== "" ||
         value.mobileNumber?.trim() !== "" ||
         value.address?.trim() !== "" ||
         value.email?.trim() !== "" ||
+        value.password?.trim() !== "" ||
         (value.image && value.image.size > 0);
       setHasValues(!!hasValues);
     });
@@ -92,6 +95,7 @@ export default function AddCompanyClient() {
       if (data.mobileNumber) formData.append("mobileNumber", data.mobileNumber);
       if (data.address) formData.append("address", data.address);
       if (data.email) formData.append("email", data.email);
+      if (data.password) formData.append("password", data.password);
       formData.append("image", data.image);
 
       const response = await fetch("/api/company", {
@@ -234,13 +238,32 @@ export default function AddCompanyClient() {
                 control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem className="space-y-2 md:col-span-2">
+                  <FormItem className="space-y-2">
                     <FormLabel className="text-gray-700">Address</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         className="focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
                         placeholder="Enter company address"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-gray-700">Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        className="focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                        placeholder="Enter password (optional)"
                       />
                     </FormControl>
                     <FormMessage className="text-red-500" />

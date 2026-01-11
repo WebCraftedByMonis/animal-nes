@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary'
 import { z } from 'zod'
+import { hashPassword } from '@/lib/auth/company-auth'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
@@ -14,6 +15,7 @@ const companySchema = z.object({
   mobileNumber: z.string().optional(),
   address: z.string().optional(),
   email: z.string().email().optional(),
+  password: z.string().optional(),
 })
 
 const updateCompanySchema = z.object({
@@ -74,14 +76,16 @@ export async function POST(request: NextRequest) {
     const mobileNumber = formData.get('mobileNumber') as string | null
     const address = formData.get('address') as string | null
     const email = formData.get('email') as string | null
+    const password = formData.get('password') as string | null
     const imageFile = formData.get('image') as File | null
 
     // Validate input
-    const validation = companySchema.safeParse({ 
+    const validation = companySchema.safeParse({
       companyName,
       mobileNumber,
       address,
-      email
+      email,
+      password
     })
 
     if (!validation.success) {
@@ -155,6 +159,11 @@ export async function POST(request: NextRequest) {
     // Upload image to Cloudinary
     const uploadResult = await uploadImage(buffer, 'companies', imageFile.name)
 
+    // Hash password - use provided password or default
+    const defaultPassword = 'Animalwellnesscompany'
+    const passwordToHash = validation.data.password || defaultPassword
+    const hashedPassword = await hashPassword(passwordToHash)
+
     // Create company and image records in a transaction
     const result = await prisma.$transaction(async (prisma) => {
       // Create the company first
@@ -164,6 +173,7 @@ export async function POST(request: NextRequest) {
           mobileNumber: validation.data.mobileNumber || null,
           address: validation.data.address || null,
           email: validation.data.email || null,
+          password: hashedPassword,
         },
       })
 
