@@ -124,10 +124,16 @@ export function NavigationMenuDemo() {
                
               </ListItem>
               <ListItem href="/VeterinaryAssistants" title="Veterinary Assistants">
-               
+
               </ListItem>
               <ListItem href="/Students" title="Students">
-               
+
+              </ListItem>
+              <ListItem href="/Farmers" title="Farmers">
+
+              </ListItem>
+              <ListItem href="/Faculty" title="Faculty">
+
               </ListItem>
             </ul>
           </NavigationMenuContent>
