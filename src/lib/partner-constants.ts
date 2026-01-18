@@ -51,17 +51,28 @@ export const studentSpecializations = [
 ];
 
 export const farmerSpecializations = [
-  'Livestock Farming',
-  'Dairy Farming',
-  'Poultry Farming',
-  'Crop Farming',
-  'Fish Farming',
-  'Mixed Farming'
+  'Cow – گائے',
+  'Buffalo – بھینس',
+  'Goat – بکری',
+  'Sheep – بھیڑ',
+  'Camel – اونٹ',
+  'Donkey – گدھا',
+  'Horse – گھوڑا',
+  'Desi/ Fancy birds – دیسی مرغی / مرغا',
+  'Broiler Chicken – برائلر مرغی',
+  'Layer Chicken – انڈے دینے والی مرغ',
+  'Dog – کتا',
+  'Cat – بلی',
+  'Fish – مچھلی',
+  'Others'
 ];
 
 export const facultySpecializations = [
-  'VETERINARY MEDICAL SCIENCES',
-  'ARTS'
+  'Veterinary',
+  'Medical',
+  'Science',
+  'Arts',
+  'Others'
 ];
 
 export const getSpecializationsByPartnerType = (partnerType: string) => {

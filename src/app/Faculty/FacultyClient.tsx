@@ -153,7 +153,7 @@ export default function FacultyClient() {
           Faculty
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Connect with faculty members specializing in veterinary medical sciences and arts
+          Connect with faculty members specializing in veterinary, medical, science, arts, and more
         </p>
       </div>
 
@@ -182,8 +182,11 @@ export default function FacultyClient() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Specializations</SelectItem>
-              <SelectItem value="VETERINARY MEDICAL SCIENCES">Veterinary Medical Sciences</SelectItem>
-              <SelectItem value="ARTS">Arts</SelectItem>
+              <SelectItem value="Veterinary">Veterinary</SelectItem>
+              <SelectItem value="Medical">Medical</SelectItem>
+              <SelectItem value="Science">Science</SelectItem>
+              <SelectItem value="Arts">Arts</SelectItem>
+              <SelectItem value="Others">Others</SelectItem>
             </SelectContent>
           </Select>
 

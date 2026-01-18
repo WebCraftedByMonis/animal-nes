@@ -153,7 +153,7 @@ export default function FarmersClient() {
           Farmers
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Connect with farmers specializing in livestock, dairy, poultry, crop, fish, and mixed farming
+          Connect with farmers raising cows, buffaloes, goats, sheep, poultry, and other animals
         </p>
       </div>
 
@@ -178,16 +178,24 @@ export default function FarmersClient() {
 
           <Select value={specialization} onValueChange={handleSpecializationChange}>
             <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
-              <SelectValue placeholder="Filter by specialization" />
+              <SelectValue placeholder="Filter by animal type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Specializations</SelectItem>
-              <SelectItem value="Livestock Farming">Livestock Farming</SelectItem>
-              <SelectItem value="Dairy Farming">Dairy Farming</SelectItem>
-              <SelectItem value="Poultry Farming">Poultry Farming</SelectItem>
-              <SelectItem value="Crop Farming">Crop Farming</SelectItem>
-              <SelectItem value="Fish Farming">Fish Farming</SelectItem>
-              <SelectItem value="Mixed Farming">Mixed Farming</SelectItem>
+              <SelectItem value="all">All Animal Types</SelectItem>
+              <SelectItem value="Cow – گائے">Cow – گائے</SelectItem>
+              <SelectItem value="Buffalo – بھینس">Buffalo – بھینس</SelectItem>
+              <SelectItem value="Goat – بکری">Goat – بکری</SelectItem>
+              <SelectItem value="Sheep – بھیڑ">Sheep – بھیڑ</SelectItem>
+              <SelectItem value="Camel – اونٹ">Camel – اونٹ</SelectItem>
+              <SelectItem value="Donkey – گدھا">Donkey – گدھا</SelectItem>
+              <SelectItem value="Horse – گھوڑا">Horse – گھوڑا</SelectItem>
+              <SelectItem value="Desi/ Fancy birds – دیسی مرغی / مرغا">Desi/ Fancy birds</SelectItem>
+              <SelectItem value="Broiler Chicken – برائلر مرغی">Broiler Chicken</SelectItem>
+              <SelectItem value="Layer Chicken – انڈے دینے والی مرغ">Layer Chicken</SelectItem>
+              <SelectItem value="Dog – کتا">Dog – کتا</SelectItem>
+              <SelectItem value="Cat – بلی">Cat – بلی</SelectItem>
+              <SelectItem value="Fish – مچھلی">Fish – مچھلی</SelectItem>
+              <SelectItem value="Others">Others</SelectItem>
             </SelectContent>
           </Select>
 
