@@ -349,17 +349,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     color: lightGray,
   });
 
-  // Table headers - Adjusted to bring Description and Qty closer
-  const col1X = margin + 10;
-  const col2X = margin + 35;  // Description starts closer to #
-  const col3X = pageWidth - 240;  // Qty moved left to be closer to Description
-  const col4X = pageWidth - 160;  // Price with more space
-  const col5X = pageWidth - 70;   // Total with more space
+  // Table headers - Adjusted for discount column
+  const col1X = margin + 5;
+  const col2X = margin + 20;  // Description
+  const col3X = pageWidth - 320;  // Qty
+  const col4X = pageWidth - 270;  // Original Price (MRP)
+  const col5X = pageWidth - 205;  // Discount
+  const col6X = pageWidth - 140;  // Price
+  const col7X = pageWidth - 70;   // Total
 
   page.drawText('#', {
     x: col1X,
     y: currentY - 15,
-    size: 10,
+    size: 9,
     font: boldFont,
     color: darkGray,
   });
@@ -367,7 +369,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   page.drawText('Description', {
     x: col2X,
     y: currentY - 15,
-    size: 10,
+    size: 9,
     font: boldFont,
     color: darkGray,
   });
@@ -375,23 +377,39 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   page.drawText('Qty', {
     x: col3X,
     y: currentY - 15,
-    size: 10,
+    size: 9,
+    font: boldFont,
+    color: darkGray,
+  });
+
+  page.drawText('MRP', {
+    x: col4X,
+    y: currentY - 15,
+    size: 9,
+    font: boldFont,
+    color: darkGray,
+  });
+
+  page.drawText('Disc%', {
+    x: col5X,
+    y: currentY - 15,
+    size: 9,
     font: boldFont,
     color: darkGray,
   });
 
   page.drawText('Price', {
-    x: col4X,
+    x: col6X,
     y: currentY - 15,
-    size: 10,
+    size: 9,
     font: boldFont,
     color: darkGray,
   });
 
   page.drawText('Total', {
-    x: col5X,
+    x: col7X,
     y: currentY - 15,
-    size: 10,
+    size: 9,
     font: boldFont,
     color: darkGray,
   });
@@ -400,6 +418,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // Table items
   let subtotal = 0;
+  let totalSavings = 0;
+  const discountColor = rgb(0.8, 0.2, 0.2); // Red for discount
+
   order.items.forEach((item, index) => {
     checkNewPage(30);
 
@@ -419,29 +440,36 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       : `${item.product?.productName || 'Product'}${item.variant?.packingVolume ? ` - ${item.variant.packingVolume}` : ''}`;
 
     const itemPrice = item.price;
+    const originalPrice = (item as any).originalPrice || item.price;
+    const discountPercentage = (item as any).discountPercentage || 0;
     const itemTotal = itemPrice * item.quantity;
     subtotal += itemTotal;
+
+    // Calculate savings for this item
+    if (discountPercentage > 0) {
+      totalSavings += (originalPrice - itemPrice) * item.quantity;
+    }
 
     // Item number
     page.drawText((index + 1).toString(), {
       x: col1X,
       y: currentY - 10,
-      size: 10,
+      size: 9,
       font,
       color: darkGray,
     });
 
     // Description (truncate if needed for spacing)
     let displayName = itemName;
-    const maxDescLength = 30;  // Reduced to give more space to other columns
+    const maxDescLength = 28;  // Allow longer descriptions
     if (displayName.length > maxDescLength) {
       displayName = displayName.substring(0, maxDescLength - 3) + '...';
     }
-    
+
     page.drawText(displayName, {
       x: col2X,
       y: currentY - 10,
-      size: 9,
+      size: 8,
       font,
       color: darkGray,
     });
@@ -450,25 +478,53 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     page.drawText(item.quantity.toString(), {
       x: col3X,
       y: currentY - 10,
-      size: 10,
+      size: 8,
       font,
       color: darkGray,
     });
 
-    // Price
-    page.drawText(`PKR ${itemPrice.toFixed(2)}`, {
+    // Original Price (MRP) - show with 2 decimals
+    page.drawText(`${originalPrice.toFixed(2)}`, {
       x: col4X,
       y: currentY - 10,
-      size: 10,
+      size: 8,
       font,
-      color: darkGray,
+      color: discountPercentage > 0 ? mediumGray : darkGray,
     });
 
-    // Total
-    page.drawText(`PKR ${itemTotal.toFixed(2)}`, {
-      x: col5X,
+    // Discount Percentage
+    if (discountPercentage > 0) {
+      page.drawText(`${discountPercentage}%`, {
+        x: col5X,
+        y: currentY - 10,
+        size: 8,
+        font: boldFont,
+        color: discountColor,
+      });
+    } else {
+      page.drawText('-', {
+        x: col5X,
+        y: currentY - 10,
+        size: 8,
+        font,
+        color: mediumGray,
+      });
+    }
+
+    // Final Price - show with 2 decimals
+    page.drawText(`${itemPrice.toFixed(2)}`, {
+      x: col6X,
       y: currentY - 10,
-      size: 10,
+      size: 8,
+      font: discountPercentage > 0 ? boldFont : font,
+      color: discountPercentage > 0 ? primaryColor : darkGray,
+    });
+
+    // Total - show with 2 decimals
+    page.drawText(`${itemTotal.toFixed(2)}`, {
+      x: col7X,
+      y: currentY - 10,
+      size: 8,
       font,
       color: darkGray,
     });
@@ -489,21 +545,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // SUMMARY SECTION (Right aligned) - Adjusted for more space
   const summaryX = pageWidth - 280;  // Moved left for more room
   const summaryValueX = pageWidth - 130;  // Values have more space
+  const hasSavings = totalSavings > 0;
 
-  // Summary box
+  // Summary box - taller if there are savings
+  const summaryBoxHeight = hasSavings ? 120 : 100;
   page.drawRectangle({
     x: summaryX - 10,
-    y: currentY - 95,
+    y: currentY - summaryBoxHeight - 5,
     width: 260,  // Wider box
-    height: 100,
+    height: summaryBoxHeight,
     borderColor: lightGray,
     borderWidth: 1,
   });
 
+  let summaryYOffset = 20;
+
   // Subtotal
   page.drawText('Subtotal:', {
     x: summaryX,
-    y: currentY - 20,
+    y: currentY - summaryYOffset,
     size: 11,
     font,
     color: mediumGray,
@@ -511,17 +571,40 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   page.drawText(`PKR ${subtotal.toFixed(2)}`, {
     x: summaryValueX,
-    y: currentY - 20,
+    y: currentY - summaryYOffset,
     size: 11,
     font,
     color: darkGray,
   });
 
+  summaryYOffset += 20;
+
+  // Show savings if there are discounts
+  if (hasSavings) {
+    page.drawText('You Saved:', {
+      x: summaryX,
+      y: currentY - summaryYOffset,
+      size: 11,
+      font: boldFont,
+      color: rgb(0.1, 0.6, 0.1), // Green color for savings
+    });
+
+    page.drawText(`- PKR ${totalSavings.toFixed(2)}`, {
+      x: summaryValueX,
+      y: currentY - summaryYOffset,
+      size: 11,
+      font: boldFont,
+      color: rgb(0.1, 0.6, 0.1),
+    });
+
+    summaryYOffset += 20;
+  }
+
   // Shipping
   const shipmentCharges = parseFloat(order.shipmentcharges || '0');
   page.drawText('Shipping:', {
     x: summaryX,
-    y: currentY - 40,
+    y: currentY - summaryYOffset,
     size: 11,
     font,
     color: mediumGray,
@@ -529,25 +612,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   page.drawText(`PKR ${shipmentCharges.toFixed(2)}`, {
     x: summaryValueX,
-    y: currentY - 40,
+    y: currentY - summaryYOffset,
     size: 11,
     font,
     color: darkGray,
   });
 
+  summaryYOffset += 15;
+
   // Divider line
   page.drawLine({
-    start: { x: summaryX, y: currentY - 50 },
-    end: { x: summaryX + 240, y: currentY - 50 },  // Adjusted line width
+    start: { x: summaryX, y: currentY - summaryYOffset },
+    end: { x: summaryX + 240, y: currentY - summaryYOffset },  // Adjusted line width
     thickness: 1,
     color: mediumGray,
   });
+
+  summaryYOffset += 20;
 
   // Total
   const total = subtotal + shipmentCharges;
   page.drawText('TOTAL:', {
     x: summaryX,
-    y: currentY - 70,
+    y: currentY - summaryYOffset,
     size: 13,
     font: boldFont,
     color: primaryColor,
@@ -555,13 +642,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   page.drawText(`PKR ${total.toFixed(2)}`, {
     x: summaryValueX,
-    y: currentY - 70,
+    y: currentY - summaryYOffset,
     size: 13,
     font: boldFont,
     color: primaryColor,
   });
 
-  currentY -= 120;
+  currentY -= summaryBoxHeight + 20;
 
   // FOOTER (for branded invoices)
   if (branded) {

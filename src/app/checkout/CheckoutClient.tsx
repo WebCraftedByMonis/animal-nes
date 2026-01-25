@@ -1,10 +1,10 @@
-'use client' 
+'use client'
 
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { CartItem } from '../../../types/cart'
+import { CartItem, Discount } from '../../../types/cart'
 import { AnimalCartItem } from '../../../types/animal'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
 
@@ -14,6 +14,50 @@ interface CheckoutProps {
 }
 
 const FIXED_DELIVERY_CHARGE = 350;
+
+// Helper to get active discount for an item
+// Priority: variant-level > product-level > company-level
+function getActiveDiscount(item: CartItem): Discount | null {
+  // Check variant-level discount first
+  if (item.variant.discounts && item.variant.discounts.length > 0) {
+    const variantDiscount = item.variant.discounts.find(d => d.isActive)
+    if (variantDiscount) return variantDiscount
+  }
+
+  // Then check product-level discount
+  if (item.product.discounts && item.product.discounts.length > 0) {
+    const productDiscounts = item.product.discounts.filter(d =>
+      d.isActive && d.productId !== null && d.variantId === null && !d.companyId
+    )
+    if (productDiscounts.length > 0) {
+      return productDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b)
+    }
+
+    // Finally check company-level discount
+    const companyDiscounts = item.product.discounts.filter(d =>
+      d.isActive && d.companyId !== null && d.productId === null && d.variantId === null
+    )
+    if (companyDiscounts.length > 0) {
+      return companyDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b)
+    }
+  }
+
+  return null
+}
+
+// Calculate discounted price
+function calculateDiscountedPrice(price: number, percentage: number): number {
+  return Math.round((price - (price * percentage / 100)) * 100) / 100
+}
+
+// Get final price for cart item
+function getFinalPrice(item: CartItem): number {
+  const discount = getActiveDiscount(item)
+  if (discount) {
+    return calculateDiscountedPrice(item.variant.customerPrice, discount.percentage)
+  }
+  return item.variant.customerPrice
+}
 
 export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutProps) {
     const { data: session } = useSession()
@@ -31,10 +75,17 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     // City state - now just a simple string input
     const [city, setCity] = useState('')
 
-    // Calculate subtotal
+    // Calculate subtotal with discounted prices
     const subtotal =
+        cartItems.reduce((sum, item) => sum + item.quantity * getFinalPrice(item), 0) +
+        animalCartItems.reduce((sum, item) => sum + item.quantity * item.animal.totalPrice, 0)
+
+    // Calculate original subtotal (without discounts) for showing savings
+    const originalSubtotal =
         cartItems.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0) +
         animalCartItems.reduce((sum, item) => sum + item.quantity * item.animal.totalPrice, 0)
+
+    const totalSavings = originalSubtotal - subtotal
 
     // Calculate total with fixed shipping charge
     const total = subtotal + FIXED_DELIVERY_CHARGE
@@ -148,13 +199,35 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                             </tr>
                         </thead>
                         <tbody>
-                            {cartItems.map(item => (
-                                <tr key={`product-${item.id}`} className="border-b">
-                                    <td className="p-2">{item.product.productName}</td>
-                                    <td className="p-2">Qty: {item.quantity} - {item.variant.packingVolume}</td>
-                                    <td className="p-2 text-right">PKR {(item.variant.customerPrice * item.quantity).toFixed(2)}</td>
-                                </tr>
-                            ))}
+                            {cartItems.map(item => {
+                                const discount = getActiveDiscount(item)
+                                const finalPrice = getFinalPrice(item)
+                                return (
+                                    <tr key={`product-${item.id}`} className="border-b">
+                                        <td className="p-2">
+                                            {item.product.productName}
+                                            {discount && (
+                                                <span className="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded">
+                                                    {discount.percentage}% OFF
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="p-2">Qty: {item.quantity} - {item.variant.packingVolume}</td>
+                                        <td className="p-2 text-right">
+                                            {discount ? (
+                                                <div>
+                                                    <span className="text-green-600 font-medium">PKR {(finalPrice * item.quantity).toFixed(2)}</span>
+                                                    <span className="text-gray-400 line-through text-sm ml-2">
+                                                        PKR {(item.variant.customerPrice * item.quantity).toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span>PKR {(item.variant.customerPrice * item.quantity).toFixed(2)}</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                             {animalCartItems.map(item => (
                                 <tr key={`animal-${item.id}`} className="border-b">
                                     <td className="p-2">{item.animal.specie} - {item.animal.breed}</td>
@@ -166,13 +239,19 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                                 <td colSpan={2} className="text-right p-2">Subtotal:</td>
                                 <td className="text-right p-2">PKR {subtotal.toFixed(2)}</td>
                             </tr>
+                            {totalSavings > 0 && (
+                                <tr className="text-green-600">
+                                    <td colSpan={2} className="text-right p-2">Discount Savings:</td>
+                                    <td className="text-right p-2">- PKR {totalSavings.toFixed(2)}</td>
+                                </tr>
+                            )}
                             <tr>
                                 <td colSpan={2} className="text-right p-2">
                                     Delivery Charges:
                                 </td>
                                 <td className="text-right p-2">PKR {FIXED_DELIVERY_CHARGE.toFixed(2)}</td>
                             </tr>
-                            <tr className="font-bold bg-gray-50">
+                            <tr className="font-bold bg-gray-50 dark:bg-gray-800">
                                 <td colSpan={2} className="text-right p-2">Total:</td>
                                 <td className="text-right p-2 text-green-500">PKR {total.toFixed(2)}</td>
                             </tr>

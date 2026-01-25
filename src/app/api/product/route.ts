@@ -318,6 +318,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Execute queries
+    const now = new Date()
     const [items, total] = await Promise.all([
       prisma.product.findMany({
         where,
@@ -330,10 +331,39 @@ export async function GET(req: NextRequest) {
           image: true,
           pdf: true,
           variants: true,
+          discounts: {
+            where: {
+              isActive: true,
+              startDate: { lte: now },
+              endDate: { gte: now }
+            }
+          }
         }
       }),
       prisma.product.count({ where })
     ])
+
+    // Fetch company-level discounts for all companies in the results
+    const companyIds = [...new Set(items.map(p => p.companyId).filter(Boolean))]
+    const companyDiscounts = companyIds.length > 0 ? await prisma.discount.findMany({
+      where: {
+        companyId: { in: companyIds },
+        productId: null,
+        variantId: null,
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now }
+      }
+    }) : []
+
+    // Merge company-level discounts into each product's discounts array
+    const itemsWithCompanyDiscounts = items.map(product => ({
+      ...product,
+      discounts: [
+        ...product.discounts,
+        ...companyDiscounts.filter(d => d.companyId === product.companyId)
+      ]
+    }))
 
     // Get min and max prices for the price range slider
     const priceStats = await prisma.productVariant.aggregate({
@@ -347,7 +377,7 @@ export async function GET(req: NextRequest) {
     })
 
     return NextResponse.json({
-      data: items,
+      data: itemsWithCompanyDiscounts,
       total,
       page,
       limit,

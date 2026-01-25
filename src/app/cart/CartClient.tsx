@@ -11,16 +11,29 @@ interface ProductImage {
   alt: string
 }
 
+interface Discount {
+  id: number
+  percentage: number
+  startDate: string
+  endDate: string
+  isActive: boolean
+  companyId: number | null
+  productId: number | null
+  variantId: number | null
+}
+
 interface Product {
   id: number
   productName: string
   image: ProductImage | null
+  discounts?: Discount[]
 }
 
 interface ProductVariant {
   id: number
   packingVolume: string
   customerPrice: number
+  discounts?: Discount[]
 }
 
 interface CartItem {
@@ -32,6 +45,50 @@ interface CartItem {
 
 interface CartClientProps {
   cartItems: CartItem[]
+}
+
+// Helper to get active discount for an item
+// Priority: variant-level > product-level > company-level
+function getActiveDiscount(item: CartItem): Discount | null {
+  // Check variant-level discount first
+  if (item.variant.discounts && item.variant.discounts.length > 0) {
+    const variantDiscount = item.variant.discounts.find(d => d.isActive)
+    if (variantDiscount) return variantDiscount
+  }
+
+  // Then check product-level discount
+  if (item.product.discounts && item.product.discounts.length > 0) {
+    const productDiscounts = item.product.discounts.filter(d =>
+      d.isActive && d.productId !== null && d.variantId === null && !d.companyId
+    )
+    if (productDiscounts.length > 0) {
+      return productDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b)
+    }
+
+    // Finally check company-level discount
+    const companyDiscounts = item.product.discounts.filter(d =>
+      d.isActive && d.companyId !== null && d.productId === null && d.variantId === null
+    )
+    if (companyDiscounts.length > 0) {
+      return companyDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b)
+    }
+  }
+
+  return null
+}
+
+// Calculate discounted price
+function calculateDiscountedPrice(price: number, percentage: number): number {
+  return Math.round((price - (price * percentage / 100)) * 100) / 100
+}
+
+// Get final price for cart item
+function getFinalPrice(item: CartItem): number {
+  const discount = getActiveDiscount(item)
+  if (discount) {
+    return calculateDiscountedPrice(item.variant.customerPrice, discount.percentage)
+  }
+  return item.variant.customerPrice
 }
 
 export default function CartClient({ cartItems }: CartClientProps) {
@@ -126,7 +183,9 @@ export default function CartClient({ cartItems }: CartClientProps) {
     }
   }
 
-  const subtotal = cart.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0)
+  const subtotal = cart.reduce((sum, item) => sum + item.quantity * getFinalPrice(item), 0)
+  const originalSubtotal = cart.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0)
+  const totalSavings = originalSubtotal - subtotal
 
   if (!cart.length) {
     return (
@@ -185,10 +244,31 @@ export default function CartClient({ cartItems }: CartClientProps) {
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                         {item.variant.packingVolume}
                       </span>
+                      {getActiveDiscount(item) && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">
+                          {getActiveDiscount(item)?.percentage}% OFF
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                      PKR {item.variant.customerPrice.toLocaleString()}
-                    </p>
+                    {getActiveDiscount(item) ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                            PKR {getFinalPrice(item).toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-500 line-through">
+                            PKR {item.variant.customerPrice.toLocaleString()}
+                          </p>
+                        </div>
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          You save PKR {(item.variant.customerPrice - getFinalPrice(item)).toLocaleString()} per item
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                        PKR {item.variant.customerPrice.toLocaleString()}
+                      </p>
+                    )}
                   </div>
 
                   {/* Quantity and Actions */}
@@ -255,6 +335,12 @@ export default function CartClient({ cartItems }: CartClientProps) {
                 <span>Subtotal ({cart.length} {cart.length === 1 ? 'item' : 'items'})</span>
                 <span className="font-medium">PKR {subtotal.toLocaleString()}</span>
               </div>
+              {totalSavings > 0 && (
+                <div className="flex justify-between text-green-600 dark:text-green-400">
+                  <span>Discount Savings</span>
+                  <span className="font-medium">- PKR {totalSavings.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Shipping</span>
                 <span className="text-sm">Calculated at checkout</span>
@@ -266,6 +352,11 @@ export default function CartClient({ cartItems }: CartClientProps) {
                     PKR {subtotal.toLocaleString()}
                   </span>
                 </div>
+                {totalSavings > 0 && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    You are saving PKR {totalSavings.toLocaleString()} with discounts!
+                  </p>
+                )}
               </div>
             </div>
 

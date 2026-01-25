@@ -23,6 +23,18 @@ import WishlistButton from './WishlistButton'
 import QuickAddToCartButton from './QuickAddToCartButton'
 import QuickBuyNowButton from './QuickBuyNowButton'
 
+interface Discount {
+  id: number
+  name: string
+  percentage: number
+  startDate: string
+  endDate: string
+  isActive: boolean
+  companyId: number | null
+  productId: number | null
+  variantId: number | null
+}
+
 interface Product {
   id: number
   productName: string
@@ -44,7 +56,8 @@ interface Product {
   company: { companyName: string | null } | null
   partner: { partnerName: string } | null
   image: { url: string; alt: string; publicId: string | null } | null
-  variants: { packingVolume: string | null; customerPrice: number | null; companyPrice?: number | null; dealerPrice?: number | null; inventory: number | null }[]
+  variants: { id?: number; packingVolume: string | null; customerPrice: number | null; companyPrice?: number | null; dealerPrice?: number | null; inventory: number | null }[]
+  discounts?: Discount[]
 }
 
 const categories = [
@@ -366,10 +379,51 @@ export default function ProductsClient() {
     if (!p.variants || p.variants.length === 0) return null
     const validVariants = p.variants.filter(v => v.customerPrice !== null)
     if (validVariants.length === 0) return p.variants[0]
-    const cheapest = validVariants.reduce((a, b) => 
+    const cheapest = validVariants.reduce((a, b) =>
       (a.customerPrice || 0) <= (b.customerPrice || 0) ? a : b
     )
     return cheapest ?? p.variants[0]
+  }
+
+  // Helper to get active discount for a product/variant
+  // Priority: variant-level > product-level > company-level
+  const getActiveDiscount = (product: Product, variantId?: number): Discount | null => {
+    if (!product.discounts || product.discounts.length === 0) return null
+
+    const now = new Date()
+    const activeDiscounts = product.discounts.filter(d => {
+      if (!d.isActive) return false
+      const start = new Date(d.startDate)
+      const end = new Date(d.endDate)
+      return now >= start && now <= end
+    })
+
+    if (activeDiscounts.length === 0) return null
+
+    // Prioritize variant-specific discount
+    if (variantId) {
+      const variantDiscount = activeDiscounts.find(d => d.variantId === variantId)
+      if (variantDiscount) return variantDiscount
+    }
+
+    // Then product-level discount (highest percentage)
+    const productDiscounts = activeDiscounts.filter(d => d.productId !== null && d.variantId === null && d.companyId === null)
+    if (productDiscounts.length > 0) {
+      return productDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b)
+    }
+
+    // Finally company-level discount (highest percentage)
+    const companyDiscounts = activeDiscounts.filter(d => d.companyId !== null && d.productId === null && d.variantId === null)
+    if (companyDiscounts.length > 0) {
+      return companyDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b)
+    }
+
+    return activeDiscounts[0]
+  }
+
+  // Calculate discounted price
+  const calculateDiscountedPrice = (price: number, percentage: number): number => {
+    return Math.round((price - (price * percentage / 100)) * 100) / 100
   }
 
   return (
@@ -566,6 +620,10 @@ export default function ProductsClient() {
             >
               {products.map((product) => {
                 const v = pickOneVariant(product)
+                const discount = getActiveDiscount(product, v?.id)
+                const originalPrice = v?.customerPrice || 0
+                const discountedPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
+
                 return (
                   <motion.div
                     key={product.id}
@@ -594,6 +652,14 @@ export default function ProductsClient() {
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                           priority={false}
                         />
+                        {/* Discount Badge */}
+                        {discount && (
+                          <div className="absolute top-3 left-3 z-10">
+                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                              {discount.percentage}% OFF
+                            </span>
+                          </div>
+                        )}
                         <WishlistButton productId={product.id} />
                         <div className="absolute bottom-3 right-3 z-10 flex gap-2">
                           <QuickAddToCartButton
@@ -615,12 +681,28 @@ export default function ProductsClient() {
                         <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-1">{product.genericName}</p>
                       )}
 
-                      {/* Single variant (cheapest) */}
+                      {/* Single variant (cheapest) with discount */}
                       {v && v.customerPrice && (
                         <div className="pt-1">
-                          <Badge variant="outline" className="text-green-700 border-green-600/40 bg-white/60 dark:bg-zinc-900/60">
-                            {v.packingVolume || 'N/A'} – PKR {v.customerPrice.toLocaleString()}
-                          </Badge>
+                          {discount ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                                  PKR {discountedPrice.toLocaleString()}
+                                </span>
+                                <span className="text-sm text-zinc-500 line-through">
+                                  PKR {originalPrice.toLocaleString()}
+                                </span>
+                              </div>
+                              <Badge variant="outline" className="text-zinc-600 border-zinc-400/40 bg-white/60 dark:bg-zinc-900/60 w-fit">
+                                {v.packingVolume || 'N/A'}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-green-700 border-green-600/40 bg-white/60 dark:bg-zinc-900/60">
+                              {v.packingVolume || 'N/A'} – PKR {v.customerPrice.toLocaleString()}
+                            </Badge>
+                          )}
                         </div>
                       )}
 

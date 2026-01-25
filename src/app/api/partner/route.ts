@@ -42,6 +42,7 @@ const createPartnerSchema = z.object({
   specialization: z.string().optional(),
   species: z.string().optional(),
   partnerType: z.string().optional(),
+  numberOfAnimals: z.number().int().positive().optional(),
   productIds: z.array(z.number().int().positive()).optional(),
   image: z.string().min(1, 'Image is required'),
   referralCode: z.string().optional(),

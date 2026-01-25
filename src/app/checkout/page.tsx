@@ -10,20 +10,72 @@ export default async function CheckoutPage() {
     return <CheckoutLoginPrompt />
   }
 
+  const now = new Date()
+
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
       cart: {
         include: {
           product: {
-            include: { image: true },
+            include: {
+              image: true,
+              company: true,
+              discounts: {
+                where: {
+                  isActive: true,
+                  startDate: { lte: now },
+                  endDate: { gte: now }
+                }
+              }
+            },
           },
-          variant: true, // Add this line to include variant info
+          variant: {
+            include: {
+              discounts: {
+                where: {
+                  isActive: true,
+                  startDate: { lte: now },
+                  endDate: { gte: now }
+                }
+              }
+            }
+          },
         },
       },
       animalCart: { include: { animal: { include: { images: true } } } },
     },
   })
 
-  return <CheckoutClient cartItems={user?.cart || []} animalCartItems={user?.animalCart || []} />
+  // Fetch company-level discounts
+  const cartItems = user?.cart || []
+  const companyIds = [...new Set(cartItems.map(item => item.product?.companyId).filter(Boolean))] as number[]
+
+  const companyDiscounts = companyIds.length > 0 ? await prisma.discount.findMany({
+    where: {
+      companyId: { in: companyIds },
+      productId: null,
+      variantId: null,
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now }
+    }
+  }) : []
+
+  // Merge company-level discounts into cart items
+  const cartItemsWithDiscounts = cartItems.map(item => {
+    if (item.product) {
+      const productCompanyDiscounts = companyDiscounts.filter(d => d.companyId === item.product?.companyId)
+      return {
+        ...item,
+        product: {
+          ...item.product,
+          discounts: [...(item.product.discounts || []), ...productCompanyDiscounts]
+        }
+      }
+    }
+    return item
+  })
+
+  return <CheckoutClient cartItems={cartItemsWithDiscounts} animalCartItems={user?.animalCart || []} />
 }

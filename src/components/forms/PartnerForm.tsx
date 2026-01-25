@@ -51,6 +51,7 @@ const formSchema = z.object({
   specialization: z.string().optional(),
   species: z.string().optional(),
   partnerType: z.string().optional(),
+  numberOfAnimals: z.number().int().positive().optional(),
   productIds: z.array(z.number()).optional(),
   image: z.string().min(1, "Image is required"),
   requestPremium: z.boolean().optional(),
@@ -122,6 +123,7 @@ export default function PartnerForm({
       specialization: initialData?.specialization || '',
       species: initialData?.species || '',
       partnerType: initialData?.partnerType || undefined,
+      numberOfAnimals: initialData?.numberOfAnimals || undefined,
       productIds: initialData?.productIds || [],
       image: initialData?.image || '',
       requestPremium: initialData?.requestPremium || false,
@@ -201,6 +203,7 @@ export default function PartnerForm({
       specialization: '',
       species: '',
       partnerType: undefined,
+      numberOfAnimals: undefined,
       productIds: [],
       image: '',
       requestPremium: false,
@@ -292,6 +295,22 @@ export default function PartnerForm({
             />
             {errors.partnerType && <p className="text-red-500 text-sm">{errors.partnerType.message}</p>}
           </div>
+
+          {/* Number of Animals field - only shown when partner type is Farmer */}
+          {partnerType === 'Farmer' && (
+            <div>
+              <Label htmlFor="numberOfAnimals">Number of Animals</Label>
+              <Input
+                id="numberOfAnimals"
+                type="number"
+                min="1"
+                {...register('numberOfAnimals', { valueAsNumber: true })}
+                className="focus:border-green-500 focus:ring-green-500"
+                placeholder="Enter number of animals"
+              />
+              {errors.numberOfAnimals && <p className="text-red-500 text-sm">{errors.numberOfAnimals.message}</p>}
+            </div>
+          )}
 
           <div>
             <Label htmlFor="shopName">Shop Name/Instition </Label>

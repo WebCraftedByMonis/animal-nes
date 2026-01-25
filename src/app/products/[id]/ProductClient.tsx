@@ -9,6 +9,17 @@ import ProductReviewForm from '@/components/ProductReviewForm';
 import ProductReviews from '@/components/ProductReviews';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
+interface Discount {
+  id: number;
+  name: string;
+  percentage: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  productId: number | null;
+  variantId: number | null;
+}
+
 interface Product {
   id: number;
   productName: string;
@@ -35,6 +46,7 @@ interface Product {
     companyPrice: number | null;
     inventory: number;
   }[];
+  discounts?: Discount[];
 }
 
 export default function ProductClient({ product }: { product: Product }) {
@@ -45,6 +57,60 @@ export default function ProductClient({ product }: { product: Product }) {
 
   const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
   const isOutOfStock = product.outofstock || !product.isActive;
+
+  // Helper to get active discount for a variant
+  const getActiveDiscount = (variantId: number): Discount | null => {
+    if (!product.discounts || product.discounts.length === 0) return null;
+
+    const now = new Date();
+    const activeDiscounts = product.discounts.filter(d => {
+      if (!d.isActive) return false;
+      const start = new Date(d.startDate);
+      const end = new Date(d.endDate);
+      return now >= start && now <= end;
+    });
+
+    if (activeDiscounts.length === 0) return null;
+
+    // Prioritize variant-specific discount
+    const variantDiscount = activeDiscounts.find(d => d.variantId === variantId);
+    if (variantDiscount) return variantDiscount;
+
+    // Return product-level discount (highest percentage)
+    const productDiscounts = activeDiscounts.filter(d => d.productId !== null && d.variantId === null);
+    if (productDiscounts.length > 0) {
+      return productDiscounts.reduce((a, b) => a.percentage > b.percentage ? a : b);
+    }
+
+    return activeDiscounts[0];
+  };
+
+  // Calculate discounted price
+  const calculateDiscountedPrice = (price: number, percentage: number): number => {
+    return Math.round((price - (price * percentage / 100)) * 100) / 100;
+  };
+
+  // Format time remaining for discount
+  const formatTimeRemaining = (endDate: string): string => {
+    const now = new Date();
+    const end = new Date(endDate);
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Expired';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    if (days > 0) return `${days}d ${hours}h left`;
+    if (hours > 0) return `${hours}h left`;
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${minutes}m left`;
+  };
+
+  const activeDiscount = selectedVariant ? getActiveDiscount(selectedVariant.id) : null;
+  const originalPrice = selectedVariant?.customerPrice || 0;
+  const discountedPrice = activeDiscount ? calculateDiscountedPrice(originalPrice, activeDiscount.percentage) : originalPrice;
+  const isEndingSoon = activeDiscount && (new Date(activeDiscount.endDate).getTime() - new Date().getTime()) < 24 * 60 * 60 * 1000;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -76,7 +142,12 @@ export default function ProductClient({ product }: { product: Product }) {
         <div className="md:w-1/2">
           <div className="space-y-4">
             {/* Badges */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {activeDiscount && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded">
+                  {activeDiscount.percentage}% OFF
+                </span>
+              )}
               {product.isFeatured && (
                 <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium px-2.5 py-0.5 rounded">
                   Featured
@@ -102,11 +173,33 @@ export default function ProductClient({ product }: { product: Product }) {
 
             {/* Price Display */}
             {selectedVariant && (
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  PKR {selectedVariant.customerPrice.toLocaleString()}
-                </p>
-                
+              <div className="space-y-2">
+                {activeDiscount ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                        PKR {discountedPrice.toLocaleString()}
+                      </p>
+                      <p className="text-xl text-gray-500 dark:text-gray-400 line-through">
+                        PKR {originalPrice.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                        You save PKR {(originalPrice - discountedPrice).toLocaleString()}
+                      </span>
+                      {isEndingSoon && (
+                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded">
+                          {formatTimeRemaining(activeDiscount.endDate)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    PKR {selectedVariant.customerPrice.toLocaleString()}
+                  </p>
+                )}
               </div>
             )}
 

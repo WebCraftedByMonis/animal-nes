@@ -55,6 +55,7 @@ model Product {
   checkoutItems  CheckoutItem[]
   wishlistItems  WishlistItem[]
   reviews        ProductReview[]
+  discounts      Discount[]
 
   @@index([companyId])
   @@index([partnerId])
@@ -71,6 +72,7 @@ model ProductVariant {
   productId      Int
   cartItems      CartItem[]
   checkoutItems  CheckoutItem[]
+  discounts      Discount[]
 
   @@index([productId])
 }
@@ -111,6 +113,7 @@ model Company {
   image       CompanyImage?
   stickyLogo  StickyLogo[]
   sessions    CompanySession[]
+  discounts   Discount[]
   createdAt   DateTime?        @default(now())
   updatedAt   DateTime?        @updatedAt
 }
@@ -206,6 +209,7 @@ model Partner {
   specialization      String?               @db.Text
   species             String?
   partnerType         String?
+  numberOfAnimals     Int?
   isPremium           Boolean               @default(false)
   referralCode        String?               @unique
   walletBalance       Float                 @default(0)
@@ -430,18 +434,20 @@ model Checkout {
 }
 
 model CheckoutItem {
-  id            Int             @id @default(autoincrement())
-  checkout      Checkout        @relation(name: "CheckoutToItems", fields: [checkoutId], references: [id], onDelete: Cascade)
-  checkoutId    Int
-  product       Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId     Int?
-  variantId     Int?
-  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  animalId      Int?
-  animal        SellAnimal?     @relation(fields: [animalId], references: [id], onDelete: Cascade)
-  quantity      Int
-  price         Float
-  purchasedPrice Float?         // Price purchased from vendor/partner (editable)
+  id                 Int             @id @default(autoincrement())
+  checkout           Checkout        @relation(name: "CheckoutToItems", fields: [checkoutId], references: [id], onDelete: Cascade)
+  checkoutId         Int
+  product            Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId          Int?
+  variantId          Int?
+  variant            ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  animalId           Int?
+  animal             SellAnimal?     @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  quantity           Int
+  price              Float           // Final price after discount
+  originalPrice      Float?          // Original price before discount
+  discountPercentage Float?          // Discount percentage applied (e.g., 10 for 10%)
+  purchasedPrice     Float?          // Price purchased from vendor/partner (editable)
 
   @@index([checkoutId])
   @@index([productId])
@@ -1240,4 +1246,32 @@ model EmailLog {
   @@index([emailType])
   @@index([status])
   @@index([createdAt])
+}
+
+// Discount Management System
+model Discount {
+  id              Int              @id @default(autoincrement())
+  name            String           @db.Text
+  description     String?          @db.Text
+  percentage      Float            // e.g., 10.0 for 10% off
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean          @default(true)
+
+  // Scope - company-level, product-level, or variant-level
+  companyId       Int?
+  company         Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId       Int?
+  product         Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId       Int?
+  variant         ProductVariant?  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([companyId])
+  @@index([productId])
+  @@index([variantId])
+  @@index([startDate, endDate])
+  @@index([isActive])
 }

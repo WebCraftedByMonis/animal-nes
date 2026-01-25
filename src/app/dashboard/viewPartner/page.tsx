@@ -55,6 +55,7 @@ interface Partner {
   specialization?: string
   species?: string
   partnerType?: string
+  numberOfAnimals?: number
   bloodGroup?: string
   zipcode?: string
   areaTown?: string
@@ -129,6 +130,7 @@ export default function ViewPartnersPage() {
   const [editGender, setEditGender] = useState<string>('');
   const [editPartnerType, setEditPartnerType] = useState<string>('');
   const [originalPartnerType, setOriginalPartnerType] = useState<string>('');
+  const [editNumberOfAnimals, setEditNumberOfAnimals] = useState<number | undefined>(undefined);
 
 
   const [editImage, setEditImage] = useState<File | null>(null)
@@ -213,6 +215,7 @@ useEffect(() => {
       if (editAreaTown) updateData.areaTown = editAreaTown
       if (editGender) updateData.gender = editGender
       if (editPartnerType) updateData.partnerType = editPartnerType
+      if (editNumberOfAnimals !== undefined) updateData.numberOfAnimals = editNumberOfAnimals
       if (editAvailableDays.length > 0) updateData.availableDays = editAvailableDays
 
       // Handle image upload - convert to base64 like in your POST request
@@ -449,6 +452,7 @@ useEffect(() => {
                           setEditGender(partner.gender || '');
                           setEditPartnerType(partner.partnerType || '');
                           setOriginalPartnerType(partner.partnerType || '');
+                          setEditNumberOfAnimals(partner.numberOfAnimals);
                           setEditImagePreview(partner.partnerImage?.url || null)
                           setOpen(true)
                         }}
@@ -571,6 +575,20 @@ useEffect(() => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Number of Animals - only shown when partner type is Farmer */}
+              {editPartnerType === 'Farmer' && (
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium mb-1">Number of Animals</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editNumberOfAnimals || ''}
+                    onChange={(e) => setEditNumberOfAnimals(e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="Enter number of animals"
+                  />
+                </div>
+              )}
 
               {/* Email */}
               <div className="col-span-1">

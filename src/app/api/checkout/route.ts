@@ -3,6 +3,62 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { createProductSaleTransaction, createAnimalSaleTransaction } from '@/lib/autoTransaction'
 
+// Helper to get active discount for a product/variant
+async function getActiveDiscountForItem(productId: number, variantId: number, companyId?: number): Promise<{ percentage: number } | null> {
+  const now = new Date()
+
+  // First check for variant-specific discount
+  const variantDiscount = await prisma.discount.findFirst({
+    where: {
+      variantId: variantId,
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now }
+    },
+    orderBy: { percentage: 'desc' }
+  })
+
+  if (variantDiscount) return { percentage: variantDiscount.percentage }
+
+  // Then check for product-level discount
+  const productDiscount = await prisma.discount.findFirst({
+    where: {
+      productId: productId,
+      variantId: null,
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now }
+    },
+    orderBy: { percentage: 'desc' }
+  })
+
+  if (productDiscount) return { percentage: productDiscount.percentage }
+
+  // Finally check for company-level discount
+  if (companyId) {
+    const companyDiscount = await prisma.discount.findFirst({
+      where: {
+        companyId: companyId,
+        productId: null,
+        variantId: null,
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now }
+      },
+      orderBy: { percentage: 'desc' }
+    })
+
+    if (companyDiscount) return { percentage: companyDiscount.percentage }
+  }
+
+  return null
+}
+
+// Calculate discounted price
+function calculateDiscountedPrice(price: number, percentage: number): number {
+  return Math.round((price - (price * percentage / 100)) * 100) / 100
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.email) {
@@ -27,20 +83,46 @@ export async function POST(req: NextRequest) {
     // ✅ Always use the fixed shipping charge from frontend (e.g., 350)
     const validatedShippingCharge = shippingCharges
 
-    // ✅ Recalculate subtotal server-side
-    const calculatedSubtotal = 
-      cart.reduce((sum: number, item: any) => sum + (item.quantity * item.variant.customerPrice), 0) +
-      animalCart.reduce((sum: number, item: any) => sum + (item.quantity * item.animal.totalPrice), 0)
+    // ✅ Recalculate subtotal server-side with discounts applied
+    let calculatedSubtotal = 0
+
+    // Calculate product subtotal with discounts
+    for (const item of cart) {
+      const originalPrice = item.variant.customerPrice
+      const companyId = item.product.companyId
+      const discount = await getActiveDiscountForItem(item.product.id, item.variant.id, companyId)
+      const finalPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
+      calculatedSubtotal += item.quantity * finalPrice
+    }
+
+    // Add animal cart items (no discounts on animals)
+    calculatedSubtotal += animalCart.reduce((sum: number, item: any) => sum + (item.quantity * item.animal.totalPrice), 0)
 
     // ✅ Recalculate total
     const calculatedTotal = calculatedSubtotal + validatedShippingCharge
 
-    // ✅ Verify total matches (with float tolerance)
-    if (Math.abs(calculatedTotal - total) > 0.01) {
-      return NextResponse.json({ 
-        error: 'Total mismatch. Please refresh and try again.' 
+    // ✅ Verify total matches (with float tolerance - allow 1 PKR difference for rounding)
+    if (Math.abs(calculatedTotal - total) > 1) {
+      return NextResponse.json({
+        error: 'Total mismatch. Please refresh and try again.'
       }, { status: 400 })
     }
+
+    // ✅ Prepare cart items with discounted prices
+    const cartItemsWithDiscounts = await Promise.all(
+      cart.map(async (item: any) => {
+        const originalPrice = item.variant.customerPrice
+        const companyId = item.product.companyId
+        const discount = await getActiveDiscountForItem(item.product.id, item.variant.id, companyId)
+        const finalPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
+        return {
+          ...item,
+          originalPrice,
+          finalPrice,
+          discountPercentage: discount ? discount.percentage : null
+        }
+      })
+    )
 
     // ✅ Create order
     const order = await prisma.checkout.create({
@@ -56,13 +138,15 @@ export async function POST(req: NextRequest) {
         status: 'pending',
         items: {
           create: [
-            ...cart.map((item: any) => {
+            ...cartItemsWithDiscounts.map((item: any) => {
               if (item.product) {
                 return {
                   product: { connect: { id: item.product.id } },
                   variant: { connect: { id: item.variant.id } },
                   quantity: item.quantity,
-                  price: item.variant.customerPrice,
+                  price: item.finalPrice, // Use discounted price
+                  originalPrice: item.originalPrice, // Store original price
+                  discountPercentage: item.discountPercentage, // Store discount percentage
                   purchasedPrice: item.variant.dealerPrice || item.variant.companyPrice || null,
                 }
               }
@@ -72,6 +156,8 @@ export async function POST(req: NextRequest) {
               animal: { connect: { id: item.animal.id } },
               quantity: item.quantity,
               price: item.animal.totalPrice,
+              originalPrice: item.animal.totalPrice, // Animals don't have discounts
+              discountPercentage: null,
               purchasedPrice: item.animal.purchasePrice || null,
             }))
           ]
@@ -95,12 +181,12 @@ export async function POST(req: NextRequest) {
     })
 
     if (createdOrder) {
-      // Create transactions for products
-      for (const item of cart) {
+      // Create transactions for products (use discounted prices)
+      for (const item of cartItemsWithDiscounts) {
         if (item.product) {
           const createdItem = createdOrder.items.find(i => i.productId === item.product.id && i.variantId === item.variant.id)
           if (createdItem) {
-            const productAmount = item.quantity * item.variant.customerPrice
+            const productAmount = item.quantity * item.finalPrice // Use discounted price
             const purchasedPrice = item.variant.dealerPrice || item.variant.companyPrice || null
 
             await createProductSaleTransaction(
