@@ -14,10 +14,12 @@ import Image from 'next/image';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'react-hot-toast';
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput';
-import { 
-  partnerTypeOptions, 
-  getSpecializationsByPartnerType 
+import {
+  partnerTypeOptions,
+  getSpecializationsByPartnerType,
+  farmerSpecializations
 } from '@/lib/partner-constants';
+import { Plus, Trash2 } from 'lucide-react';
 
 const genderOptions = ['MALE', 'FEMALE'] as const;
 const sendToPartnerOptions = ['YES', 'NO'] as const;
@@ -29,6 +31,11 @@ const dayOptions = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
   'FRIDAY', 'SATURDAY', 'SUNDAY'
 ] as const;
+
+const animalEntrySchema = z.object({
+  animalType: z.string().min(1, "Animal type is required"),
+  count: z.number().int().positive("Count must be at least 1"),
+});
 
 const formSchema = z.object({
   partnerName: z.string().min(1, "Partner name is required"),
@@ -52,6 +59,7 @@ const formSchema = z.object({
   species: z.string().optional(),
   partnerType: z.string().optional(),
   numberOfAnimals: z.number().int().positive().optional(),
+  animalEntries: z.array(animalEntrySchema).optional(),
   productIds: z.array(z.number()).optional(),
   image: z.string().min(1, "Image is required"),
   requestPremium: z.boolean().optional(),
@@ -124,6 +132,7 @@ export default function PartnerForm({
       species: initialData?.species || '',
       partnerType: initialData?.partnerType || undefined,
       numberOfAnimals: initialData?.numberOfAnimals || undefined,
+      animalEntries: initialData?.animalEntries || [],
       productIds: initialData?.productIds || [],
       image: initialData?.image || '',
       requestPremium: initialData?.requestPremium || false,
@@ -204,6 +213,7 @@ export default function PartnerForm({
       species: '',
       partnerType: undefined,
       numberOfAnimals: undefined,
+      animalEntries: [],
       productIds: [],
       image: '',
       requestPremium: false,
@@ -296,19 +306,93 @@ export default function PartnerForm({
             {errors.partnerType && <p className="text-red-500 text-sm">{errors.partnerType.message}</p>}
           </div>
 
-          {/* Number of Animals field - only shown when partner type is Farmer */}
+          {/* Animal Entries - only shown when partner type is Farmer */}
           {partnerType === 'Farmer' && (
-            <div>
-              <Label htmlFor="numberOfAnimals">Number of Animals</Label>
-              <Input
-                id="numberOfAnimals"
-                type="number"
-                min="1"
-                {...register('numberOfAnimals', { valueAsNumber: true })}
-                className="focus:border-green-500 focus:ring-green-500"
-                placeholder="Enter number of animals"
-              />
-              {errors.numberOfAnimals && <p className="text-red-500 text-sm">{errors.numberOfAnimals.message}</p>}
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between mb-2">
+                <Label>Animals & Quantities</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-green-500 text-green-600 hover:bg-green-50"
+                  onClick={() => {
+                    const currentEntries = watch('animalEntries') || [];
+                    setValue('animalEntries', [...currentEntries, { animalType: '', count: 1 }]);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Animal
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {(watch('animalEntries') || []).map((entry, index) => (
+                  <div key={index} className="flex gap-2 items-start p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-500">Animal Type</Label>
+                      <Controller
+                        control={control}
+                        name={`animalEntries.${index}.animalType`}
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
+                              <SelectValue placeholder="Select animal" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {farmerSpecializations.filter(animal => animal !== 'Others').map((animal) => (
+                                <SelectItem key={animal} value={animal}>{animal}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <Label className="text-xs text-gray-500">Count</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={entry.count}
+                        onChange={(e) => {
+                          const currentEntries = watch('animalEntries') || [];
+                          const updatedEntries = [...currentEntries];
+                          updatedEntries[index] = { ...updatedEntries[index], count: parseInt(e.target.value) || 1 };
+                          setValue('animalEntries', updatedEntries);
+                        }}
+                        className="focus:border-green-500 focus:ring-green-500"
+                      />
+                    </div>
+                    <div className="pt-5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          const currentEntries = watch('animalEntries') || [];
+                          setValue('animalEntries', currentEntries.filter((_, i) => i !== index));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {(watch('animalEntries') || []).length === 0 && (
+                  <div className="text-center py-4 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                    <p className="text-sm">No animals added yet</p>
+                    <p className="text-xs">Click "Add Animal" to add your animals</p>
+                  </div>
+                )}
+
+                {(watch('animalEntries') || []).length > 0 && (
+                  <div className="text-sm text-green-600 font-medium">
+                    Total: {(watch('animalEntries') || []).reduce((sum, e) => sum + (e.count || 0), 0)} animals ({(watch('animalEntries') || []).length} types)
+                  </div>
+                )}
+              </div>
+              {errors.animalEntries && <p className="text-red-500 text-sm mt-1">{errors.animalEntries.message}</p>}
             </div>
           )}
 

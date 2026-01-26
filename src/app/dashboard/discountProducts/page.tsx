@@ -35,6 +35,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Pencil, Trash2, Search, RefreshCw, Building2 } from 'lucide-react'
+import { SearchableCombobox } from '@/components/shared/SearchableCombobox'
 
 interface Company {
   id: number
@@ -280,7 +281,7 @@ export default function DiscountProductsPage() {
   }
 
   const handleCompanyChange = (companyId: string) => {
-    const id = companyId === 'none' ? null : parseInt(companyId)
+    const id = companyId ? parseInt(companyId) : null
     setFormData(prev => ({
       ...prev,
       companyId: id,
@@ -615,22 +616,13 @@ export default function DiscountProductsPage() {
                   {/* Company Selection */}
                   <div className="space-y-2">
                     <Label htmlFor="company">Select Company</Label>
-                    <Select
-                      value={formData.companyId?.toString() || 'none'}
-                      onValueChange={handleCompanyChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a company first" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">-- Select Company --</SelectItem>
-                        {companies.map((company) => (
-                          <SelectItem key={company.id} value={company.id.toString()}>
-                            {company.companyName || `Company ${company.id}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableCombobox
+                      apiEndpoint="/api/company"
+                      value={formData.companyId?.toString() || ''}
+                      onChange={handleCompanyChange}
+                      placeholder="Select company"
+                      searchKey="companyName"
+                    />
                   </div>
 
                   {/* Products Selection */}

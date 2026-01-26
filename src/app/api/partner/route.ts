@@ -21,6 +21,11 @@ const bloodGroupEnum = [
 const sendToPartnerEnum = ['YES', 'NO'] as const;
 const dayEnum = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
+const animalEntrySchema = z.object({
+  animalType: z.string().min(1),
+  count: z.number().int().positive(),
+});
+
 const createPartnerSchema = z.object({
   partnerName: z.string().min(1),
   gender: z.enum(genderEnum).optional(),
@@ -43,6 +48,7 @@ const createPartnerSchema = z.object({
   species: z.string().optional(),
   partnerType: z.string().optional(),
   numberOfAnimals: z.number().int().positive().optional(),
+  animalEntries: z.array(animalEntrySchema).optional(),
   productIds: z.array(z.number().int().positive()).optional(),
   image: z.string().min(1, 'Image is required'),
   referralCode: z.string().optional(),
@@ -96,13 +102,20 @@ async function POST(request: NextRequest) {
     }
     console.log('✅ Validation passed');
 
-    const { image, availableDays, startTimeIds, productIds, referralCode, ...partnerData } = validation.data;
+    const { image, availableDays, startTimeIds, productIds, referralCode, animalEntries, ...partnerData } = validation.data;
+
+    // Calculate total numberOfAnimals from animalEntries if provided
+    if (animalEntries && animalEntries.length > 0) {
+      partnerData.numberOfAnimals = animalEntries.reduce((sum, entry) => sum + entry.count, 0);
+    }
+
     console.log('📊 Extracted data:');
     console.log('  - Partner data keys:', Object.keys(partnerData));
     console.log('  - Available days:', availableDays);
     console.log('  - Start time IDs:', startTimeIds);
     console.log('  - Product IDs:', productIds);
     console.log('  - Referral Code:', referralCode);
+    console.log('  - Animal Entries:', animalEntries);
     console.log('  - Has image:', !!image);
 
     // Hash password if provided
@@ -165,6 +178,7 @@ async function POST(request: NextRequest) {
       const partnerCreateData = {
         ...partnerData,
         referredById: referrerId,
+        animalEntries: animalEntries && animalEntries.length > 0 ? animalEntries : undefined,
         partnerImage: {
           create: {
             url: imageResult.url,
@@ -400,12 +414,20 @@ async function PUT(request: NextRequest) {
       );
     }
 
-    const { image, availableDays, startTimeIds, productIds, ...updateData } = validation.data;
+    const { image, availableDays, startTimeIds, productIds, animalEntries, ...updateData } = validation.data;
+
+    // Calculate total numberOfAnimals from animalEntries if provided
+    if (animalEntries && animalEntries.length > 0) {
+      updateData.numberOfAnimals = animalEntries.reduce((sum, entry) => sum + entry.count, 0);
+      (updateData as any).animalEntries = animalEntries;
+    }
+
     console.log('Validated Update Data:', updateData);
     console.log('Image Data:', image);
     console.log('Available Days:', availableDays);
     console.log('Start Time IDs:', startTimeIds);
     console.log('Product IDs:', productIds);
+    console.log('Animal Entries:', animalEntries);
 
     // Step 1: Get existing partner data OUTSIDE transaction
     console.log('Fetching existing partner with ID:', id);
