@@ -42,6 +42,7 @@ import {
     Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import WhatsAppLink from "@/components/WhatsAppLink";
 
 interface BusinessPartner {
     id: number;
@@ -394,7 +395,7 @@ export default function BusinessPartnersPage() {
                                           </Badge>
                                       </TableCell>
                                       <TableCell>
-                                          <p className="text-sm">{partner.phone || "-"}</p>
+                                          <WhatsAppLink phone={partner.phone || ''} className="text-sm" />
                                       </TableCell>
                                       <TableCell>
                                           <span className="font-semibold text-green-600">

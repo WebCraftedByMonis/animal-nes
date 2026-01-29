@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Calendar, Briefcase, Building2, Phone, Mail, MapPin, Clock, User } from 'lucide-react'
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
 
 // Utility function to detect and format links
 const makeClickable = (text: string) => {
@@ -136,10 +137,10 @@ export default function JobFormDetailClient({ jobVacancy }: JobFormDetailClientP
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <a
-                  href={`https://wa.me/${jobForm.mobileNumber.replace(/\D/g, '')}`}
+                  href={getWhatsAppUrl(jobForm.mobileNumber)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-green-600 hover:underline"
                 >
                   {jobForm.mobileNumber}
                 </a>

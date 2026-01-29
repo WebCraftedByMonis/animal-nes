@@ -15,6 +15,7 @@ import {
 import { SiThreads } from "react-icons/si";
 import { BsFillHouseDoorFill } from "react-icons/bs";
 import { RiMessage2Line } from "react-icons/ri";
+import { getWhatsAppUrl } from "@/lib/whatsapp-utils";
 
 const contactItems = [
   {
@@ -38,11 +39,8 @@ const contactItems = [
   },
   {
     icon: <FaPhoneAlt className="text-green-500" />,
-    label: (
-      <div className="flex flex-col">
-        <span className="hover:underline">0333-4145431</span>
-      </div>
-    ),
+    label: "0333-4145431",
+    href: getWhatsAppUrl("0333-4145431"),
   },
   {
     icon: <FaFacebook className="text-blue-600" />,

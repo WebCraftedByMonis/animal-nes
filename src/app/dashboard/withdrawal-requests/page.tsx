@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import WhatsAppLink from '@/components/WhatsAppLink';
 
 interface WithdrawalRequest {
   id: string;
@@ -282,7 +283,7 @@ export default function WithdrawalRequestsPage() {
                   </div>
                   <div>
                     <p className="text-gray-600">Mobile</p>
-                    <p className="font-medium">{selectedRequest.partner.partnerMobileNumber || 'N/A'}</p>
+                    <div className="font-medium"><WhatsAppLink phone={selectedRequest.partner.partnerMobileNumber || ''} /></div>
                   </div>
                   <div>
                     <p className="text-gray-600">Shop Name</p>

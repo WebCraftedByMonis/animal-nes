@@ -44,6 +44,7 @@ import {
 import toast from "react-hot-toast";
 import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import WhatsAppLink from "@/components/WhatsAppLink";
 
 // Updated TypeScript interface to include payment info
 interface PaymentInfo {
@@ -469,7 +470,7 @@ export default function DashboardPage() {
 
                                     {/* Contact */}
                                     <TableCell>
-                                        <p className="text-sm">{a.doctor}</p>
+                                        <WhatsAppLink phone={a.doctor || ''} className="text-sm" />
                                     </TableCell>
 
                                     {/* Location */}

@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Pencil, Trash2, ArrowUpDown, Loader2, Search } from 'lucide-react'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
+import WhatsAppLink from '@/components/WhatsAppLink'
 import {
   Select,
   SelectContent,
@@ -216,7 +217,7 @@ export default function ViewCompaniesPage() {
                     )}
                   </TableCell>
                   <TableCell className="px-4 py-2">{company.companyName}</TableCell>
-                  <TableCell className="px-4 py-2">{company.mobileNumber || '-'}</TableCell>
+                  <TableCell className="px-4 py-2"><WhatsAppLink phone={company.mobileNumber || ''} /></TableCell>
                   <TableCell className="px-4 py-2">{company.address || '-'}</TableCell>
                   <TableCell className="px-4 py-2">{company.email || '-'}</TableCell>
                   <TableCell className="px-4 py-2">{company.products.length}</TableCell>

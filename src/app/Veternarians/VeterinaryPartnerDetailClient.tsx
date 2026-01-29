@@ -18,6 +18,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useSession } from 'next-auth/react'
 import { toast } from 'react-hot-toast'
 import { useLoginModal } from '@/contexts/LoginModalContext'
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
 
 interface Product {
   id: number
@@ -63,12 +64,7 @@ interface Partner {
 }
 
 
-const formatWhatsAppNumber = (number: string) => {
-  if (number.startsWith('03')) {
-    return '+92' + number.slice(1);
-  }
-  return number.startsWith('+') ? number : '+' + number;
-};
+// Using imported formatWhatsAppNumber from @/lib/whatsapp-utils
 
 interface VetReview {
   id: number
@@ -270,7 +266,7 @@ export default function VeterinaryPartnerDetailClient() {
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
                     <a
-                      href={`https://wa.me/${formatWhatsAppNumber(partner.partnerMobileNumber).replace(/\D/g, '')}`}
+                      href={getWhatsAppUrl(partner.partnerMobileNumber)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors"

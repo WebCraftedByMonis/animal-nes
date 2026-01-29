@@ -25,6 +25,7 @@ import {
 
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 interface Product {
   id: number;
@@ -373,7 +374,7 @@ export default function AdminOrdersPage() {
                       <TableCell rowSpan={order.items.length}>{order.user?.name}</TableCell>
                       <TableCell rowSpan={order.items.length}>{order.user?.email}</TableCell>
                       <TableCell rowSpan={order.items.length}>{order.address}, {order.city}, {order.province}</TableCell>
-                      <TableCell rowSpan={order.items.length}>{order.shippingAddress}</TableCell>
+                      <TableCell rowSpan={order.items.length}><WhatsAppLink phone={order.shippingAddress || ''} /></TableCell>
                       <TableCell rowSpan={order.items.length} className="max-w-xs truncate" title={order.paymentMethod}>
                         {order.paymentMethod.length > 20 ? order.paymentMethod.substring(0, 20) + '...' : order.paymentMethod}
                       </TableCell>

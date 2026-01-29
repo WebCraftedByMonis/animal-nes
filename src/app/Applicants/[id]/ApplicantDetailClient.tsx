@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { MapPin, Mail, Calendar, Briefcase, GraduationCap, Building2, User2, Download, Phone } from 'lucide-react'
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
 
 interface Applicant {
   id: number
@@ -133,7 +134,7 @@ export default function ApplicantDetailClient({ applicant }: ApplicantDetailClie
               </div>
 
               <a
-                href={`https://wa.me/${applicant.mobileNumber}`}
+                href={getWhatsAppUrl(applicant.mobileNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 text-sm hover:underline text-green-600 dark:text-green-400"

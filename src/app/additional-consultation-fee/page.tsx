@@ -7,6 +7,7 @@ import { useDropzone } from 'react-dropzone';
 import { Loader2, UploadCloud, X, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils';
 
 export default function AdditionalConsultationFeeForm() {
   return (
@@ -280,12 +281,12 @@ export function AdditionalConsultationFeeContent() {
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-semibold">JazzCash</div>
-                      <div className="text-sm text-gray-600">0300-8424741 - Muhammad Fiaz Qamar</div>
+                      <div className="text-sm text-gray-600"><a href={getWhatsAppUrl("0300-8424741")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0300-8424741</a> - Muhammad Fiaz Qamar</div>
                     </div>
                     {paymentMethod === 'jazzcash' && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>
                 </div>
-                
+
                 <div
                   onClick={() => handlePaymentMethodChange('easypaisa')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -297,7 +298,7 @@ export function AdditionalConsultationFeeContent() {
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-semibold">Easypaisa</div>
-                      <div className="text-sm text-gray-600">0335-4145431 - Ghazala Yasmeen</div>
+                      <div className="text-sm text-gray-600"><a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0335-4145431</a> - Ghazala Yasmeen</div>
                     </div>
                     {paymentMethod === 'easypaisa' && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>

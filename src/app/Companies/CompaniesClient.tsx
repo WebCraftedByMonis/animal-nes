@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Building2, Mail, Phone, MapPin, Package, Search } from 'lucide-react'
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 interface Company {
   id: number
@@ -241,7 +242,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
                     {company.mobileNumber && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-3 w-3 flex-shrink-0" />
-                        <span>{company.mobileNumber}</span>
+                        <WhatsAppLink phone={company.mobileNumber} showIcon={false} />
                       </div>
                     )}
                     

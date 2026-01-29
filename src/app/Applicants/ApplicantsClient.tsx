@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, Loader2, FileDown, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import WhatsAppLink from '@/components/WhatsAppLink';
 
 interface Applicant {
   id: number;
@@ -210,7 +211,7 @@ export default function ApplicantsClient({ initialApplicants, initialTotal }: Ap
                   </Badge>
 
                   <div className="text-sm text-gray-500">
-                    <p>{app.mobileNumber}</p>
+                    <WhatsAppLink phone={app.mobileNumber || ''} />
                     <p>{app.address}</p>
                     <p>{new Date(app.dateOfBirth).toLocaleDateString('en-US', { 
                       year: 'numeric', 

@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import EditApplicantModal from './EditApplicantModal'
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 interface Applicant {
   id: number
@@ -152,7 +153,7 @@ export default function ViewApplicantsPage() {
                   </TableCell>
                   <TableCell>{app.name}</TableCell>
                   <TableCell>{app.gender}</TableCell>
-                  <TableCell>{app.mobileNumber}</TableCell>
+                  <TableCell><WhatsAppLink phone={app.mobileNumber || ''} /></TableCell>
                   <TableCell>{app.address}</TableCell>
                   <TableCell>{new Date(app.dateOfBirth).toLocaleDateString()}</TableCell>
                   <TableCell>{app.qualification || '-'}</TableCell>

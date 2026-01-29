@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { getWhatsAppUrl } from "@/lib/whatsapp-utils";
 
 export default function MasterTrainerRegistration() {
   const router = useRouter();
@@ -144,7 +145,7 @@ export default function MasterTrainerRegistration() {
               <div>
                 <p className="font-semibold text-green-600 mb-1">Contact Us:</p>
                 <p className="text-gray-700">
-                  Phone: <a href="tel:+923354145431" className="text-blue-600 hover:text-blue-800">(+92) 335-4145431</a>
+                  Phone: <a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">(+92) 335-4145431</a>
                 </p>
                 <p className="text-gray-700">
                   Email: <a href="mailto:animalwellnessshop@gmail.com" className="text-blue-600 hover:text-blue-800">animalwellnessshop@gmail.com</a>
@@ -253,7 +254,7 @@ export default function MasterTrainerRegistration() {
                 <span className="text-sm text-gray-700">
                   <span className="text-red-500">*</span> I understand that I will have to pay{" "}
                   <span className="font-bold">Rs. 5000</span> through easypaisa account{" "}
-                  <span className="font-bold">03354145431</span>: Ghazala Yasmeen; Animal Wellness Shop
+                  <a href={getWhatsAppUrl("03354145431")} target="_blank" rel="noopener noreferrer" className="font-bold text-green-600 hover:underline" onClick={e => e.stopPropagation()}>03354145431</a>: Ghazala Yasmeen; Animal Wellness Shop
                 </span>
               </label>
             </div>
@@ -277,7 +278,7 @@ export default function MasterTrainerRegistration() {
           <p className="font-semibold text-gray-800 mb-2">Important Notice:</p>
           <p>After submitting your registration, our team will review your payment.</p>
           <p className="mt-1">Once approved, you will receive a confirmation email with all program details.</p>
-          <p className="mt-2 text-xs text-gray-500">For any queries, contact us at (+92) 335-4145431</p>
+          <p className="mt-2 text-xs text-gray-500">For any queries, contact us at <a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">(+92) 335-4145431</a></p>
         </div>
       </div>
     </div>

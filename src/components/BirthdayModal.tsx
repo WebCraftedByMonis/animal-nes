@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, Cake, User, Phone, MapPin, Calendar } from 'lucide-react'
 import Image from 'next/image'
 import { formatDate } from 'date-fns'
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 interface BirthdayPartner {
   id: number
@@ -233,7 +234,7 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
                           {partner.partnerMobileNumber && (
                             <div className="flex items-center gap-2">
                               <Phone className="w-4 h-4 flex-shrink-0" />
-                              <span className="break-all">{partner.partnerMobileNumber}</span>
+                              <WhatsAppLink phone={partner.partnerMobileNumber} showIcon={false} className="break-all" />
                             </div>
                           )}
 

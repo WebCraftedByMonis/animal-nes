@@ -28,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Pencil, Trash2, ArrowUpDown, Loader2, Search, Cake } from 'lucide-react'
+import WhatsAppLink from '@/components/WhatsAppLink'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import BirthdayModal from '@/components/BirthdayModal'
 import {
@@ -414,7 +415,7 @@ useEffect(() => {
                       )}
                     </TableCell>
                     <TableCell className="px-4 py-2">{partner.partnerName}</TableCell>
-                    <TableCell className="px-4 py-2">{partner.partnerMobileNumber || '-'}</TableCell>
+                    <TableCell className="px-4 py-2"><WhatsAppLink phone={partner.partnerMobileNumber || ''} /></TableCell>
                     <TableCell className="px-4 py-2">{partner.cityName || '-'}</TableCell>
                     <TableCell className="px-4 py-2">{partner.partnerType || '-'}</TableCell>
                     <TableCell className="px-4 py-2">{partner.shopName || '-'}</TableCell>

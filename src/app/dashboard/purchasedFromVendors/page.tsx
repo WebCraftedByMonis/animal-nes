@@ -5,7 +5,7 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Edit, Loader2, Search, Save, X } from 'lucide-react'
+import { Edit, Loader2, Search, Save, X, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip as UITooltip,
@@ -167,6 +167,13 @@ export default function PurchasedFromVendorsPage() {
     } finally {
       setUpdatingItemId(null)
     }
+  }
+
+  const downloadInvoice = (orderId: string, branded: boolean = false) => {
+    const url = branded
+      ? `/api/orders/${orderId}/invoice?branded=true`
+      : `/api/orders/${orderId}/invoice`
+    window.open(url, '_blank')
   }
 
   const totalPages = Math.ceil(total / limit)
@@ -348,6 +355,36 @@ export default function PurchasedFromVendorsPage() {
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Edit Purchased Price</p>
+                          </TooltipContent>
+                        </UITooltip>
+
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => downloadInvoice(purchase.orderId, false)}
+                            >
+                              <FileText className="w-5 h-5 text-blue-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download Invoice</p>
+                          </TooltipContent>
+                        </UITooltip>
+
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => downloadInvoice(purchase.orderId, true)}
+                            >
+                              <Download className="w-5 h-5 text-green-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download Branded Invoice</p>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>

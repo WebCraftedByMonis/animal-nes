@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import Link from 'next/link'
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 interface PrescriptionItem {
   id?: number
@@ -461,7 +462,7 @@ export default function PrescriptionsDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Contact</label>
-                        <p className="font-medium">{selected.clinicPhone || selected.clinicEmail || '-'}</p>
+                        {selected.clinicPhone ? <WhatsAppLink phone={selected.clinicPhone} /> : <p className="font-medium">{selected.clinicEmail || '-'}</p>}
                       </div>
                     </CardContent>
                   </Card>

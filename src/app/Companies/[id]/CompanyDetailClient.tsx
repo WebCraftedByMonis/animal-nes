@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Building2, Mail, Phone, MapPin, Package, Calendar, ExternalLink } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
 
 interface Product {
   id: number
@@ -43,12 +44,7 @@ interface Company {
   createdAt: string
 }
 
-const formatWhatsAppNumber = (number: string) => {
-  if (number.startsWith('03')) {
-    return '+92' + number.slice(1);
-  }
-  return number.startsWith('+') ? number : '+' + number;
-};
+// Using imported getWhatsAppUrl from @/lib/whatsapp-utils
 
 export default function CompanyDetailClient() {
   const { id } = useParams<{ id: string }>()
@@ -165,7 +161,7 @@ export default function CompanyDetailClient() {
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
                     <a
-                      href={`https://wa.me/${formatWhatsAppNumber(company.mobileNumber).replace(/\D/g, '')}`}
+                      href={getWhatsAppUrl(company.mobileNumber)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-500 transition-colors"

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { CartItem, Discount } from '../../../types/cart'
 import { AnimalCartItem } from '../../../types/animal'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
 
 interface CheckoutProps {
     cartItems: CartItem[]
@@ -262,22 +263,42 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 <div className="mt-4">
                     <h3 className="font-semibold mb-2">Select Payment Method</h3>
                     <div className="flex flex-col gap-2">
-                        {[
-                            'Jazz cash 0300-8424741 Muhammad Fiaz Qamar', 
-                            'Easypaisa 03354145431 Ghazala Yasmeen', 
-                            'CASH ON DELIVERY(COD)', 
-                            'Bank Alfalah: ZAIDIS INTERNATIONAL: 01531002450497: IBAN PK82ALFH0153001002450497 Swift code ALFHPKKAXXX Chauburji Branch, Lahore Branch Code 0153'
-                        ].map(method => (
-                            <label key={method} className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    name="payment"
-                                    value={method}
-                                    onChange={e => setPaymentMethod(e.target.value)}
-                                />
-                                {method}
-                            </label>
-                        ))}
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="payment"
+                                value="Jazz cash 0300-8424741 Muhammad Fiaz Qamar"
+                                onChange={e => setPaymentMethod(e.target.value)}
+                            />
+                            Jazz cash <a href={getWhatsAppUrl("0300-8424741")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0300-8424741</a> Muhammad Fiaz Qamar
+                        </label>
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="payment"
+                                value="Easypaisa 03354145431 Ghazala Yasmeen"
+                                onChange={e => setPaymentMethod(e.target.value)}
+                            />
+                            Easypaisa <a href={getWhatsAppUrl("03354145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>03354145431</a> Ghazala Yasmeen
+                        </label>
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="payment"
+                                value="CASH ON DELIVERY(COD)"
+                                onChange={e => setPaymentMethod(e.target.value)}
+                            />
+                            CASH ON DELIVERY(COD)
+                        </label>
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="payment"
+                                value="Bank Alfalah: ZAIDIS INTERNATIONAL: 01531002450497: IBAN PK82ALFH0153001002450497 Swift code ALFHPKKAXXX Chauburji Branch, Lahore Branch Code 0153"
+                                onChange={e => setPaymentMethod(e.target.value)}
+                            />
+                            Bank Alfalah: ZAIDIS INTERNATIONAL: 01531002450497: IBAN PK82ALFH0153001002450497 Swift code ALFHPKKAXXX Chauburji Branch, Lahore Branch Code 0153
+                        </label>
                     </div>
                 </div>
 

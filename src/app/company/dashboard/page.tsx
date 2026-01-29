@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast, Toaster } from 'react-hot-toast';
+import { Download, Edit, Loader2, Save, Search, X, FileText } from 'lucide-react';
 
 interface ProductVariant {
   id: number;
@@ -45,11 +46,42 @@ interface Company {
   products?: Product[];
 }
 
+interface CompanyOrder {
+  orderId: number;
+  itemId: number;
+  orderDate: string;
+  customerName: string;
+  customerEmail: string;
+  city: string;
+  province: string;
+  address: string;
+  mobileNumber: string;
+  productName: string;
+  partnerName: string;
+  variant: string;
+  quantity: number;
+  sellingPrice: number;
+  purchasedPrice: number | null;
+  status: string;
+  paymentMethod: string;
+}
+
 export default function CompanyDashboard() {
   const router = useRouter();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'products' | 'profile' | 'password'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'profile' | 'password'>('products');
+
+  // Orders state
+  const [orders, setOrders] = useState<CompanyOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersSearch, setOrdersSearch] = useState('');
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersLimit, setOrdersLimit] = useState(10);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editedPurchasedPrice, setEditedPurchasedPrice] = useState<number>(0);
+  const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
 
   // Password form state
   const [passwordData, setPasswordData] = useState({
@@ -81,6 +113,94 @@ export default function CompanyDashboard() {
     }
   };
 
+  const fetchOrders = useCallback(async (searchTerm = '', pageNum = ordersPage, limitNum = ordersLimit) => {
+    setOrdersLoading(true);
+    try {
+      const response = await fetch(`/api/company/orders?search=${encodeURIComponent(searchTerm)}&page=${pageNum}&limit=${limitNum}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setOrders(data.orders);
+        setOrdersTotal(data.total);
+      } else {
+        toast.error('Failed to load orders');
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to load orders');
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [ordersPage, ordersLimit]);
+
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchOrders('', 1, ordersLimit);
+    }
+  }, [activeTab, ordersLimit]);
+
+  useEffect(() => {
+    if (activeTab === 'orders' && ordersPage > 1) {
+      fetchOrders(ordersSearch, ordersPage, ordersLimit);
+    }
+  }, [ordersPage]);
+
+  const handleOrdersSearch = () => {
+    setOrdersPage(1);
+    fetchOrders(ordersSearch, 1, ordersLimit);
+  };
+
+  const resetOrdersFilters = () => {
+    setOrdersSearch('');
+    setOrdersPage(1);
+    fetchOrders('', 1, ordersLimit);
+  };
+
+  const handleEditClick = (itemId: number, currentPrice: number | null) => {
+    setEditingItemId(itemId);
+    setEditedPurchasedPrice(currentPrice || 0);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditedPurchasedPrice(0);
+  };
+
+  const handleSavePrice = async (itemId: number) => {
+    setUpdatingItemId(itemId);
+    try {
+      const response = await fetch('/api/company/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, purchasedPrice: editedPurchasedPrice })
+      });
+
+      if (response.ok) {
+        setOrders(prev => prev.map(order =>
+          order.itemId === itemId
+            ? { ...order, purchasedPrice: editedPurchasedPrice }
+            : order
+        ));
+        toast.success('Purchased price updated successfully!');
+        setEditingItemId(null);
+      } else {
+        toast.error('Failed to update purchased price');
+      }
+    } catch (error) {
+      console.error('Error updating purchased price:', error);
+      toast.error('Failed to update purchased price');
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
+  const downloadInvoice = (orderId: number, branded: boolean = false) => {
+    const url = branded
+      ? `/api/orders/${orderId}/invoice?branded=true`
+      : `/api/orders/${orderId}/invoice`;
+    window.open(url, '_blank');
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/company/logout', { method: 'POST' });
@@ -106,7 +226,6 @@ export default function CompanyDashboard() {
     setPasswordLoading(true);
 
     try {
-      // TODO: Create change-password endpoint for companies
       toast.error('Password change functionality coming soon!');
     } catch (error) {
       console.error('Password change error:', error);
@@ -130,6 +249,8 @@ export default function CompanyDashboard() {
   if (!company) {
     return null;
   }
+
+  const ordersTotalPages = Math.ceil(ordersTotal / ordersLimit);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,6 +300,16 @@ export default function CompanyDashboard() {
               }`}
             >
               Products ({company.products?.length || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'orders'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Orders
             </button>
             <button
               onClick={() => setActiveTab('profile')}
@@ -256,6 +387,215 @@ export default function CompanyDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Orders for Your Products</h2>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="flex items-center justify-between gap-4 flex-wrap bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center gap-2 flex-1 max-w-md">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search by product, customer..."
+                    value={ordersSearch}
+                    onChange={(e) => setOrdersSearch(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleOrdersSearch()}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <button
+                  onClick={handleOrdersSearch}
+                  disabled={ordersLoading}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={resetOrdersFilters}
+                  disabled={ordersLoading}
+                  className="px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <select
+                className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-green-500"
+                value={ordersLimit}
+                onChange={(e) => {
+                  const newLimit = Number(e.target.value);
+                  setOrdersLimit(newLimit);
+                  setOrdersPage(1);
+                }}
+              >
+                {[10, 25, 50].map((n) => (
+                  <option key={n} value={n}>Show {n}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Orders Table */}
+            <div className="bg-white rounded-lg shadow overflow-x-auto">
+              {ordersLoading && (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin inline-block text-green-600" />
+                  <span className="ml-2 text-gray-600">Loading orders...</span>
+                </div>
+              )}
+
+              {!ordersLoading && orders.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  No orders found for your products yet.
+                </div>
+              )}
+
+              {!ordersLoading && orders.length > 0 && (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variant</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Selling Price</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchased Price</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {orders.map((order) => (
+                      <tr key={`${order.orderId}-${order.itemId}`} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-mono">{order.orderId}</td>
+                        <td className="px-4 py-3 text-sm">{new Date(order.orderDate).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <div>{order.customerName}</div>
+                          <div className="text-xs text-gray-500">{order.mobileNumber}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{order.city}, {order.province}</td>
+                        <td className="px-4 py-3 text-sm font-medium">{order.productName}</td>
+                        <td className="px-4 py-3 text-sm">{order.variant}</td>
+                        <td className="px-4 py-3 text-sm">{order.quantity}</td>
+                        <td className="px-4 py-3 text-sm font-semibold">PKR {order.sellingPrice.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {editingItemId === order.itemId ? (
+                            <input
+                              type="number"
+                              value={editedPurchasedPrice}
+                              onChange={(e) => setEditedPurchasedPrice(Number(e.target.value))}
+                              className="w-28 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                              min="0"
+                              step="0.01"
+                              autoFocus
+                            />
+                          ) : (
+                            <span className={order.purchasedPrice ? 'font-semibold text-green-600' : 'text-gray-400'}>
+                              {order.purchasedPrice ? `PKR ${order.purchasedPrice.toFixed(2)}` : 'Not Set'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            order.status === 'delivered'
+                              ? 'bg-green-100 text-green-700'
+                              : order.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex items-center gap-1">
+                            {editingItemId === order.itemId ? (
+                              <>
+                                <button
+                                  onClick={() => handleSavePrice(order.itemId)}
+                                  disabled={updatingItemId === order.itemId}
+                                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                  title="Save"
+                                >
+                                  {updatingItemId === order.itemId ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                  ) : (
+                                    <Save className="w-5 h-5" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                  title="Cancel"
+                                >
+                                  <X className="w-5 h-5" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleEditClick(order.itemId, order.purchasedPrice)}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                  title="Edit Purchased Price"
+                                >
+                                  <Edit className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => downloadInvoice(order.orderId, false)}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                  title="Download Invoice"
+                                >
+                                  <FileText className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => downloadInvoice(order.orderId, true)}
+                                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                  title="Download Branded Invoice"
+                                >
+                                  <Download className="w-5 h-5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {!ordersLoading && orders.length > 0 && (
+              <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+                <button
+                  disabled={ordersPage === 1 || ordersLoading}
+                  onClick={() => setOrdersPage((p) => Math.max(p - 1, 1))}
+                  className="px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                  Page {ordersPage} of {ordersTotalPages} - Total: {ordersTotal} orders
+                </span>
+                <button
+                  disabled={ordersPage === ordersTotalPages || ordersLoading}
+                  onClick={() => setOrdersPage((p) => Math.min(p + 1, ordersTotalPages))}
+                  className="px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
               </div>
             )}
           </div>

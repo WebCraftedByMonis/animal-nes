@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 interface JobFormImage {
   id: string
@@ -288,7 +289,7 @@ export default function JobFormsPage() {
                       <div className="text-sm text-gray-500">{job.location}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">{job.mobileNumber}</div>
+                      <div className="text-sm"><WhatsAppLink phone={job.mobileNumber || ''} /></div>
                       {job.email && <div className="text-xs text-gray-500">{job.email}</div>}
                     </TableCell>
                     <TableCell>
@@ -610,7 +611,7 @@ export default function JobFormsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm text-gray-600">Contact Number</h3>
-                    <p className="mt-1">{selectedJob.mobileNumber}</p>
+                    <div className="mt-1"><WhatsAppLink phone={selectedJob.mobileNumber || ''} /></div>
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm text-gray-600">Email</h3>

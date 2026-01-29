@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { Eye, Crown, X, Pencil, Trash2, MessageSquare } from 'lucide-react';
+import WhatsAppLink from '@/components/WhatsAppLink';
 
 interface ProductVariant {
   id: number;
@@ -1163,7 +1164,7 @@ export default function PartnerDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{partner.partnerMobileNumber || '-'}</p>
+                      <div className="mt-1 text-sm text-gray-900"><WhatsAppLink phone={partner.partnerMobileNumber || ''} /></div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Partner Type</label>

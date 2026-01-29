@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import WhatsAppLink from '@/components/WhatsAppLink'
 
 
 interface UserProfile {
@@ -144,7 +145,7 @@ export default function ProfilePage() {
               <CardContent className="p-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-lg font-medium text-green-700">{appt.doctor}</h4>
+                    <h4 className="text-lg font-medium text-green-700"><WhatsAppLink phone={appt.doctor || ''} showIcon={false} /></h4>
                     <p className="text-sm text-gray-500">
                       {appt.species} — {appt.city}
                     </p>

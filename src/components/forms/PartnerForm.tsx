@@ -20,6 +20,7 @@ import {
   farmerSpecializations
 } from '@/lib/partner-constants';
 import { Plus, Trash2 } from 'lucide-react';
+import { getWhatsAppUrl } from '@/lib/whatsapp-utils';
 
 const genderOptions = ['MALE', 'FEMALE'] as const;
 const sendToPartnerOptions = ['YES', 'NO'] as const;
@@ -657,7 +658,7 @@ export default function PartnerForm({
                       📱 Jazz Cash:
                     </p>
                     <p className="text-gray-700"><strong>Account Title:</strong> Muhammad Fiaz Qamar</p>
-                    <p className="text-gray-700"><strong>Mobile Number:</strong> 0300-8424741</p>
+                    <p className="text-gray-700"><strong>Mobile Number:</strong> <a href={getWhatsAppUrl("0300-8424741")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">0300-8424741</a></p>
                   </div>
 
                   <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
@@ -665,7 +666,7 @@ export default function PartnerForm({
                       💳 Easypaisa:
                     </p>
                     <p className="text-gray-700"><strong>Account Title:</strong> Ghazala Yasmeen</p>
-                    <p className="text-gray-700"><strong>Mobile Number:</strong> 03354145431</p>
+                    <p className="text-gray-700"><strong>Mobile Number:</strong> <a href={getWhatsAppUrl("03354145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">03354145431</a></p>
                   </div>
 
                   <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
