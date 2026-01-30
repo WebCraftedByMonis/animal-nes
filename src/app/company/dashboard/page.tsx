@@ -83,6 +83,11 @@ export default function CompanyDashboard() {
   const [editedPurchasedPrice, setEditedPurchasedPrice] = useState<number>(0);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
 
+  // Product variant editing state
+  const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
+  const [editedCompanyPrice, setEditedCompanyPrice] = useState<number>(0);
+  const [updatingVariantId, setUpdatingVariantId] = useState<number | null>(null);
+
   // Password form state
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -199,6 +204,56 @@ export default function CompanyDashboard() {
       ? `/api/orders/${orderId}/invoice?branded=true`
       : `/api/orders/${orderId}/invoice`;
     window.open(url, '_blank');
+  };
+
+  const handleVariantEditClick = (variantId: number, currentPrice: number | null) => {
+    setEditingVariantId(variantId);
+    setEditedCompanyPrice(currentPrice || 0);
+  };
+
+  const handleVariantCancelEdit = () => {
+    setEditingVariantId(null);
+    setEditedCompanyPrice(0);
+  };
+
+  const handleSaveVariantPrice = async (variantId: number, productId: number) => {
+    setUpdatingVariantId(variantId);
+    try {
+      const response = await fetch('/api/company/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variantId, companyPrice: editedCompanyPrice })
+      });
+
+      if (response.ok) {
+        // Update local state
+        setCompany(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            products: prev.products?.map(product =>
+              product.id === productId
+                ? {
+                    ...product,
+                    variants: product.variants?.map(v =>
+                      v.id === variantId ? { ...v, companyPrice: editedCompanyPrice } : v
+                    )
+                  }
+                : product
+            )
+          };
+        });
+        toast.success('Company price updated successfully!');
+        setEditingVariantId(null);
+      } else {
+        toast.error('Failed to update company price');
+      }
+    } catch (error) {
+      console.error('Error updating company price:', error);
+      toast.error('Failed to update company price');
+    } finally {
+      setUpdatingVariantId(null);
+    }
   };
 
   const handleLogout = async () => {
@@ -342,6 +397,7 @@ export default function CompanyDashboard() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">Your Products</h2>
+              <p className="text-sm text-gray-500">Edit company price (purchased price) for each variant</p>
             </div>
 
             {!company.products || company.products.length === 0 ? (
@@ -349,41 +405,131 @@ export default function CompanyDashboard() {
                 <p className="text-gray-500">No products found</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-6">
                 {company.products.map((product) => (
-                  <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    {product.image?.url && (
-                      <div className="relative h-48 bg-gray-100">
-                        <Image
-                          src={product.image.url}
-                          alt={product.image.alt || product.productName}
-                          fill
-                          className="object-contain p-4"
-                        />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                        {product.productName}
-                      </h3>
-                      {product.genericName && (
-                        <p className="text-sm text-gray-600 mb-2">{product.genericName}</p>
-                      )}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                          {product.category}
-                        </span>
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${
-                          product.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                        }`}>
-                          {product.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                      {product.variants && product.variants.length > 0 && (
-                        <div className="mt-3 text-sm text-gray-600">
-                          <p className="font-medium">Variants: {product.variants.length}</p>
+                  <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="flex flex-col md:flex-row">
+                      {/* Product Image */}
+                      {product.image?.url && (
+                        <div className="relative w-full md:w-48 h-48 bg-gray-100 flex-shrink-0">
+                          <Image
+                            src={product.image.url}
+                            alt={product.image.alt || product.productName}
+                            fill
+                            className="object-contain p-4"
+                          />
                         </div>
                       )}
+
+                      {/* Product Info & Variants */}
+                      <div className="flex-1 p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold text-lg text-gray-900">
+                              {product.productName}
+                            </h3>
+                            {product.genericName && (
+                              <p className="text-sm text-gray-600">{product.genericName}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                              {product.category}
+                            </span>
+                            <span className={`text-xs font-medium px-2 py-1 rounded ${
+                              product.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                            }`}>
+                              {product.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Variants Table */}
+                        {product.variants && product.variants.length > 0 ? (
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Company Price</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dealer Price</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Customer Price</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Inventory</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {product.variants.map((variant) => (
+                                  <tr key={variant.id} className="hover:bg-gray-50">
+                                    <td className="px-3 py-2 text-sm font-medium text-gray-900">{variant.packingVolume}</td>
+                                    <td className="px-3 py-2 text-sm">
+                                      {editingVariantId === variant.id ? (
+                                        <input
+                                          type="number"
+                                          value={editedCompanyPrice}
+                                          onChange={(e) => setEditedCompanyPrice(Number(e.target.value))}
+                                          className="w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                          min="0"
+                                          step="0.01"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <span className={variant.companyPrice ? 'font-semibold text-blue-600' : 'text-gray-400'}>
+                                          {variant.companyPrice ? `PKR ${variant.companyPrice.toFixed(2)}` : 'Not Set'}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-gray-600">
+                                      {variant.dealerPrice ? `PKR ${variant.dealerPrice.toFixed(2)}` : '-'}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-gray-600">
+                                      PKR {variant.customerPrice.toFixed(2)}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-gray-600">{variant.inventory}</td>
+                                    <td className="px-3 py-2 text-sm">
+                                      <div className="flex items-center gap-1">
+                                        {editingVariantId === variant.id ? (
+                                          <>
+                                            <button
+                                              onClick={() => handleSaveVariantPrice(variant.id, product.id)}
+                                              disabled={updatingVariantId === variant.id}
+                                              className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                              title="Save"
+                                            >
+                                              {updatingVariantId === variant.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                              ) : (
+                                                <Save className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                            <button
+                                              onClick={handleVariantCancelEdit}
+                                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                              title="Cancel"
+                                            >
+                                              <X className="w-4 h-4" />
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleVariantEditClick(variant.id, variant.companyPrice)}
+                                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                            title="Edit Company Price"
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">No variants available</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

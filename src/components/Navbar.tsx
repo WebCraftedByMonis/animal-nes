@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Cat, MenuIcon, Heart } from "lucide-react";
+import { Cat, MenuIcon, Heart, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signIn, signOut, useSession } from "next-auth/react";
@@ -112,7 +112,6 @@ export default function Navbar() {
                     ["Master Trainings", "/forms"],
                     ["Nexus News", "/animal-news"],
                     ["Find Doctor", "/findDoctor"],
-                    ["Dashboard", "/partner/dashboard"],
                   ].map(([label, href]) => (
                     <NavigationMenuItem key={label}>
                       <NavigationMenuLink
@@ -126,6 +125,30 @@ export default function Navbar() {
                       </NavigationMenuLink>
                     </NavigationMenuItem>
                   ))}
+                  {/* Dashboard Dropdown */}
+                  <NavigationMenuItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className={cn(
+                        navigationMenuTriggerStyle(),
+                        "text-xs font-medium hover:text-green-500 transition-colors px-2 py-1.5 flex items-center gap-1"
+                      )}>
+                        Dashboard
+                        <ChevronDown className="h-3 w-3" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem asChild>
+                          <Link href="/partner/dashboard" className="w-full cursor-pointer">
+                            Partner Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/company/dashboard" className="w-full cursor-pointer">
+                            Company Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
@@ -254,7 +277,6 @@ export default function Navbar() {
                         ["Master Trainings", "/forms"],
                         ["Nexus News", "/animal-news"],
                         ["Find Doctor", "/findDoctor"],
-                        ["Dashboard", "/partner/dashboard"],
                       ].map(([label, href]) => (
                         <DrawerClose asChild key={label}>
                           <Link
@@ -265,6 +287,27 @@ export default function Navbar() {
                           </Link>
                         </DrawerClose>
                       ))}
+
+                      {/* Dashboard Section */}
+                      <div className="pt-2">
+                        <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Dashboards</p>
+                        <DrawerClose asChild>
+                          <Link
+                            href="/partner/dashboard"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                          >
+                            Partner Dashboard
+                          </Link>
+                        </DrawerClose>
+                        <DrawerClose asChild>
+                          <Link
+                            href="/company/dashboard"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                          >
+                            Company Dashboard
+                          </Link>
+                        </DrawerClose>
+                      </div>
                     </div>
 
                     {/* NavigationMenuDemo for mobile */}
