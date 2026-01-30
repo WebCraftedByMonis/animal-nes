@@ -200,9 +200,10 @@ export default function CompanyDashboard() {
   };
 
   const downloadInvoice = (orderId: number, branded: boolean = false) => {
+    // Use vendor invoice API for company dashboard
     const url = branded
-      ? `/api/orders/${orderId}/invoice?branded=true`
-      : `/api/orders/${orderId}/invoice`;
+      ? `/api/company/orders/${orderId}/invoice?branded=true`
+      : `/api/company/orders/${orderId}/invoice`;
     window.open(url, '_blank');
   };
 
