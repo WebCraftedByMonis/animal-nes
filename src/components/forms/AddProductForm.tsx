@@ -36,7 +36,6 @@ const formSchema = z.object({
         companyPrice: z.string().optional(),
         dealerPrice: z.string().optional(),
         customerPrice: z.string().min(1, "Customer price is required"),
-        inventory: z.string().min(1, "Inventory is required"),
       })
     )
     .min(1, "At least one variant is required"),
@@ -92,7 +91,6 @@ export default function AddProductForm() {
           companyPrice: "",
           dealerPrice: "",
           customerPrice: "",
-          inventory: "",
         },
       ],
       partnerId: "",
@@ -154,7 +152,7 @@ export default function AddProductForm() {
         formData.append(`variants[${i}][companyPrice]`, variant.companyPrice ?? "");
         formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice ?? "");
         formData.append(`variants[${i}][customerPrice]`, variant.customerPrice);
-        formData.append(`variants[${i}][inventory]`, variant.inventory);
+        formData.append(`variants[${i}][inventory]`, "100"); // Default inventory value
       });
 
       Object.entries(otherFields).forEach(([key, value]) => {
@@ -207,7 +205,6 @@ export default function AddProductForm() {
               companyPrice: "",
               dealerPrice: "",
               customerPrice: "",
-              inventory: "",
             },
           ],
           partnerId: "",
@@ -617,7 +614,7 @@ export default function AddProductForm() {
             <FormLabel className="block text-lg font-semibold text-gray-800">Product Variants *</FormLabel>
             {fields.map((field, index) => (
               <div key={field.id} className="border p-4 rounded-md space-y-2 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Packing Volume */}
                   <FormField
                     control={form.control}
@@ -640,21 +637,6 @@ export default function AddProductForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Our Price *</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Inventory */}
-                  <FormField
-                    control={form.control}
-                    name={`variants.${index}.inventory`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Inventory *</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
                         </FormControl>
@@ -718,7 +700,6 @@ export default function AddProductForm() {
                   companyPrice: "",
                   dealerPrice: "",
                   customerPrice: "",
-                  inventory: "",
                 })
               }
             >

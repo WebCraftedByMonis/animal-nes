@@ -158,11 +158,6 @@ export default function ProductClient({ product }: { product: Product }) {
                   Out of Stock
                 </span>
               )}
-              {selectedVariant && selectedVariant.inventory === 0 && !isOutOfStock && (
-                <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs font-medium px-2.5 py-0.5 rounded">
-                  Selected Variant Out of Stock
-                </span>
-              )}
             </div>
 
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{product.productName}</h1>
@@ -203,12 +198,6 @@ export default function ProductClient({ product }: { product: Product }) {
               </div>
             )}
 
-            {/* Inventory Display */}
-            {selectedVariant && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Inventory: {selectedVariant.inventory > 0 ? `${selectedVariant.inventory} units available` : 'Out of stock'}
-              </p>
-            )}
 
             {/* Variant Selection */}
             <div className="space-y-3">
@@ -220,11 +209,10 @@ export default function ProductClient({ product }: { product: Product }) {
                     onClick={() => setSelectedVariantId(variant.id)}
                     className={`
                       px-4 py-2 rounded-lg transition-all text-sm font-medium
-                      ${selectedVariantId === variant.id 
-                        ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                      ${selectedVariantId === variant.id
+                        ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                         : 'border-2 border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-zinc-600'
                       }
-                      ${variant.inventory === 0 ? 'opacity-60' : ''}
                     `}
                   >
                     {variant.packingVolume}
@@ -299,7 +287,7 @@ export default function ProductClient({ product }: { product: Product }) {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              {!isOutOfStock && selectedVariantId && selectedVariant && selectedVariant.inventory > 0 ? (
+              {!isOutOfStock && selectedVariantId && selectedVariant ? (
                 <>
                   <AddToCartClientWrapper
                     productId={product.id}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
@@ -124,6 +124,11 @@ export default function ProductsClient() {
   const [subCategoryFilter, setSubCategoryFilter] = useState<string>(searchParams.get('subCategory') || 'all')
   const [subSubCategoryFilter, setSubSubCategoryFilter] = useState<string>(searchParams.get('subsubCategory') || 'all')
   const [productTypeFilter, setProductTypeFilter] = useState<string>(searchParams.get('productType') || 'all')
+  // Track if price filter was explicitly applied by user (via URL params or button click)
+  const hasPriceFilterFromUrl = searchParams.get('minPrice') !== null || searchParams.get('maxPrice') !== null
+  const [priceFilterApplied, setPriceFilterApplied] = useState(hasPriceFilterFromUrl)
+  const initialPriceSetRef = useRef(false)
+
   const [priceRange, setPriceRange] = useState<number[]>([
     Number(searchParams.get('minPrice')) || 0,
     Number(searchParams.get('maxPrice')) || 100000
@@ -161,8 +166,6 @@ export default function ProductsClient() {
     const subCat = params.subCategory ?? subCategoryFilter
     const subSubCat = params.subsubCategory ?? subSubCategoryFilter
     const pt = params.productType ?? productTypeFilter
-    const minP = params.minPrice ?? appliedPriceRange[0]
-    const maxP = params.maxPrice ?? appliedPriceRange[1]
 
     if (p > 1) urlParams.set('page', String(p))
     if (s) urlParams.set('search', s)
@@ -173,12 +176,14 @@ export default function ProductsClient() {
     if (subCat !== 'all') urlParams.set('subCategory', subCat)
     if (subSubCat !== 'all') urlParams.set('subsubCategory', subSubCat)
     if (pt !== 'all') urlParams.set('productType', pt)
-    if (minP !== minPriceLimit) urlParams.set('minPrice', String(minP))
-    if (maxP !== maxPriceLimit) urlParams.set('maxPrice', String(maxP))
+
+    // Only add price params if explicitly provided (when user clicks Apply Price Filter)
+    if (params.minPrice !== undefined) urlParams.set('minPrice', String(params.minPrice))
+    if (params.maxPrice !== undefined) urlParams.set('maxPrice', String(params.maxPrice))
 
     const queryString = urlParams.toString()
     router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false })
-  }, [router, page, search, sortBy, sortOrder, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange, minPriceLimit, maxPriceLimit])
+  }, [router, page, search, sortBy, sortOrder, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter])
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -194,8 +199,9 @@ export default function ProductsClient() {
           subCategory: subCategoryFilter === 'all' ? undefined : subCategoryFilter,
           subsubCategory: subSubCategoryFilter === 'all' ? undefined : subSubCategoryFilter,
           productType: productTypeFilter === 'all' ? undefined : productTypeFilter,
-          minPrice: appliedPriceRange[0],
-          maxPrice: appliedPriceRange[1],
+          // Only send price filter when explicitly applied by user
+          minPrice: priceFilterApplied ? appliedPriceRange[0] : undefined,
+          maxPrice: priceFilterApplied ? appliedPriceRange[1] : undefined,
         },
       })
 
@@ -205,6 +211,11 @@ export default function ProductsClient() {
       if (data.minPrice !== undefined && data.maxPrice !== undefined) {
         setMinPriceLimit(data.minPrice)
         setMaxPriceLimit(data.maxPrice)
+        // Update only the slider display range on first load (not appliedPriceRange)
+        if (!initialPriceSetRef.current) {
+          initialPriceSetRef.current = true
+          setPriceRange([data.minPrice, data.maxPrice])
+        }
       }
     } catch (err) {
       console.error(err)
@@ -214,7 +225,7 @@ export default function ProductsClient() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange])
+  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange, priceFilterApplied])
 
   // Fetch data when dependencies change
   useEffect(() => {
@@ -234,6 +245,7 @@ export default function ProductsClient() {
   }
 
   const handlePriceFilter = () => {
+    setPriceFilterApplied(true)
     setAppliedPriceRange([...priceRange])
     setPage(1)
     updateURL({ page: 1, minPrice: priceRange[0], maxPrice: priceRange[1] })
@@ -293,6 +305,8 @@ export default function ProductsClient() {
     setProductTypeFilter('all')
     setPriceRange([minPriceLimit, maxPriceLimit])
     setAppliedPriceRange([minPriceLimit, maxPriceLimit])
+    setPriceFilterApplied(false)
+    initialPriceSetRef.current = true // Keep as true since we already know the limits
     setPage(1)
     router.push('/products', { scroll: false })
   }

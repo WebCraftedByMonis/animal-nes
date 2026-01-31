@@ -59,6 +59,7 @@ const updatePartnerSchema = createPartnerSchema
   .extend({
     password: z.string().min(6).optional(),
     image: z.string().optional(),
+    numberOfAnimals: z.number().int().positive().nullable().optional(),
   })
   .partial();
 
