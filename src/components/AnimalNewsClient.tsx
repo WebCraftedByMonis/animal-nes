@@ -97,7 +97,7 @@ export default function AnimalNewsClient({
 
       {isLoading && (
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       )}
 
@@ -106,7 +106,7 @@ export default function AnimalNewsClient({
           <div
             key={item.id}
             onClick={() => router.push(`/animal-news/${item.id}`)}
-            className="cursor-pointer bg-white shadow rounded-lg overflow-hidden border hover:shadow-md transition"
+            className="cursor-pointer bg-white dark:bg-zinc-900 shadow rounded-lg overflow-hidden border dark:border-zinc-700 hover:shadow-md transition"
           >
             {item.image && (
               <Image
@@ -119,11 +119,11 @@ export default function AnimalNewsClient({
             )}
 
             <div className="p-4 space-y-2">
-              <h2 className="text-xl font-semibold text-green-700">
+              <h2 className="text-xl font-semibold text-green-700 dark:text-green-400">
                 {(page - 1) * limit + i + 1}. {item.title}
               </h2>
 
-              <p className="text-gray-600 line-clamp-3">{item.description}</p>
+              <p className="text-gray-600 dark:text-gray-400 line-clamp-3">{item.description}</p>
 
               {item.pdf && (
                 <p className="text-blue-500 underline text-sm">PDF Attached</p>
@@ -142,7 +142,7 @@ export default function AnimalNewsClient({
           >
             Previous
           </Button>
-          <span className="text-gray-700 pt-2">
+          <span className="text-gray-700 dark:text-gray-300 pt-2">
             Page {page} of {totalPages}
           </span>
           <Button

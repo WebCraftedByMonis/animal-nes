@@ -58,7 +58,7 @@ const contactItems = [
     href: "https://www.instagram.com/animalwellnessshop?igsh=Y3ZuYmNpc21iNjZ0",
   },
   {
-    icon: <FaTiktok className="text-black" />,
+    icon: <FaTiktok className="text-black dark:text-white" />,
     label: "TikTok",
     href: "https://www.tiktok.com/@animalwellnessshop?_t=ZS-8ybHNCBO7wl&_r=1",
   },
@@ -73,7 +73,7 @@ const contactItems = [
     href: "https://www.linkedin.com/in/muhammad-fiaz-qamar-195208a2/",
   },
   {
-    icon: <SiThreads className="text-black" />,
+    icon: <SiThreads className="text-black dark:text-white" />,
     label: "Threads",
     href: "https://www.threads.com/@animalwellnessshop",
   },

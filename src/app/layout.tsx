@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoginModalProvider } from "@/contexts/LoginModalContext";
+import { CountryProvider } from "@/contexts/CountryContext";
 import LoginModal from "@/components/LoginModal";
 
 export const metadata: Metadata = {
@@ -97,26 +98,28 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionWrapper>
-            <CartProvider>
-              <WishlistProvider>
-                <LoginModalProvider>
-                  <ProgressBar />
-                  {/* Main layout container */}
-                  <div className="min-h-screen flex flex-col">
-                    <Navbar />
-                    <Toaster position="top-center" />
-                    <LoginModal />
+            <CountryProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <LoginModalProvider>
+                    <ProgressBar />
+                    {/* Main layout container */}
+                    <div className="min-h-screen flex flex-col">
+                      <Navbar />
+                      <Toaster position="top-center" />
+                      <LoginModal />
 
-                    {/* Main content with padding-top to account for fixed navbar */}
-                    <main className="flex-1 pt-14 sm:pt-16">
-                      {children}
-                    </main>
+                      {/* Main content with padding-top to account for fixed navbar */}
+                      <main className="flex-1 pt-14 sm:pt-16">
+                        {children}
+                      </main>
 
-                    <Footer />
-                  </div>
-                </LoginModalProvider>
-              </WishlistProvider>
-            </CartProvider>
+                      <Footer />
+                    </div>
+                  </LoginModalProvider>
+                </WishlistProvider>
+              </CartProvider>
+            </CountryProvider>
           </SessionWrapper>
         </ThemeProvider>
       </body>

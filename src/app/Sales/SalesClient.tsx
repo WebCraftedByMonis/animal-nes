@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Store, MapPin, Phone, Mail, Package, User2, Calendar, Search } from 'lucide-react'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Partner {
   id: number
@@ -60,6 +61,7 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { country } = useCountry()
 
   // Initialize state from URL params
   const [allPartners, setAllPartners] = useState<Partner[]>(initialPartners)
@@ -118,6 +120,7 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
           sortBy,
           order,
           partnerTypeGroup: 'sales',
+          country,
           _t: Date.now()
         },
       })
@@ -128,7 +131,7 @@ export default function SalesClient({ initialPartners }: SalesClientProps) {
     } finally {
       setLoading(false)
     }
-  }, [sortBy, order])
+  }, [sortBy, order, country])
 
   // Fetch partners on mount or when sort changes
   useEffect(() => {

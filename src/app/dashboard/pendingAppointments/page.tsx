@@ -69,6 +69,7 @@ interface AppointmentRequest {
     isEmergency: boolean;
     description: string;
     status: "APPROVED" | "REJECTED" | "PENDING";
+    country?: string;
     customer: {
         name: string;
         email: string;
@@ -425,6 +426,7 @@ export default function DashboardPage() {
                             <TableHead className="font-semibold">Customer</TableHead>
                             <TableHead className="font-semibold">Contact</TableHead>
                             <TableHead className="font-semibold">Location</TableHead>
+                            <TableHead className="font-semibold">Country</TableHead>
                             <TableHead className="font-semibold">Animal</TableHead>
                             <TableHead className="font-semibold">Consultation</TableHead>
                             <TableHead className="font-semibold">Payment</TableHead>
@@ -477,8 +479,15 @@ export default function DashboardPage() {
                                     <TableCell>
                                         <div>
                                             <p className="font-medium">{a.city}</p>
-                                            <p className="text-xs text-gray-500">{a.state || "Pakistan"}</p>
+                                            <p className="text-xs text-gray-500">{a.state || "-"}</p>
                                         </div>
+                                    </TableCell>
+
+                                    {/* Country */}
+                                    <TableCell>
+                                        <Badge variant="outline" className={a.country === 'UAE' ? 'border-blue-500 text-blue-600' : 'border-green-500 text-green-600'}>
+                                            {a.country || 'Pakistan'}
+                                        </Badge>
                                     </TableCell>
 
                                     {/* Animal */}

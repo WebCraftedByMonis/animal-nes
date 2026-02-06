@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Pencil, Trash2, ArrowUpDown, Loader2, Search } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import WhatsAppLink from '@/components/WhatsAppLink'
 import {
@@ -39,6 +40,7 @@ interface Company {
   mobileNumber: string | null
   address: string | null
   email: string | null
+  country?: string
   image: { url: string; alt: string; publicId: string | null } | null
   products: { id: number }[]
   createdAt: string
@@ -194,6 +196,7 @@ export default function ViewCompaniesPage() {
                 <TableHead className="px-4 py-2">Mobile</TableHead>
                 <TableHead className="px-4 py-2">Address</TableHead>
                 <TableHead className="px-4 py-2">Email</TableHead>
+                <TableHead className="px-4 py-2">Country</TableHead>
                 <TableHead className="px-4 py-2">Products</TableHead>
                 <TableHead className="px-4 py-2">Actions</TableHead>
               </TableRow>
@@ -220,6 +223,11 @@ export default function ViewCompaniesPage() {
                   <TableCell className="px-4 py-2"><WhatsAppLink phone={company.mobileNumber || ''} /></TableCell>
                   <TableCell className="px-4 py-2">{company.address || '-'}</TableCell>
                   <TableCell className="px-4 py-2">{company.email || '-'}</TableCell>
+                  <TableCell className="px-4 py-2">
+                    <Badge variant="outline" className={company.country === 'UAE' ? 'border-blue-500 text-blue-600' : 'border-green-500 text-green-600'}>
+                      {company.country || 'Pakistan'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="px-4 py-2">{company.products.length}</TableCell>
                   <TableCell className="px-4 py-2 flex gap-2">
                     <Button

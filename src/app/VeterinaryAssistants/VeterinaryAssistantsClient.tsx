@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
+import { useCountry } from '@/contexts/CountryContext'
 import { toast } from 'react-toastify'
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
@@ -50,6 +51,7 @@ interface Partner {
 export default function VeterinaryAssistantsClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { country } = useCountry()
 
   // Initialize state from URL params
   const [partners, setPartners] = useState<Partner[]>([])
@@ -80,6 +82,7 @@ export default function VeterinaryAssistantsClient() {
           search: search || undefined,
           specialization: specialization === 'all' ? undefined : specialization,
           partnerTypeGroup: 'veterinary_assistant',
+          country,
           page,
           limit
         }
@@ -95,7 +98,7 @@ export default function VeterinaryAssistantsClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, limit, search, specialization])
+  }, [page, limit, search, specialization, country])
 
   // Fetch data when dependencies change
   useEffect(() => {

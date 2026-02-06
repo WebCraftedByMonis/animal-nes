@@ -173,7 +173,7 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
                   quality={60}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                   {getInitials(testimonial.user.name)}
                 </div>
               )}
@@ -672,7 +672,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             className="mt-12 max-w-2xl mx-auto"
           >
             <Card className="border-emerald-200 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 py-4">
+              <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 py-4">
                 <CardTitle className="text-lg md:text-xl text-center">Share Your Experience</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
@@ -748,7 +748,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             className="flex flex-col sm:flex-row justify-center gap-4"
           >
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button size="lg" className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
+              <Button size="lg" className="bg-white dark:bg-zinc-100 text-emerald-800 hover:bg-gray-100 dark:hover:bg-zinc-200 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
                 Sign Up Free
               </Button>
             </motion.div>

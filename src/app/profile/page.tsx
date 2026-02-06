@@ -96,7 +96,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-6">
       {/* Profile Info Card */}
-      <Card className="p-6 mb-6 border-none shadow-md bg-white">
+      <Card className="p-6 mb-6 border-none shadow-md bg-white dark:bg-zinc-900">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 justify-between">
           <div className="flex items-center gap-6">
             <Avatar className="w-24 h-24">
@@ -107,7 +107,7 @@ export default function ProfilePage() {
             </Avatar>
             <div>
               <h2 className="text-2xl font-bold text-green-500">{user?.name || 'Anonymous'}</h2>
-              <p className="text-gray-600">{user?.email}</p>
+              <p className="text-gray-600 dark:text-gray-400">{user?.email}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-4 mt-4">
@@ -118,7 +118,7 @@ export default function ProfilePage() {
 
             <Button
               variant="outline"
-              className="border-green-500 text-green-500 hover:bg-green-50"
+              className="border-green-500 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
               onClick={() => router.push('/cart')}
             >
               View Cart
@@ -141,7 +141,7 @@ export default function ProfilePage() {
       ) : (
         <div className="space-y-4">
           {appointments.map((appt) => (
-            <Card key={appt.id} className="p-4 border bg-white shadow-sm">
+            <Card key={appt.id} className="p-4 border bg-white dark:bg-zinc-900 shadow-sm">
               <CardContent className="p-0">
                 <div className="flex items-center justify-between">
                   <div>
@@ -183,7 +183,7 @@ export default function ProfilePage() {
       ) : (
         <div className="space-y-4">
           {sellRequests.map((r) => (
-            <Card key={r.id} className="p-4 border bg-white shadow-sm">
+            <Card key={r.id} className="p-4 border bg-white dark:bg-zinc-900 shadow-sm">
               <CardContent className="p-0">
                 <div className="flex items-center justify-between">
                   <div>

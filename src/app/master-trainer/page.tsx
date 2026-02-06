@@ -112,22 +112,22 @@ export default function MasterTrainerRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white dark:from-zinc-900 dark:to-zinc-800 py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-green-600 mb-4">
             ماسٹر ٹرینر پروگرام — رجسٹریشن اوپن!
           </h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
             Master Trainer Program — Registration Open!
           </h2>
 
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-md p-6 mb-6">
             <div className="space-y-3 text-left">
               <p className="text-lg">
                 <span className="font-semibold text-green-600">Event Timing:</span>{" "}
-                <span className="text-gray-700">November 29 - December 14, 2025</span>
+                <span className="text-gray-700 dark:text-gray-300">November 29 - December 14, 2025</span>
               </p>
 
               <div>
@@ -156,12 +156,12 @@ export default function MasterTrainerRegistration() {
         </div>
 
         {/* Registration Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6">Registration Form</h3>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8">
+          <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Registration Form</h3>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -171,12 +171,12 @@ export default function MasterTrainerRegistration() {
                 value={form.name}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full p-3 border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -186,12 +186,12 @@ export default function MasterTrainerRegistration() {
                 value={form.email}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full p-3 border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 WhatsApp Number <span className="text-red-500">*</span>
               </label>
               <input
@@ -201,12 +201,12 @@ export default function MasterTrainerRegistration() {
                 value={form.whatsappNumber}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full p-3 border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Address <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -216,15 +216,15 @@ export default function MasterTrainerRegistration() {
                 onChange={handleChange}
                 required
                 rows={3}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full p-3 border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Payment Screenshot <span className="text-red-500">*</span>
               </label>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 Upload payment screenshot (Max 10 MB - JPEG, PNG, WEBP)
               </p>
               <input
@@ -232,7 +232,7 @@ export default function MasterTrainerRegistration() {
                 accept="image/jpeg,image/jpg,image/png,image/webp"
                 onChange={handleFileChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                className="w-full p-3 border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 dark:file:bg-green-900/30 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100"
               />
               {screenshot && (
                 <p className="mt-2 text-sm text-green-600">
@@ -241,7 +241,7 @@ export default function MasterTrainerRegistration() {
               )}
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
               <label className="flex items-start space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -251,7 +251,7 @@ export default function MasterTrainerRegistration() {
                   required
                   className="mt-1 accent-green-500 w-5 h-5"
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-red-500">*</span> I understand that I will have to pay{" "}
                   <span className="font-bold">Rs. 5000</span> through easypaisa account{" "}
                   <a href={getWhatsAppUrl("03354145431")} target="_blank" rel="noopener noreferrer" className="font-bold text-green-600 hover:underline" onClick={e => e.stopPropagation()}>03354145431</a>: Ghazala Yasmeen; Animal Wellness Shop
@@ -274,11 +274,11 @@ export default function MasterTrainerRegistration() {
         </div>
 
         {/* Footer Note */}
-        <div className="mt-6 text-center text-sm text-gray-600 bg-white p-4 rounded-lg shadow">
-          <p className="font-semibold text-gray-800 mb-2">Important Notice:</p>
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-zinc-900 p-4 rounded-lg shadow">
+          <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Important Notice:</p>
           <p>After submitting your registration, our team will review your payment.</p>
           <p className="mt-1">Once approved, you will receive a confirmation email with all program details.</p>
-          <p className="mt-2 text-xs text-gray-500">For any queries, contact us at <a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">(+92) 335-4145431</a></p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">For any queries, contact us at <a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">(+92) 335-4145431</a></p>
         </div>
       </div>
     </div>

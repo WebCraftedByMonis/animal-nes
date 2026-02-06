@@ -246,7 +246,7 @@ export default function FormsClient() {
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Desktop Filters Sidebar */}
       <div className="hidden lg:block w-64 space-y-4">
-        <div className="p-4 rounded-2xl border bg-white shadow-sm">
+        <div className="p-4 rounded-2xl border bg-white dark:bg-zinc-900 dark:border-zinc-700 shadow-sm">
           <h3 className="font-semibold mb-4 text-lg">Filters</h3>
           <FilterSection />
         </div>
@@ -279,7 +279,7 @@ export default function FormsClient() {
       <div className="flex-1 space-y-4">
         {/* Top Bar: Sort & Limit */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             Showing {forms.length} of {total} forms
           </div>
 
@@ -341,7 +341,7 @@ export default function FormsClient() {
         {/* No Results */}
         {!loading && forms.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No forms found</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No forms found</p>
             <Button onClick={clearFilters} variant="outline" className="mt-4">
               Clear Filters
             </Button>

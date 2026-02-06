@@ -45,6 +45,7 @@ const formSchema = z.object({
   partnerMobileNumber: z.string().optional(),
   shopName: z.string().optional(),
   cityName: z.string().optional(),
+  country: z.string().optional(),
   fullAddress: z.string().optional(),
   rvmpNumber: z.string().optional(),
   sendToPartner: z.enum(sendToPartnerOptions).optional(),
@@ -118,6 +119,7 @@ export default function PartnerForm({
       partnerMobileNumber: initialData?.partnerMobileNumber || '',
       shopName: initialData?.shopName || '',
       cityName: initialData?.cityName || '',
+      country: initialData?.country || '',
       fullAddress: initialData?.fullAddress || '',
       rvmpNumber: initialData?.rvmpNumber || '',
       sendToPartner: initialData?.sendToPartner || undefined,
@@ -199,6 +201,7 @@ export default function PartnerForm({
       partnerMobileNumber: '',
       shopName: '',
       cityName: '',
+      country: '',
       fullAddress: '',
       rvmpNumber: '',
       sendToPartner: undefined,
@@ -429,6 +432,26 @@ export default function PartnerForm({
             <Label htmlFor="cityName">City</Label>
             <Input id="cityName" {...register('cityName')} className="focus:border-green-500 focus:ring-green-500" />
             {errors.cityName && <p className="text-red-500 text-sm">{errors.cityName.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="country">Country</Label>
+            <Controller
+              control={control}
+              name="country"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pakistan">Pakistan</SelectItem>
+                    <SelectItem value="UAE">UAE</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.country && <p className="text-red-500 text-sm">{errors.country.message}</p>}
           </div>
 
           <div>

@@ -108,6 +108,7 @@ model Company {
   mobileNumber String?         @unique
   products    Product[]
   address     String?          @db.Text
+  country     String?
   email       String?          @unique
   password    String?
   image       CompanyImage?
@@ -194,6 +195,7 @@ model Partner {
   shopName            String?               @db.Text
   partnerMobileNumber String?
   cityName            String?
+  country             String?
   fullAddress         String?               @db.Text
   rvmpNumber          String?
   sendToPartner       SendToPartner?
@@ -497,6 +499,7 @@ model SellAnimal {
   ageType         AgeType
   ageNumber       Int
   location        String
+  country         String?
   weightType      WeightType
   weightValue     Float
   gender          Gender
@@ -757,6 +760,7 @@ model AppointmentRequest {
   doctor        String
   city          String
   state         String?
+  country       String?
   species       String
   fullAddress   String?           @db.Text
   gender        Gender

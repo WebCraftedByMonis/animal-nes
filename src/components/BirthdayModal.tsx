@@ -136,12 +136,12 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-green-500" />
-              <span className="ml-2 text-gray-600">Loading birthday partners...</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">Loading birthday partners...</span>
             </div>
           ) : error ? (
             <div className="text-center py-12">
               <div className="text-red-500 mb-2">⚠️ Error</div>
-              <p className="text-gray-600">{error}</p>
+              <p className="text-gray-600 dark:text-gray-400">{error}</p>
               <Button
                 onClick={fetchBirthdayPartners}
                 variant="outline"
@@ -153,7 +153,7 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
           ) : birthdayPartners.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎂</div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 No Birthdays Today
               </h3>
               <p className="text-gray-500">
@@ -266,7 +266,7 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
                                 window.open(`https://wa.me/${partner.partnerMobileNumber.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`, '_blank')
                               }
                             }}
-                            className="text-sm bg-green-50 text-green-700 hover:bg-green-100 flex-1 sm:flex-initial"
+                            className="text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 flex-1 sm:flex-initial"
                             disabled={!partner.partnerMobileNumber}
                           >
                             🎉 Wish Happy Birthday

@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     const specie = formData.get('specie') as string
     const breed = formData.get('breed') as string
     const location = formData.get('location') as string
+    const country = formData.get('country') as string | null
     const quantity = parseInt(formData.get('quantity') as string)
     const ageType = formData.get('ageType') as 'DAYS' | 'WEEKS' | 'MONTHS' | 'YEARS'
     const ageNumber = parseInt(formData.get('ageNumber') as string)
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
         breed,
         quantity,
         location,
+        country,
         ageType,
         ageNumber,
         weightType,
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'createdAt'
     const order = searchParams.get('order') || 'desc'
     const rawStatus = searchParams.get('status')
+    const country = searchParams.get('country')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
 
@@ -166,6 +169,7 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.SellAnimalWhereInput = {
       ...(status ? { status } : {}),
+      ...(country && country !== 'all' ? { country } : {}),
       OR: q
         ? [
             { specie: { contains: q, } },
@@ -263,6 +267,7 @@ export async function PUT(request: NextRequest) {
     const referredBy = formData.get('referredBy') as string
     const status = formData.get('status') as string
     const autoDelete = formData.get('autoDelete') as string
+    const country = formData.get('country') as string
 
     if (specie) updateData.specie = specie
     if (breed) updateData.breed = breed
@@ -278,6 +283,7 @@ export async function PUT(request: NextRequest) {
     if (purchasePrice) updateData.purchasePrice = parseFloat(purchasePrice)
     if (referredBy !== undefined) updateData.referredBy = referredBy || null
     if (autoDelete !== undefined) updateData.autoDelete = autoDelete === 'true'
+    if (country) updateData.country = country
 
     if (status) {
       const statusUpper = status.toUpperCase()

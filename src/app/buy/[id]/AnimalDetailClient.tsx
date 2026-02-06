@@ -9,12 +9,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { MapPin, Mail, Tag, ShoppingCart, Calendar, Scale, Heart, ShieldCheck, User, Clock } from 'lucide-react'
 import AddAnimalToCartButton from '@/components/AnimalCartButton'
+import { useCountry, Country } from '@/contexts/CountryContext'
+import { getCurrencySymbol } from '@/lib/currency-utils'
 
 interface SellAnimal {
   id: number
   specie: string
   breed: string
   location: string
+  country?: string
   quantity: number
   ageType: string
   ageNumber: number
@@ -37,9 +40,14 @@ interface SellAnimal {
 
 export default function AnimalDetailClient() {
   const { id } = useParams<{ id: string }>()
+  const { country: contextCountry } = useCountry()
   const [animal, setAnimal] = useState<SellAnimal | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
+
+  // Use animal's country if available, otherwise fall back to context country
+  const animalCountry = (animal?.country as Country) || contextCountry
+  const currencySymbol = getCurrencySymbol(animalCountry)
 
   useEffect(() => {
     if (!id) return
@@ -185,7 +193,7 @@ export default function AnimalDetailClient() {
             </h1>
             <div className="flex flex-wrap gap-2 mb-4">
               <Badge className="bg-green-600 text-white px-3 py-1 text-sm font-medium">
-                PKR {animal.totalPrice.toLocaleString()}
+                {currencySymbol} {animal.totalPrice.toLocaleString()}
               </Badge>
               <Badge variant="outline" className="text-sm">
                 {animal.gender}
@@ -285,7 +293,7 @@ export default function AnimalDetailClient() {
                 </div> */}
                 <div className="flex justify-between">
                   <span className="dark:text-white text-black">Selling Price:</span>
-                  <span className="font-medium text-green-600">PKR {animal.totalPrice.toLocaleString()}</span>
+                  <span className="font-medium text-green-600">{currencySymbol} {animal.totalPrice.toLocaleString()}</span>
                 </div>
                 {/* {animal.quantity > 1 && (
                   <div className="flex justify-between">

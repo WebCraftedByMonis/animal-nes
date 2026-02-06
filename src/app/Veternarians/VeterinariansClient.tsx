@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Stethoscope, MapPin, GraduationCap, Calendar, Package, User2, Search } from 'lucide-react'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Partner {
   id: number
@@ -46,6 +47,7 @@ interface Partner {
 export default function VeterinariansClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { country } = useCountry()
 
   // Initialize state from URL params
   const [partners, setPartners] = useState<Partner[]>([])
@@ -81,7 +83,8 @@ export default function VeterinariansClient() {
           order,
           partnerTypeGroup: 'veterinarian',
           page,
-          limit
+          limit,
+          country
         }
       })
 
@@ -95,7 +98,7 @@ export default function VeterinariansClient() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, search, sortBy, order])
+  }, [page, limit, search, sortBy, order, country])
 
   // Fetch data when dependencies change
   useEffect(() => {

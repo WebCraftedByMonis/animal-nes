@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     appointmentAt,
     isEmergency,
     description,
+    country,
   } = body;
 
   try {
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
         appointmentAt: autoAppointmentDate,
         isEmergency,
         description,
+        country,
         customer: {
           connect: { email: session.user.email },
         },

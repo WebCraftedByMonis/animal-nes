@@ -28,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Pencil, Trash2, ArrowUpDown, Loader2, Search, Cake } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import WhatsAppLink from '@/components/WhatsAppLink'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import BirthdayModal from '@/components/BirthdayModal'
@@ -60,6 +61,7 @@ interface Partner {
   bloodGroup?: string
   zipcode?: string
   areaTown?: string
+  country?: string
   availableDaysOfWeek: { day: string }[]
   startTimeIds?: number[]
   productIds?: number[]
@@ -380,6 +382,7 @@ useEffect(() => {
                 <TableHead className="px-4 py-2">Specialization</TableHead>
                 <TableHead className="px-4 py-2">Qualification</TableHead>
                 <TableHead className="px-4 py-2">State</TableHead>
+                <TableHead className="px-4 py-2">Country</TableHead>
                 <TableHead className="px-4 py-2">Blood Group</TableHead>
                 <TableHead className="px-4 py-2">Available Days</TableHead>
                 <TableHead className="px-4 py-2">Send To Partner</TableHead>
@@ -422,6 +425,11 @@ useEffect(() => {
                     <TableCell className="px-4 py-2">{partner.specialization || '-'}</TableCell>
                     <TableCell className="px-4 py-2">{partner.qualificationDegree || '-'}</TableCell>
                     <TableCell className="px-4 py-2">{partner.state || '-'}</TableCell>
+                    <TableCell className="px-4 py-2">
+                      <Badge variant="outline" className={partner.country === 'UAE' ? 'border-blue-500 text-blue-600' : 'border-green-500 text-green-600'}>
+                        {partner.country || 'Pakistan'}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="px-4 py-2">{partner.bloodGroup || '-'}</TableCell>
                     <TableCell className="px-4 py-2">
                       {partner.availableDaysOfWeek?.map((d) => d.day).join(', ') || '-'}

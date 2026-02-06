@@ -18,12 +18,14 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Building2, Mail, Phone, MapPin, Package, Search } from 'lucide-react'
 import WhatsAppLink from '@/components/WhatsAppLink'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Company {
   id: number
   companyName: string
   mobileNumber: string | null
   address: string | null
+  country: string | null
   email: string | null
   image: { url: string; alt: string; publicId: string | null } | null
   products: { id: number }[]
@@ -39,6 +41,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { country } = useCountry()
 
   // Initialize state from URL params
   const [companies, setCompanies] = useState<Company[]>(initialCompanies)
@@ -89,7 +92,8 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
           sortBy,
           sortOrder,
           page,
-          limit
+          limit,
+          country
         },
       })
       setCompanies(data.data)
@@ -100,7 +104,7 @@ export default function CompaniesClient({ initialCompanies, initialTotal }: Comp
     } finally {
       setLoading(false)
     }
-  }, [search, sortBy, sortOrder, page, limit])
+  }, [search, sortBy, sortOrder, page, limit, country])
 
   useEffect(() => {
     // Fetch on mount if no initial data, or when filters change

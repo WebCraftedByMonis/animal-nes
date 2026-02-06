@@ -14,6 +14,7 @@ const companySchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
   mobileNumber: z.string().optional(),
   address: z.string().optional(),
+  country: z.string().optional(),
   email: z.string().email().optional(),
   password: z.string().optional(),
 })
@@ -22,6 +23,7 @@ const updateCompanySchema = z.object({
   companyName: z.string().min(1, 'Company name is required').optional(),
   mobileNumber: z.string().optional(),
   address: z.string().optional(),
+  country: z.string().optional(),
   email: z.string().email().optional(),
 })
 
@@ -32,16 +34,24 @@ export async function GET(req: NextRequest) {
   const sortBy = searchParams.get('sortBy') || 'id';
   const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc';
   const limitParam = searchParams.get('limit') || '10';
+  const country = searchParams.get('country') || '';
 
   const limit = limitParam === 'all' ? undefined : parseInt(limitParam, 10);
   const page = parseInt(searchParams.get('page') || '1', 10);
   const skip = limit ? (page - 1) * limit : undefined;
 
+  // Build where clause with country filter
+  const where: any = {
+    companyName: { contains: search },
+  };
+
+  if (country && country !== 'all') {
+    where.country = country;
+  }
+
   const [items, total] = await Promise.all([
     prisma.company.findMany({
-      where: {
-        companyName: { contains: search },
-      },
+      where,
       orderBy: {
         [sortBy]: sortOrder,
       },
@@ -57,9 +67,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     prisma.company.count({
-      where: {
-        companyName: { contains: search },
-      },
+      where,
     }),
   ]);
 
@@ -75,6 +83,7 @@ export async function POST(request: NextRequest) {
     const companyName = formData.get('companyName') as string
     const mobileNumber = formData.get('mobileNumber') as string | null
     const address = formData.get('address') as string | null
+    const country = formData.get('country') as string | null
     const email = formData.get('email') as string | null
     const password = formData.get('password') as string | null
     const imageFile = formData.get('image') as File | null
@@ -84,6 +93,7 @@ export async function POST(request: NextRequest) {
       companyName,
       mobileNumber,
       address,
+      country,
       email,
       password
     })
@@ -172,6 +182,7 @@ export async function POST(request: NextRequest) {
           companyName: validation.data.companyName,
           mobileNumber: validation.data.mobileNumber || null,
           address: validation.data.address || null,
+          country: validation.data.country || null,
           email: validation.data.email || null,
           password: hashedPassword,
         },
@@ -270,6 +281,7 @@ export async function PUT(request: NextRequest) {
     const companyName = formData.get('companyName') as string | null
     const mobileNumber = formData.get('mobileNumber') as string | null
     const address = formData.get('address') as string | null
+    const country = formData.get('country') as string | null
     const email = formData.get('email') as string | null
     const imageFile = formData.get('image') as File | null
 
@@ -289,11 +301,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate input if any field is provided
-    if (companyName || mobileNumber || address || email) {
-      const validation = updateCompanySchema.safeParse({ 
+    if (companyName || mobileNumber || address || country || email) {
+      const validation = updateCompanySchema.safeParse({
         companyName,
         mobileNumber,
         address,
+        country,
         email
       })
       if (!validation.success) {
@@ -357,6 +370,7 @@ export async function PUT(request: NextRequest) {
           companyName: companyName || existingCompany.companyName,
           mobileNumber: mobileNumber ?? existingCompany.mobileNumber,
           address: address ?? existingCompany.address,
+          country: country ?? existingCompany.country,
           email: email ?? existingCompany.email,
         },
       })

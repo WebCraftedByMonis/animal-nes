@@ -67,17 +67,18 @@ export async function PATCH(req: NextRequest) {
       try {
         console.log(`Appointment ${appointmentId} approved, finding veterinarians in ${appointment.city}...`);
 
-        // Get veterinarians in the same city with valid emails
+        // Get veterinarians in the same city with valid emails, filtered by country if available
         const veterinarians = await prisma.partner.findMany({
           where: {
             partnerType: 'Veterinarian (Clinic, Hospital, Consultant)',
             cityName: {
               equals: appointment.city,
-              
+
             },
             partnerEmail: {
               not: null
-            }
+            },
+            ...(appointment.country ? { country: appointment.country } : {})
           },
           select: {
             id: true,
@@ -85,7 +86,8 @@ export async function PATCH(req: NextRequest) {
             partnerMobileNumber: true,
             partnerEmail: true,
             specialization: true,
-            cityName: true
+            cityName: true,
+            country: true
           }
         });
 
@@ -99,11 +101,12 @@ export async function PATCH(req: NextRequest) {
                 partnerType: 'Veterinarian (Clinic, Hospital, Consultant)',
                 state: {
                   equals: appointment.state,
-                  
+
                 },
                 partnerEmail: {
                   not: null
-                }
+                },
+                ...(appointment.country ? { country: appointment.country } : {})
               },
               select: {
                 id: true,
@@ -112,7 +115,8 @@ export async function PATCH(req: NextRequest) {
                 partnerEmail: true,
                 specialization: true,
                 cityName: true,
-                state: true
+                state: true,
+                country: true
               },
               take: 5 // Limit to 5 vets from state to avoid spam
             });

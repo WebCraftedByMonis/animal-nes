@@ -24,6 +24,7 @@ import {
   GraduationCap, BookOpen, Award, Building2,
   Search, Filter, Users, Tractor
 } from 'lucide-react'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Partner {
   id: number
@@ -50,6 +51,7 @@ interface Partner {
 export default function FarmersClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { country } = useCountry()
 
   // Initialize state from URL params
   const [partners, setPartners] = useState<Partner[]>([])
@@ -81,7 +83,8 @@ export default function FarmersClient() {
           specialization: specialization === 'all' ? undefined : specialization,
           partnerTypeGroup: 'farmer',
           page,
-          limit
+          limit,
+          country
         }
       })
 
@@ -95,7 +98,7 @@ export default function FarmersClient() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, limit, search, specialization])
+  }, [page, limit, search, specialization, country])
 
   // Fetch data when dependencies change
   useEffect(() => {

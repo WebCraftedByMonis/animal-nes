@@ -28,9 +28,9 @@ interface FormCardProps {
 
 export default function FormCard({ form }: FormCardProps) {
   return (
-    <div className="group rounded-2xl overflow-hidden border border-green-200 bg-gradient-to-br from-green-50 to-white hover:shadow-xl transition-all duration-300 flex flex-col h-full">
+    <div className="group rounded-2xl overflow-hidden border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-zinc-900 hover:shadow-xl transition-all duration-300 flex flex-col h-full">
       {/* Thumbnail Image */}
-      <div className="relative w-full h-48 bg-gradient-to-br from-green-100 to-green-50 overflow-hidden">
+      <div className="relative w-full h-48 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-zinc-800 overflow-hidden">
         {form.thumbnailUrl ? (
           <Image
             src={form.thumbnailUrl}
@@ -68,19 +68,19 @@ export default function FormCard({ form }: FormCardProps) {
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-green-600 transition-colors">
+        <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
           {form.title}
         </h3>
 
         {/* Description */}
         {form.description && (
-          <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 flex-1">
             {form.description}
           </p>
         )}
 
         {/* Stats */}
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-4">
           <div className="flex items-center gap-1">
             <FileText className="w-4 h-4" />
             <span>{form._count.fields} fields</span>

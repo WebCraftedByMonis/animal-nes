@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { useCountry } from '@/contexts/CountryContext';
 
 interface SellAnimalRequest {
   id: number;
@@ -27,6 +28,7 @@ interface BuyClientProps {
 
 export default function BuyClient({ initialAnimals, initialTotal }: BuyClientProps) {
   const router = useRouter();
+  const { country, currencySymbol } = useCountry();
 
   const [requests, setRequests] = useState<SellAnimalRequest[]>(initialAnimals);
   const [loading, setLoading] = useState(false);
@@ -40,12 +42,13 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
     try {
       setLoading(true);
       const { data } = await axios.get('/api/sell-animal', {
-        params: { 
-          q: search, 
-          limit, 
-          page, 
-          sort: 'createdAt', 
-          order: 'desc'
+        params: {
+          q: search,
+          limit,
+          page,
+          sort: 'createdAt',
+          order: 'desc',
+          country
         },
       });
 
@@ -59,7 +62,7 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
 
       setRequests(simplified);
       setTotal(data.total);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
 
       if (axios.isAxiosError(error)) {
@@ -74,13 +77,11 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
     } finally {
       setLoading(false);
     }
-  }, [search, page, limit]);
+  }, [search, page, limit, country]);
 
   useEffect(() => {
-    if (search || page > 1 || limit !== 8) {
-      fetchRequests();
-    }
-  }, [search, page, limit, fetchRequests]);
+    fetchRequests();
+  }, [search, page, limit, country, fetchRequests]);
 
   const handleSearch = () => {
     setSearch(searchTerm);
@@ -159,7 +160,7 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
                     />
                   </div>
                 ) : (
-                  <div className="aspect-square w-full bg-gray-100 rounded-md flex items-center justify-center text-sm text-gray-500">
+                  <div className="aspect-square w-full bg-gray-100 dark:bg-zinc-800 rounded-md flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                     No Image
                   </div>
                 )}
@@ -170,7 +171,7 @@ export default function BuyClient({ initialAnimals, initialTotal }: BuyClientPro
 
                   <div className="flex justify-between items-center">
                     <Badge variant="outline" className="text-green-600 border-green-600">
-                      PKR {animal.totalPrice.toFixed(2)}
+                      {currencySymbol} {animal.totalPrice.toFixed(2)}
                     </Badge>
                   </div>
                 </div>

@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import WishlistButton from './WishlistButton'
 import QuickAddToCartButton from './QuickAddToCartButton'
 import QuickBuyNowButton from './QuickBuyNowButton'
+import { useCountry } from '@/contexts/CountryContext'
+import { formatPrice } from '@/lib/currency-utils'
 
 interface Discount {
   id: number
@@ -106,6 +108,7 @@ const cardVariants = {
 export default function ProductsClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { country, currencySymbol } = useCountry()
 
   // Initialize state from URL params
   const [products, setProducts] = useState<Product[]>([])
@@ -202,6 +205,8 @@ export default function ProductsClient() {
           // Only send price filter when explicitly applied by user
           minPrice: priceFilterApplied ? appliedPriceRange[0] : undefined,
           maxPrice: priceFilterApplied ? appliedPriceRange[1] : undefined,
+          // Filter by country
+          country: country,
         },
       })
 
@@ -225,7 +230,7 @@ export default function ProductsClient() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange, priceFilterApplied])
+  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange, priceFilterApplied, country])
 
   // Fetch data when dependencies change
   useEffect(() => {
@@ -364,7 +369,7 @@ export default function ProductsClient() {
       </div>
 
       <div className="space-y-2">
-        <Label>Price Range: PKR {priceRange[0].toLocaleString()} - PKR {priceRange[1].toLocaleString()}</Label>
+        <Label>Price Range: {currencySymbol} {priceRange[0].toLocaleString()} - {currencySymbol} {priceRange[1].toLocaleString()}</Label>
         <Slider
           value={priceRange}
           onValueChange={(v) => setPriceRange(v as number[])}
@@ -596,7 +601,7 @@ export default function ProductsClient() {
       <div className="hidden lg:block">
         <div className="flex items-center gap-4">
           <Label>Price Range:</Label>
-          <span>PKR {priceRange[0].toLocaleString()}</span>
+          <span>{currencySymbol} {priceRange[0].toLocaleString()}</span>
           <Slider
             value={priceRange}
             onValueChange={(v) => setPriceRange(v as number[])}
@@ -605,7 +610,7 @@ export default function ProductsClient() {
             step={100}
             className="w-[300px]"
           />
-          <span>PKR {priceRange[1].toLocaleString()}</span>
+          <span>{currencySymbol} {priceRange[1].toLocaleString()}</span>
           <Button 
             onClick={handlePriceFilter} 
             size="sm" 
@@ -702,10 +707,10 @@ export default function ProductsClient() {
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                  PKR {discountedPrice.toLocaleString()}
+                                  {currencySymbol} {discountedPrice.toLocaleString()}
                                 </span>
                                 <span className="text-sm text-zinc-500 line-through">
-                                  PKR {originalPrice.toLocaleString()}
+                                  {currencySymbol} {originalPrice.toLocaleString()}
                                 </span>
                               </div>
                               <Badge variant="outline" className="text-zinc-600 border-zinc-400/40 bg-white/60 dark:bg-zinc-900/60 w-fit">
@@ -714,7 +719,7 @@ export default function ProductsClient() {
                             </div>
                           ) : (
                             <Badge variant="outline" className="text-green-700 border-green-600/40 bg-white/60 dark:bg-zinc-900/60">
-                              {v.packingVolume || 'N/A'} – PKR {v.customerPrice.toLocaleString()}
+                              {v.packingVolume || 'N/A'} – {currencySymbol} {v.customerPrice.toLocaleString()}
                             </Badge>
                           )}
                         </div>

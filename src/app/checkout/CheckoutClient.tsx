@@ -133,13 +133,13 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                     type="text" 
                     value={session?.user?.name || ''} 
                     disabled 
-                    className="w-full border p-2 rounded" 
+                    className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                 />
                 <input 
                     type="email" 
                     value={session?.user?.email || ''} 
                     disabled 
-                    className="w-full border p-2 rounded" 
+                    className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                 />
 
                 <input 
@@ -147,7 +147,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                     placeholder="Mobile No." 
                     value={shippingAddress} 
                     onChange={e => setShippingAddress(e.target.value)} 
-                    className="w-full border p-2 rounded" 
+                    className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                 />
 
                 {/* City input - now manual text input */}
@@ -158,10 +158,10 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                         placeholder="Enter your city" 
                         value={city} 
                         onChange={e => setCity(e.target.value)} 
-                        className="w-full border p-2 rounded" 
+                        className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                         required
                     />
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                         Delivery charges: <span className="font-semibold text-green-500">PKR {FIXED_DELIVERY_CHARGE.toFixed(2)}</span>
                     </p>
                 </div>
@@ -186,7 +186,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                     placeholder="Address/ Shipping Address" 
                     value={address} 
                     onChange={e => setAddress(e.target.value)} 
-                    className="w-full border p-2 rounded" 
+                    className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                 />
 
                 <div className="mt-6">
@@ -307,7 +307,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 <div className="mt-4">
                     <label className="flex items-start gap-2">
                         <div>
-                            <p className="text-sm text-gray-700">
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
                                 Note: Please note that some products are not eligible for a return if the product is "No longer needed."
                                 {showFullTerms ? (
                                     <>

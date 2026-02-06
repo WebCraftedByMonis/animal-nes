@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -18,6 +19,7 @@ const formSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
   mobileNumber: z.string().optional(),
   address: z.string().optional(),
+  country: z.string().optional(),
   email: z.string().email("Invalid email address").optional(),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
   image: z.instanceof(File).refine((file) => file.size > 0, {
@@ -39,6 +41,7 @@ export default function AddCompanyClient() {
       companyName: "",
       mobileNumber: "",
       address: "",
+      country: "",
       email: "",
       password: "",
     },
@@ -50,6 +53,7 @@ export default function AddCompanyClient() {
         value.companyName?.trim() !== "" ||
         value.mobileNumber?.trim() !== "" ||
         value.address?.trim() !== "" ||
+        value.country?.trim() !== "" ||
         value.email?.trim() !== "" ||
         value.password?.trim() !== "" ||
         (value.image && value.image.size > 0);
@@ -94,6 +98,7 @@ export default function AddCompanyClient() {
       formData.append("companyName", data.companyName);
       if (data.mobileNumber) formData.append("mobileNumber", data.mobileNumber);
       if (data.address) formData.append("address", data.address);
+      if (data.country) formData.append("country", data.country);
       if (data.email) formData.append("email", data.email);
       if (data.password) formData.append("password", data.password);
       formData.append("image", data.image);
@@ -247,6 +252,28 @@ export default function AddCompanyClient() {
                         placeholder="Enter company address"
                       />
                     </FormControl>
+                    <FormMessage className="text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-gray-700">Country</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Pakistan">Pakistan</SelectItem>
+                        <SelectItem value="UAE">UAE</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-red-500" />
                   </FormItem>
                 )}

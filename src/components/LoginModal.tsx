@@ -87,7 +87,7 @@ function LoginModalContent({ isOpen, onClose, trigger = 'button' }: Required<Log
           <Button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 font-medium"
+            className="w-full h-12 bg-white hover:bg-gray-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-zinc-600 font-medium"
           >
             <svg
               className="w-5 h-5 mr-3"

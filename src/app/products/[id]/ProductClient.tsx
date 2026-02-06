@@ -8,6 +8,7 @@ import WishlistButton from '@/components/WishlistButton';
 import ProductReviewForm from '@/components/ProductReviewForm';
 import ProductReviews from '@/components/ProductReviews';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useCountry } from '@/contexts/CountryContext';
 
 interface Discount {
   id: number;
@@ -54,6 +55,7 @@ export default function ProductClient({ product }: { product: Product }) {
   const [showDescription, setShowDescription] = useState(false);
   const [showDosage, setShowDosage] = useState(false);
   const [refreshReviews, setRefreshReviews] = useState(0);
+  const { currencySymbol } = useCountry();
 
   const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
   const isOutOfStock = product.outofstock || !product.isActive;
@@ -173,15 +175,15 @@ export default function ProductClient({ product }: { product: Product }) {
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
                       <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                        PKR {discountedPrice.toLocaleString()}
+                        {currencySymbol} {discountedPrice.toLocaleString()}
                       </p>
                       <p className="text-xl text-gray-500 dark:text-gray-400 line-through">
-                        PKR {originalPrice.toLocaleString()}
+                        {currencySymbol} {originalPrice.toLocaleString()}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-green-600 dark:text-green-400 font-medium">
-                        You save PKR {(originalPrice - discountedPrice).toLocaleString()}
+                        You save {currencySymbol} {(originalPrice - discountedPrice).toLocaleString()}
                       </span>
                       {isEndingSoon && (
                         <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded">
@@ -192,7 +194,7 @@ export default function ProductClient({ product }: { product: Product }) {
                   </div>
                 ) : (
                   <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    PKR {selectedVariant.customerPrice.toLocaleString()}
+                    {currencySymbol} {selectedVariant.customerPrice.toLocaleString()}
                   </p>
                 )}
               </div>

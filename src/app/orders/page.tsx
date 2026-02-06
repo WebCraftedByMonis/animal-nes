@@ -26,7 +26,7 @@ export default async function OrdersPage() {
   })
 
   if (!orders.length) {
-    return <p className="text-center mt-10 text-gray-700">No orders found.</p>
+    return <p className="text-center mt-10 text-gray-700 dark:text-gray-300">No orders found.</p>
   }
 
   return (
@@ -34,7 +34,7 @@ export default async function OrdersPage() {
       <h1 className="text-3xl font-bold text-green-500 mb-6">Your Orders</h1>
       <ul className="space-y-4">
         {orders.map(order => (
-          <li key={order.id} className="border p-4 rounded-lg shadow">
+          <li key={order.id} className="border dark:border-zinc-700 p-4 rounded-lg shadow bg-white dark:bg-zinc-900">
             <p className="font-semibold">Order ID: {order.id}</p>
             <div className="mb-2">
               <p className="font-semibold">Items:</p>

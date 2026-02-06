@@ -42,6 +42,7 @@ import {
 
 import { NavigationMenuDemo } from "./Navigation-menu";
 import { ModeToggle } from "./ModeToggle";
+import CountrySwitcher from "./CountrySwitcher";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
@@ -160,14 +161,17 @@ export default function Navbar() {
           </div>
 
           {/* Right Section - Actions */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
+          <div className="flex items-center gap-0.5 sm:gap-1.5 lg:gap-2">
+            {/* Country Switcher */}
+            <CountrySwitcher />
+
             {/* Theme Toggle - Hidden on mobile */}
             <div className="hidden sm:block">
               <ModeToggle />
             </div>
 
             {/* Wishlist Button with Badge */}
-            <Link href="/wishlist" className="relative p-2" aria-label={`Wishlist${wishlist.length > 0 ? ` (${wishlist.length} items)` : ''}`}>
+            <Link href="/wishlist" className="relative p-1.5" aria-label={`Wishlist${wishlist.length > 0 ? ` (${wishlist.length} items)` : ''}`}>
               <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
               {wishlist.length > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center" aria-hidden="true">
@@ -178,7 +182,7 @@ export default function Navbar() {
             </Link>
 
             {/* Cart Button with Badge */}
-            <Link href="/cart" className="relative p-2" aria-label={`Shopping cart${counts.productCount > 0 ? ` (${counts.productCount} items)` : ''}`}>
+            <Link href="/cart" className="relative p-1.5" aria-label={`Shopping cart${counts.productCount > 0 ? ` (${counts.productCount} items)` : ''}`}>
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
               {counts.productCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center" aria-hidden="true">
@@ -189,7 +193,7 @@ export default function Navbar() {
             </Link>
 
             {/* Animal Cart with Badge */}
-            <Link href="/animalCart" className="relative p-2" aria-label={`Animal cart${counts.animalCount > 0 ? ` (${counts.animalCount} animals)` : ''}`}>
+            <Link href="/animalCart" className="relative p-1.5" aria-label={`Animal cart${counts.animalCount > 0 ? ` (${counts.animalCount} animals)` : ''}`}>
               <Cat className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 hover:text-green-600 transition-colors" />
               {counts.animalCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white text-[10px] sm:text-xs font-medium rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center" aria-hidden="true">
@@ -290,7 +294,7 @@ export default function Navbar() {
 
                       {/* Dashboard Section */}
                       <div className="pt-2">
-                        <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Dashboards</p>
+                        <p className="px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Dashboards</p>
                         <DrawerClose asChild>
                           <Link
                             href="/partner/dashboard"

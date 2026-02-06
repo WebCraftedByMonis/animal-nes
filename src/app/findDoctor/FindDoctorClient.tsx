@@ -5,11 +5,13 @@ import toast from "react-hot-toast";
 import { useSession, signIn } from "next-auth/react";
 import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
 import { useLoginModal } from "@/contexts/LoginModalContext";
+import { useCountry } from "@/contexts/CountryContext";
 
 export default function FindDoctorClient() {
   const router = useRouter();
   const { status, data: session } = useSession();
   const { openModal } = useLoginModal();
+  const { country } = useCountry();
   const [hasPromptedLogin, setHasPromptedLogin] = useState(false);
   const [form, setForm] = useState({
     doctor: "",
@@ -20,6 +22,7 @@ export default function FindDoctorClient() {
     gender: "MALE",
     isEmergency: false,
     description: "",
+    country: "Pakistan",
   });
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +36,7 @@ export default function FindDoctorClient() {
 
   if (status === 'loading') {
     return (
-      <div className="text-center mt-20 text-lg font-medium text-gray-600">
+      <div className="text-center mt-20 text-lg font-medium text-gray-600 dark:text-gray-400">
         Loading...
       </div>
     )
@@ -99,6 +102,7 @@ export default function FindDoctorClient() {
           gender: "MALE",
           isEmergency: false,
           description: "",
+          country: "Pakistan",
         });
         setTimeout(() => {
           router.push(`/payment?appointmentId=${appointment.id}`);
@@ -121,7 +125,7 @@ export default function FindDoctorClient() {
     return (
       <div className="min-h-screen flex items-center justify-center py-10 px-4">
         <div className="p-8 rounded-2xl shadow-lg max-w-xl w-full">
-          <p className="text-center text-gray-500">Checking your session…</p>
+          <p className="text-center text-gray-500 dark:text-gray-400">Checking your session…</p>
         </div>
       </div>
     );
@@ -159,18 +163,34 @@ export default function FindDoctorClient() {
             value={form.doctor}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          
+
           <input
             name="city"
             placeholder="City"
             value={form.city}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Country
+            </label>
+            <select
+              name="country"
+              value={form.country}
+              onChange={handleChange}
+              required
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="Pakistan">Pakistan</option>
+              <option value="UAE">UAE</option>
+            </select>
+          </div>
+
           <SuggestiveInput
             suggestions={[
               "Punjab",
@@ -211,18 +231,18 @@ export default function FindDoctorClient() {
             placeholder="Full Address (Optional)"
             value={form.fullAddress}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Animal Gender
             </label>
             <select
               name="gender"
               value={form.gender}
               onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
@@ -246,7 +266,7 @@ export default function FindDoctorClient() {
             value={form.description}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
 
           <button

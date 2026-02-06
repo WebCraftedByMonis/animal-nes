@@ -243,17 +243,17 @@ export  function PaymentFormContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-lg p-8">
           <h1 className="text-3xl font-bold text-green-500 mb-6 text-center">
             Payment Information
           </h1>
           
           {/* Appointment Summary */}
-          <div className="mb-6 p-4 bg-green-50 rounded-xl">
-            <h3 className="font-semibold text-green-700 mb-2">Appointment Details:</h3>
-            <div className="text-sm text-gray-600 space-y-1">
+          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <h3 className="font-semibold text-green-700 dark:text-green-400 mb-2">Appointment Details:</h3>
+            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <p><span className="font-medium">Customer:</span> {appointmentData.customer?.name || 'N/A'}</p>
               <p><span className="font-medium">Contact:</span> <a href={getWhatsAppUrl(appointmentData.doctor || '')} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{appointmentData.doctor}</a></p>
               <p><span className="font-medium">Location:</span> {appointmentData.city}, {appointmentData.state || 'Pakistan'}</p>
@@ -265,7 +265,7 @@ export  function PaymentFormContent() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Consultation Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Consultation Type *
               </label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -274,8 +274,8 @@ export  function PaymentFormContent() {
                   onClick={() => handleConsultationTypeChange('needy')}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     consultationType === 'needy'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="font-semibold">Needy</div>
@@ -287,8 +287,8 @@ export  function PaymentFormContent() {
                   onClick={() => handleConsultationTypeChange('virtual')}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     consultationType === 'virtual'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="font-semibold">Virtual</div>
@@ -300,8 +300,8 @@ export  function PaymentFormContent() {
                   onClick={() => handleConsultationTypeChange('physical')}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     consultationType === 'physical'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="font-semibold">Physical</div>
@@ -316,7 +316,7 @@ export  function PaymentFormContent() {
             {/* Payment Method - Hidden for needy consultation */}
             {consultationType !== 'needy' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Payment Method *
               </label>
               <div className="space-y-3">
@@ -324,14 +324,14 @@ export  function PaymentFormContent() {
                   onClick={() => handlePaymentMethodChange('jazzcash')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'jazzcash'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-semibold">JazzCash</div>
-                      <div className="text-sm text-gray-600"><a href={getWhatsAppUrl("0300-8424741")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0300-8424741</a> - Muhammad Fiaz Qamar</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400"><a href={getWhatsAppUrl("0300-8424741")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0300-8424741</a> - Muhammad Fiaz Qamar</div>
                     </div>
                     {paymentMethod === 'jazzcash' && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>
@@ -341,14 +341,14 @@ export  function PaymentFormContent() {
                   onClick={() => handlePaymentMethodChange('easypaisa')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'easypaisa'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-semibold">Easypaisa</div>
-                      <div className="text-sm text-gray-600"><a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0335-4145431</a> - Ghazala Yasmeen</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400"><a href={getWhatsAppUrl("0335-4145431")} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline" onClick={e => e.stopPropagation()}>0335-4145431</a> - Ghazala Yasmeen</div>
                     </div>
                     {paymentMethod === 'easypaisa' && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>
@@ -358,15 +358,15 @@ export  function PaymentFormContent() {
                   onClick={() => handlePaymentMethodChange('bank')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'bank'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-semibold">Bank Alfalah</div>
-                      <div className="text-sm text-gray-600">ZAIDIS INTERNATIONAL - 01531002450497</div>
-                      <div className="text-xs text-gray-500">Chauburji Branch, Lahore</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">ZAIDIS INTERNATIONAL - 01531002450497</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500">Chauburji Branch, Lahore</div>
                     </div>
                     {paymentMethod === 'bank' && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>
@@ -376,14 +376,14 @@ export  function PaymentFormContent() {
                   onClick={() => handlePaymentMethodChange('cod')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'cod'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 hover:border-green-400'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-semibold">Cash on Delivery (COD)</div>
-                      <div className="text-sm text-gray-600">Pay when doctor arrives</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Pay when doctor arrives</div>
                     </div>
                     {paymentMethod === 'cod' && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>
@@ -398,10 +398,10 @@ export  function PaymentFormContent() {
             {/* Payment Screenshot Upload - Only show if not COD and not needy */}
             {consultationType !== 'needy' && paymentMethod && paymentMethod !== 'cod' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   Payment Screenshot *
                 </label>
-                <p className="text-sm text-gray-500 mb-3">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                   Please attach a screenshot of your payment transaction
                 </p>
                 
@@ -409,15 +409,15 @@ export  function PaymentFormContent() {
                   <div
                     {...getRootProps()}
                     className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                      isDragActive ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-400'
+                      isDragActive ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 dark:border-zinc-600 hover:border-green-400'
                     }`}
                   >
                     <input {...getInputProps()} />
                     <UploadCloud className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Drag and drop your screenshot here, or click to select
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                       Supports: JPEG, JPG, PNG, WEBP (Max 5MB)
                     </p>
                   </div>
@@ -452,8 +452,8 @@ export  function PaymentFormContent() {
             
             {/* Important Note for Needy */}
             {consultationType === 'needy' && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                <p className="text-sm text-green-800">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                <p className="text-sm text-green-800 dark:text-green-300">
                   <strong>Free Consultation:</strong> This is a free consultation for those in need. No payment is required. We will find a qualified veterinarian to help your animal.
                 </p>
               </div>
@@ -461,8 +461,8 @@ export  function PaymentFormContent() {
             
             {/* Important Note for Paid Consultations */}
             {consultationType !== 'needy' && consultationFee > 0 && paymentMethod && paymentMethod !== 'cod' && (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                <p className="text-sm text-yellow-800">
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+                <p className="text-sm text-yellow-800 dark:text-yellow-300">
                   <strong>Important:</strong> Please complete the payment of <strong>{consultationFee} PKR</strong> to the selected payment method before uploading the screenshot.
                 </p>
               </div>
@@ -473,7 +473,7 @@ export  function PaymentFormContent() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                className="px-6 py-3 border border-gray-300 dark:border-zinc-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors font-medium"
                 disabled={submitting}
               >
                 Back

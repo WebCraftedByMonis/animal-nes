@@ -105,9 +105,9 @@ const containerClasses = "absolute inset-0 w-full h-full"
   // Error state
   if (error) {
     return (
-      <div className={`${containerClasses} flex items-center justify-center bg-gray-100`}>
+      <div className={`${containerClasses} flex items-center justify-center bg-gray-100 dark:bg-zinc-800`}>
         <div className="text-center">
-          <p className="text-gray-600 mb-2">{error}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-2">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
             className="text-green-500 hover:text-green-600 underline"
@@ -122,10 +122,10 @@ const containerClasses = "absolute inset-0 w-full h-full"
   // No banners state
   if (banners.length === 0) {
     return (
-      <div className={`${containerClasses} flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200`}>
+      <div className={`${containerClasses} flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-800 dark:to-zinc-900`}>
         <div className="text-center">
-          <p className="text-gray-600 text-lg">No banners to display</p>
-          <p className="text-gray-500 text-sm mt-2">Please add banners from the admin dashboard</p>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">No banners to display</p>
+          <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">Please add banners from the admin dashboard</p>
         </div>
       </div>
     )

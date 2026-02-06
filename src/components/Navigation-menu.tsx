@@ -57,12 +57,12 @@ const components: { title: string; href: string; description: string }[] = [
 export function NavigationMenuDemo() {
   return (
     <NavigationMenu>
-     <NavigationMenuList className="flex flex-col items-start md:flex-row md:items-center">
+     <NavigationMenuList className="flex flex-col items-start md:flex-row md:items-center gap-0">
 
 
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">Join</span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal text-xs h-8 px-2"><span className="text-green-600 font-semibold">Join</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <li className="row-span-3 hidden md:block">
@@ -96,7 +96,7 @@ export function NavigationMenuDemo() {
 
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">View </span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal text-xs h-8 px-2"><span className="text-green-600 font-semibold">View</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="flex flex-col gap-3 p-4 md:w-[300px] lg:w-[300px] lg:grid-cols-[.75fr_1fr]">
         {/* <li className="row-span-3 hidden md:block">
@@ -141,7 +141,7 @@ export function NavigationMenuDemo() {
 
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">Animal Marketplace</span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal text-xs h-8 px-2"><span className="text-green-600 font-semibold">Marketplace</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="flex flex-col gap-3 p-4 md:w-[300px] lg:w-[300px] lg:grid-cols-[.75fr_1fr]">
               <ListItem href="/sell" title="Sell Animal">
@@ -155,7 +155,7 @@ export function NavigationMenuDemo() {
         </NavigationMenuItem>
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal"><span className="text-green-600 font-semibold">Career Options</span></NavigationMenuTrigger>
+          <NavigationMenuTrigger className="font-normal text-xs h-8 px-2"><span className="text-green-600 font-semibold">Careers</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
               {components.map((component) => (

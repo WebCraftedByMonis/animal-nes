@@ -2,6 +2,7 @@
 
 import { getWhatsAppUrl } from '@/lib/whatsapp-utils';
 import { FaWhatsapp } from 'react-icons/fa';
+import { useCountry, Country } from '@/contexts/CountryContext';
 
 interface WhatsAppLinkProps {
   phone: string;
@@ -9,11 +10,15 @@ interface WhatsAppLinkProps {
   children?: React.ReactNode;
   className?: string;
   showIcon?: boolean;
+  /** Override the country for phone formatting. If not provided, uses the selected country from context */
+  phoneCountry?: Country;
 }
 
 /**
  * A clickable phone number that opens WhatsApp
- * Automatically adds +92 prefix if the number starts with 03 or doesn't have country code
+ * Automatically adds the appropriate country prefix based on the selected country
+ * - Pakistan: +92 prefix
+ * - UAE: +971 prefix
  */
 export default function WhatsAppLink({
   phone,
@@ -21,12 +26,16 @@ export default function WhatsAppLink({
   children,
   className = '',
   showIcon = true,
+  phoneCountry,
 }: WhatsAppLinkProps) {
+  const { country: contextCountry } = useCountry();
+  const effectiveCountry = phoneCountry || contextCountry;
+
   if (!phone || phone === '-') {
     return <span className={className}>{children || phone || '-'}</span>;
   }
 
-  const whatsappUrl = getWhatsAppUrl(phone, message);
+  const whatsappUrl = getWhatsAppUrl(phone, message, effectiveCountry);
 
   return (
     <a

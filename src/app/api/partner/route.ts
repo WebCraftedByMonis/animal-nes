@@ -33,6 +33,7 @@ const createPartnerSchema = z.object({
   partnerMobileNumber: z.string().optional(),
   shopName: z.string().optional(),
   cityName: z.string().optional(),
+  country: z.string().optional(),
   fullAddress: z.string().optional(),
   rvmpNumber: z.string().optional(),
   sendToPartner: z.enum(sendToPartnerEnum).optional(),
@@ -319,10 +320,16 @@ async function GET(request: NextRequest) {
     if (specialization) {
       whereClause.specialization = { contains: specialization,  };
     }
-    
+
     const species = searchParams.get('species');
     if (species) {
       whereClause.species = species;
+    }
+
+    // Country filter
+    const country = searchParams.get('country');
+    if (country && country !== 'all') {
+      whereClause.country = country;
     }
     
     // Execute queries - Optimized to prevent N+1 queries

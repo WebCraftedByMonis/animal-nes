@@ -25,7 +25,7 @@ export default function SellFormClient() {
 
   if (status === 'loading') {
     return (
-      <div className="text-center mt-20 text-lg font-medium text-gray-600">
+      <div className="text-center mt-20 text-lg font-medium text-gray-600 dark:text-gray-400">
         Loading...
       </div>
     )
@@ -91,6 +91,17 @@ export default function SellFormClient() {
 
           <div><Label>Breed</Label><Input name="breed" required /></div>
           <div><Label>Location</Label><Input name="location" required /></div>
+
+          <div>
+            <Label>Country</Label>
+            <Select name="country" required>
+              <SelectTrigger><SelectValue placeholder="Select Country" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pakistan">Pakistan</SelectItem>
+                <SelectItem value="UAE">UAE</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div><Label>Quantity</Label><Input name="quantity" type="number" required /></div>
           <div><Label>Age</Label><Input name="ageNumber" type="number" required /></div>

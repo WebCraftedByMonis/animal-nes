@@ -263,12 +263,20 @@ export async function GET(req: NextRequest) {
   const subCategory = searchParams.get('subCategory') || ''
   const subsubCategory = searchParams.get('subsubCategory') || ''
   const productType = searchParams.get('productType') || ''
+  const country = searchParams.get('country') || ''
   const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined
   const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
 
   // Build where clause
   const where: any = {
      // Always filter for active products
+  }
+
+  // Country filter - filter by company's country
+  if (country && country !== 'all') {
+    where.company = {
+      country: country
+    }
   }
 
   // Search filter - searches across multiple fields

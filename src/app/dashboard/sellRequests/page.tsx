@@ -31,6 +31,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 interface SellAnimalRequest {
   id: string;
   specie: string;
@@ -42,6 +43,7 @@ interface SellAnimalRequest {
   weightValue: number;
   gender: 'MALE' | 'FEMALE';
   location: string;
+  country?: string;
   healthCertificate: boolean;
   totalPrice: number;
   purchasePrice: number;
@@ -151,6 +153,7 @@ export default function AnimalRequestsDashboard() {
               <TableHead>Image</TableHead>
               <TableHead>Video</TableHead>
               <TableHead>Location</TableHead>
+              <TableHead>Country</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Customer</TableHead>
@@ -216,6 +219,11 @@ export default function AnimalRequestsDashboard() {
                   )}
                 </TableCell>
                 <TableCell>{r.location}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={r.country === 'UAE' ? 'border-blue-500 text-blue-600' : 'border-green-500 text-green-600'}>
+                    {r.country || 'Pakistan'}
+                  </Badge>
+                </TableCell>
                 <TableCell>{r.gender}</TableCell>
                 <TableCell>{r.quantity}</TableCell>
                 <TableCell>{r.user?.name}</TableCell>
