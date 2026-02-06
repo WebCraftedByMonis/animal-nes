@@ -360,6 +360,16 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
+              {/* Download Backups */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/backups">
+                    <FileText className="w-4 h-4" />
+                    <span className="hover:text-green-500">Download Backups</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Divider */}
               <div className="my-4 border-t border-gray-300 dark:border-zinc-700" />
 
