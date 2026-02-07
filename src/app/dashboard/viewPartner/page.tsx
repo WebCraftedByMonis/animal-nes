@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Partner {
   id: number
@@ -105,6 +106,7 @@ const PartnerImage = ({ imageUrl, altText }: { imageUrl: string; altText: string
 }
 
 export default function ViewPartnersPage() {
+  const { country } = useCountry()
   const [partners, setPartners] = useState<Partner[]>([])
   const [search, setSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -164,10 +166,10 @@ useEffect(() => {
 }, [editPartnerType, originalPartnerType, open]);
 
   const fetchPartners = useCallback(async () => {
-    
+
     try {
       const { data } = await axios.get('/api/partner', {
-        params: { search, sortBy, order: sortOrder, page, limit }
+        params: { search, sortBy, order: sortOrder, page, limit, country }
       })
       console.log('API Response:', data);
 
@@ -187,7 +189,7 @@ useEffect(() => {
     } finally {
       setIsLoading(false)
     }
-  }, [search, sortBy, sortOrder, page, limit])
+  }, [search, sortBy, sortOrder, page, limit, country])
 
   useEffect(() => {
     fetchPartners()

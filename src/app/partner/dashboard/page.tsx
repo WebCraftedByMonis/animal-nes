@@ -6,6 +6,10 @@ import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { Eye, Crown, X, Pencil, Trash2, MessageSquare } from 'lucide-react';
 import WhatsAppLink from '@/components/WhatsAppLink';
+import PartnerShop from '@/components/partner/PartnerShop';
+import PartnerCart from '@/components/partner/PartnerCart';
+import PartnerCheckout from '@/components/partner/PartnerCheckout';
+import PartnerOrders from '@/components/partner/PartnerOrders';
 
 interface ProductVariant {
   id: number;
@@ -59,7 +63,8 @@ export default function PartnerDashboard() {
   const router = useRouter();
   const [partner, setPartner] = useState<Partner | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'products' | 'profile' | 'password' | 'wallet'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'shop' | 'cart' | 'checkout' | 'shop-orders' | 'profile' | 'password' | 'wallet'>('products');
+  const [cartCount, setCartCount] = useState(0);
 
   // Password form state
   const [passwordData, setPasswordData] = useState({
@@ -168,6 +173,22 @@ export default function PartnerDashboard() {
       setLoading(false);
     }
   };
+
+  const fetchCartCount = async () => {
+    try {
+      const res = await fetch('/api/partner/cart');
+      const data = await res.json();
+      if (res.ok) {
+        setCartCount(data.cartItems?.length || 0);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (partner) fetchCartCount();
+  }, [partner]);
 
   const handleLogout = async () => {
     try {
@@ -743,6 +764,29 @@ export default function PartnerDashboard() {
                 My Products ({partner.products?.length || 0})
               </button>
               <button
+                onClick={() => setActiveTab('shop')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors relative ${
+                  activeTab === 'shop' || activeTab === 'cart' || activeTab === 'checkout'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Shop
+                {cartCount > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{cartCount}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('shop-orders')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'shop-orders'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Shop Orders
+              </button>
+              <button
                 onClick={() => setActiveTab('profile')}
                 className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'profile'
@@ -905,6 +949,42 @@ export default function PartnerDashboard() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Shop Tab */}
+            {activeTab === 'shop' && (
+              <PartnerShop
+                cartCount={cartCount}
+                onCartUpdate={fetchCartCount}
+                onViewCart={() => setActiveTab('cart')}
+                onCheckout={() => setActiveTab('checkout')}
+              />
+            )}
+
+            {/* Cart Tab */}
+            {activeTab === 'cart' && (
+              <PartnerCart
+                onBack={() => setActiveTab('shop')}
+                onCheckout={() => setActiveTab('checkout')}
+                onCartUpdate={fetchCartCount}
+              />
+            )}
+
+            {/* Checkout Tab */}
+            {activeTab === 'checkout' && (
+              <PartnerCheckout
+                partner={partner}
+                onBack={() => setActiveTab('cart')}
+                onSuccess={() => {
+                  fetchCartCount();
+                  setActiveTab('shop-orders');
+                }}
+              />
+            )}
+
+            {/* Shop Orders Tab */}
+            {activeTab === 'shop-orders' && (
+              <PartnerOrders />
             )}
 
             {/* Profile Tab */}

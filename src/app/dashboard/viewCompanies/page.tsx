@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Company {
   id: number
@@ -47,6 +48,7 @@ interface Company {
 }
 
 export default function ViewCompaniesPage() {
+  const { country } = useCountry()
   const [companies, setCompanies] = useState<Company[]>([])
   const [search, setSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -72,7 +74,7 @@ export default function ViewCompaniesPage() {
   const fetchCompanies = useCallback(async () => {
     try {
       const { data } = await axios.get('/api/company', {
-        params: { search, sortBy, sortOrder, page, limit },
+        params: { search, sortBy, sortOrder, page, limit, country },
       })
       setCompanies(data.data)
       setTotal(data.total)
@@ -81,7 +83,7 @@ export default function ViewCompaniesPage() {
       console.log(error)
       toast.error('Failed to fetch companies')
     }
-  }, [search, sortBy, sortOrder, page, limit])
+  }, [search, sortBy, sortOrder, page, limit, country])
 
   useEffect(() => {
     fetchCompanies()

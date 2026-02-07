@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { validateAdminSession } from '@/lib/auth/admin-auth';
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import CountrySwitcher from "@/components/CountrySwitcher";
 
 export default async function DashboardLayout({ 
   children 
@@ -28,8 +29,11 @@ export default async function DashboardLayout({
       <SidebarProvider>
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex items-start">
+          <div className="flex items-center justify-between">
             <SidebarTrigger className="m-2" />
+            <div className="m-2">
+              <CountrySwitcher />
+            </div>
           </div>
           <main className="flex-1 px-4 pb-4 overflow-auto">
             {children}

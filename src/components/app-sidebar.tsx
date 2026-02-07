@@ -166,6 +166,7 @@ export function AppSidebar() {
                     <Link href="/dashboard/ordersCompleted" className="block text-sm text-muted-foreground hover:underline">Orders Completed</Link>
                     <Link href="/dashboard/purchasedFromVendors" className="block text-sm text-muted-foreground hover:underline">Purchased from Vendors</Link>
                     <Link href="/dashboard/requestByCustomers" className="block text-sm text-muted-foreground hover:underline">Request By Customers</Link>
+                    <Link href="/dashboard/partner-orders" className="block text-sm text-muted-foreground hover:underline">Partner B2B Orders</Link>
                   </div>
                 )}
               </SidebarMenuItem>

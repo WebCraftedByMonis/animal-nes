@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast, Toaster } from 'react-hot-toast';
 import { Download, Edit, Loader2, Save, Search, X, FileText } from 'lucide-react';
+import CompanyPaymentSettings from '@/components/company/CompanyPaymentSettings';
+import CompanyDiscounts from '@/components/company/CompanyDiscounts';
+import CompanyPartnerOrders from '@/components/company/CompanyPartnerOrders';
 
 interface ProductVariant {
   id: number;
@@ -70,7 +73,7 @@ export default function CompanyDashboard() {
   const router = useRouter();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'profile' | 'password'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'partner-orders' | 'discounts' | 'payment-settings' | 'profile' | 'password'>('products');
 
   // Orders state
   const [orders, setOrders] = useState<CompanyOrder[]>([]);
@@ -376,6 +379,36 @@ export default function CompanyDashboard() {
               }`}
             >
               Company Profile
+            </button>
+            <button
+              onClick={() => setActiveTab('partner-orders')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'partner-orders'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Partner Orders
+            </button>
+            <button
+              onClick={() => setActiveTab('discounts')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'discounts'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Discounts
+            </button>
+            <button
+              onClick={() => setActiveTab('payment-settings')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'payment-settings'
+                  ? 'border-teal-500 text-teal-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Payment Settings
             </button>
             <button
               onClick={() => setActiveTab('password')}
@@ -746,6 +779,21 @@ export default function CompanyDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Partner Orders Tab */}
+        {activeTab === 'partner-orders' && (
+          <CompanyPartnerOrders />
+        )}
+
+        {/* Discounts Tab */}
+        {activeTab === 'discounts' && (
+          <CompanyDiscounts />
+        )}
+
+        {/* Payment Settings Tab */}
+        {activeTab === 'payment-settings' && (
+          <CompanyPaymentSettings />
         )}
 
         {/* Profile Tab */}

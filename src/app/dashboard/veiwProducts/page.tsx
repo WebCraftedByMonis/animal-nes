@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
 import { ComboboxSelect } from '@/components/shared/ComboboxSelect'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface ProductVariant {
   id?: number
@@ -75,6 +76,7 @@ interface Product {
 }
 
 export default function ViewProductsPage() {
+  const { country } = useCountry()
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -115,14 +117,14 @@ export default function ViewProductsPage() {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const params: any = { search, sortBy, sortOrder, page, limit, includeVariants: true }
+      const params: any = { search, sortBy, sortOrder, page, limit, includeVariants: true, country }
       if (minPrice) params.minPrice = parseFloat(minPrice)
       if (maxPrice) params.maxPrice = parseFloat(maxPrice)
-      
+
       const { data } = await axios.get('/api/product', {
         params,
       })
-   
+
       setProducts(data.data)
       setTotal(data.total)
       setLastCreatedAt(data.lastSubmittedAt)
@@ -130,25 +132,25 @@ export default function ViewProductsPage() {
       console.log(error)
       toast.error('Failed to fetch products')
     }
-  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice])
+  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice, country])
 
-  const fetchCompaniesAndPartners = async () => {
+  const fetchCompaniesAndPartners = useCallback(async () => {
     try {
       const [companiesRes, partnersRes] = await Promise.all([
-        axios.get('/api/company?limit=all'),
-        axios.get('/api/partner?limit=all')
+        axios.get(`/api/company?limit=all&country=${country}`),
+        axios.get(`/api/partner?limit=all&country=${country}`)
       ])
       setCompanies(companiesRes.data.data || [])
       setPartners(partnersRes.data.data || [])
     } catch (error) {
       console.error('Failed to fetch companies or partners', error)
     }
-  }
+  }, [country])
 
   useEffect(() => {
     fetchProducts()
     fetchCompaniesAndPartners()
-  }, [fetchProducts])
+  }, [fetchProducts, fetchCompaniesAndPartners])
 
   const handleUpdate = async () => {
     if (!editId) return

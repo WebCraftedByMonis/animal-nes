@@ -51,11 +51,13 @@ model Product {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   variants       ProductVariant[]
-  cartItems      CartItem[]
-  checkoutItems  CheckoutItem[]
-  wishlistItems  WishlistItem[]
-  reviews        ProductReview[]
-  discounts      Discount[]
+  cartItems          CartItem[]
+  checkoutItems      CheckoutItem[]
+  wishlistItems      WishlistItem[]
+  reviews            ProductReview[]
+  discounts          Discount[]
+  partnerCartItems   PartnerCartItem[]
+  partnerOrderItems  PartnerOrderItem[]
 
   @@index([companyId])
   @@index([partnerId])
@@ -70,9 +72,11 @@ model ProductVariant {
   inventory      Int?
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId      Int
-  cartItems      CartItem[]
-  checkoutItems  CheckoutItem[]
-  discounts      Discount[]
+  cartItems          CartItem[]
+  checkoutItems      CheckoutItem[]
+  discounts          Discount[]
+  partnerCartItems   PartnerCartItem[]
+  partnerOrderItems  PartnerOrderItem[]
 
   @@index([productId])
 }
@@ -113,10 +117,12 @@ model Company {
   password    String?
   image       CompanyImage?
   stickyLogo  StickyLogo[]
-  sessions    CompanySession[]
-  discounts   Discount[]
-  createdAt   DateTime?        @default(now())
-  updatedAt   DateTime?        @updatedAt
+  sessions        CompanySession[]
+  discounts       Discount[]
+  partnerOrders   PartnerOrder[]
+  paymentSettings CompanyPaymentSettings?
+  createdAt       DateTime?        @default(now())
+  updatedAt       DateTime?        @updatedAt
 }
 
 model CompanyImage {
@@ -222,6 +228,8 @@ model Partner {
   assignedAppointments  AppointmentRequest[]
   products            Product[]
   sessions            PartnerSession[]
+  partnerCartItems    PartnerCartItem[]
+  partnerOrders       PartnerOrder[]
   premiumRequests     PremiumPartnershipRequest[]
   withdrawalRequests  WithdrawalRequest[]
   reviews             VetReview[]
@@ -1279,4 +1287,87 @@ model Discount {
   @@index([variantId])
   @@index([startDate, endDate])
   @@index([isActive])
+}
+
+// ============================================
+// PARTNER B2B E-COMMERCE SYSTEM
+// ============================================
+
+model PartnerCartItem {
+  id        Int            @id @default(autoincrement())
+  partner   Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId Int
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  variantId Int
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int            @default(1)
+  createdAt DateTime       @default(now())
+
+  @@unique([partnerId, productId, variantId])
+  @@index([partnerId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model PartnerOrder {
+  id                Int                @id @default(autoincrement())
+  partner           Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId         Int
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId         Int
+  city              String
+  province          String
+  address           String             @db.Text
+  shippingAddress   String             @db.Text
+  paymentMethod     String             @db.Text
+  paymentScreenshot String?            @db.Text
+  total             Float
+  status            String             @default("pending")
+  items             PartnerOrderItem[] @relation("PartnerOrderToItems")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([partnerId])
+  @@index([companyId])
+  @@index([status])
+}
+
+model PartnerOrderItem {
+  id                 Int             @id @default(autoincrement())
+  order              PartnerOrder    @relation(name: "PartnerOrderToItems", fields: [orderId], references: [id], onDelete: Cascade)
+  orderId            Int
+  product            Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId          Int
+  variantId          Int
+  variant            ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity           Int
+  price              Float
+  originalPrice      Float?
+  discountPercentage Float?
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model CompanyPaymentSettings {
+  id              Int      @id @default(autoincrement())
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       Int      @unique
+  bankName        String?  @db.Text
+  accountTitle    String?  @db.Text
+  accountNumber   String?  @db.Text
+  jazzcashNumber  String?
+  easypaisaNumber String?
+  enableCOD       Boolean  @default(false)
+  enableBank      Boolean  @default(false)
+  enableJazzcash  Boolean  @default(false)
+  enableEasypaisa Boolean  @default(false)
+  minimumOrderAmount Float? @default(0)
+  policyText      String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId])
 }
