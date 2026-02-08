@@ -13,6 +13,23 @@ function toIso(value: Date | null | undefined) {
   return value ? value.toISOString() : null;
 }
 
+const EXCEL_MAX_CELL_LENGTH = 32767;
+
+function truncateForExcel(value: unknown): unknown {
+  if (typeof value === 'string' && value.length > EXCEL_MAX_CELL_LENGTH) {
+    return value.slice(0, EXCEL_MAX_CELL_LENGTH);
+  }
+  return value;
+}
+
+function sanitizeRow(row: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    sanitized[key] = truncateForExcel(value);
+  }
+  return sanitized;
+}
+
 function fileNameForType(type: BackupType) {
   const stamp = new Date().toISOString().slice(0, 10);
   return `${type}-backup-${stamp}.xlsx`;
@@ -131,7 +148,7 @@ export async function GET(request: NextRequest) {
   }
 
   const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const worksheet = XLSX.utils.json_to_sheet(rows.map(sanitizeRow));
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
