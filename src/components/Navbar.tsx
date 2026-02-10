@@ -111,7 +111,6 @@ export default function Navbar() {
                   {[
                     ["Products", "/products"],
                     ["Master Trainings", "/forms"],
-                    ["Nexus News", "/animal-news"],
                     ["Find Doctor", "/findDoctor"],
                   ].map(([label, href]) => (
                     <NavigationMenuItem key={label}>
@@ -126,6 +125,30 @@ export default function Navbar() {
                       </NavigationMenuLink>
                     </NavigationMenuItem>
                   ))}
+                  {/* Wellness-News Dropdown */}
+                  <NavigationMenuItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className={cn(
+                        navigationMenuTriggerStyle(),
+                        "text-xs font-medium hover:text-green-500 transition-colors px-2 py-1.5 flex items-center gap-1"
+                      )}>
+                        Wellness-News
+                        <ChevronDown className="h-3 w-3" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem asChild>
+                          <Link href="/addNews" className="w-full cursor-pointer">
+                            Add News
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/animal-news" className="w-full cursor-pointer">
+                            Explore News
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </NavigationMenuItem>
                   {/* Dashboard Dropdown */}
                   <NavigationMenuItem>
                     <DropdownMenu>
@@ -279,7 +302,6 @@ export default function Navbar() {
                       {[
                         ["Products", "/products"],
                         ["Master Trainings", "/forms"],
-                        ["Nexus News", "/animal-news"],
                         ["Find Doctor", "/findDoctor"],
                       ].map(([label, href]) => (
                         <DrawerClose asChild key={label}>
@@ -291,6 +313,27 @@ export default function Navbar() {
                           </Link>
                         </DrawerClose>
                       ))}
+
+                      {/* Wellness-News Dropdown (mobile) */}
+                      <div className="pt-2">
+                        <p className="px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Wellness-News</p>
+                        <DrawerClose asChild>
+                          <Link
+                            href="/addNews"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                          >
+                            Add News
+                          </Link>
+                        </DrawerClose>
+                        <DrawerClose asChild>
+                          <Link
+                            href="/animal-news"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                          >
+                            Explore News
+                          </Link>
+                        </DrawerClose>
+                      </div>
 
                       {/* Dashboard Section */}
                       <div className="pt-2">

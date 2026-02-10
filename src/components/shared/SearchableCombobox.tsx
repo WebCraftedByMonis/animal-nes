@@ -18,6 +18,7 @@ interface SearchableComboboxProps {
   onChange: (value: string) => void;
   placeholder: string;
   searchKey: string; // e.g., 'companyName' or 'partnerName'
+  extraParams?: Record<string, string | number | boolean | undefined>;
 }
 
 export function SearchableCombobox({ 
@@ -25,7 +26,8 @@ export function SearchableCombobox({
   value, 
   onChange, 
   placeholder, 
-  searchKey 
+  searchKey,
+  extraParams
 }: SearchableComboboxProps) {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SearchableOption[]>([]);
@@ -52,7 +54,8 @@ export function SearchableCombobox({
           limit: 10,
           sortBy: 'createdAt',
           sortOrder: 'desc', // Company API uses sortOrder
-          order: 'desc' // Partner API uses order
+          order: 'desc', // Partner API uses order
+          ...extraParams
         }
       });
       
@@ -70,7 +73,7 @@ export function SearchableCombobox({
     } finally {
       setLoading(false);
     }
-  }, [apiEndpoint, searchKey]);
+  }, [apiEndpoint, searchKey, extraParams]);
 
   // Search function
   const searchOptions = useCallback(async (query: string) => {
@@ -87,7 +90,8 @@ export function SearchableCombobox({
       const response = await axios.get(`${apiEndpoint}/search`, {
         params: {
           search: query,
-          limit: 20 // Limit results for better performance
+          limit: 20, // Limit results for better performance
+          ...extraParams
         }
       });
       
@@ -104,7 +108,7 @@ export function SearchableCombobox({
     } finally {
       setLoading(false);
     }
-  }, [apiEndpoint, searchKey, initialLoaded, loadInitialOptions]);
+  }, [apiEndpoint, searchKey, initialLoaded, loadInitialOptions, extraParams]);
 
   // Debounced search
   const debouncedSearch = useCallback(

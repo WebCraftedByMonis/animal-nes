@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { Loader2, Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { useCountry } from '@/contexts/CountryContext';
+import { formatPrice } from '@/lib/currency-utils';
 
 interface CartItem {
   id: number;
@@ -37,17 +39,18 @@ interface PartnerCartProps {
 }
 
 export default function PartnerCart({ onBack, onCheckout, onCartUpdate }: PartnerCartProps) {
+  const { country } = useCountry();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [country]);
 
   const fetchCart = async () => {
     try {
-      const res = await fetch('/api/partner/cart');
+      const res = await fetch(`/api/partner/cart?country=${encodeURIComponent(country)}`);
       const data = await res.json();
       if (res.ok) {
         setCartItems(data.cartItems);
@@ -201,9 +204,9 @@ export default function PartnerCart({ onBack, onCheckout, onCartUpdate }: Partne
                         <p className="text-xs text-gray-500">{item.variant.packingVolume}</p>
                         <div className="flex items-center gap-1 mt-1">
                           {discount > 0 && (
-                            <span className="text-xs text-gray-400 line-through">Rs.{price}</span>
+                            <span className="text-xs text-gray-400 line-through">{formatPrice(price, country, true)}</span>
                           )}
-                          <span className="text-sm font-bold text-green-700">Rs.{finalPrice}</span>
+                          <span className="text-sm font-bold text-green-700">{formatPrice(finalPrice, country, true)}</span>
                           {discount > 0 && (
                             <span className="text-xs text-red-500">-{discount}%</span>
                           )}
@@ -229,7 +232,7 @@ export default function PartnerCart({ onBack, onCheckout, onCartUpdate }: Partne
                       </div>
 
                       <div className="text-right min-w-[80px]">
-                        <p className="font-bold text-green-700">Rs.{(finalPrice * item.quantity).toFixed(2)}</p>
+                        <p className="font-bold text-green-700">{formatPrice(finalPrice * item.quantity, country, true)}</p>
                       </div>
 
                       <button
@@ -246,7 +249,7 @@ export default function PartnerCart({ onBack, onCheckout, onCartUpdate }: Partne
 
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 rounded-b-lg flex justify-between items-center">
                 <span className="text-sm text-gray-600">Subtotal ({group.companyName})</span>
-                <span className="font-bold text-green-700">Rs.{group.subtotal.toFixed(2)}</span>
+                <span className="font-bold text-green-700">{formatPrice(group.subtotal, country, true)}</span>
               </div>
             </div>
           ))}
@@ -255,7 +258,7 @@ export default function PartnerCart({ onBack, onCheckout, onCartUpdate }: Partne
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-semibold text-gray-900">Grand Total</span>
-              <span className="text-xl font-bold text-green-700">Rs.{grandTotal.toFixed(2)}</span>
+              <span className="text-xl font-bold text-green-700">{formatPrice(grandTotal, country, true)}</span>
             </div>
             <div className="flex gap-3">
               <button onClick={onBack} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">

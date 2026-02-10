@@ -612,7 +612,7 @@ export default function PartnerForm({
               <svg className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-              <h3 className="text-xl font-bold text-green-800">Premium Partnership - 5000 PKR</h3>
+              <h3 className="text-xl font-bold text-green-800">Premium Partnership - 500 AED</h3>
             </div>
 
             <div className="bg-white p-4 rounded-lg mb-4">
@@ -661,7 +661,7 @@ export default function PartnerForm({
                   }
                 }}
               />
-              <span className="font-semibold text-green-800">✅ I want to request Premium Partnership (5000 PKR)</span>
+              <span className="font-semibold text-green-800">✅ I want to request Premium Partnership (500 AED)</span>
             </label>
           </div>
 
@@ -673,7 +673,7 @@ export default function PartnerForm({
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  Payment Details (5000 PKR):
+                  Payment Details (500 AED):
                 </h4>
                 <div className="space-y-3 text-sm">
                   <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
@@ -705,7 +705,7 @@ export default function PartnerForm({
                 </div>
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
                   <p className="text-xs text-yellow-800 font-medium">
-                    ⚠️ Please make sure to upload the payment screenshot after transferring the amount of 5000 PKR to any of the above accounts.
+                    ⚠️ Please make sure to upload the payment screenshot after transferring the amount of 500 AED to any of the above accounts.
                   </p>
                 </div>
               </div>

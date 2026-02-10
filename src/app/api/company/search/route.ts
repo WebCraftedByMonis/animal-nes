@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const country = searchParams.get('country') || '';
 
     const companies = await prisma.company.findMany({
       where: {
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
           contains: search,
           
         },
+        ...(country && country !== 'all' ? { country } : {}),
       },
       select: {
         id: true,

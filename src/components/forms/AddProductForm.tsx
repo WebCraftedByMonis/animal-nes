@@ -20,6 +20,7 @@ import axios, { AxiosError } from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import { SearchableCombobox } from "@/components/shared/SearchableCombobox";
 import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
+import { useCountry } from "@/contexts/CountryContext";
 
 const formSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
@@ -68,6 +69,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function AddProductForm() {
+  const { country } = useCountry();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [pdfPreview, setPdfPreview] = useState<string | null>(null);
@@ -417,6 +419,7 @@ export default function AddProductForm() {
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Select company"
+                        extraParams={{ country }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -439,6 +442,7 @@ export default function AddProductForm() {
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Select partner"
+                        extraParams={{ country }}
                       />
                     </FormControl>
                     <FormMessage />

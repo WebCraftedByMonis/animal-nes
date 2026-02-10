@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { validatePartnerSession } from '@/lib/auth/partner-auth'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('partner-token')?.value
@@ -12,8 +12,14 @@ export async function GET() {
     const partner = await validatePartnerSession(token)
     if (!partner) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const { searchParams } = new URL(req.url)
+    const country = searchParams.get('country') || ''
+
     const cartItems = await prisma.partnerCartItem.findMany({
-      where: { partnerId: partner.id },
+      where: {
+        partnerId: partner.id,
+        ...(country && country !== 'all' ? { product: { company: { country } } } : {}),
+      },
       include: {
         product: {
           include: {

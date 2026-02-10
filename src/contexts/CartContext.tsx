@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 interface CartItem {
   productId: number;
@@ -36,6 +37,7 @@ const CART_STORAGE_KEY = "cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [counts, setCounts] = useState<CartCounts>({
     productCount: 0,
     animalCount: 0,
@@ -289,8 +291,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Sync localStorage to database when user logs in
   useEffect(() => {
     if (session?.user?.email && status === "authenticated") {
-      syncCartToDatabase().then(() => {
-        fetchCounts();
+      syncCartToDatabase().then(async () => {
+        await fetchCounts();
+        if (typeof window !== "undefined" && window.location.pathname === "/checkout") {
+          router.refresh();
+        }
       });
     }
   }, [session?.user?.email, status]);

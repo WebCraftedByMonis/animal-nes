@@ -6,8 +6,9 @@ export async function GET(req: Request) {
   const limit = parseInt(searchParams.get('limit') || '10')
   const page = parseInt(searchParams.get('page') || '1')
   const search = searchParams.get('search') || ''
+  const country = searchParams.get('country') || ''
 
-  const where = search
+  const where: any = search
     ? {
         OR: [
           { user: { name: { contains: search,  } } },
@@ -20,12 +21,38 @@ export async function GET(req: Request) {
       }
     : {}
 
+  const itemFilter: any = {}
+
+  if (country && country !== 'all') {
+    itemFilter.OR = [
+      {
+        product: {
+          company: {
+            country,
+          },
+        },
+      },
+      {
+        animal: {
+          country,
+        },
+      },
+    ]
+  }
+
+  if (Object.keys(itemFilter).length > 0) {
+    where.items = {
+      some: itemFilter,
+    }
+  }
+
     const [orders, total] = await Promise.all([
       prisma.checkout.findMany({
         where,
         include: {
           user: true,
           items: {
+            ...(Object.keys(itemFilter).length > 0 ? { where: itemFilter } : {}),
             include: {
               product: true,
               variant: true,

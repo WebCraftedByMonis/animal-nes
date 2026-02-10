@@ -26,6 +26,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import WhatsAppLink from '@/components/WhatsAppLink'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Product {
   id: number;
@@ -98,6 +99,7 @@ interface EditedItem {
 }
 
 export default function AdminOrdersPage() {
+  const { country } = useCountry()
   const [orders, setOrders] = useState<Order[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -215,7 +217,7 @@ export default function AdminOrdersPage() {
     setIsLoading(true)
     try {
       const response = await axios.get('/api/orders', {
-        params: { search: searchTerm, page: pageNum, limit: limitNum },
+        params: { search: searchTerm, page: pageNum, limit: limitNum, country },
       })
       setOrders(response.data.orders)
       setTotal(response.data.total)
@@ -225,12 +227,12 @@ export default function AdminOrdersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, limit])
+  }, [page, limit, country])
 
   // Load initial data on component mount
   useEffect(() => {
     fetchOrders('', 1, limit)
-  }, [limit])
+  }, [limit, country])
 
   // Handle page changes - maintain current search
   useEffect(() => {

@@ -119,6 +119,25 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
     })
   }
 
+  const getCardUrl = (partner: BirthdayPartner) => {
+    const params = new URLSearchParams()
+    params.set('name', partner.partnerName)
+    if (partner.partnerImage?.url) {
+      params.set('image', partner.partnerImage.url)
+    }
+    return `/api/birthday-card?${params.toString()}`
+  }
+
+  const getDownloadUrl = (partner: BirthdayPartner) => {
+    const params = new URLSearchParams()
+    params.set('name', partner.partnerName)
+    if (partner.partnerImage?.url) {
+      params.set('image', partner.partnerImage.url)
+    }
+    params.set('download', '1')
+    return `/api/birthday-card?${params.toString()}`
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
@@ -261,7 +280,8 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              const message = `🎉 Happy Birthday ${partner.partnerName}! 🎂 Wishing you a wonderful year ahead!`
+                              const cardUrl = getCardUrl(partner)
+                              const message = `Happy Birthday ${partner.partnerName}! Here's your birthday card: ${cardUrl}`
                               if (partner.partnerMobileNumber) {
                                 window.open(`https://wa.me/${partner.partnerMobileNumber.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`, '_blank')
                               }
@@ -269,7 +289,29 @@ export default function BirthdayModal({ isOpen, onClose }: BirthdayModalProps) {
                             className="text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 flex-1 sm:flex-initial"
                             disabled={!partner.partnerMobileNumber}
                           >
-                            🎉 Wish Happy Birthday
+                            🎉 Send Card on WhatsApp
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const cardUrl = getCardUrl(partner)
+                              window.open(cardUrl, '_blank')
+                            }}
+                            className="text-sm"
+                          >
+                            View Card
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const downloadUrl = getDownloadUrl(partner)
+                              window.open(downloadUrl, '_blank')
+                            }}
+                            className="text-sm"
+                          >
+                            Download Card
                           </Button>
                         </div>
                       </div>

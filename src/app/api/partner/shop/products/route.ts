@@ -21,14 +21,17 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const sort = searchParams.get('sort') || 'newest'
+    const countryParam = searchParams.get('country') || ''
 
     const where: any = {
       isActive: true,
       outofstock: false,
       // Filter by partner's country
-      ...(partner.country ? {
-        company: { country: partner.country }
-      } : {}),
+      ...(countryParam && countryParam !== 'all'
+        ? { company: { country: countryParam } }
+        : partner.country
+          ? { company: { country: partner.country } }
+          : {}),
     }
 
     if (search) {
@@ -91,13 +94,24 @@ export async function GET(req: NextRequest) {
 
     // Also fetch categories and companies for filters
     const categories = await prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(countryParam && countryParam !== 'all'
+          ? { company: { country: countryParam } }
+          : partner.country
+            ? { company: { country: partner.country } }
+            : {}),
+      },
       select: { category: true },
       distinct: ['category'],
     })
 
     const companies = await prisma.company.findMany({
-      where: partner.country ? { country: partner.country } : {},
+      where: (countryParam && countryParam !== 'all')
+        ? { country: countryParam }
+        : partner.country
+          ? { country: partner.country }
+          : {},
       select: { id: true, companyName: true },
     })
 

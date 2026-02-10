@@ -15,10 +15,16 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
+    const country = searchParams.get('country') || ''
 
     const [orders, total] = await Promise.all([
       prisma.partnerOrder.findMany({
-        where: { partnerId: partner.id },
+        where: {
+          partnerId: partner.id,
+          ...(country && country !== 'all'
+            ? { company: { country } }
+            : {}),
+        },
         include: {
           company: { select: { id: true, companyName: true } },
           items: {

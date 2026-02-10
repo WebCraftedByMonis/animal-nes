@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Product {
   id: number;
@@ -88,6 +89,7 @@ interface VendorPurchase {
 }
 
 export default function PurchasedFromVendorsPage() {
+  const { country } = useCountry()
   const [purchases, setPurchases] = useState<VendorPurchase[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -113,7 +115,7 @@ export default function PurchasedFromVendorsPage() {
     setIsLoading(true)
     try {
       const response = await axios.get('/api/vendor-purchases', {
-        params: { search: searchTerm, page: pageNum, limit: limitNum },
+        params: { search: searchTerm, page: pageNum, limit: limitNum, country },
       })
       setPurchases(response.data.purchases)
       setTotal(response.data.total)
@@ -123,11 +125,11 @@ export default function PurchasedFromVendorsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, limit])
+  }, [page, limit, country])
 
   useEffect(() => {
     fetchPurchases('', 1, limit)
-  }, [limit])
+  }, [limit, country])
 
   useEffect(() => {
     if (page > 1) {

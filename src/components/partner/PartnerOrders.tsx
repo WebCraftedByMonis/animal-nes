@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCountry } from '@/contexts/CountryContext';
+import { formatPrice } from '@/lib/currency-utils';
 
 interface OrderItem {
   id: number;
@@ -37,6 +39,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function PartnerOrders() {
+  const { country } = useCountry();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -45,12 +48,12 @@ export default function PartnerOrders() {
 
   useEffect(() => {
     fetchOrders();
-  }, [page]);
+  }, [page, country]);
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/partner/shop/orders?page=${page}&limit=10`);
+      const res = await fetch(`/api/partner/shop/orders?page=${page}&limit=10&country=${encodeURIComponent(country)}`);
       const data = await res.json();
       if (res.ok) {
         setOrders(data.orders);
@@ -99,7 +102,7 @@ export default function PartnerOrders() {
                   <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </span>
-                  <span className="font-bold text-green-700">Rs.{order.total.toFixed(2)}</span>
+                  <span className="font-bold text-green-700">{formatPrice(order.total, country, true)}</span>
                   {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
               </div>
@@ -141,7 +144,7 @@ export default function PartnerOrders() {
                             {item.discountPercentage && (
                               <p className="text-xs text-red-500">-{item.discountPercentage}%</p>
                             )}
-                            <p className="text-sm font-medium">Rs.{(item.price * item.quantity).toFixed(2)}</p>
+                            <p className="text-sm font-medium">{formatPrice(item.price * item.quantity, country, true)}</p>
                           </div>
                         </div>
                       ))}

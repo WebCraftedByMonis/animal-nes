@@ -349,10 +349,11 @@ export default function CompanyDashboard() {
       {/* Tabs */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8 border-b border-gray-200">
+          <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex items-center gap-3 overflow-x-auto border-b border-gray-200 py-1 sm:py-0">
             <button
               onClick={() => setActiveTab('products')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'products'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -362,7 +363,7 @@ export default function CompanyDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('orders')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'orders'
                   ? 'border-green-500 text-green-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -372,7 +373,7 @@ export default function CompanyDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('profile')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'profile'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -382,7 +383,7 @@ export default function CompanyDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('partner-orders')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'partner-orders'
                   ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -392,7 +393,7 @@ export default function CompanyDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('discounts')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'discounts'
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -402,7 +403,7 @@ export default function CompanyDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('payment-settings')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'payment-settings'
                   ? 'border-teal-500 text-teal-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -412,7 +413,7 @@ export default function CompanyDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('password')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'password'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -420,6 +421,7 @@ export default function CompanyDashboard() {
             >
               Change Password
             </button>
+            </div>
           </div>
         </div>
       </div>

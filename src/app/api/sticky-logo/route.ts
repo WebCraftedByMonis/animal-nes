@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const country = searchParams.get('country') || ''
+
     const stickyLogos = await prisma.stickyLogo.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(country && country !== 'all' ? { company: { country } } : {}),
+      },
       include: {
         company: {
           include: {
@@ -31,7 +37,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { companyId } = body
+    const { companyId, country } = body
 
     if (!companyId) {
       return NextResponse.json(
@@ -42,7 +48,10 @@ export async function POST(request: NextRequest) {
 
     // Check if we already have 10 active sticky logos
     const activeCount = await prisma.stickyLogo.count({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(country && country !== 'all' ? { company: { country } } : {}),
+      },
     })
 
     if (activeCount >= 10) {
@@ -62,6 +71,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Company not found' },
         { status: 404 }
+      )
+    }
+
+    if (country && country !== 'all' && company.country !== country) {
+      return NextResponse.json(
+        { error: 'Company country does not match selected country' },
+        { status: 400 }
       )
     }
 
@@ -142,10 +158,28 @@ export async function DELETE(request: NextRequest) {
       )
     } else {
       // Deactivate all sticky logos
-      await prisma.stickyLogo.updateMany({
-        where: { isActive: true },
-        data: { isActive: false },
-      })
+      if (searchParams.get('country') && searchParams.get('country') !== 'all') {
+        const country = searchParams.get('country') as string
+        const logos = await prisma.stickyLogo.findMany({
+          where: {
+            isActive: true,
+            company: { country },
+          },
+          select: { id: true },
+        })
+        const ids = logos.map(l => l.id)
+        if (ids.length > 0) {
+          await prisma.stickyLogo.updateMany({
+            where: { id: { in: ids } },
+            data: { isActive: false },
+          })
+        }
+      } else {
+        await prisma.stickyLogo.updateMany({
+          where: { isActive: true },
+          data: { isActive: false },
+        })
+      }
 
       return NextResponse.json(
         { message: 'All sticky logos removed successfully' },

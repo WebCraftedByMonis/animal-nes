@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { Search, ShoppingCart, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCountry } from '@/contexts/CountryContext';
+import { formatPrice } from '@/lib/currency-utils';
 
 interface ProductVariant {
   id: number;
@@ -33,6 +35,7 @@ interface PartnerShopProps {
 }
 
 export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: PartnerShopProps) {
+  const { country } = useCountry();
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -54,6 +57,7 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
         ...(search && { search }),
         ...(category && { category }),
         ...(companyId && { companyId }),
+        ...(country && { country }),
       });
 
       const res = await fetch(`/api/partner/shop/products?${params}`);
@@ -71,7 +75,7 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
     } finally {
       setLoading(false);
     }
-  }, [page, search, category, companyId]);
+  }, [page, search, category, companyId, country]);
 
   useEffect(() => {
     fetchProducts();
@@ -251,9 +255,9 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
                             <p className="text-xs text-gray-600 truncate">{variant.packingVolume}</p>
                             <div className="flex items-center gap-1">
                               {discount > 0 && (
-                                <span className="text-xs text-gray-400 line-through">Rs.{price}</span>
+                                <span className="text-xs text-gray-400 line-through">{formatPrice(price, country, true)}</span>
                               )}
-                              <span className="text-sm font-bold text-green-700">Rs.{finalPrice}</span>
+                              <span className="text-sm font-bold text-green-700">{formatPrice(finalPrice, country, true)}</span>
                               {discount > 0 && (
                                 <span className="text-xs text-red-500 font-medium">-{discount}%</span>
                               )}

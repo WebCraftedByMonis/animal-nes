@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { Loader2, ArrowLeft, Upload, AlertCircle } from 'lucide-react';
+import { useCountry } from '@/contexts/CountryContext';
+import { formatPrice } from '@/lib/currency-utils';
 
 interface CartItem {
   id: number;
@@ -61,6 +63,7 @@ interface PartnerCheckoutProps {
 }
 
 export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerCheckoutProps) {
+  const { country } = useCountry();
   const [groups, setGroups] = useState<CompanyGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +76,7 @@ export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerC
 
   useEffect(() => {
     fetchCartAndSettings();
-  }, []);
+  }, [country]);
 
   const getPrice = (item: CartItem) => item.variant.companyPrice || item.variant.customerPrice;
 
@@ -96,7 +99,7 @@ export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerC
 
   const fetchCartAndSettings = async () => {
     try {
-      const res = await fetch('/api/partner/cart');
+      const res = await fetch(`/api/partner/cart?country=${encodeURIComponent(country)}`);
       const data = await res.json();
       if (!res.ok) return;
 
@@ -175,7 +178,7 @@ export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerC
         return;
       }
       if (group.paymentSettings?.minimumOrderAmount && group.subtotal < group.paymentSettings.minimumOrderAmount) {
-        toast.error(`Minimum order for ${group.companyName} is Rs.${group.paymentSettings.minimumOrderAmount}`);
+        toast.error(`Minimum order for ${group.companyName} is ${formatPrice(group.paymentSettings.minimumOrderAmount, country, true)}`);
         return;
       }
     }
@@ -282,7 +285,7 @@ export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerC
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 rounded-t-lg">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-gray-900">{group.companyName}</h3>
-              <span className="font-bold text-green-700">Rs.{group.subtotal.toFixed(2)}</span>
+              <span className="font-bold text-green-700">{formatPrice(group.subtotal, country, true)}</span>
             </div>
           </div>
 
@@ -294,7 +297,7 @@ export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerC
                   <span className="text-gray-600">
                     {item.product.productName} ({item.variant.packingVolume}) x{item.quantity}
                   </span>
-                  <span className="font-medium">Rs.{(getFinalPrice(item) * item.quantity).toFixed(2)}</span>
+                  <span className="font-medium">{formatPrice(getFinalPrice(item) * item.quantity, country, true)}</span>
                 </div>
               ))}
             </div>
@@ -427,7 +430,7 @@ export default function PartnerCheckout({ partner, onBack, onSuccess }: PartnerC
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex justify-between items-center mb-4">
           <span className="text-lg font-semibold">Grand Total</span>
-          <span className="text-xl font-bold text-green-700">Rs.{grandTotal.toFixed(2)}</span>
+          <span className="text-xl font-bold text-green-700">{formatPrice(grandTotal, country, true)}</span>
         </div>
         <div className="flex gap-3">
           <button onClick={onBack} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">

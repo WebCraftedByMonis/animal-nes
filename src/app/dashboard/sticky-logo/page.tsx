@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2, Plus, X, ExternalLink } from 'lucide-react'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Company {
   id: number
@@ -34,6 +35,7 @@ interface StickyLogo {
 }
 
 export default function StickyLogoPage() {
+  const { country } = useCountry()
   const [stickyLogos, setStickyLogos] = useState<StickyLogo[]>([])
   const [companyId, setCompanyId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -45,7 +47,9 @@ export default function StickyLogoPage() {
   const fetchStickyLogos = async () => {
     setIsLoading(true)
     try {
-      const { data } = await axios.get('/api/sticky-logo')
+      const { data } = await axios.get('/api/sticky-logo', {
+        params: { country },
+      })
       setStickyLogos(data.data || [])
     } catch (error) {
       console.log(error)
@@ -63,7 +67,9 @@ export default function StickyLogoPage() {
 
     setIsLoadingPreview(true)
     try {
-      const { data } = await axios.get(`/api/company/${id}`)
+      const { data } = await axios.get(`/api/company/${id}`, {
+        params: { country },
+      })
       setCompanyPreview(data)
     } catch (error) {
       console.log(error)
@@ -76,7 +82,7 @@ export default function StickyLogoPage() {
 
   useEffect(() => {
     fetchStickyLogos()
-  }, [])
+  }, [country])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -103,9 +109,10 @@ export default function StickyLogoPage() {
 
     setIsSaving(true)
     try {
-      await axios.post('/api/sticky-logo', {
-        companyId: Number(companyId),
-      })
+    await axios.post('/api/sticky-logo', {
+      companyId: Number(companyId),
+      country,
+    })
       await fetchStickyLogos()
       setCompanyId('')
       setCompanyPreview(null)
@@ -137,7 +144,9 @@ export default function StickyLogoPage() {
 
     setRemovingId(-1)
     try {
-      await axios.delete('/api/sticky-logo')
+      await axios.delete('/api/sticky-logo', {
+        params: { country },
+      })
       await fetchStickyLogos()
       toast.success('All sticky logos removed successfully')
     } catch (error) {
