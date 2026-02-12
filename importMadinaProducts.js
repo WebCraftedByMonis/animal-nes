@@ -11,7 +11,7 @@ async function importProducts() {
   try {
     console.log('📂 Reading Excel file...');
 
-    const workbook = XLSX.readFile('./Final Madina Medicose monis List.xlsx');
+    const workbook = XLSX.readFile('./Dr Jawad Petone shop Monis products.xlsx');
     const sheetName = workbook.SheetNames[0];
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
 
