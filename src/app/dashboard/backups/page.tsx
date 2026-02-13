@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useCountry } from '@/contexts/CountryContext';
 
 type BackupType = 'products' | 'companies' | 'partners';
 
@@ -12,11 +13,11 @@ const backupLinks: { type: BackupType; label: string; description: string }[] = 
 
 export default function BackupsPage() {
   const [downloading, setDownloading] = useState<BackupType | null>(null);
+  const { country } = useCountry();
 
   const handleDownload = (type: BackupType) => {
     setDownloading(type);
-    // Let the browser handle the file download in a new tab.
-    window.open(`/api/admin/backups?type=${type}`, '_blank', 'noopener,noreferrer');
+    window.open(`/api/admin/backups?type=${type}&country=${country}`, '_blank', 'noopener,noreferrer');
     setTimeout(() => setDownloading(null), 800);
   };
 
@@ -28,6 +29,9 @@ export default function BackupsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Download Backups</h1>
             <p className="mt-1 text-sm text-gray-600">
               Export database data as Excel files. Each download is separate.
+            </p>
+            <p className="mt-2 text-sm font-medium text-emerald-700 bg-emerald-50 inline-block px-3 py-1 rounded-full">
+              Downloading data for: {country}
             </p>
           </div>
 

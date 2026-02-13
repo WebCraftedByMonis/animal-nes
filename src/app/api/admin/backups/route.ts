@@ -30,9 +30,9 @@ function sanitizeRow(row: Record<string, unknown>): Record<string, unknown> {
   return sanitized;
 }
 
-function fileNameForType(type: BackupType) {
+function fileNameForType(type: BackupType, country: string) {
   const stamp = new Date().toISOString().slice(0, 10);
-  return `${type}-backup-${stamp}.xlsx`;
+  return `${type}-backup-${country}-${stamp}.xlsx`;
 }
 
 export async function GET(request: NextRequest) {
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') as BackupType | null;
+  const country = searchParams.get('country') || 'Pakistan';
 
   if (!type || !['products', 'companies', 'partners'].includes(type)) {
     return NextResponse.json(
@@ -63,6 +64,12 @@ export async function GET(request: NextRequest) {
 
   if (type === 'products') {
     const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { company: { country: country } },
+          { partner: { country: country } },
+        ],
+      },
       include: {
         company: { select: { id: true, companyName: true } },
         partner: { select: { id: true, partnerName: true } },
@@ -97,6 +104,7 @@ export async function GET(request: NextRequest) {
 
   if (type === 'companies') {
     const companies = await prisma.company.findMany({
+      where: { country: country },
       orderBy: { id: 'asc' },
     });
 
@@ -116,6 +124,7 @@ export async function GET(request: NextRequest) {
 
   if (type === 'partners') {
     const partners = await prisma.partner.findMany({
+      where: { country: country },
       orderBy: { id: 'asc' },
     });
 
@@ -152,7 +161,7 @@ export async function GET(request: NextRequest) {
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-  const filename = fileNameForType(type);
+  const filename = fileNameForType(type, country);
 
   return new NextResponse(buffer, {
     status: 200,

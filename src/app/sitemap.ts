@@ -26,14 +26,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     vacancies,
     jobPosts,
     applicants,
+    facultyPartners,
+    farmerPartners,
+    masterTrainers,
+    dynamicForms,
   ] = await Promise.all([
     fetchData<any>("product"),
-    fetchData<any>("partner"), 
+    fetchData<any>("partner"),
     fetchData<any>("company"),
     fetchData<any>("animal-news"),
     fetchData<any>("vacancyForm"),
     fetchData<any>("traditionaljobpost"),
     fetchData<any>("jobApplicant"),
+    fetchData<any>("partner?partnerTypeGroup=faculty"),
+    fetchData<any>("partner?partnerTypeGroup=farmer"),
+    fetchData<any>("master-trainer"),
+    fetchData<any>("dynamic-forms"),
   ]);
 
   // High-priority static pages
@@ -128,6 +136,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.5,
     },
+    {
+      url: `${baseUrl}/Faculty`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/Farmers`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/master-trainer`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/forms`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
   ];
 
   // Dynamic product pages
@@ -200,6 +232,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
+  // Faculty pages
+  const facultyPages: MetadataRoute.Sitemap = facultyPartners
+    .filter((partner: any) => partner.id)
+    .map((partner: any) => ({
+      url: `${baseUrl}/Faculty/${partner.id}`,
+      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
+  // Dynamic form pages
+  const formPages: MetadataRoute.Sitemap = dynamicForms
+    .filter((form: any) => form.slug && form.isActive !== false)
+    .map((form: any) => ({
+      url: `${baseUrl}/forms/${form.slug}`,
+      lastModified: form.updatedAt ? new Date(form.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
+  // Farmer pages
+  const farmerPages: MetadataRoute.Sitemap = farmerPartners
+    .filter((partner: any) => partner.id)
+    .map((partner: any) => ({
+      url: `${baseUrl}/Farmers/${partner.id}`,
+      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
   return [
     ...staticPages,
     ...productPages,
@@ -209,5 +271,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...vacancyPages,
     ...jobPostPages,
     ...animalPages,
+    ...facultyPages,
+    ...farmerPages,
+    ...formPages,
   ].sort((a, b) => (b.priority || 0) - (a.priority || 0));
 }

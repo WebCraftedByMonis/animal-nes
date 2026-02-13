@@ -14,6 +14,7 @@ import Image from "next/image"
 import { useSession } from "next-auth/react"
 import { signIn } from "next-auth/react"
 import FullScreenSlider from "./FullScreenSlider"
+import BannerContactBar from "./BannerContactBar"
 import SectionComponent, { SectionItem } from "./SectionComponent"
 import { useLoginModal } from "@/contexts/LoginModalContext"
 import StickyLogo from "./StickyLogo"
@@ -284,8 +285,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* First Section: Slider (50vh on mobile, 100vh on desktop) */}
-
+      {/* Contact Bar - Right beneath Navbar */}
+      <BannerContactBar />
 
       {/* Hero Section - Exactly one screen height */}
       <section className="min-h-screen flex items-center relative overflow-hidden">
