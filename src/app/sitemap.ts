@@ -10,7 +10,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
       if (!res.ok) return [];
       const json = await res.json();
-      return json.data || json || [];
+      const data = json.data || json;
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error(`Failed to fetch ${endpoint}:`, error);
       return [];
