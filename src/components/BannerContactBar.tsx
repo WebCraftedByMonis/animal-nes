@@ -1,14 +1,31 @@
 "use client"
 
 import { useCountry } from "@/contexts/CountryContext"
-import { FaWhatsapp, FaSnapchatGhost, FaMapMarkerAlt } from "react-icons/fa"
+import { FaWhatsapp, FaSnapchatGhost, FaMapMarkerAlt, FaFacebookMessenger, FaTiktok } from "react-icons/fa"
 import { RiMessage2Fill } from "react-icons/ri"
-const PAKISTAN_LINKS = [
-  {
+import { SiZoom } from "react-icons/si"
+
+const WHATSAPP_LINKS: Record<string, { icon: React.ReactNode; label: string; href: string; color: string }> = {
+  Pakistan: {
     icon: <FaWhatsapp className="w-4 h-4" />,
     label: "WhatsApp",
     href: "https://wa.me/923354145431",
     color: "bg-green-600 hover:bg-green-700",
+  },
+  UAE: {
+    icon: <FaWhatsapp className="w-4 h-4" />,
+    label: "WhatsApp",
+    href: "https://wa.me/971547478202",
+    color: "bg-green-600 hover:bg-green-700",
+  },
+}
+
+const COMMON_LINKS = [
+  {
+    icon: <FaFacebookMessenger className="w-4 h-4" />,
+    label: "Messenger",
+    href: "https://m.me/61569643526062",
+    color: "bg-blue-500 hover:bg-blue-600",
   },
   {
     icon: <RiMessage2Fill className="w-4 h-4" />,
@@ -23,6 +40,18 @@ const PAKISTAN_LINKS = [
     color: "bg-yellow-500 hover:bg-yellow-600",
   },
   {
+    icon: <FaTiktok className="w-4 h-4" />,
+    label: "TikTok",
+    href: "https://www.tiktok.com/@animalwellnessshop?_r=1&_t=ZS-93thXueLmuV",
+    color: "bg-gray-800 hover:bg-gray-900",
+  },
+  {
+    icon: <SiZoom className="w-4 h-4" />,
+    label: "Zoom",
+    href: "https://us05web.zoom.us/j/89762221855?pwd=CT3wbqCWG5HSan9Gdy4dbTV2DGyZD5.1",
+    color: "bg-blue-500 hover:bg-blue-600",
+  },
+  {
     icon: <FaMapMarkerAlt className="w-4 h-4" />,
     label: "Location",
     href: "https://maps.app.goo.gl/2BGmq1cdsvjwVEsGA",
@@ -30,18 +59,9 @@ const PAKISTAN_LINKS = [
   },
 ]
 
-const UAE_LINKS = [
-  {
-    icon: <FaWhatsapp className="w-4 h-4" />,
-    label: "WhatsApp",
-    href: "https://wa.me/971547478202",
-    color: "bg-green-600 hover:bg-green-700",
-  },
-]
-
 export default function BannerContactBar() {
   const { country } = useCountry()
-  const links = country === "UAE" ? UAE_LINKS : PAKISTAN_LINKS
+  const links = [WHATSAPP_LINKS[country], ...COMMON_LINKS]
 
   return (
     <div className="w-full bg-emerald-800 py-2 px-3 sm:px-6">
