@@ -28,6 +28,9 @@ interface TraditionalJobPost {
   id: number
   title: string
   description: string
+  name?: string | null
+  whatsapp?: string | null
+  email?: string | null
   image: { url: string; alt: string; publicId: string | null } | null
   createdAt: string
   updatedAt: string
@@ -246,6 +249,56 @@ export default function JobPostDetailClient({ traditionalJobPost }: JobPostDetai
                 </div>
               </CardContent>
             </Card>
+
+            {/* Contact Info Card */}
+            {(jobPost.name || jobPost.whatsapp || jobPost.email) && (
+              <Card>
+                <CardHeader>
+                  <h3 className="font-semibold">Contact Info</h3>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {jobPost.name && (
+                    <div className="flex items-start gap-3">
+                      <Briefcase className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">Name</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{jobPost.name}</p>
+                      </div>
+                    </div>
+                  )}
+                  {jobPost.whatsapp && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">WhatsApp</p>
+                        <a
+                          href={`https://wa.me/${jobPost.whatsapp.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-green-600 hover:underline"
+                        >
+                          {jobPost.whatsapp}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {jobPost.email && (
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">Email</p>
+                        <a
+                          href={`mailto:${jobPost.email}`}
+                          className="text-sm text-green-600 hover:underline"
+                        >
+                          {jobPost.email}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Company Info Card (placeholder) */}
             <Card>

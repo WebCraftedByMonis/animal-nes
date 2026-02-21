@@ -78,10 +78,13 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const title = formData.get('title') as string
     const description = formData.get('description') as string
+    const name = (formData.get('name') as string) || null
+    const whatsapp = (formData.get('whatsapp') as string) || null
+    const email = (formData.get('email') as string) || null
     const imageFile = formData.get('image') as File | null
 
     // Validate input
-    const validation = traditionalJobPostSchema.safeParse({ 
+    const validation = traditionalJobPostSchema.safeParse({
       title,
       description,
     })
@@ -114,6 +117,9 @@ export async function POST(request: NextRequest) {
         data: {
           title: validation.data.title,
           description: validation.data.description,
+          name,
+          whatsapp,
+          email,
         },
       })
 
@@ -215,6 +221,9 @@ export async function PUT(request: NextRequest) {
     const id = formData.get('id') as string
     const title = formData.get('title') as string | null
     const description = formData.get('description') as string | null
+    const name = (formData.get('name') as string) || null
+    const whatsapp = (formData.get('whatsapp') as string) || null
+    const email = (formData.get('email') as string) || null
     const imageFile = formData.get('image') as File | null
 
     if (!id) {
@@ -298,6 +307,9 @@ export async function PUT(request: NextRequest) {
         data: {
           title: title || existingJobPost.title,
           description: description || existingJobPost.description,
+          name,
+          whatsapp,
+          email,
         },
       })
 

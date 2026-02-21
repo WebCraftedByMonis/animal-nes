@@ -18,6 +18,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           id: true,
           title: true,
           description: true,
+          name: true,
+          whatsapp: true,
+          email: true,
+          createdAt: true,
           image: {
             select: { url: true, alt: true },
           },

@@ -24,6 +24,9 @@ interface NewsItem {
   id: number
   title: string
   description: string
+  name?: string | null
+  whatsapp?: string | null
+  email?: string | null
   createdAt: string
   image?: {
     id: number
@@ -48,6 +51,9 @@ export default function NewsPage() {
   const [editId, setEditId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editName, setEditName] = useState('')
+  const [editWhatsapp, setEditWhatsapp] = useState('')
+  const [editEmail, setEditEmail] = useState('')
   const [editImage, setEditImage] = useState<File | null>(null)
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null)
   const [editPdf, setEditPdf] = useState<File | null>(null)
@@ -93,6 +99,9 @@ export default function NewsPage() {
     formData.append('id', editId.toString())
     formData.append('title', editTitle)
     formData.append('description', editDescription)
+    if (editName) formData.append('name', editName)
+    if (editWhatsapp) formData.append('whatsapp', editWhatsapp)
+    if (editEmail) formData.append('email', editEmail)
     if (editImage) formData.append('image', editImage)
     if (editPdf) formData.append('pdf', editPdf)
 
@@ -142,7 +151,9 @@ export default function NewsPage() {
                 <TableHead>ID</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Title</TableHead>
-                
+                <TableHead>Name</TableHead>
+                <TableHead>WhatsApp</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>PDF</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
@@ -158,7 +169,9 @@ export default function NewsPage() {
                     )}
                   </TableCell>
                   <TableCell>{item.title}</TableCell>
-                  
+                  <TableCell>{item.name || '—'}</TableCell>
+                  <TableCell>{item.whatsapp || '—'}</TableCell>
+                  <TableCell>{item.email || '—'}</TableCell>
                   <TableCell>
                     {item.pdf && (
                       <a
@@ -180,6 +193,9 @@ export default function NewsPage() {
                         setEditId(item.id)
                         setEditTitle(item.title)
                         setEditDescription(item.description)
+                        setEditName(item.name || '')
+                        setEditWhatsapp(item.whatsapp || '')
+                        setEditEmail(item.email || '')
                         setEditImagePreview(item.image?.url || null)
                         setOpen(true)
                       }}
@@ -238,6 +254,43 @@ export default function NewsPage() {
   />
 </div>
 
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label htmlFor="editName" className="block text-sm font-medium mb-1">
+          Name <span className="text-gray-400 font-normal">(Optional)</span>
+        </label>
+        <Input
+          id="editName"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          placeholder="Enter name"
+        />
+      </div>
+      <div>
+        <label htmlFor="editWhatsapp" className="block text-sm font-medium mb-1">
+          WhatsApp No <span className="text-gray-400 font-normal">(Optional)</span>
+        </label>
+        <Input
+          id="editWhatsapp"
+          value={editWhatsapp}
+          onChange={(e) => setEditWhatsapp(e.target.value)}
+          placeholder="Enter WhatsApp number"
+        />
+      </div>
+      <div>
+        <label htmlFor="editEmail" className="block text-sm font-medium mb-1">
+          Email <span className="text-gray-400 font-normal">(Optional)</span>
+        </label>
+        <Input
+          id="editEmail"
+          type="email"
+          value={editEmail}
+          onChange={(e) => setEditEmail(e.target.value)}
+          placeholder="Enter email address"
+        />
+      </div>
+    </div>
 
     <div>
       <label htmlFor="editNewsImage" className="block text-sm font-medium mb-1">

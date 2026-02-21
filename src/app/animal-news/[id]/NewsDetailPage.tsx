@@ -12,6 +12,9 @@ type NewsItem = {
   id: string;
   title: string;
   description: string;
+  name?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
   image?: { url: string; alt: string };
   pdf?: { url: string };
   createdAt?: string;
@@ -129,6 +132,43 @@ export default function NewsDetailPage({ id }: NewsDetailPageProps) {
                     Download Full Article PDF
                   </a>
                 </Button>
+              </div>
+            )}
+
+            {(news.name || news.whatsapp || news.email) && (
+              <div className="mt-8 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 space-y-2">
+                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
+                  Contact Info
+                </h3>
+                {news.name && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">Name:</span> {news.name}
+                  </p>
+                )}
+                {news.whatsapp && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">WhatsApp:</span>{' '}
+                    <a
+                      href={`https://wa.me/${news.whatsapp.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:underline"
+                    >
+                      {news.whatsapp}
+                    </a>
+                  </p>
+                )}
+                {news.email && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">Email:</span>{' '}
+                    <a
+                      href={`mailto:${news.email}`}
+                      className="text-green-600 hover:underline"
+                    >
+                      {news.email}
+                    </a>
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -38,12 +38,18 @@ export async function POST(req: NextRequest) {
 
     const title = formData.get('title') as string
     const description = formData.get('description') as string
+    const name = (formData.get('name') as string) || null
+    const whatsapp = (formData.get('whatsapp') as string) || null
+    const email = (formData.get('email') as string) || null
     const image = formData.get('image') as File | null
     const pdf = formData.get('pdf') as File | null
 
     console.log('📩 [SERVER] Incoming form data:')
     console.log('  Title:', title)
     console.log('  Description length:', description?.length || 0)
+    console.log('  Name:', name)
+    console.log('  WhatsApp:', whatsapp)
+    console.log('  Email:', email)
     console.log('  Image file:', image ? `${image.name}, ${image.size} bytes, type: ${image.type}` : 'No image')
     console.log('  PDF file:', pdf ? `${pdf.name}, ${pdf.size} bytes, type: ${pdf.type}` : 'No PDF')
 
@@ -99,6 +105,9 @@ export async function POST(req: NextRequest) {
         data: {
           title,
           description,
+          name,
+          whatsapp,
+          email,
           imageId: imageRecord?.id,
           pdfId: pdfRecord?.id,
         },
@@ -203,6 +212,9 @@ export async function PUT(req: NextRequest) {
 
     const title = formData.get('title') as string
     const description = formData.get('description') as string
+    const name = (formData.get('name') as string) || null
+    const whatsapp = (formData.get('whatsapp') as string) || null
+    const email = (formData.get('email') as string) || null
     const image = formData.get('image') as File | null
     const pdf = formData.get('pdf') as File | null
 
@@ -269,6 +281,9 @@ export async function PUT(req: NextRequest) {
         data: {
           title,
           description,
+          name,
+          whatsapp,
+          email,
           imageId: imageRecord?.id,
           pdfId: pdfRecord?.id,
         },

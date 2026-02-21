@@ -471,6 +471,9 @@ model AnimalNews {
   id          Int        @id @default(autoincrement())
   title       String     @unique
   description String     @db.Text
+  name        String?
+  whatsapp    String?
+  email       String?
   image       newsImage? @relation(fields: [imageId], references: [id], onDelete: Cascade)
   imageId     Int?
   pdf         newsPdf?   @relation(fields: [pdfId], references: [id], onDelete: Cascade)
@@ -689,6 +692,9 @@ model TraditionalJobPost {
   id          Int                     @id @default(autoincrement())
   title       String                  @db.Text
   description String                  @db.Text
+  name        String?
+  whatsapp    String?
+  email       String?
   image       TraditionalJobPostImage?
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt

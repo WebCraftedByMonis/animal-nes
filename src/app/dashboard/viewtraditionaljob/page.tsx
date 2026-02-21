@@ -38,6 +38,9 @@ interface TraditionalJobPost {
   id: number
   title: string
   description: string
+  name?: string | null
+  whatsapp?: string | null
+  email?: string | null
   image: { url: string; alt: string; publicId: string | null } | null
   createdAt: string
   updatedAt: string
@@ -56,6 +59,9 @@ export default function ViewTraditionalJobPostsPage() {
   const [editId, setEditId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editName, setEditName] = useState('')
+  const [editWhatsapp, setEditWhatsapp] = useState('')
+  const [editEmail, setEditEmail] = useState('')
   const [editJobImage, setEditJobImage] = useState<File | null>(null)
   const [editJobImagePreview, setEditJobImagePreview] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
@@ -92,6 +98,9 @@ export default function ViewTraditionalJobPostsPage() {
       formData.append('id', editId.toString())
       formData.append('title', editTitle)
       formData.append('description', editDescription)
+      if (editName) formData.append('name', editName)
+      if (editWhatsapp) formData.append('whatsapp', editWhatsapp)
+      if (editEmail) formData.append('email', editEmail)
       if (editJobImage) formData.append('image', editJobImage)
 
       await axios.put('/api/traditionaljobpost', formData)
@@ -184,6 +193,9 @@ export default function ViewTraditionalJobPostsPage() {
                     Job Title <ArrowUpDown className="inline h-4 w-4" />
                   </TableHead>
                   <TableHead className="px-4 py-2 max-w-md">Description</TableHead>
+                  <TableHead className="px-4 py-2">Name</TableHead>
+                  <TableHead className="px-4 py-2">WhatsApp</TableHead>
+                  <TableHead className="px-4 py-2">Email</TableHead>
                   <TableHead className="px-4 py-2">Created</TableHead>
                   <TableHead className="px-4 py-2">Updated</TableHead>
                   <TableHead className="px-4 py-2">Actions</TableHead>
@@ -192,7 +204,7 @@ export default function ViewTraditionalJobPostsPage() {
               <TableBody>
                 {jobPosts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                       No job posts found. Click "Add New Job Post" to create your first post.
                     </TableCell>
                   </TableRow>
@@ -224,6 +236,9 @@ export default function ViewTraditionalJobPostsPage() {
                           {jobPost.description}
                         </p>
                       </TableCell>
+                      <TableCell className="px-4 py-2 text-sm">{jobPost.name || '—'}</TableCell>
+                      <TableCell className="px-4 py-2 text-sm">{jobPost.whatsapp || '—'}</TableCell>
+                      <TableCell className="px-4 py-2 text-sm">{jobPost.email || '—'}</TableCell>
                       <TableCell className="px-4 py-2 text-sm text-gray-600">
                         {formatDistanceToNow(new Date(jobPost.createdAt), { addSuffix: true })}
                       </TableCell>
@@ -239,6 +254,9 @@ export default function ViewTraditionalJobPostsPage() {
                               setEditId(jobPost.id)
                               setEditTitle(jobPost.title)
                               setEditDescription(jobPost.description)
+                              setEditName(jobPost.name || '')
+                              setEditWhatsapp(jobPost.whatsapp || '')
+                              setEditEmail(jobPost.email || '')
                               setEditJobImagePreview(jobPost.image?.url || null)
                               setOpen(true)
                             }}
@@ -327,6 +345,34 @@ export default function ViewTraditionalJobPostsPage() {
                 />
               </div>
               
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name <span className="text-gray-400 font-normal">(Optional)</span></label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Enter name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">WhatsApp No <span className="text-gray-400 font-normal">(Optional)</span></label>
+                  <Input
+                    value={editWhatsapp}
+                    onChange={(e) => setEditWhatsapp(e.target.value)}
+                    placeholder="Enter WhatsApp number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email <span className="text-gray-400 font-normal">(Optional)</span></label>
+                  <Input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="Enter email address"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Job Post Image</label>
                 <Input 
