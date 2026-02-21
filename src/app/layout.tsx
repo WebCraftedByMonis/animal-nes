@@ -12,6 +12,7 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import { CountryProvider } from "@/contexts/CountryContext";
 import LoginModal from "@/components/LoginModal";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.animalwellness.shop"),
@@ -90,6 +91,19 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
+      {/* Google Analytics */}
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-JGDZM2JJ59"
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-JGDZM2JJ59');
+        `}
+      </Script>
       <body className={poppins.className}>
         <ThemeProvider
           attribute="class"

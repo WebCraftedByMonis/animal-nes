@@ -19,6 +19,9 @@ import "react-toastify/dist/ReactToastify.css";
 const formSchema = z.object({
   title: z.string().min(1, "Job title is required"),
   description: z.string().min(1, "Job description is required"),
+  name: z.string().default(""),
+  whatsapp: z.string().default(""),
+  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
   image: z.instanceof(File).refine((file) => file.size > 0, {
     message: "Job post image is required",
   }),
@@ -37,15 +40,21 @@ export default function QuickJobFormClient() {
     defaultValues: {
       title: "",
       description: "",
+      name: "",
+      whatsapp: "",
+      email: "",
     },
   });
 
   // Check if form has any values
   useEffect(() => {
     const subscription = form.watch((value) => {
-      const hasValues = 
+      const hasValues =
         value.title?.trim() !== "" ||
         value.description?.trim() !== "" ||
+        (value.name ?? "").trim() !== "" ||
+        (value.whatsapp ?? "").trim() !== "" ||
+        (value.email ?? "").trim() !== "" ||
         (value.image && value.image.size > 0);
       setHasValues(!!hasValues);
     });
@@ -93,6 +102,9 @@ export default function QuickJobFormClient() {
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("description", data.description);
+      if (data.name) formData.append("name", data.name);
+      if (data.whatsapp) formData.append("whatsapp", data.whatsapp);
+      if (data.email) formData.append("email", data.email);
       formData.append("image", data.image);
 
       const response = await fetch("/api/traditionaljobpost", {
@@ -165,6 +177,62 @@ export default function QuickJobFormClient() {
                 </FormItem>
               )}
             />
+
+            {/* Optional Contact Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-gray-700">Name <span className="text-gray-400 font-normal">(Optional)</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter name"
+                        className="focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="whatsapp"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-gray-700">WhatsApp No <span className="text-gray-400 font-normal">(Optional)</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter WhatsApp number"
+                        className="focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-gray-700">Email Address <span className="text-gray-400 font-normal">(Optional)</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="Enter email address"
+                        className="focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500" />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* Image Upload */}
             <div className="space-y-2">
