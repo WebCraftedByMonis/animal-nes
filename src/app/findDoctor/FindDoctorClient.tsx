@@ -76,7 +76,11 @@ export default function FindDoctorClient() {
       target instanceof HTMLInputElement && target.type === "checkbox"
         ? target.checked
         : target.value;
-    setForm((prev) => ({ ...prev, [target.name]: value }));
+    setForm((prev) => {
+      const updated = { ...prev, [target.name]: value };
+      if (target.name === "country") updated.state = "";
+      return updated;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,15 +196,27 @@ export default function FindDoctorClient() {
           </div>
 
           <SuggestiveInput
-            suggestions={[
-              "Punjab",
-              "Sindh",
-              "Balochistan",
-              "Khyber Pakhtunkhwa",
-              "Gilgit Baltistan",
-              "Kashmir",
-              "Islamabad",
-            ]}
+            suggestions={
+              form.country === "UAE"
+                ? [
+                    "Abu Dhabi",
+                    "Dubai",
+                    "Sharjah",
+                    "Ajman",
+                    "Umm Al Quwain",
+                    "Ras Al Khaimah",
+                    "Fujairah",
+                  ]
+                : [
+                    "Punjab",
+                    "Sindh",
+                    "Balochistan",
+                    "Khyber Pakhtunkhwa",
+                    "Gilgit Baltistan",
+                    "Kashmir",
+                    "Islamabad",
+                  ]
+            }
             value={form.state}
             onChange={(val) => setForm((prev) => ({ ...prev, state: val }))}
             placeholder="State (Optional)"

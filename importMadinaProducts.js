@@ -9,7 +9,7 @@ const s = (v) => (v == null || v === '' ? null : String(v).trim());
 
 async function importProducts() {
   try {
-    console.log('📂 Reading Excel file...');
+    console.log('📂 Reading Excel file...'); 
 
     const workbook = XLSX.readFile('./Dr Jawad Petone shop Monis products.xlsx');
     const sheetName = workbook.SheetNames[0];

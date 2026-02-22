@@ -266,6 +266,8 @@ export async function GET(req: NextRequest) {
   const country = searchParams.get('country') || ''
   const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined
   const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
+  const companyId = searchParams.get('companyId') ? parseInt(searchParams.get('companyId')!) : undefined
+  const partnerId = searchParams.get('partnerId') ? parseInt(searchParams.get('partnerId')!) : undefined
 
   // Build where clause
   const where: any = {
@@ -302,6 +304,12 @@ export async function GET(req: NextRequest) {
   }
   if (productType && productType !== 'all') {
     where.productType = productType
+  }
+  if (companyId) {
+    where.companyId = companyId
+  }
+  if (partnerId) {
+    where.partnerId = partnerId
   }
 
   // Price filter - this is a bit complex as price is in variants

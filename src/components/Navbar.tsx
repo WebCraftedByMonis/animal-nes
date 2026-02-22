@@ -343,8 +343,13 @@ export default function Navbar() {
                   </DrawerHeader>
 
                   <div className="flex flex-col px-4 py-4 space-y-3 overflow-y-auto">
+                    {/* NavigationMenuDemo for mobile — View, Join, Marketplace, Careers */}
+                    <div>
+                      <NavigationMenuDemo />
+                    </div>
+
                     {/* Mobile Navigation Links */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 border-t pt-3">
                       {[
                         ["Products", "/products"],
                         ["Master Trainings", "/forms"],
@@ -436,11 +441,6 @@ export default function Navbar() {
                           </Link>
                         </DrawerClose>
                       </div>
-                    </div>
-
-                    {/* NavigationMenuDemo for mobile */}
-                    <div className="pt-3 border-t">
-                      <NavigationMenuDemo />
                     </div>
 
                     {/* Theme Toggle in mobile menu */}

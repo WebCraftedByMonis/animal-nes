@@ -173,6 +173,12 @@ export default function PartnerForm({
     setValue('specialization', '');
   }, [partnerType, setValue]);
 
+  // Clear state when country changes
+  const watchedCountry = watch('country');
+  React.useEffect(() => {
+    setValue('state', '');
+  }, [watchedCountry, setValue]);
+
   const onDrop = (acceptedFiles: File[]) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -461,15 +467,27 @@ export default function PartnerForm({
           <div>
             <Label>State</Label>
             <SuggestiveInput
-              suggestions={[
-                "Punjab",
-                "Sindh",
-                "Balochistan",
-                "Khyber Pakhtunkhwa",
-                "Gilgit Baltistan",
-                "Kashmir",
-                "Islamabad",
-              ]}
+              suggestions={
+                watch('country') === "UAE"
+                  ? [
+                      "Abu Dhabi",
+                      "Dubai",
+                      "Sharjah",
+                      "Ajman",
+                      "Umm Al Quwain",
+                      "Ras Al Khaimah",
+                      "Fujairah",
+                    ]
+                  : [
+                      "Punjab",
+                      "Sindh",
+                      "Balochistan",
+                      "Khyber Pakhtunkhwa",
+                      "Gilgit Baltistan",
+                      "Kashmir",
+                      "Islamabad",
+                    ]
+              }
               value={watch('state') || ""}
               onChange={(v) => setValue('state', v)}
               placeholder="Enter state"

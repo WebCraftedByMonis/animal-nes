@@ -24,6 +24,7 @@ import QuickAddToCartButton from './QuickAddToCartButton'
 import QuickBuyNowButton from './QuickBuyNowButton'
 import { useCountry } from '@/contexts/CountryContext'
 import { formatPrice } from '@/lib/currency-utils'
+import { SearchableCombobox } from '@/components/shared/SearchableCombobox'
 
 interface Discount {
   id: number
@@ -127,6 +128,8 @@ export default function ProductsClient() {
   const [subCategoryFilter, setSubCategoryFilter] = useState<string>(searchParams.get('subCategory') || 'all')
   const [subSubCategoryFilter, setSubSubCategoryFilter] = useState<string>(searchParams.get('subsubCategory') || 'all')
   const [productTypeFilter, setProductTypeFilter] = useState<string>(searchParams.get('productType') || 'all')
+  const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get('companyId') || '')
+  const [partnerFilter, setPartnerFilter] = useState<string>(searchParams.get('partnerId') || '')
   // Track if price filter was explicitly applied by user (via URL params or button click)
   const hasPriceFilterFromUrl = searchParams.get('minPrice') !== null || searchParams.get('maxPrice') !== null
   const [priceFilterApplied, setPriceFilterApplied] = useState(hasPriceFilterFromUrl)
@@ -157,6 +160,8 @@ export default function ProductsClient() {
     productType?: string
     minPrice?: number
     maxPrice?: number
+    companyId?: string
+    partnerId?: string
   }) => {
     const urlParams = new URLSearchParams()
 
@@ -169,6 +174,8 @@ export default function ProductsClient() {
     const subCat = params.subCategory ?? subCategoryFilter
     const subSubCat = params.subsubCategory ?? subSubCategoryFilter
     const pt = params.productType ?? productTypeFilter
+    const cid = params.companyId !== undefined ? params.companyId : companyFilter
+    const pid = params.partnerId !== undefined ? params.partnerId : partnerFilter
 
     if (p > 1) urlParams.set('page', String(p))
     if (s) urlParams.set('search', s)
@@ -179,6 +186,8 @@ export default function ProductsClient() {
     if (subCat !== 'all') urlParams.set('subCategory', subCat)
     if (subSubCat !== 'all') urlParams.set('subsubCategory', subSubCat)
     if (pt !== 'all') urlParams.set('productType', pt)
+    if (cid) urlParams.set('companyId', cid)
+    if (pid) urlParams.set('partnerId', pid)
 
     // Only add price params if explicitly provided (when user clicks Apply Price Filter)
     if (params.minPrice !== undefined) urlParams.set('minPrice', String(params.minPrice))
@@ -186,7 +195,7 @@ export default function ProductsClient() {
 
     const queryString = urlParams.toString()
     router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false })
-  }, [router, page, search, sortBy, sortOrder, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter])
+  }, [router, page, search, sortBy, sortOrder, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, companyFilter, partnerFilter])
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -202,6 +211,8 @@ export default function ProductsClient() {
           subCategory: subCategoryFilter === 'all' ? undefined : subCategoryFilter,
           subsubCategory: subSubCategoryFilter === 'all' ? undefined : subSubCategoryFilter,
           productType: productTypeFilter === 'all' ? undefined : productTypeFilter,
+          companyId: companyFilter || undefined,
+          partnerId: partnerFilter || undefined,
           // Only send price filter when explicitly applied by user
           minPrice: priceFilterApplied ? appliedPriceRange[0] : undefined,
           maxPrice: priceFilterApplied ? appliedPriceRange[1] : undefined,
@@ -230,7 +241,7 @@ export default function ProductsClient() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, appliedPriceRange, priceFilterApplied, country])
+  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, companyFilter, partnerFilter, appliedPriceRange, priceFilterApplied, country])
 
   // Fetch data when dependencies change
   useEffect(() => {
@@ -288,6 +299,18 @@ export default function ProductsClient() {
     updateURL({ page: 1, productType: value })
   }
 
+  const handleCompanyChange = (value: string) => {
+    setCompanyFilter(value)
+    setPage(1)
+    updateURL({ page: 1, companyId: value })
+  }
+
+  const handlePartnerChange = (value: string) => {
+    setPartnerFilter(value)
+    setPage(1)
+    updateURL({ page: 1, partnerId: value })
+  }
+
   const handleLimitChange = (value: string) => {
     const newLimit = Number(value)
     setLimit(newLimit)
@@ -308,6 +331,8 @@ export default function ProductsClient() {
     setSubCategoryFilter('all')
     setSubSubCategoryFilter('all')
     setProductTypeFilter('all')
+    setCompanyFilter('')
+    setPartnerFilter('')
     setPriceRange([minPriceLimit, maxPriceLimit])
     setAppliedPriceRange([minPriceLimit, maxPriceLimit])
     setPriceFilterApplied(false)
@@ -366,6 +391,30 @@ export default function ProductsClient() {
             {productTypes.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Company</Label>
+        <SearchableCombobox
+          apiEndpoint="/api/company"
+          searchKey="companyName"
+          value={companyFilter}
+          onChange={handleCompanyChange}
+          placeholder="All Companies"
+          extraParams={{ country }}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Partner</Label>
+        <SearchableCombobox
+          apiEndpoint="/api/partner"
+          searchKey="partnerName"
+          value={partnerFilter}
+          onChange={handlePartnerChange}
+          placeholder="All Partners"
+          extraParams={{ country }}
+        />
       </div>
 
       <div className="space-y-2">
@@ -518,6 +567,28 @@ export default function ProductsClient() {
           </SelectContent>
         </Select>
 
+        <div className="w-[180px]">
+          <SearchableCombobox
+            apiEndpoint="/api/company"
+            searchKey="companyName"
+            value={companyFilter}
+            onChange={handleCompanyChange}
+            placeholder="All Companies"
+            extraParams={{ country }}
+          />
+        </div>
+
+        <div className="w-[180px]">
+          <SearchableCombobox
+            apiEndpoint="/api/partner"
+            searchKey="partnerName"
+            value={partnerFilter}
+            onChange={handlePartnerChange}
+            placeholder="All Partners"
+            extraParams={{ country }}
+          />
+        </div>
+
         <div className="flex items-center gap-2">
           <span className="text-sm">Show</span>
           <Select value={String(limit)} onValueChange={handleLimitChange}>
@@ -635,7 +706,7 @@ export default function ProductsClient() {
               initial="hidden"
               animate="show"
               exit="hidden"
-              key={`${search}-${page}-${sortBy}-${sortOrder}-${categoryFilter}-${subCategoryFilter}-${subSubCategoryFilter}-${productTypeFilter}-${appliedPriceRange.join('-')}`}
+              key={`${search}-${page}-${sortBy}-${sortOrder}-${categoryFilter}-${subCategoryFilter}-${subSubCategoryFilter}-${productTypeFilter}-${companyFilter}-${partnerFilter}-${appliedPriceRange.join('-')}`}
             >
               {products.map((product) => {
                 const v = pickOneVariant(product)
