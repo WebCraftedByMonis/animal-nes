@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
     include: {
       sessions: {
         orderBy: { createdAt: "desc" },
+        take: 1, // only need the most recent for "Last Login"
       },
     },
   });

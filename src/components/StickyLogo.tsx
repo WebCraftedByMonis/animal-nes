@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import axios from 'axios'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Company {
   id: number
@@ -21,11 +22,16 @@ interface StickyLogo {
 export default function StickyLogo() {
   const [stickyLogos, setStickyLogos] = useState<StickyLogo[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const { country } = useCountry()
 
   useEffect(() => {
     const fetchStickyLogos = async () => {
+      setIsLoading(true)
+      setStickyLogos([])
       try {
-        const { data } = await axios.get('/api/sticky-logo')
+        const { data } = await axios.get('/api/sticky-logo', {
+          params: { country },
+        })
         setStickyLogos(data.data || [])
       } catch (error) {
         console.log('Error fetching sticky logos:', error)
@@ -35,7 +41,7 @@ export default function StickyLogo() {
     }
 
     fetchStickyLogos()
-  }, [])
+  }, [country])
 
   if (isLoading || stickyLogos.length === 0) {
     return null

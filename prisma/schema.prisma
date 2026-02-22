@@ -310,6 +310,8 @@ model User {
   emailVerified DateTime?
   image         String?
   PhoneNumber   String?
+  country       String?
+  password      String?
   accounts      Account[]
   sessions      Session[]
   cart          CartItem[]

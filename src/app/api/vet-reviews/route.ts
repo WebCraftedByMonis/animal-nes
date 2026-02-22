@@ -100,15 +100,21 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const session = await auth()
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    // Resolve the DB user — supports both OAuth and credentials users
+    const dbUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    const userId = dbUser.id
 
-    console.log('=== VET REVIEW POST REQUEST DEBUG ===')
-    console.log('User ID:', session.user.id)
-    console.log('Raw request body:', JSON.stringify(body, null, 2))
+    const body = await request.json()
 
     // Validate input
     const validation = vetReviewSchema.safeParse(body)
@@ -141,7 +147,7 @@ export async function POST(request: NextRequest) {
     const existingReview = await prisma.vetReview.findUnique({
       where: {
         userId_partnerId: {
-          userId: session.user.id,
+          userId,
           partnerId: data.partnerId,
         },
       },
@@ -157,7 +163,7 @@ export async function POST(request: NextRequest) {
     // Create the review
     const review = await prisma.vetReview.create({
       data: {
-        userId: session.user.id,
+        userId,
         partnerId: data.partnerId,
         rating: data.rating,
         comment: data.comment,

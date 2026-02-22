@@ -38,6 +38,7 @@ interface User {
   email: string | null;
   image: string | null;
   PhoneNumber: string | null;
+  country: string | null;
   sessions: Session[];
 }
 
@@ -125,7 +126,7 @@ export default function UsersPage() {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Phone Number</TableHead>
-            
+            <TableHead>Country</TableHead>
             <TableHead>Last Login</TableHead>
           </TableRow>
         </TableHeader>
@@ -149,7 +150,8 @@ export default function UsersPage() {
                 {user.name ?? "Unnamed"}
               </TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{user.PhoneNumber}</TableCell>
+              <TableCell>{user.PhoneNumber ?? "—"}</TableCell>
+              <TableCell>{user.country ?? "—"}</TableCell>
               <TableCell>
                 {user.sessions[0]
                   ? new Date(user.sessions[0].createdAt).toLocaleString()

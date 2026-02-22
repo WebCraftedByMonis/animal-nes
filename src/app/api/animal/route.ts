@@ -15,8 +15,17 @@ async function uploadToCloudinary(buffer: Buffer, type: 'image' | 'video', origi
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Resolve DB user so we get the real user.id (works for both OAuth and credentials)
+    const dbUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const formData = await request.formData()
@@ -71,7 +80,7 @@ export async function POST(request: NextRequest) {
         location,
         referredBy,
         status: SellStatus.PENDING,
-        userId: session.user.id,
+        userId: dbUser.id,
         images: {
           create: [
             {

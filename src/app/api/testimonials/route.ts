@@ -81,19 +81,29 @@ export async function POST(request: NextRequest) {
   try {
     // Check if user is authenticated
     const session = await auth()
-    
-    if (!session || !session.user) {
+
+    if (!session || !session.user?.email) {
       return NextResponse.json(
         { error: 'You must be logged in to post a testimonial' },
         { status: 401 }
       )
     }
 
+    // Resolve DB user — works for both OAuth and credentials users
+    const dbUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    const userId = dbUser.id
+
     const body = await request.json()
-    
+
     // Validate input
     const validation = testimonialSchema.safeParse(body)
-    
+
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.errors[0].message },
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
     // Check if user already has a testimonial (optional - remove this block if multiple testimonials allowed)
     const existingtestimonial = await prisma.testimonial.findFirst({
       where: {
-        userId: session.user.id,
+        userId,
       },
     })
 
@@ -119,7 +129,7 @@ export async function POST(request: NextRequest) {
     const testimonial = await prisma.testimonial.create({
       data: {
         content: validation.data.content,
-        userId: session.user.id,
+        userId,
         isApproved: false, // Requires approval
         isActive: true,
       },
@@ -155,13 +165,22 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth()
-    
-    if (!session || !session.user) {
+
+    if (!session || !session.user?.email) {
       return NextResponse.json(
         { error: 'You must be logged in to update a testimonial' },
         { status: 401 }
       )
     }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    const userId = dbUser.id
 
     const body = await request.json()
     const { id, ...updateData } = body
@@ -204,7 +223,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if user owns this testimonial (unless updating approval status)
-    const isUpdatingOwntestimonial = existingtestimonial.userId === session.user.id
+    const isUpdatingOwntestimonial = existingtestimonial.userId === userId
     const isUpdatingApprovalStatus = validation.data.isApproved !== undefined || validation.data.isActive !== undefined
     
     if (!isUpdatingOwntestimonial && !isUpdatingApprovalStatus) {

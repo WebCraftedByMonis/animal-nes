@@ -17,6 +17,8 @@ interface UserProfile {
   name: string | null
   email: string | null
   image?: string | null
+  phoneNumber?: string | null
+  country?: string | null
 }
 
 interface Appointment {
@@ -100,22 +102,30 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 justify-between">
           <div className="flex items-center gap-6">
             <Avatar className="w-24 h-24">
-              <AvatarImage  src={user?.image || ''} alt={user?.name || 'User'} />
+              <AvatarImage src={user?.image || ''} alt={user?.name || 'User'} />
               <AvatarFallback className="bg-green-500 text-white text-2xl">
                 {getInitials(user?.name || '')}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="space-y-1">
               <h2 className="text-2xl font-bold text-green-500">{user?.name || 'Anonymous'}</h2>
               <p className="text-gray-600 dark:text-gray-400">{user?.email}</p>
+              {user?.phoneNumber && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  📞 {user.phoneNumber}
+                </p>
+              )}
+              {user?.country && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  🌍 {user.country}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-4 mt-4">
             <Button className="bg-green-500 hover:bg-green-600" onClick={() => router.push('/orders')}>
               Go to Order History
             </Button>
-
-
             <Button
               variant="outline"
               className="border-green-500 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
