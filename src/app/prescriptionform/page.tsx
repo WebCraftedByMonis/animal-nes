@@ -1,8 +1,8 @@
 'use client'
 export const dynamic = 'force-dynamic';
 
-import { Suspense, useEffect, useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { Suspense, useEffect, useState, useRef, useCallback } from 'react'
+import { useForm, useFieldArray, UseFormRegister, UseFormSetValue } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'react-hot-toast'
-import { Plus, Trash2, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, Trash2, Calendar as CalendarIcon, Search, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 
@@ -54,7 +55,150 @@ const prescriptionSchema = z.object({
 
 type FormValues = z.infer<typeof prescriptionSchema>
 
+interface SuggestionProduct {
+  id: number
+  productName: string
+  genericName?: string | null
+  category?: string | null
+  image?: { url: string; alt?: string | null } | null
+  company?: { companyName: string } | null
+}
 
+function MedicineNameInput({
+  idx,
+  register,
+  setValue,
+  error,
+}: {
+  idx: number
+  register: UseFormRegister<FormValues>
+  setValue: UseFormSetValue<FormValues>
+  error?: string
+}) {
+  const [suggestions, setSuggestions] = useState<SuggestionProduct[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+    setLoadingSuggestions(true)
+    try {
+      const params = new URLSearchParams({ search: query, page: '1', limit: '6' })
+      const res = await fetch(`/api/product?${params}`)
+      const data = await res.json()
+      if (res.ok && data.data) {
+        setSuggestions(data.data)
+        setShowSuggestions(true)
+      }
+    } catch {
+      // silently ignore
+    } finally {
+      setLoadingSuggestions(false)
+    }
+  }, [])
+
+  const { onChange: rhfOnChange, ...rest } = register(`prescriptionItems.${idx}.medicineName` as const)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    rhfOnChange(e)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => fetchSuggestions(e.target.value), 300)
+  }
+
+  const handleSelect = (name: string) => {
+    setValue(`prescriptionItems.${idx}.medicineName`, name, { shouldValidate: true })
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 w-3 h-3 pointer-events-none" />
+        <Input
+          {...rest}
+          onChange={handleChange}
+          placeholder="Medicine name"
+          className="pl-7"
+          onKeyDown={(e) => e.key === 'Escape' && setShowSuggestions(false)}
+          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+          autoComplete="off"
+        />
+      </div>
+
+      {showSuggestions && (suggestions.length > 0 || loadingSuggestions) && (
+        <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-64 overflow-y-auto">
+          {loadingSuggestions && suggestions.length === 0 ? (
+            <div className="flex items-center justify-center gap-2 py-3 text-gray-500 text-sm">
+              <Loader2 className="w-3 h-3 animate-spin text-green-500" />
+              Searching...
+            </div>
+          ) : (
+            suggestions.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-green-50 border-b border-gray-100 last:border-b-0 text-left"
+                onClick={() => handleSelect(product.productName)}
+              >
+                {/* Thumbnail */}
+                <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded overflow-hidden">
+                  {product.image?.url ? (
+                    <Image
+                      src={product.image.url}
+                      alt={product.productName}
+                      width={32}
+                      height={32}
+                      className="object-contain w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-[9px]">Rx</div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{product.productName}</p>
+                  <div className="flex items-center gap-2">
+                    {product.genericName && (
+                      <span className="text-xs text-gray-500 truncate">{product.genericName}</span>
+                    )}
+                    {product.company && (
+                      <span className="text-xs text-blue-600 truncate">{product.company.companyName}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Badge */}
+                <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
+                  Select
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  )
+}
 
 export default function NewPrescriptionPage() {
   return (
@@ -389,10 +533,12 @@ useEffect(() => {
               <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
                 <div className="md:col-span-2">
                   <label className="text-sm text-gray-600">Medicine / Product Name</label>
-                  <Input {...register(`prescriptionItems.${idx}.medicineName` as const)} placeholder="Medicine name" />
-                  {errors.prescriptionItems?.[idx]?.medicineName && (
-                    <p className="text-xs text-red-600 mt-1">{errors.prescriptionItems[idx]?.medicineName?.message}</p>
-                  )}
+                  <MedicineNameInput
+                    idx={idx}
+                    register={register}
+                    setValue={setValue}
+                    error={errors.prescriptionItems?.[idx]?.medicineName?.message}
+                  />
                 </div>
 
                 <div>

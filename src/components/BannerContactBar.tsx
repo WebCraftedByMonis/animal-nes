@@ -3,7 +3,7 @@
 import { useCountry } from "@/contexts/CountryContext"
 import { FaWhatsapp, FaSnapchatGhost, FaMapMarkerAlt, FaFacebookMessenger, FaTiktok } from "react-icons/fa"
 import { RiMessage2Fill } from "react-icons/ri"
-import { SiZoom } from "react-icons/si"
+import { SiZoom, SiGooglemeet } from "react-icons/si"
 
 const WHATSAPP_LINKS: Record<string, { icon: React.ReactNode; label: string; href: string; color: string }> = {
   Pakistan: {
@@ -50,6 +50,23 @@ const COMMON_LINKS = [
     label: "Zoom",
     href: "https://us05web.zoom.us/j/89762221855?pwd=CT3wbqCWG5HSan9Gdy4dbTV2DGyZD5.1",
     color: "bg-blue-500 hover:bg-blue-600",
+  },
+  {
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+        <path d="M12.5 3C9.46 3 7 5.46 7 8.5v.5H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3v.5C7 21.54 9.46 24 12.5 24S18 21.54 18 18.5V8.5C18 5.46 15.54 3 12.5 3z" fill="#5059C9"/>
+        <path d="M19 7h-1V5.5A3.5 3.5 0 0 0 14.5 2h-1A3.5 3.5 0 0 0 10 5.5V7H9a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z" fill="#7B83EB"/>
+      </svg>
+    ),
+    label: "MS Teams",
+    href: "https://teams.live.com/meet/9381024436336?p=5DZY54S6aSxvnXkQg3",
+    color: "bg-indigo-600 hover:bg-indigo-700",
+  },
+  {
+    icon: <SiGooglemeet className="w-4 h-4" />,
+    label: "Google Meet",
+    href: "https://meet.google.com/wrt-pvcj-nra",
+    color: "bg-emerald-600 hover:bg-emerald-700",
   },
   {
     icon: <FaMapMarkerAlt className="w-4 h-4" />,
