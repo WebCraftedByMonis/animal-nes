@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useCountry } from "@/contexts/CountryContext";
 import { Input } from "@/components/ui/input";
 import {
     Table,
@@ -59,6 +60,7 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
+    const { country, currencySymbol } = useCountry();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -101,6 +103,7 @@ export default function TransactionsPage() {
                 search,
                 limit: limit.toString(),
                 page: page.toString(),
+                country,
             });
 
             if (typeFilter && typeFilter !== "ALL") {
@@ -128,7 +131,7 @@ export default function TransactionsPage() {
 
     useEffect(() => {
         fetchData();
-    }, [search, page, limit, typeFilter, statusFilter, sourceFilter]);
+    }, [search, page, limit, typeFilter, statusFilter, sourceFilter, country]);
 
     const handleAdd = async () => {
         try {
@@ -250,7 +253,7 @@ export default function TransactionsPage() {
                         <DollarSign className="h-8 w-8 text-green-500" />
                         <div>
                             <p className="text-sm text-gray-600">Total Revenue</p>
-                            <p className="text-2xl font-bold">₨{totalRevenue.toLocaleString()}</p>
+                            <p className="text-2xl font-bold">{currencySymbol}{totalRevenue.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -271,7 +274,7 @@ export default function TransactionsPage() {
                         <div>
                             <p className="text-sm text-gray-600">Average Transaction</p>
                             <p className="text-2xl font-bold">
-                                ₨{total > 0 ? (totalRevenue / total).toFixed(0) : 0}
+                                {currencySymbol}{total > 0 ? (totalRevenue / total).toFixed(0) : 0}
                             </p>
                         </div>
                     </div>
@@ -393,7 +396,7 @@ export default function TransactionsPage() {
                                       </TableCell>
                                       <TableCell>
                                           <span className="font-semibold text-green-600">
-                                              ₨{transaction.amount.toLocaleString()}
+                                              {currencySymbol}{transaction.amount.toLocaleString()}
                                           </span>
                                       </TableCell>
                                       <TableCell>
@@ -494,7 +497,7 @@ export default function TransactionsPage() {
                             </div>
 
                             <div>
-                                <Label htmlFor="amount">Amount (₨) *</Label>
+                                <Label htmlFor="amount">Amount ({currencySymbol}) *</Label>
                                 <Input
                                     id="amount"
                                     type="number"

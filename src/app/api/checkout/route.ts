@@ -140,7 +140,8 @@ export async function POST(req: NextRequest) {
               productAmount,
               purchasedPrice,
               `${item.product.productName} (${item.variant.packingVolume || 'N/A'})`,
-              paymentMethod
+              paymentMethod,
+              'PENDING'
             )
           }
         }
@@ -159,7 +160,8 @@ export async function POST(req: NextRequest) {
             animalAmount,
             purchasedPrice,
             `${item.animal.specie} - ${item.animal.breed}`,
-            paymentMethod
+            paymentMethod,
+            'PENDING'
           )
         }
       }

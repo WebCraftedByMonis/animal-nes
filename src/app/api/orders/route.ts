@@ -7,6 +7,7 @@ export async function GET(req: Request) {
   const page = parseInt(searchParams.get('page') || '1')
   const search = searchParams.get('search') || ''
   const country = searchParams.get('country') || ''
+  const status = searchParams.get('status') || ''
 
   const where: any = search
     ? {
@@ -44,6 +45,10 @@ export async function GET(req: Request) {
     where.items = {
       some: itemFilter,
     }
+  }
+
+  if (status) {
+    where.status = status
   }
 
     const [orders, total] = await Promise.all([

@@ -39,6 +39,8 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  // submittedSearch is what actually drives the product grid fetch
+  const [submittedSearch, setSubmittedSearch] = useState('');
   const [category, setCategory] = useState('');
   const [companyId, setCompanyId] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
@@ -106,7 +108,7 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
       const params = new URLSearchParams({
         page: String(page),
         limit: '20',
-        ...(search && { search }),
+        ...(submittedSearch && { search: submittedSearch }),
         ...(category && { category }),
         ...(companyId && { companyId }),
         ...(country && { country }),
@@ -127,15 +129,17 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
     } finally {
       setLoading(false);
     }
-  }, [page, search, category, companyId, country]);
+  }, [page, submittedSearch, category, companyId, country]);
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Submit the search — triggers the main product grid fetch
   const handleSearch = () => {
+    setShowSuggestions(false);
+    setSubmittedSearch(search);
     setPage(1);
-    fetchProducts();
   };
 
   const addToCart = async (productId: number, variantId: number) => {
@@ -204,20 +208,27 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
       <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <div ref={searchContainerRef} className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               value={search}
               onChange={handleSearchChange}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') { setShowSuggestions(false); handleSearch(); }
+                if (e.key === 'Enter') handleSearch();
                 if (e.key === 'Escape') setShowSuggestions(false);
               }}
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
               autoComplete="off"
             />
+            <button
+              onClick={handleSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+              title="Search"
+              type="button"
+            >
+              <Search className="w-4 h-4" />
+            </button>
 
             {/* Suggestion Dropdown */}
             {showSuggestions && (suggestions.length > 0 || loadingSuggestions) && (
@@ -258,11 +269,12 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
                           )}
                         </div>
 
-                        {/* Product info — clicking selects the product */}
+                        {/* Product info — clicking selects and submits */}
                         <div
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => {
                             setSearch(product.productName);
+                            setSubmittedSearch(product.productName);
                             setShowSuggestions(false);
                             setPage(1);
                           }}
@@ -319,13 +331,7 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
             {companies.map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
           </select>
           <button
-            onClick={handleSearch}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            Search
-          </button>
-          <button
-            onClick={() => { setSearch(''); setCategory(''); setCompanyId(''); setPage(1); }}
+            onClick={() => { setSearch(''); setSubmittedSearch(''); setCategory(''); setCompanyId(''); setPage(1); }}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
             Clear

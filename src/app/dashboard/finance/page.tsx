@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import { useCountry } from "@/contexts/CountryContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -70,6 +71,7 @@ interface FinancialOverview {
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899'];
 
 export default function FinanceOverviewPage() {
+    const { country, currencySymbol } = useCountry();
     const [data, setData] = useState<FinancialOverview | null>(null);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState("all");
@@ -77,7 +79,7 @@ export default function FinanceOverviewPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            let params = "";
+            const queryParams = new URLSearchParams({ country });
 
             if (dateRange !== "all") {
                 const endDate = new Date();
@@ -98,10 +100,11 @@ export default function FinanceOverviewPage() {
                         break;
                 }
 
-                params = `?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
+                queryParams.set('startDate', startDate.toISOString());
+                queryParams.set('endDate', endDate.toISOString());
             }
 
-            const res = await axios.get(`/api/finance/overview${params}`);
+            const res = await axios.get(`/api/finance/overview?${queryParams}`);
             setData(res.data);
         } catch (error) {
             console.error("Failed to load financial overview", error);
@@ -112,7 +115,7 @@ export default function FinanceOverviewPage() {
 
     useEffect(() => {
         fetchData();
-    }, [dateRange]);
+    }, [dateRange, country]);
 
     if (loading || !data) {
         return (
@@ -190,7 +193,7 @@ export default function FinanceOverviewPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">
-                            ₨{summary.totalRevenue.toLocaleString()}
+                            {currencySymbol}{summary.totalRevenue.toLocaleString()}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                             {summary.transactionCount} transactions
@@ -207,7 +210,7 @@ export default function FinanceOverviewPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-red-600">
-                            ₨{summary.totalExpenses.toLocaleString()}
+                            {currencySymbol}{summary.totalExpenses.toLocaleString()}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                             {summary.expenseCount} expenses
@@ -232,7 +235,7 @@ export default function FinanceOverviewPage() {
                                 summary.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'
                             }`}
                         >
-                            ₨{summary.netProfit.toLocaleString()}
+                            {currencySymbol}{summary.netProfit.toLocaleString()}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                             Margin: {summary.profitMargin}%
@@ -249,7 +252,7 @@ export default function FinanceOverviewPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-yellow-600">
-                            ₨{summary.pendingDistributions.toLocaleString()}
+                            {currencySymbol}{summary.pendingDistributions.toLocaleString()}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                             {summary.pendingDistributionsCount} pending
@@ -360,7 +363,7 @@ export default function FinanceOverviewPage() {
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number) => `₨${value.toLocaleString()}`}
+                                    formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
@@ -392,7 +395,7 @@ export default function FinanceOverviewPage() {
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number) => `₨${value.toLocaleString()}`}
+                                    formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
@@ -411,7 +414,7 @@ export default function FinanceOverviewPage() {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="month" />
                             <YAxis />
-                            <Tooltip formatter={(value: number) => `₨${value.toLocaleString()}`} />
+                            <Tooltip formatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`} />
                             <Legend />
                             <Line
                                 type="monotone"
@@ -459,7 +462,7 @@ export default function FinanceOverviewPage() {
                                         </span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold">₨{item.amount.toLocaleString()}</p>
+                                        <p className="font-semibold">{currencySymbol}{item.amount.toLocaleString()}</p>
                                         <p className="text-xs text-gray-500">{item.count} txns</p>
                                     </div>
                                 </div>
@@ -486,7 +489,7 @@ export default function FinanceOverviewPage() {
                                         </span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold">₨{item.amount.toLocaleString()}</p>
+                                        <p className="font-semibold">{currencySymbol}{item.amount.toLocaleString()}</p>
                                         <p className="text-xs text-gray-500">{item.count} items</p>
                                     </div>
                                 </div>

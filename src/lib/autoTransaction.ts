@@ -64,20 +64,21 @@ export async function createProductSaleTransaction(
   revenue: number,
   costPrice: number | null,
   productName: string,
-  paymentMethod?: string
+  paymentMethod?: string,
+  status: 'PENDING' | 'COMPLETED' = 'PENDING'
 ) {
   const profit = costPrice !== null ? revenue - costPrice : revenue
 
   return createAutoTransaction({
     type: 'PRODUCT_SALE',
-    amount: revenue, // Pass revenue to createAutoTransaction
+    amount: revenue,
     costPrice: costPrice || undefined,
-    profit: profit, // Calculated profit
+    profit: profit,
     description: `Product Sale: ${productName}`,
     paymentMethod,
     checkoutId,
     checkoutItemId,
-    status: 'COMPLETED',
+    status,
   })
 }
 
@@ -90,20 +91,21 @@ export async function createAnimalSaleTransaction(
   revenue: number,
   costPrice: number | null,
   animalName: string,
-  paymentMethod?: string
+  paymentMethod?: string,
+  status: 'PENDING' | 'COMPLETED' = 'PENDING'
 ) {
   const profit = costPrice !== null ? revenue - costPrice : revenue
 
   return createAutoTransaction({
     type: 'ANIMAL_SALE',
-    amount: revenue, // Pass revenue to createAutoTransaction
+    amount: revenue,
     costPrice: costPrice || undefined,
-    profit: profit, // Calculated profit
+    profit: profit,
     description: `Animal Sale: ${animalName}`,
     paymentMethod,
     checkoutId,
     checkoutItemId,
-    status: 'COMPLETED',
+    status,
   })
 }
 

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  // Await the params object first
   const { id } = await params;
   const orderId = parseInt(id, 10);
 
@@ -11,10 +10,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   try {
-    const updatedOrder = await prisma.checkout.update({
-      where: { id: orderId },
-      data: { status: 'delivered' },
-    });
+    // Mark order as delivered and flip its PENDING transactions to COMPLETED in one go
+    const [updatedOrder] = await Promise.all([
+      prisma.checkout.update({
+        where: { id: orderId },
+        data: { status: 'delivered' },
+      }),
+      prisma.transaction.updateMany({
+        where: { checkoutId: orderId, status: 'PENDING' },
+        data: { status: 'COMPLETED' },
+      }),
+    ]);
 
     return NextResponse.json(updatedOrder);
   } catch (error) {

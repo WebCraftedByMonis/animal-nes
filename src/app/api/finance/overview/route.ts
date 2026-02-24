@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -10,6 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const country = searchParams.get('country') || ''
 
     const dateFilter: any = {}
     if (startDate) {
@@ -19,12 +21,41 @@ export async function GET(req: NextRequest) {
       dateFilter.lte = new Date(endDate)
     }
 
+    // Build country-based checkout ID filter
+    let checkoutIdFilter: any = {}
+    let checkoutIds: number[] = []
+    if (country && country !== 'all') {
+      const checkouts = await prisma.checkout.findMany({
+        where: {
+          items: {
+            some: {
+              OR: [
+                { product: { company: { country } } },
+                { animal: { country } },
+              ],
+            },
+          },
+        },
+        select: { id: true },
+      })
+      checkoutIds = checkouts.map((c) => c.id)
+      checkoutIdFilter = {
+        OR: [
+          { checkoutId: { in: checkoutIds } },
+          { checkoutId: null },
+        ],
+      }
+    }
+
+    const transactionWhere: any = {
+      status: 'COMPLETED',
+      ...(Object.keys(dateFilter).length > 0 && { transactionDate: dateFilter }),
+      ...(country && country !== 'all' ? checkoutIdFilter : {}),
+    }
+
     // Get total revenue (completed transactions)
     const revenueStats = await prisma.transaction.aggregate({
-      where: {
-        status: 'COMPLETED',
-        ...(Object.keys(dateFilter).length > 0 && { transactionDate: dateFilter }),
-      },
+      where: transactionWhere,
       _sum: {
         amount: true,
       },
@@ -34,17 +65,14 @@ export async function GET(req: NextRequest) {
     // Get revenue by type
     const revenueByType = await prisma.transaction.groupBy({
       by: ['type'],
-      where: {
-        status: 'COMPLETED',
-        ...(Object.keys(dateFilter).length > 0 && { transactionDate: dateFilter }),
-      },
+      where: transactionWhere,
       _sum: {
         amount: true,
       },
       _count: true,
     })
 
-    // Get total expenses (completed)
+    // Get total expenses (completed) — expenses are global (no country field)
     const expenseStats = await prisma.expense.aggregate({
       where: {
         status: 'COMPLETED',
@@ -94,17 +122,48 @@ export async function GET(req: NextRequest) {
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-    const monthlyRevenue = await prisma.$queryRaw`
-      SELECT
-        DATE_FORMAT(transactionDate, '%Y-%m') as month,
-        SUM(amount) as revenue
-      FROM Transaction
-      WHERE status = 'COMPLETED' AND transactionDate >= ${sixMonthsAgo}
-      GROUP BY DATE_FORMAT(transactionDate, '%Y-%m')
-      ORDER BY month ASC
-    `
+    let monthlyRevenue: any[]
+    let monthlyExpenses: any[]
 
-    const monthlyExpenses = await prisma.$queryRaw`
+    if (country && country !== 'all' && checkoutIds.length > 0) {
+      const idList = Prisma.join(checkoutIds)
+      monthlyRevenue = await prisma.$queryRaw`
+        SELECT
+          DATE_FORMAT(transactionDate, '%Y-%m') as month,
+          SUM(amount) as revenue
+        FROM Transaction
+        WHERE status = 'COMPLETED'
+          AND transactionDate >= ${sixMonthsAgo}
+          AND (checkoutId IS NULL OR checkoutId IN (${idList}))
+        GROUP BY DATE_FORMAT(transactionDate, '%Y-%m')
+        ORDER BY month ASC
+      `
+    } else if (country && country !== 'all' && checkoutIds.length === 0) {
+      // Country selected but no matching checkouts — only manual transactions
+      monthlyRevenue = await prisma.$queryRaw`
+        SELECT
+          DATE_FORMAT(transactionDate, '%Y-%m') as month,
+          SUM(amount) as revenue
+        FROM Transaction
+        WHERE status = 'COMPLETED'
+          AND transactionDate >= ${sixMonthsAgo}
+          AND checkoutId IS NULL
+        GROUP BY DATE_FORMAT(transactionDate, '%Y-%m')
+        ORDER BY month ASC
+      `
+    } else {
+      monthlyRevenue = await prisma.$queryRaw`
+        SELECT
+          DATE_FORMAT(transactionDate, '%Y-%m') as month,
+          SUM(amount) as revenue
+        FROM Transaction
+        WHERE status = 'COMPLETED' AND transactionDate >= ${sixMonthsAgo}
+        GROUP BY DATE_FORMAT(transactionDate, '%Y-%m')
+        ORDER BY month ASC
+      `
+    }
+
+    monthlyExpenses = await prisma.$queryRaw`
       SELECT
         DATE_FORMAT(expenseDate, '%Y-%m') as month,
         SUM(amount) as expense

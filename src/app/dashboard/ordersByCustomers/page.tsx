@@ -99,7 +99,7 @@ interface EditedItem {
 }
 
 export default function AdminOrdersPage() {
-  const { country } = useCountry()
+  const { country, currencySymbol } = useCountry()
   const [orders, setOrders] = useState<Order[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -217,7 +217,7 @@ export default function AdminOrdersPage() {
     setIsLoading(true)
     try {
       const response = await axios.get('/api/orders', {
-        params: { search: searchTerm, page: pageNum, limit: limitNum, country },
+        params: { search: searchTerm, page: pageNum, limit: limitNum, country, status: 'pending' },
       })
       setOrders(response.data.orders)
       setTotal(response.data.total)
@@ -277,7 +277,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold text-green-500">All Orders</h1>
+      <h1 className="text-3xl font-bold text-green-500">Pending Orders</h1>
 
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2 flex-1 max-w-md">
@@ -402,16 +402,16 @@ export default function AdminOrdersPage() {
                   <TableCell>{item.variant?.packingVolume ?? '-'}</TableCell>
                   <TableCell>{item.animal ? item.quantity : '-'}</TableCell>
                   <TableCell>{item.product ? item.quantity : '-'}</TableCell>
-                  <TableCell>{item.animal ? `PKR ${item.price?.toFixed(2)}` : '-'}</TableCell>
-                  <TableCell>{item.product ? `PKR ${item.price?.toFixed(2)}` : '-'}</TableCell>
+                  <TableCell>{item.animal ? `${currencySymbol} ${item.price?.toFixed(2)}` : '-'}</TableCell>
+                  <TableCell>{item.product ? `${currencySymbol} ${item.price?.toFixed(2)}` : '-'}</TableCell>
 
                   {idx === 0 && (
                     <>
                       <TableCell rowSpan={order.items.length} className="font-semibold">
-                        PKR {order.shipmentcharges}
+                        {currencySymbol} {order.shipmentcharges}
                       </TableCell>
                       <TableCell rowSpan={order.items.length} className="font-semibold">
-                        PKR {order.total.toFixed(2)}
+                        {currencySymbol} {order.total.toFixed(2)}
                       </TableCell>
                     </>
                   )}
@@ -624,7 +624,7 @@ export default function AdminOrdersPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`price-${item.id}`}>Selling Price (PKR)</Label>
+                          <Label htmlFor={`price-${item.id}`}>Selling Price ({currencySymbol})</Label>
                           <Input
                             id={`price-${item.id}`}
                             type="number"
@@ -636,7 +636,7 @@ export default function AdminOrdersPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`purchased-price-${item.id}`}>Purchased Price (PKR)</Label>
+                          <Label htmlFor={`purchased-price-${item.id}`}>Purchased Price ({currencySymbol})</Label>
                           <Input
                             id={`purchased-price-${item.id}`}
                             type="number"
@@ -653,7 +653,7 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="shipment-charges">Shipment Charges (PKR)</Label>
+                <Label htmlFor="shipment-charges">Shipment Charges ({currencySymbol})</Label>
                 <Input
                   id="shipment-charges"
                   type="number"
@@ -672,7 +672,7 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="text-lg font-semibold">
-                New Total: PKR {(editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')).toFixed(2)}
+                New Total: {currencySymbol} {(editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')).toFixed(2)}
               </div>
             </div>
           )}

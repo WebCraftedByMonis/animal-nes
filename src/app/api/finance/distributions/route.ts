@@ -22,6 +22,7 @@ const calculateDistributionSchema = z.object({
   partnerId: z.number().optional(),
   periodStart: z.string().or(z.date()),
   periodEnd: z.string().or(z.date()),
+  country: z.string().optional(),
 })
 
 // GET - Fetch all partner distributions
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const { partnerId, periodStart, periodEnd } = validation.data
+      const { partnerId, periodStart, periodEnd, country } = validation.data
 
       // Parse dates as local timezone, not UTC
       // "2025-11-15" should be Nov 15 00:00 in server's local time (Pakistan)
@@ -138,15 +139,38 @@ export async function POST(request: NextRequest) {
         inRange: t.transactionDate >= periodStartDate && t.transactionDate <= periodEndDate
       })))
 
+      // Build country-based checkout ID filter for revenue calculation
+      let revenueWhere: any = {
+        status: 'COMPLETED',
+        transactionDate: {
+          gte: periodStartDate,
+          lte: periodEndDate,
+        },
+      }
+      if (country && country !== 'all') {
+        const checkouts = await prisma.checkout.findMany({
+          where: {
+            items: {
+              some: {
+                OR: [
+                  { product: { company: { country } } },
+                  { animal: { country } },
+                ],
+              },
+            },
+          },
+          select: { id: true },
+        })
+        const checkoutIds = checkouts.map((c) => c.id)
+        revenueWhere.OR = [
+          { checkoutId: { in: checkoutIds } },
+          { checkoutId: null },
+        ]
+      }
+
       // Get revenue for the period
       const revenue = await prisma.transaction.aggregate({
-        where: {
-          status: 'COMPLETED',
-          transactionDate: {
-            gte: periodStartDate,
-            lte: periodEndDate,
-          },
-        },
+        where: revenueWhere,
         _sum: {
           amount: true,
         },

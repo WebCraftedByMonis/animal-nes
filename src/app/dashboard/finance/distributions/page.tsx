@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useCountry } from "@/contexts/CountryContext";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +48,7 @@ interface Calculation {
 }
 
 export default function DistributionsPage() {
+    const { country, currencySymbol } = useCountry();
     const [distributions, setDistributions] = useState<Distribution[]>([]);
     const [partners, setPartners] = useState<BusinessPartner[]>([]);
     const [limit, setLimit] = useState(10);
@@ -113,6 +115,7 @@ export default function DistributionsPage() {
                 periodStart: calcFormData.periodStart,
                 periodEnd: calcFormData.periodEnd,
                 partnerId: calcFormData.partnerId ? parseInt(calcFormData.partnerId) : undefined,
+                country,
             });
 
             setCalculations(res.data.calculations);
@@ -226,7 +229,7 @@ export default function DistributionsPage() {
                         <div className="flex items-center gap-3">
                             <Clock className="h-8 w-8 text-yellow-500" />
                             <div>
-                                <p className="text-2xl font-bold text-yellow-600">₨{pendingAmount.toLocaleString()}</p>
+                                <p className="text-2xl font-bold text-yellow-600">{currencySymbol}{pendingAmount.toLocaleString()}</p>
                                 <p className="text-xs text-gray-500">{distributions.filter(d => d.status === "PENDING").length} pending</p>
                             </div>
                         </div>
@@ -241,7 +244,7 @@ export default function DistributionsPage() {
                         <div className="flex items-center gap-3">
                             <CheckCircle className="h-8 w-8 text-green-500" />
                             <div>
-                                <p className="text-2xl font-bold text-green-600">₨{completedAmount.toLocaleString()}</p>
+                                <p className="text-2xl font-bold text-green-600">{currencySymbol}{completedAmount.toLocaleString()}</p>
                                 <p className="text-xs text-gray-500">{distributions.filter(d => d.status === "COMPLETED").length} completed</p>
                             </div>
                         </div>
@@ -324,9 +327,9 @@ export default function DistributionsPage() {
                                         <p className="text-xs text-gray-500">to {new Date(dist.periodEnd).toLocaleDateString()}</p>
                                     </div>
                                 </TableCell>
-                                <TableCell><span className="font-semibold">₨{dist.totalRevenue.toLocaleString()}</span></TableCell>
+                                <TableCell><span className="font-semibold">{currencySymbol}{dist.totalRevenue.toLocaleString()}</span></TableCell>
                                 <TableCell><span className="text-blue-600 font-semibold">{dist.partner.sharePercentage}%</span></TableCell>
-                                <TableCell><span className="font-semibold text-green-600">₨{dist.shareAmount.toLocaleString()}</span></TableCell>
+                                <TableCell><span className="font-semibold text-green-600">{currencySymbol}{dist.shareAmount.toLocaleString()}</span></TableCell>
                                 <TableCell>{getStatusBadge(dist.status)}</TableCell>
                                 <TableCell><p className="text-sm">{dist.paymentDate ? new Date(dist.paymentDate).toLocaleDateString() : "-"}</p></TableCell>
                                 <TableCell>
@@ -396,9 +399,9 @@ export default function DistributionsPage() {
                                     <div key={idx} className="flex justify-between items-center border-b pb-2">
                                         <div>
                                             <p className="font-medium">{calc.partnerName}</p>
-                                            <p className="text-xs text-gray-500">Share: {calc.sharePercentage}% of ₨{calc.totalRevenue.toLocaleString()}</p>
+                                            <p className="text-xs text-gray-500">Share: {calc.sharePercentage}% of {currencySymbol}{calc.totalRevenue.toLocaleString()}</p>
                                         </div>
-                                        <p className="font-bold text-green-600">₨{calc.shareAmount.toLocaleString()}</p>
+                                        <p className="font-bold text-green-600">{currencySymbol}{calc.shareAmount.toLocaleString()}</p>
                                     </div>
                                 ))}
                             </div>

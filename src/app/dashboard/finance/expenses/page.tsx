@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Image from "next/image";
+import { useCountry } from "@/contexts/CountryContext";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +39,7 @@ interface BusinessPartner {
 }
 
 export default function ExpensesPage() {
+    const { currencySymbol } = useCountry();
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [partners, setPartners] = useState<BusinessPartner[]>([]);
     const [search, setSearch] = useState("");
@@ -254,7 +256,7 @@ export default function ExpensesPage() {
                         <TrendingDown className="h-8 w-8 text-red-500" />
                         <div>
                             <p className="text-sm text-gray-600">Total Expenses</p>
-                            <p className="text-2xl font-bold text-red-600">₨{totalExpenses.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-red-600">{currencySymbol}{totalExpenses.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -275,7 +277,7 @@ export default function ExpensesPage() {
                         <div>
                             <p className="text-sm text-gray-600">Average Expense</p>
                             <p className="text-2xl font-bold">
-                                ₨{total > 0 ? (totalExpenses / total).toFixed(0) : 0}
+                                {currencySymbol}{total > 0 ? (totalExpenses / total).toFixed(0) : 0}
                             </p>
                         </div>
                     </div>
@@ -359,7 +361,7 @@ export default function ExpensesPage() {
                                     <p className="text-sm max-w-xs truncate" title={expense.description}>{expense.description}</p>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="font-semibold text-red-600">₨{expense.amount.toLocaleString()}</span>
+                                    <span className="font-semibold text-red-600">{currencySymbol}{expense.amount.toLocaleString()}</span>
                                 </TableCell>
                                 <TableCell>
                                     {expense.paidToPartner ? (
@@ -430,7 +432,7 @@ export default function ExpensesPage() {
                                 </Select>
                             </div>
                             <div>
-                                <Label>Amount (₨) *</Label>
+                                <Label>Amount ({currencySymbol}) *</Label>
                                 <Input type="number" min="0" step="0.01" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })} />
                             </div>
                         </div>
