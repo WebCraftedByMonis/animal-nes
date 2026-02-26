@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle file uploads
+    const imageUrlField = (formData.get('imageUrl') as string | null)?.trim() || null
     const [imageResult, pdfResult] = await Promise.all([
       handleFileUpload(formData.get('image') as File | null, 'image'),
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
@@ -153,6 +154,15 @@ export async function POST(request: NextRequest) {
             url: imageResult.secure_url,
             alt: validation.data.productName,
             publicId: imageResult.public_id,
+            productId: product.id
+          }
+        })
+      } else if (imageUrlField) {
+        await tx.productImage.create({
+          data: {
+            url: imageUrlField,
+            alt: validation.data.productName,
+            publicId: null,
             productId: product.id
           }
         })
@@ -492,12 +502,13 @@ export async function PUT(request: NextRequest) {
    
 
     // Handle file uploads
+    const imageUrlFieldPut = (formData.get('imageUrl') as string | null)?.trim() || null
     const [imageResult, pdfResult] = await Promise.all([
       handleFileUpload(formData.get('image') as File | null, 'image'),
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
     ])
 
-   
+
 
     // Parse variants
     const variants: VariantInput[] = []
@@ -563,7 +574,7 @@ export async function PUT(request: NextRequest) {
         if (existingProduct.image?.publicId) {
           try {
             await deleteFromCloudinary(existingProduct.image.publicId, 'image')
-            
+
           } catch (error) {
             console.error('Failed to delete old image:', error)
           }
@@ -583,8 +594,30 @@ export async function PUT(request: NextRequest) {
             publicId: imageResult.public_id
           }
         })
+      } else if (imageUrlFieldPut) {
+        // If a direct URL is provided (no file upload), upsert with that URL
+        if (existingProduct.image?.publicId) {
+          try {
+            await deleteFromCloudinary(existingProduct.image.publicId, 'image')
+          } catch (error) {
+            console.error('Failed to delete old image:', error)
+          }
+        }
 
-        
+        await tx.productImage.upsert({
+          where: { productId },
+          create: {
+            url: imageUrlFieldPut,
+            alt: cleanedProductData.productName || existingProduct.productName,
+            publicId: null,
+            productId
+          },
+          update: {
+            url: imageUrlFieldPut,
+            alt: cleanedProductData.productName || existingProduct.productName,
+            publicId: null
+          }
+        })
       }
 
       // Handle PDF update

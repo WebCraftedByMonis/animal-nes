@@ -48,11 +48,8 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
   outofstock: z.boolean().default(true),
-  image: z
-    .any()
-    .refine((file) => file instanceof File && file.size > 0, {
-      message: "Image is required",
-    }),
+  imageUrl: z.string().optional(),
+  image: z.any().optional(),
 
   pdf: z
     .any()
@@ -99,7 +96,7 @@ export default function AddProductForm() {
       description: "",
       dosage: "",
       productLink: "",
-
+      imageUrl: "",
     },
   });
 
@@ -213,6 +210,7 @@ export default function AddProductForm() {
           description: "",
           dosage: "",
           productLink: "",
+          imageUrl: "",
         });
 
         // Clear image and PDF previews
@@ -535,6 +533,21 @@ export default function AddProductForm() {
                 />
               </div>
 
+              {/* Image URL */}
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Image URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter image URL (if not uploading a file)" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Image Upload */}
               <div className="md:col-span-2">
                 <FormField
@@ -542,7 +555,7 @@ export default function AddProductForm() {
                   name="image"
                   render={() => (
                     <FormItem>
-                      <FormLabel>Product Image *</FormLabel>
+                      <FormLabel>Product Image (Optional — upload or provide URL above)</FormLabel>
                       <div {...getImageRootProps()} className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer">
                         <input {...getImageInputProps()} />
                         {imagePreview ? (

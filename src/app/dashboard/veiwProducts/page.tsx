@@ -106,6 +106,7 @@ export default function ViewProductsPage() {
   const [editOutofstock, setEditOutofstock] = useState(false)
   const [editProductImage, setEditProductImage] = useState<File | null>(null)
   const [editProductImagePreview, setEditProductImagePreview] = useState<string | null>(null)
+  const [editImageUrl, setEditImageUrl] = useState('')
   const [editProductPdf, setEditProductPdf] = useState<File | null>(null)
   const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
   const [open, setOpen] = useState(false)
@@ -191,6 +192,9 @@ export default function ViewProductsPage() {
       // Add files if they exist
       if (editProductImage) {
         formData.append('image', editProductImage)
+      }
+      if (editImageUrl) {
+        formData.append('imageUrl', editImageUrl)
       }
       if (editProductPdf) {
         formData.append('pdf', editProductPdf)
@@ -469,6 +473,7 @@ export default function ViewProductsPage() {
                         setEditIsActive(product.isActive)
                         setEditOutofstock(product.outofstock)
                         setEditProductImagePreview(product.image?.url || null)
+                        setEditImageUrl(product.image?.url || '')
                         setEditVariants(product.variants.map(v => ({
                           id: v.id,
                           packingVolume: v.packingVolume,
@@ -540,6 +545,7 @@ export default function ViewProductsPage() {
     setEditProductImage(null)
     setEditProductPdf(null)
     setEditProductImagePreview(null)
+    setEditImageUrl('')
   }
 }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -808,24 +814,39 @@ export default function ViewProductsPage() {
                 </div>
               </div>
               
+              <div>
+                <Label>Image URL</Label>
+                <Input
+                  value={editImageUrl}
+                  onChange={(e) => {
+                    setEditImageUrl(e.target.value)
+                    setEditProductImagePreview(e.target.value || null)
+                  }}
+                  placeholder="Enter image URL (or upload a file below)"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Product Image</Label>
-                  <Input 
-                    type="file" 
-                    accept="image/*" 
+                  <Label>Product Image (Upload to replace)</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null
                       setEditProductImage(file)
-                      if (file) setEditProductImagePreview(URL.createObjectURL(file))
-                    }} 
+                      if (file) {
+                        setEditProductImagePreview(URL.createObjectURL(file))
+                        setEditImageUrl('')
+                      }
+                    }}
                   />
                   {editProductImagePreview && (
                     <div className="mt-2 relative aspect-square w-32">
-                      <Image 
-                        src={editProductImagePreview} 
-                        alt="Preview" 
-                        fill 
+                      <Image
+                        src={editProductImagePreview}
+                        alt="Preview"
+                        fill
                         className="rounded object-cover"
                       />
                     </div>

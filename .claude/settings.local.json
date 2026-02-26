@@ -10,7 +10,9 @@
       "Bash(npx prisma db push:*)",
       "Bash(npx prisma generate:*)",
       "Bash(for file in  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\app\\\\dashboard\\\\backups\\\\page.tsx\"  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\app\\\\thankyou\\\\page.tsx\"  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\components\\\\AddToCartButton.tsx\"  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\components\\\\WishlistButton.tsx\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
