@@ -74,14 +74,20 @@ export async function generateMetadata({
       description: description.substring(0, 160), // Keep under 160 chars for SEO
       keywords: [
         data.name,
-        data.expectedPosition || 'job applicant',
-        data.qualification || 'professional',
-        data.highestDegree || '',
-        data.preferredIndustry || '',
+        data.expectedPosition,
+        data.qualification,
+        data.highestDegree,
+        data.majorFieldOfStudy,
+        data.degreeInstitution,
+        data.preferredIndustry,
+        data.preferredLocation,
+        data.previousCompany,
+        `${data.expectedPosition ?? 'job applicant'} Pakistan`,
         'veterinary candidate',
         'animal care applicant',
-        'job seeker'
-      ].filter(Boolean).join(', '),
+        'job seeker',
+        'animal wellness careers',
+      ].filter(Boolean),
       openGraph: {
         title: `${data.name} - ${data.expectedPosition || 'Job Applicant'}`,
         description: `View ${data.name}'s professional profile. ${data.qualification ? `Qualification: ${data.qualification}` : ''} ${data.workExperience ? `| Experience: ${data.workExperience}` : ''}`,

@@ -77,12 +77,17 @@ export async function generateMetadata({
         data.position,
         data.company,
         data.location,
+        data.companyAddress,
+        `${data.position} at ${data.company}`,
+        `${data.position} ${data.location}`,
+        data.noofpositions ? `${data.noofpositions} openings` : null,
         'veterinary jobs',
         'animal care careers',
-        'job vacancy',
+        'job vacancy Pakistan',
         'apply now',
-        data.eligibility || 'professional'
-      ].filter(Boolean).join(', '),
+        'animal wellness hiring',
+        data.eligibility,
+      ].filter(Boolean),
       openGraph: {
         title: `${data.position} at ${data.company}`,
         description: `${data.position} opportunity at ${data.company} in ${data.location}. Apply by ${new Date(data.deadline).toLocaleDateString()}.`,
@@ -105,7 +110,7 @@ export async function generateMetadata({
         images: data.jobFormImage?.url ? [data.jobFormImage.url] : [],
       },
       alternates: {
-        canonical: `/jobvacancy/${id}`
+        canonical: `https://www.animalwellness.shop/jobvacancy/${id}`,
       }
     }
   } catch (e) {
@@ -124,6 +129,48 @@ export default async function JobVacancyDetailPage({
 }) {
   const { id } = await params;
   const jobVacancy = await getJobVacancy(id)
-  
-  return <JobFormDetailClient jobVacancy={jobVacancy} />
+
+  const jsonLd = jobVacancy
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'JobPosting',
+        title: jobVacancy.position,
+        description: `${jobVacancy.eligibility}. ${jobVacancy.benefits}`,
+        hiringOrganization: {
+          '@type': 'Organization',
+          name: jobVacancy.company,
+          address: jobVacancy.companyAddress,
+        },
+        jobLocation: {
+          '@type': 'Place',
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: jobVacancy.location,
+            addressCountry: 'PK',
+          },
+        },
+        validThrough: jobVacancy.deadline,
+        totalJobOpenings: jobVacancy.noofpositions || undefined,
+        datePosted: jobVacancy.createdAt,
+        url: `https://www.animalwellness.shop/jobvacancy/${id}`,
+        applicationContact: {
+          '@type': 'ContactPoint',
+          telephone: jobVacancy.mobileNumber,
+          email: jobVacancy.email || undefined,
+          contactType: 'HR',
+        },
+      }
+    : null
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <JobFormDetailClient jobVacancy={jobVacancy} />
+    </>
+  )
 }

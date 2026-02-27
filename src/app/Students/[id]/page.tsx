@@ -119,14 +119,22 @@ export async function generateMetadata({
       },
       keywords: [
         data.partnerName,
-        'student',
-        'animal sciences',
-        'education',
+        data.qualificationDegree,
         data.specialization,
+        data.species,
         data.cityName,
         data.state,
+        data.areaTown,
+        `animal sciences student ${data.cityName ?? ''}`.trim(),
+        'student',
+        'animal sciences',
+        'veterinary student',
+        'education',
         'Animal Wellness',
-      ].filter(Boolean).join(', '),
+      ].filter(Boolean),
+      alternates: {
+        canonical: `https://www.animalwellness.shop/Students/${id}`,
+      },
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

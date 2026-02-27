@@ -80,15 +80,23 @@ export async function generateMetadata({
       keywords: [
         data.partnerName,
         data.shopName,
-        'animal wellness',
-        'veterinary products',
-        'animal health store',
-        'pet supplies',
         data.cityName,
         data.state,
         data.areaTown,
+        data.specialization,
+        data.partnerType,
+        data.species,
+        `${data.shopName ?? data.partnerName} ${data.cityName ?? ''}`.trim(),
+        'animal wellness',
+        'veterinary products',
+        'animal health store',
+        'pet supplies Pakistan',
         'sales partner',
-      ].filter(Boolean).join(', '),
+        'veterinary distributor',
+      ].filter(Boolean),
+      alternates: {
+        canonical: `https://www.animalwellness.shop/Sales/${id}`,
+      },
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

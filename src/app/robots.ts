@@ -31,7 +31,6 @@ export default function robots(): MetadataRoute.Robots {
           "/addPartner/",
           "/sell/",
           "/Privacy/",
-          "/*?*", // Block URLs with query parameters for cleaner indexing
         ],
       },
       {

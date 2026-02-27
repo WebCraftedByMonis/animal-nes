@@ -84,14 +84,24 @@ export async function generateMetadata({
       },
       keywords: [
         data.partnerName,
+        data.shopName,
+        data.qualificationDegree,
+        data.specialization,
+        data.species,
+        data.cityName,
+        data.state,
+        data.areaTown,
+        `veterinary assistant ${data.cityName ?? ''}`.trim(),
+        `${data.specialization ?? ''} assistant`.trim(),
         'veterinary assistant',
         'animal health',
         'pet care',
-        data.specialization,
-        data.cityName,
-        data.state,
+        'vet technician Pakistan',
         'Animal Wellness',
-      ].filter(Boolean).join(', '),
+      ].filter(Boolean),
+      alternates: {
+        canonical: `https://www.animalwellness.shop/VeterinaryAssistants/${id}`,
+      },
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

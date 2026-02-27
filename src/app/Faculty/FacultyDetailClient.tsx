@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -70,6 +71,8 @@ interface FacultyDetailClientProps {
 export default function FacultyDetailClient({ partner }: FacultyDetailClientProps) {
   const router = useRouter()
   const loading = false
+  const [productPage, setProductPage] = useState(1)
+  const PRODUCTS_PER_PAGE = 6
 
   const navigateToProduct = (product: Product) => {
     router.push(`/products/${product.id}`)
@@ -335,8 +338,9 @@ export default function FacultyDetailClient({ partner }: FacultyDetailClientProp
             </h2>
 
             {partner.products.length > 0 ? (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {partner.products.map((product) => (
+                {partner.products.slice((productPage - 1) * PRODUCTS_PER_PAGE, productPage * PRODUCTS_PER_PAGE).map((product) => (
                   <Card
                     key={product.id}
                     className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
@@ -381,6 +385,25 @@ export default function FacultyDetailClient({ partner }: FacultyDetailClientProp
                   </Card>
                 ))}
               </div>
+              {partner.products.length > PRODUCTS_PER_PAGE && (
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Showing {(productPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(productPage * PRODUCTS_PER_PAGE, partner.products.length)} of {partner.products.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setProductPage(p => p - 1)} disabled={productPage === 1}>
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {productPage} / {Math.ceil(partner.products.length / PRODUCTS_PER_PAGE)}
+                    </span>
+                    <Button variant="outline" size="sm" onClick={() => setProductPage(p => p + 1)} disabled={productPage === Math.ceil(partner.products.length / PRODUCTS_PER_PAGE)}>
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+              </>
             ) : (
               <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-12 text-center">
                 <Package className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />

@@ -49,8 +49,6 @@ export async function generateMetadata({
 
     const data: SellAnimal = await res.json()
 
-    
-console.log(data)
     // Create a descriptive title and description
     const age = `${data.ageNumber} ${data.ageType}`
     const weight = `${data.weightValue} ${data.weightType}`
@@ -62,6 +60,23 @@ console.log(data)
     return {
       title,
       description,
+      keywords: [
+        data.specie,
+        data.breed,
+        `${data.specie} for sale`,
+        `${data.breed} for sale`,
+        `${data.specie} ${data.breed}`,
+        data.location,
+        data.gender,
+        `${data.ageNumber} ${data.ageType} ${data.specie}`,
+        `${data.weightValue} ${data.weightType}`,
+        data.healthCertificate ? 'health certified animal' : null,
+        'buy animals online',
+        'live animals for sale',
+        'livestock Pakistan',
+        'animal marketplace',
+        'animal wellness',
+      ].filter(Boolean),
       openGraph: {
         title,
         description,
@@ -82,6 +97,9 @@ console.log(data)
         title,
         description: `${data.gender} ${data.specie} in ${data.location} - PKR ${data.totalPrice.toLocaleString()}`,
         images: data.images.length > 0 ? [data.images[0].url] : [],
+      },
+      alternates: {
+        canonical: `https://www.animalwellness.shop/buy/${id}`,
       },
     }
   } catch (error) {

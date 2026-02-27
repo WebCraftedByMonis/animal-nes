@@ -119,14 +119,23 @@ export async function generateMetadata({
       },
       keywords: [
         data.partnerName,
+        data.qualificationDegree,
+        data.specialization,
+        data.species,
+        data.cityName,
+        data.state,
+        data.areaTown,
+        `faculty ${data.cityName ?? ''}`.trim(),
+        `${data.specialization ?? ''} faculty`.trim(),
         'faculty',
         'education',
         'academic',
-        data.specialization,
-        data.cityName,
-        data.state,
+        'veterinary education Pakistan',
         'Animal Wellness',
-      ].filter(Boolean).join(', '),
+      ].filter(Boolean),
+      alternates: {
+        canonical: `https://www.animalwellness.shop/Faculty/${id}`,
+      },
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

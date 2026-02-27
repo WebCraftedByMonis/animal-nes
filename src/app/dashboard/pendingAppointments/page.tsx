@@ -435,7 +435,7 @@ export default function DashboardPage() {
                                 Emergency <ArrowUpDown className="inline h-3 w-3" />
                             </TableHead>
                             <TableHead className="font-semibold cursor-pointer" onClick={() => toggleSort("appointmentAt")}>
-                                Date/Time <ArrowUpDown className="inline h-3 w-3" />
+                                Requested Date <ArrowUpDown className="inline h-3 w-3" />
                             </TableHead>
                             <TableHead className="font-semibold">Status</TableHead>
                             <TableHead className="font-semibold">Actions</TableHead>
@@ -554,11 +554,15 @@ export default function DashboardPage() {
                                         )}
                                     </TableCell>
 
-                                    {/* Date/Time */}
+                                    {/* Requested Appointment Date */}
                                     <TableCell>
-                                        <div>
-                                            <p className="text-sm">{new Date(a.appointmentAt).toLocaleDateString()}</p>
-                                            <p className="text-xs text-gray-500">{new Date(a.appointmentAt).toLocaleTimeString()}</p>
+                                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md px-2 py-1 inline-block">
+                                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                                {new Date(a.appointmentAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                            <p className="text-xs text-green-600 dark:text-green-400">
+                                                {new Date(a.appointmentAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
                                         </div>
                                     </TableCell>
 

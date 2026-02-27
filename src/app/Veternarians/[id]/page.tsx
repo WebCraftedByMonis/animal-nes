@@ -83,15 +83,25 @@ export async function generateMetadata({
       },
       keywords: [
         data.partnerName,
+        data.shopName,
+        data.qualificationDegree,
+        data.specialization,
+        data.species,
+        data.cityName,
+        data.state,
+        data.areaTown,
+        `veterinarian ${data.cityName ?? ''}`.trim(),
+        `${data.specialization ?? ''} vet`.trim(),
         'veterinary',
         'veterinarian',
         'animal health',
         'pet care',
-        data.specialization,
-        data.cityName,
-        data.state,
+        'animal doctor Pakistan',
         'Animal Wellness',
-      ].filter(Boolean).join(', '),
+      ].filter(Boolean),
+      alternates: {
+        canonical: `https://www.animalwellness.shop/Veternarians/${id}`,
+      },
     }
   } catch (e) {
     console.error('Error generating metadata:', e)
@@ -102,6 +112,57 @@ export async function generateMetadata({
   }
 }
 
-export default function Page() {
-  return <VeterinaryPartnerDetailClient />
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  let jsonLd = null
+
+  try {
+    const res = await fetch(`${getApiUrl()}/api/partner/${id}`, {
+      next: { revalidate: 1800 },
+    })
+    if (res.ok) {
+      const data: Partner = await res.json()
+      const location = [data.areaTown, data.cityName, data.state].filter(Boolean).join(', ')
+      jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Physician',
+        name: data.partnerName,
+        url: `https://www.animalwellness.shop/Veternarians/${id}`,
+        telephone: data.partnerMobileNumber || undefined,
+        email: data.partnerEmail || undefined,
+        image: data.partnerImage?.url || undefined,
+        medicalSpecialty: data.specialization || 'Veterinary Medicine',
+        description: [data.qualificationDegree, data.specialization, data.species ? `Treats ${data.species}` : null]
+          .filter(Boolean)
+          .join('. '),
+        address: location
+          ? {
+              '@type': 'PostalAddress',
+              streetAddress: data.fullAddress || undefined,
+              addressLocality: data.cityName || undefined,
+              addressRegion: data.state || undefined,
+              addressCountry: 'PK',
+            }
+          : undefined,
+      }
+    }
+  } catch {
+    // JSON-LD is non-critical, silently skip on error
+  }
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <VeterinaryPartnerDetailClient />
+    </>
+  )
 }

@@ -38,11 +38,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: form.description || `Submit ${form.title} - Secure online form submission for animal wellness services.`,
       keywords: [
         form.title,
+        `${form.title} form`,
+        `${form.title} registration`,
+        form.paymentRequired ? 'paid registration' : 'free registration',
+        form.paymentRequired && form.paymentAmount ? `registration fee ${form.paymentAmount}` : null,
         'veterinary forms',
         'animal registration',
         'pet care forms',
         'animal wellness applications',
-        'online form submission'
+        'online form submission',
       ].filter(Boolean),
       openGraph: {
         title: `${form.title} - Submit Online`,

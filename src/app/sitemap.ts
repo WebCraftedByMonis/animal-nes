@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   async function fetchData<T>(endpoint: string): Promise<T[]> {
     try {
-      const res = await fetch(`${baseUrl}/api/${endpoint}`, { 
+      const res = await fetch(`${baseUrl}/api/${endpoint}`, {
         next: { revalidate: 3600 }
       });
       if (!res.ok) return [];
@@ -18,31 +18,50 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // Custom fetcher for sell-animal API which returns { items: [...], total: N }
+  async function fetchSellAnimals(): Promise<any[]> {
+    try {
+      const res = await fetch(`${baseUrl}/api/sell-animal?limit=1000&status=ACCEPTED`, {
+        next: { revalidate: 3600 }
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json.items) ? json.items : [];
+    } catch (error) {
+      console.error("Failed to fetch sell-animal:", error);
+      return [];
+    }
+  }
+
   // Fetch dynamic content
   const [
     products,
-    partners,
+    vetPartners,
+    salesPartners,
+    vaPartners,
+    studentPartners,
     companies,
     news,
     vacancies,
     jobPosts,
-    applicants,
     facultyPartners,
     farmerPartners,
-    masterTrainers,
     dynamicForms,
+    sellAnimals,
   ] = await Promise.all([
     fetchData<any>("product"),
-    fetchData<any>("partner"),
+    fetchData<any>("partner?partnerTypeGroup=veterinarian"),
+    fetchData<any>("partner?partnerTypeGroup=sales"),
+    fetchData<any>("partner?partnerTypeGroup=veterinary_assistant"),
+    fetchData<any>("partner?partnerTypeGroup=student"),
     fetchData<any>("company"),
     fetchData<any>("animal-news"),
     fetchData<any>("vacancyForm"),
     fetchData<any>("traditionaljobpost"),
-    fetchData<any>("jobApplicant"),
     fetchData<any>("partner?partnerTypeGroup=faculty"),
     fetchData<any>("partner?partnerTypeGroup=farmer"),
-    fetchData<any>("master-trainer"),
     fetchData<any>("dynamic-forms"),
+    fetchSellAnimals(),
   ]);
 
   // High-priority static pages
@@ -56,7 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/products`,
       lastModified: new Date(),
-      changeFrequency: "daily", 
+      changeFrequency: "daily",
       priority: 0.9,
     },
     {
@@ -173,14 +192,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-  // Veterinary partner pages  
-  const partnerPages: MetadataRoute.Sitemap = partners
-    .filter((partner: any) => partner.id)
-    .map((partner: any) => ({
-      url: `${baseUrl}/Veternarians/${partner.id}`,
-      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
+  // Veterinarian partner pages
+  const vetPages: MetadataRoute.Sitemap = vetPartners
+    .filter((p: any) => p.id)
+    .map((p: any) => ({
+      url: `${baseUrl}/Veternarians/${p.id}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.6,
+    }));
+
+  // Sales partner pages
+  const salesPages: MetadataRoute.Sitemap = salesPartners
+    .filter((p: any) => p.id)
+    .map((p: any) => ({
+      url: `${baseUrl}/Sales/${p.id}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
+  // Veterinary assistant pages
+  const vaPages: MetadataRoute.Sitemap = vaPartners
+    .filter((p: any) => p.id)
+    .map((p: any) => ({
+      url: `${baseUrl}/VeterinaryAssistants/${p.id}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
+  // Student pages
+  const studentPages: MetadataRoute.Sitemap = studentPartners
+    .filter((p: any) => p.id)
+    .map((p: any) => ({
+      url: `${baseUrl}/Students/${p.id}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
     }));
 
   // Company pages
@@ -223,12 +272,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  // Buy/animal listing pages
-  const animalPages: MetadataRoute.Sitemap = products
-    .filter((product: any) => product.id && product.category === "animals")
-    .map((product: any) => ({
-      url: `${baseUrl}/buy/${product.id}`,
-      lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
+  // Buy/animal listing pages (from sell-animal API, not products)
+  const animalPages: MetadataRoute.Sitemap = sellAnimals
+    .filter((a: any) => a.id)
+    .map((a: any) => ({
+      url: `${baseUrl}/buy/${a.id}`,
+      lastModified: a.updatedAt ? new Date(a.updatedAt) : new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
@@ -238,6 +287,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((partner: any) => partner.id)
     .map((partner: any) => ({
       url: `${baseUrl}/Faculty/${partner.id}`,
+      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
+  // Farmer pages
+  const farmerPages: MetadataRoute.Sitemap = farmerPartners
+    .filter((partner: any) => partner.id)
+    .map((partner: any) => ({
+      url: `${baseUrl}/Farmers/${partner.id}`,
       lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.6,
@@ -253,20 +312,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-  // Farmer pages
-  const farmerPages: MetadataRoute.Sitemap = farmerPartners
-    .filter((partner: any) => partner.id)
-    .map((partner: any) => ({
-      url: `${baseUrl}/Farmers/${partner.id}`,
-      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
-
   return [
     ...staticPages,
     ...productPages,
-    ...partnerPages,
+    ...vetPages,
+    ...salesPages,
+    ...vaPages,
+    ...studentPages,
     ...companyPages,
     ...newsPages,
     ...vacancyPages,

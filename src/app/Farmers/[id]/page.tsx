@@ -119,14 +119,24 @@ export async function generateMetadata({
       },
       keywords: [
         data.partnerName,
-        'farmer',
-        'agriculture',
-        'farming',
+        data.qualificationDegree,
         data.specialization,
+        data.species,
         data.cityName,
         data.state,
+        data.areaTown,
+        data.shopName,
+        `farmer ${data.cityName ?? ''}`.trim(),
+        `${data.species ?? ''} farming`.trim(),
+        'farmer',
+        'agriculture',
+        'livestock farming',
+        'animal farming Pakistan',
         'Animal Wellness',
-      ].filter(Boolean).join(', '),
+      ].filter(Boolean),
+      alternates: {
+        canonical: `https://www.animalwellness.shop/Farmers/${id}`,
+      },
     }
   } catch (e) {
     console.error('Error generating metadata:', e)

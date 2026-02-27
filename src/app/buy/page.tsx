@@ -5,9 +5,29 @@ import { getApiUrl } from '@/lib/utils'
 export const revalidate = 300 // 5 minutes - animals data changes frequently
 
 export const metadata: Metadata = {
-  title: 'Buy Animals',
-  description: 'Browse and purchase animals from verified sellers',
-  keywords: ['buy animals', 'animal marketplace', 'livestock purchase', 'animal sales'],
+  title: 'Buy Animals | Animal Wellness',
+  description: 'Browse and buy verified animals online — cows, buffaloes, goats, sheep, camels, poultry, horses and more. Health-certified livestock from trusted sellers across Pakistan and UAE.',
+  keywords: [
+    'buy animals online', 'livestock for sale', 'buy cow Pakistan', 'buy buffalo',
+    'buy goat online', 'buy sheep', 'buy camel', 'poultry for sale', 'horse for sale',
+    'health certified animals', 'verified animal sellers', 'live animals marketplace',
+    'animal marketplace Pakistan', 'animal wellness', 'buy farm animals',
+  ],
+  alternates: {
+    canonical: 'https://www.animalwellness.shop/buy',
+  },
+  openGraph: {
+    title: 'Buy Animals | Animal Wellness',
+    description: 'Browse and buy verified livestock and animals from trusted sellers. Cows, buffaloes, goats, poultry, horses and more.',
+    url: 'https://www.animalwellness.shop/buy',
+    siteName: 'Animal Wellness',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Buy Animals | Animal Wellness',
+    description: 'Browse and buy verified livestock and animals from trusted sellers.',
+  },
 }
 
 interface SellAnimalRequest {

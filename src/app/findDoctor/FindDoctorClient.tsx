@@ -23,6 +23,7 @@ export default function FindDoctorClient() {
     isEmergency: false,
     description: "",
     country: "Pakistan",
+    appointmentAt: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -107,6 +108,7 @@ export default function FindDoctorClient() {
           isEmergency: false,
           description: "",
           country: "Pakistan",
+          appointmentAt: "",
         });
         setTimeout(() => {
           router.push(`/payment?appointmentId=${appointment.id}`);
@@ -275,6 +277,24 @@ export default function FindDoctorClient() {
             />
             <span>Emergency</span>
           </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Preferred Appointment Date & Time
+            </label>
+            <input
+              type="datetime-local"
+              name="appointmentAt"
+              value={form.appointmentAt}
+              onChange={handleChange}
+              min={new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16)}
+              required
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Choose when you would like the appointment. Minimum 1 hour from now.
+            </p>
+          </div>
 
           <textarea
             name="description"
