@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Trash2, Download, Edit, Loader2, Search } from 'lucide-react'
+import { Trash2, Download, Edit, Loader2, Search, Plus, X, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip as UITooltip,
@@ -22,7 +22,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import WhatsAppLink from '@/components/WhatsAppLink'
@@ -98,6 +104,18 @@ interface EditedItem {
   purchasedPrice: number | null;
 }
 
+interface ManualItem {
+  localId: string;
+  productId?: number;
+  productName?: string;
+  variantId?: number;
+  variantLabel?: string;
+  availableVariants: { id: number; packingVolume: string; customerPrice: number }[];
+  quantity: number;
+  price: number;
+  purchasedPrice: number | null;
+}
+
 export default function AdminOrdersPage() {
   const { country, currencySymbol } = useCountry()
   const [orders, setOrders] = useState<Order[]>([])
@@ -114,6 +132,27 @@ export default function AdminOrdersPage() {
   const [editedPaymentMethod, setEditedPaymentMethod] = useState('')
   const [editedItems, setEditedItems] = useState<EditedItem[]>([])
   const [updatingOrder, setUpdatingOrder] = useState(false)
+
+  // ── Manual Order ──────────────────────────────────────────────
+  const [manualOrderOpen, setManualOrderOpen] = useState(false)
+  const [userSearch, setUserSearch] = useState('')
+  const [userResults, setUserResults] = useState<User[]>([])
+  const [searchingUsers, setSearchingUsers] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [manualCity, setManualCity] = useState('')
+  const [manualProvince, setManualProvince] = useState('')
+  const [manualAddress, setManualAddress] = useState('')
+  const [manualPhone, setManualPhone] = useState('')
+  const [manualPayment, setManualPayment] = useState('')
+  const [manualShipment, setManualShipment] = useState(0)
+  const [manualStatus, setManualStatus] = useState<'pending' | 'delivered'>('pending')
+  const [manualItems, setManualItems] = useState<ManualItem[]>([])
+  const [productSearch, setProductSearch] = useState('')
+  const [productResults, setProductResults] = useState<any[]>([])
+  const [searchingProducts, setSearchingProducts] = useState(false)
+  const [showProductDropdown, setShowProductDropdown] = useState(false)
+  const [creatingOrder, setCreatingOrder] = useState(false)
+  const productSearchRef = useRef<HTMLDivElement>(null)
 
   const handleDeleteClick = (orderId: string) => {
     setOrderToDelete(orderId)
@@ -202,6 +241,135 @@ export default function AdminOrdersPage() {
     ))
   }
 
+  // ── Manual Order Handlers ──────────────────────────────────────
+  const searchUsers = useCallback(async (term: string) => {
+    if (!term.trim()) { setUserResults([]); return }
+    setSearchingUsers(true)
+    try {
+      const { data } = await axios.get('/api/users', { params: { search: term, pageSize: 6 } })
+      setUserResults(data.users || [])
+    } catch {
+      setUserResults([])
+    } finally {
+      setSearchingUsers(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => searchUsers(userSearch), 300)
+    return () => clearTimeout(t)
+  }, [userSearch, searchUsers])
+
+  const searchProducts = useCallback(async (term: string) => {
+    if (!term.trim()) { setProductResults([]); setShowProductDropdown(false); return }
+    setSearchingProducts(true)
+    try {
+      const { data } = await axios.get('/api/product', { params: { search: term, limit: 8 } })
+      setProductResults(data.data || [])
+      setShowProductDropdown(true)
+    } catch {
+      setProductResults([])
+    } finally {
+      setSearchingProducts(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => searchProducts(productSearch), 300)
+    return () => clearTimeout(t)
+  }, [productSearch, searchProducts])
+
+  const addProductToItems = (product: any) => {
+    const firstVariant = product.variants?.[0]
+    const newItem: ManualItem = {
+      localId: Date.now().toString(),
+      productId: product.id,
+      productName: product.productName,
+      variantId: firstVariant?.id,
+      variantLabel: firstVariant?.packingVolume,
+      availableVariants: product.variants || [],
+      quantity: 1,
+      price: firstVariant?.customerPrice || 0,
+      purchasedPrice: null,
+    }
+    setManualItems(prev => [...prev, newItem])
+    setProductSearch('')
+    setProductResults([])
+    setShowProductDropdown(false)
+  }
+
+  const updateManualItem = (localId: string, field: keyof ManualItem, value: any) => {
+    setManualItems(prev => prev.map(item => {
+      if (item.localId !== localId) return item
+      if (field === 'variantId') {
+        const variant = item.availableVariants.find(v => v.id === Number(value))
+        return { ...item, variantId: variant?.id, variantLabel: variant?.packingVolume, price: variant?.customerPrice || item.price }
+      }
+      return { ...item, [field]: value }
+    }))
+  }
+
+  const removeManualItem = (localId: string) => {
+    setManualItems(prev => prev.filter(i => i.localId !== localId))
+  }
+
+  const resetManualOrderForm = () => {
+    setSelectedUser(null)
+    setUserSearch('')
+    setUserResults([])
+    setManualCity('')
+    setManualProvince('')
+    setManualAddress('')
+    setManualPhone('')
+    setManualPayment('')
+    setManualShipment(0)
+    setManualStatus('pending')
+    setManualItems([])
+    setProductSearch('')
+    setProductResults([])
+    setShowProductDropdown(false)
+  }
+
+  const handleCreateManualOrder = async () => {
+    if (!selectedUser) { toast.error('Please select a customer'); return }
+    if (!manualCity) { toast.error('City is required'); return }
+    if (!manualAddress) { toast.error('Address is required'); return }
+    if (!manualPhone) { toast.error('Mobile number is required'); return }
+    if (!manualPayment) { toast.error('Payment method is required'); return }
+    if (manualItems.length === 0) { toast.error('Add at least one item'); return }
+
+    setCreatingOrder(true)
+    try {
+      await axios.post('/api/orders/manual', {
+        userId: selectedUser.id,
+        city: manualCity,
+        province: manualProvince,
+        address: manualAddress,
+        shippingAddress: manualPhone,
+        paymentMethod: manualPayment,
+        shipmentCharges: manualShipment,
+        status: manualStatus,
+        items: manualItems.map(i => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+          price: i.price,
+          purchasedPrice: i.purchasedPrice,
+        })),
+      })
+      toast.success('Order created successfully!')
+      setManualOrderOpen(false)
+      resetManualOrderForm()
+      fetchOrders('', 1, limit)
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to create order')
+    } finally {
+      setCreatingOrder(false)
+    }
+  }
+
+  const manualTotal = manualItems.reduce((s, i) => s + i.price * i.quantity, 0) + manualShipment
+
   const handleSearch = () => {
     setPage(1)
     fetchOrders(search, 1, limit)
@@ -277,7 +445,16 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold text-green-500">Pending Orders</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-green-500">Pending Orders</h1>
+        <Button
+          onClick={() => { resetManualOrderForm(); setManualOrderOpen(true) }}
+          className="bg-green-600 hover:bg-green-700 gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Create Manual Order
+        </Button>
+      </div>
 
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2 flex-1 max-w-md">
@@ -546,6 +723,270 @@ export default function AdminOrdersPage() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Manual Order Dialog */}
+      <Dialog open={manualOrderOpen} onOpenChange={(open) => { setManualOrderOpen(open); if (!open) resetManualOrderForm() }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <ShoppingCart className="w-5 h-5" />
+              Create Manual Order
+            </DialogTitle>
+            <DialogDescription>
+              Fill in the customer details and items to create an order manually.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-2">
+            {/* ── Customer Section ── */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Customer</h3>
+
+              {/* User search */}
+              <div className="space-y-1 relative">
+                <Label>Search Customer *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type name or email..."
+                    value={userSearch}
+                    onChange={e => { setUserSearch(e.target.value); setSelectedUser(null) }}
+                  />
+                  {searchingUsers && <Loader2 className="w-4 h-4 animate-spin self-center text-green-600" />}
+                </div>
+                {userResults.length > 0 && !selectedUser && (
+                  <div className="absolute z-50 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    {userResults.map(u => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm border-b last:border-b-0"
+                        onClick={() => {
+                          setSelectedUser(u)
+                          setUserSearch(u.name)
+                          setUserResults([])
+                        }}
+                      >
+                        <span className="font-medium">{u.name}</span>
+                        <span className="text-gray-400 ml-2">{u.email}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedUser && (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-2 text-sm">
+                    <div>
+                      <span className="font-medium text-green-800">{selectedUser.name}</span>
+                      <span className="text-green-600 ml-2">{selectedUser.email}</span>
+                    </div>
+                    <button onClick={() => { setSelectedUser(null); setUserSearch('') }}>
+                      <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>City *</Label>
+                  <Input value={manualCity} onChange={e => setManualCity(e.target.value)} placeholder="e.g. Lahore" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Province</Label>
+                  <Input value={manualProvince} onChange={e => setManualProvince(e.target.value)} placeholder="e.g. Punjab" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Address *</Label>
+                <Input value={manualAddress} onChange={e => setManualAddress(e.target.value)} placeholder="Street, area..." />
+              </div>
+
+              <div className="space-y-1">
+                <Label>Mobile Number *</Label>
+                <Input value={manualPhone} onChange={e => setManualPhone(e.target.value)} placeholder="+92300..." />
+              </div>
+            </div>
+
+            {/* ── Items Section ── */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Order Items</h3>
+
+              {/* Product search */}
+              <div className="relative" ref={productSearchRef}>
+                <Label>Search & Add Product</Label>
+                <div className="flex gap-2 mt-1">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      className="pl-9"
+                      placeholder="Type product name..."
+                      value={productSearch}
+                      onChange={e => setProductSearch(e.target.value)}
+                    />
+                  </div>
+                  {searchingProducts && <Loader2 className="w-4 h-4 animate-spin self-center text-green-600" />}
+                </div>
+                {showProductDropdown && productResults.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    {productResults.map((p: any) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm border-b last:border-b-0"
+                        onClick={() => addProductToItems(p)}
+                      >
+                        <span className="font-medium">{p.productName}</span>
+                        {p.variants?.length > 0 && (
+                          <span className="text-gray-400 ml-2 text-xs">
+                            {p.variants.length} variant{p.variants.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Items list */}
+              {manualItems.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-3">No items added yet.</p>
+              )}
+
+              {manualItems.map((item) => (
+                <div key={item.localId} className="border rounded p-3 space-y-2 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">{item.productName || 'Custom Item'}</span>
+                    <button onClick={() => removeManualItem(item.localId)}>
+                      <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {item.availableVariants.length > 0 && (
+                      <div className="space-y-1 col-span-2 sm:col-span-1">
+                        <Label className="text-xs">Variant</Label>
+                        <Select
+                          value={String(item.variantId ?? '')}
+                          onValueChange={val => updateManualItem(item.localId, 'variantId', val)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {item.availableVariants.map(v => (
+                              <SelectItem key={v.id} value={String(v.id)}>
+                                {v.packingVolume} — {currencySymbol} {v.customerPrice}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Qty</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        className="h-8 text-xs"
+                        value={item.quantity}
+                        onChange={e => updateManualItem(item.localId, 'quantity', Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Sell Price ({currencySymbol})</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="h-8 text-xs"
+                        value={item.price}
+                        onChange={e => updateManualItem(item.localId, 'price', Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Purchase Price ({currencySymbol})</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="h-8 text-xs"
+                        value={item.purchasedPrice ?? ''}
+                        placeholder="Optional"
+                        onChange={e => updateManualItem(item.localId, 'purchasedPrice', e.target.value ? Number(e.target.value) : null)}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right text-xs text-gray-500">
+                    Subtotal: {currencySymbol} {(item.price * item.quantity).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Payment Section ── */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Payment & Status</h3>
+
+              <div className="space-y-1">
+                <Label>Payment Method *</Label>
+                <Textarea
+                  value={manualPayment}
+                  onChange={e => setManualPayment(e.target.value)}
+                  placeholder="e.g. Cash on Delivery, Bank Transfer..."
+                  className="min-h-[60px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Shipment Charges ({currencySymbol})</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={manualShipment}
+                    onChange={e => setManualShipment(Number(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Order Status</Label>
+                  <Select value={manualStatus} onValueChange={(v) => setManualStatus(v as 'pending' | 'delivered')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded px-4 py-2 flex justify-between items-center">
+                <span className="font-semibold text-green-800">Order Total</span>
+                <span className="text-xl font-bold text-green-700">
+                  {currencySymbol} {manualTotal.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setManualOrderOpen(false); resetManualOrderForm() }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateManualOrder}
+              disabled={creatingOrder}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {creatingOrder ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
+              ) : (
+                <><ShoppingCart className="mr-2 h-4 w-4" /> Create Order</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

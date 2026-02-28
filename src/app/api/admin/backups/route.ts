@@ -4,6 +4,14 @@ import { prisma } from '@/lib/prisma';
 import { validateAdminSession } from '@/lib/auth/admin-auth';
 import * as XLSX from 'xlsx';
 
+// ─── shared auth helper ───────────────────────────────────────────────────────
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin-token')?.value;
+  if (!token) return null;
+  return validateAdminSession(token);
+}
+
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
@@ -36,17 +44,8 @@ function fileNameForType(type: BackupType, country: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('admin-token')?.value;
-
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const admin = await validateAdminSession(token);
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') as BackupType | null;
@@ -171,4 +170,159 @@ export async function GET(request: NextRequest) {
       'Cache-Control': 'no-store',
     },
   });
+}
+
+// ─── POST — restore / upload backup ──────────────────────────────────────────
+export async function POST(request: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const formData = await request.formData();
+  const type = formData.get('type') as BackupType | null;
+  const country = (formData.get('country') as string | null) || 'Pakistan';
+  const file = formData.get('file') as File | null;
+
+  if (!type || !['products', 'companies', 'partners'].includes(type)) {
+    return NextResponse.json({ error: 'Invalid backup type' }, { status: 400 });
+  }
+  if (!file) {
+    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  }
+
+  // Read the xlsx file into rows
+  const arrayBuffer = await file.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  const allRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+
+  // For companies and partners the backup includes a `country` column — only
+  // restore rows that match the currently selected country so a Pakistan backup
+  // can't accidentally overwrite UAE records (and vice-versa).
+  // Products don't carry a direct country field so we skip that filter for them.
+  const rows = (type === 'products')
+    ? allRows
+    : allRows.filter((r: any) => !r.country || r.country === country);
+
+  const skippedByCountry = allRows.length - rows.length;
+
+  let imported = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  if (skippedByCountry > 0) {
+    errors.push(`${skippedByCountry} row(s) skipped — country does not match "${country}"`);
+  }
+
+  if (type === 'companies') {
+    for (const raw of rows) {
+      const row = raw as Record<string, any>;
+      const id = Number(row.id);
+      if (!id) { failed++; errors.push(`Row skipped — missing id`); continue; }
+      try {
+        const data = {
+          companyName: row.companyName ?? null,
+          mobileNumber: row.mobileNumber ?? null,
+          address: row.address ?? null,
+          country: row.country ?? null,
+          email: row.email ?? null,
+        };
+        await prisma.company.upsert({
+          where: { id },
+          update: data,
+          create: { id, ...data },
+        });
+        imported++;
+      } catch (e: any) {
+        failed++;
+        errors.push(`Company id=${id}: ${e.message}`);
+      }
+    }
+  }
+
+  if (type === 'partners') {
+    for (const raw of rows) {
+      const row = raw as Record<string, any>;
+      const id = Number(row.id);
+      if (!id || !row.partnerName) {
+        failed++;
+        errors.push(`Row skipped — missing id or partnerName`);
+        continue;
+      }
+      try {
+        const data = {
+          partnerName: String(row.partnerName),
+          partnerEmail: row.partnerEmail ?? null,
+          shopName: row.shopName ?? null,
+          partnerMobileNumber: row.partnerMobileNumber ? String(row.partnerMobileNumber) : null,
+          cityName: row.cityName ?? null,
+          country: row.country ?? null,
+          fullAddress: row.fullAddress ?? null,
+          rvmpNumber: row.rvmpNumber ?? null,
+          qualificationDegree: row.qualificationDegree ?? null,
+          zipcode: row.zipcode ?? null,
+          state: row.state ?? null,
+          areaTown: row.areaTown ?? null,
+          specialization: row.specialization ?? null,
+          species: row.species ?? null,
+          partnerType: row.partnerType ?? null,
+          numberOfAnimals: row.numberOfAnimals ? Number(row.numberOfAnimals) : null,
+          isPremium: row.isPremium === true || row.isPremium === 'true' || row.isPremium === 1,
+          referralCode: row.referralCode ?? null,
+          walletBalance: row.walletBalance ? Number(row.walletBalance) : 0,
+        };
+        await prisma.partner.upsert({
+          where: { id },
+          update: data,
+          create: { id, ...data },
+        });
+        imported++;
+      } catch (e: any) {
+        failed++;
+        errors.push(`Partner id=${id}: ${e.message}`);
+      }
+    }
+  }
+
+  if (type === 'products') {
+    for (const raw of rows) {
+      const row = raw as Record<string, any>;
+      const id = Number(row.id);
+      const companyId = Number(row.companyId);
+      const partnerId = Number(row.partnerId);
+      if (!id || !row.productName || !companyId || !partnerId) {
+        failed++;
+        errors.push(`Row skipped — missing id, productName, companyId, or partnerId`);
+        continue;
+      }
+      try {
+        const data = {
+          productName: String(row.productName),
+          genericName: row.genericName ?? null,
+          category: row.category ?? null,
+          subCategory: row.subCategory ?? null,
+          subsubCategory: row.subsubCategory ?? null,
+          productType: row.productType ?? null,
+          description: row.description ?? null,
+          productLink: row.productLink ?? null,
+          dosage: row.dosage ?? null,
+          outofstock: row.outofstock === true || row.outofstock === 'true' || row.outofstock === 1,
+          isFeatured: row.isFeatured === true || row.isFeatured === 'true' || row.isFeatured === 1,
+          isActive: row.isActive === true || row.isActive === 'true' || row.isActive === 1,
+          company: { connect: { id: companyId } },
+          partner: { connect: { id: partnerId } },
+        };
+        await prisma.product.upsert({
+          where: { id },
+          update: data,
+          create: { id, ...data },
+        });
+        imported++;
+      } catch (e: any) {
+        failed++;
+        errors.push(`Product id=${id}: ${e.message}`);
+      }
+    }
+  }
+
+  return NextResponse.json({ imported, failed, errors: errors.slice(0, 20) });
 }

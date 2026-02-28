@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FileText, DollarSign, Users, Calendar } from 'lucide-react'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface FormCardProps {
   form: {
@@ -27,6 +28,8 @@ interface FormCardProps {
 }
 
 export default function FormCard({ form }: FormCardProps) {
+  const { currencySymbol } = useCountry()
+
   return (
     <div className="group rounded-2xl overflow-hidden border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-zinc-900 hover:shadow-xl transition-all duration-300 flex flex-col h-full">
       {/* Thumbnail Image */}
@@ -50,7 +53,7 @@ export default function FormCard({ form }: FormCardProps) {
           <div className="absolute top-3 right-3">
             <Badge className="bg-blue-600 hover:bg-blue-700 text-white">
               <DollarSign className="w-3 h-3 mr-1" />
-              Rs. {form.paymentAmount}
+              {currencySymbol} {form.paymentAmount}
             </Badge>
           </div>
         )}

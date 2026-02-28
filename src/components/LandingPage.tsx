@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -200,6 +200,20 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const [page, setPage] = useState(initialTestimonials?.pagination.page || 1)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
+  // Measure contact bar height so hero + contactBar + navbar = exactly 100vh
+  const contactBarRef = useRef<HTMLDivElement>(null)
+  const [contactBarH, setContactBarH] = useState(44) // sensible default while measuring
+
+  useEffect(() => {
+    const el = contactBarRef.current
+    if (!el) return
+    const update = () => setContactBarH(el.offsetHeight)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   // Parallax scroll
   const { scrollY } = useScroll()
   const heroY = useTransform(scrollY, [0, 300], [0, 50])
@@ -285,11 +299,16 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Contact Bar - Right beneath Navbar */}
-      <BannerContactBar />
+      {/* Contact Bar — measured so hero can fill exactly the remaining viewport */}
+      <div ref={contactBarRef}>
+        <BannerContactBar />
+      </div>
 
-      {/* Hero Section - Exactly one screen height */}
-      <section className="min-h-screen flex items-center relative overflow-hidden">
+      {/* Hero Section — fills 100vh minus navbar and contact bar */}
+      <section
+        style={{ minHeight: `calc(100vh - var(--navbar-height) - ${contactBarH}px)` }}
+        className="flex items-center relative overflow-hidden"
+      >
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -411,7 +430,11 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         </motion.div>
       </section>
 
-      <section className="h-[50vh] md:h-screen relative overflow-hidden">
+      {/* Slider — fills 100vh minus navbar so it snaps cleanly as the second viewport */}
+      <section
+        style={{ height: 'calc(100vh - var(--navbar-height))' }}
+        className="relative overflow-hidden"
+      >
         <FullScreenSlider />
       </section>
 

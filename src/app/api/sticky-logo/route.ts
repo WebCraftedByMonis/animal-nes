@@ -21,7 +21,6 @@ export async function GET(req: NextRequest) {
       orderBy: {
         createdAt: 'asc',
       },
-      take: 10, // Limit to 10 logos
     })
 
     return NextResponse.json({ data: stickyLogos })
@@ -42,21 +41,6 @@ export async function POST(request: NextRequest) {
     if (!companyId) {
       return NextResponse.json(
         { error: 'Company ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Check if we already have 10 active sticky logos
-    const activeCount = await prisma.stickyLogo.count({
-      where: {
-        isActive: true,
-        ...(country && country !== 'all' ? { company: { country } } : {}),
-      },
-    })
-
-    if (activeCount >= 10) {
-      return NextResponse.json(
-        { error: 'Maximum of 10 sticky logos reached. Please remove one before adding a new one.' },
         { status: 400 }
       )
     }

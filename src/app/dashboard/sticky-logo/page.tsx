@@ -34,6 +34,16 @@ interface StickyLogo {
   company: Company
 }
 
+const SECTION_SIZE = 10
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size))
+  }
+  return chunks
+}
+
 export default function StickyLogoPage() {
   const { country } = useCountry()
   const [stickyLogos, setStickyLogos] = useState<StickyLogo[]>([])
@@ -102,17 +112,12 @@ export default function StickyLogoPage() {
       return
     }
 
-    if (stickyLogos.length >= 10) {
-      toast.error('Maximum of 10 sticky logos reached. Please remove one before adding a new one.')
-      return
-    }
-
     setIsSaving(true)
     try {
-    await axios.post('/api/sticky-logo', {
-      companyId: Number(companyId),
-      country,
-    })
+      await axios.post('/api/sticky-logo', {
+        companyId: Number(companyId),
+        country,
+      })
       await fetchStickyLogos()
       setCompanyId('')
       setCompanyPreview(null)
@@ -164,6 +169,10 @@ export default function StickyLogoPage() {
     )
   }
 
+  const sections = chunkArray(stickyLogos, SECTION_SIZE)
+  const totalSections = sections.length
+  const currentSectionFill = stickyLogos.length % SECTION_SIZE || (stickyLogos.length > 0 ? SECTION_SIZE : 0)
+
   return (
     <div className="p-6 space-y-6 w-full max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
@@ -171,93 +180,110 @@ export default function StickyLogoPage() {
           Sticky Logo Management
         </h1>
         <div className="text-sm text-muted-foreground">
-          {stickyLogos.length} / 10 logos active
+          {stickyLogos.length} logo{stickyLogos.length !== 1 ? 's' : ''} across {totalSections || 0} section{totalSections !== 1 ? 's' : ''}
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Active Sticky Logos</CardTitle>
-              <CardDescription>
-                Company logos displayed on the homepage (up to 10 logos)
-              </CardDescription>
-            </div>
-            {stickyLogos.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRemoveAll}
-                disabled={removingId === -1}
-                className="text-red-600 hover:text-red-700 border-red-200"
-              >
-                {removingId === -1 ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Remove All'
-                )}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {stickyLogos.length > 0 ? (
-            <div className="space-y-3">
-              {stickyLogos.map((logo) => (
-                <div key={logo.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  {logo.company.image && (
-                    <Image
-                      src={logo.company.image.url}
-                      alt={logo.company.image.alt}
-                      width={60}
-                      height={60}
-                      className="rounded object-contain"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <h3 className="font-semibold">
-                      {logo.company.companyName}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Company ID: {logo.companyId}
-                    </p>
-                    <Link
-                      href={`/Companies/${logo.companyId}`}
-                      className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1 mt-1"
-                      target="_blank"
-                    >
-                      View company page <ExternalLink className="h-3 w-3" />
-                    </Link>
-                  </div>
+      {/* Section-grouped logo list */}
+      {sections.length > 0 ? (
+        sections.map((sectionLogos, sectionIndex) => (
+          <Card key={sectionIndex}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>
+                    Section {sectionIndex + 1}
+                    {sectionIndex === 0 && (
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">(first column — max {SECTION_SIZE})</span>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    {sectionLogos.length} / {sectionIndex === sections.length - 1 && sectionLogos.length < SECTION_SIZE ? `${SECTION_SIZE} slots` : `${SECTION_SIZE}`} logos
+                    {sectionIndex < sections.length - 1 && ' (full — next section started)'}
+                  </CardDescription>
+                </div>
+                {sectionIndex === 0 && stickyLogos.length > 0 && (
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    onClick={() => handleRemove(logo.id)}
-                    disabled={removingId === logo.id}
+                    onClick={handleRemoveAll}
+                    disabled={removingId === -1}
+                    className="text-red-600 hover:text-red-700 border-red-200"
                   >
-                    {removingId === logo.id ? (
+                    {removingId === -1 ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <X className="h-4 w-4" />
+                      'Remove All'
                     )}
                   </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No sticky logos configured
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {sectionLogos.map((logo) => (
+                  <div key={logo.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                    {logo.company.image && (
+                      <Image
+                        src={logo.company.image.url}
+                        alt={logo.company.image.alt}
+                        width={60}
+                        height={60}
+                        className="rounded object-contain"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold">
+                        {logo.company.companyName}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Company ID: {logo.companyId}
+                      </p>
+                      <Link
+                        href={`/Companies/${logo.companyId}`}
+                        className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1 mt-1"
+                        target="_blank"
+                      >
+                        View company page <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemove(logo.id)}
+                      disabled={removingId === logo.id}
+                    >
+                      {removingId === logo.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No sticky logos configured yet.
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Add new logo */}
       <Card>
         <CardHeader>
           <CardTitle>Add Sticky Logo</CardTitle>
           <CardDescription>
-            Enter a company ID to add a new sticky logo (max 10)
+            Enter a company ID to add a new sticky logo.
+            {stickyLogos.length > 0 && currentSectionFill < SECTION_SIZE
+              ? ` Adding to Section ${totalSections} (${currentSectionFill}/${SECTION_SIZE} used).`
+              : stickyLogos.length > 0
+              ? ` Section ${totalSections} is full — a new section will be created.`
+              : ' Section 1 will hold the first 10 logos.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -268,11 +294,10 @@ export default function StickyLogoPage() {
               value={companyId}
               onChange={(e) => setCompanyId(e.target.value)}
               className="flex-1"
-              disabled={stickyLogos.length >= 10}
             />
             <Button
               onClick={handleSave}
-              disabled={isSaving || !companyId || !companyPreview || stickyLogos.length >= 10}
+              disabled={isSaving || !companyId || !companyPreview}
               className="bg-green-500 hover:bg-green-600"
             >
               {isSaving ? (
@@ -288,12 +313,6 @@ export default function StickyLogoPage() {
               )}
             </Button>
           </div>
-
-          {stickyLogos.length >= 10 && (
-            <p className="text-sm text-orange-600 dark:text-orange-500">
-              Maximum limit reached (10/10). Remove a logo to add a new one.
-            </p>
-          )}
 
           {isLoadingPreview && (
             <div className="flex items-center justify-center py-4">
@@ -340,16 +359,19 @@ export default function StickyLogoPage() {
       <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/10">
         <CardHeader>
           <CardTitle className="text-yellow-700 dark:text-yellow-500">
-            How to find Company ID
+            How sections work
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
-          <p>You can find the company ID in several ways:</p>
           <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Go to the View Companies page in the dashboard</li>
-            <li>The ID column shows the company ID for each company</li>
-            <li>Or visit the company detail page and check the URL (Companies/[id])</li>
+            <li>Logos are grouped into sections of {SECTION_SIZE}.</li>
+            <li>Section 1 (first column, rightmost on screen) holds the first {SECTION_SIZE} logos.</li>
+            <li>Once Section 1 is full, new logos automatically start Section 2 (next column to the left).</li>
+            <li>Each section appears as a separate column of logos on the site.</li>
           </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            To find a company ID: go to View Companies and check the ID column, or look at the URL on a company page.
+          </p>
           <Link
             href="/dashboard/viewCompanies"
             className="inline-flex items-center gap-1 text-green-600 hover:text-green-700 font-medium mt-2"

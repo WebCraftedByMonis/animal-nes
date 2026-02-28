@@ -1,19 +1,29 @@
 import { ImageResponse } from 'next/og'
+import { NextRequest } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 
-export const runtime = 'edge'
+// Node.js runtime so we can read the template file from disk
+export const runtime = 'nodejs'
 
 const size = {
   width: 768,
   height: 768,
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const name = searchParams.get('name')?.trim() || 'Partner'
   const imageUrl = searchParams.get('image')?.trim() || ''
   const download = searchParams.get('download') === '1'
 
-  const templateUrl = new URL('/birthday template.png', req.url)
+  // Read the template PNG from the public folder and convert to a base64 data URL.
+  // This is the only reliable way to embed a local image in next/og — the Edge
+  // runtime cannot fetch assets from the same server, which is why the template
+  // was previously missing while only the external partner image appeared.
+  const templatePath = path.join(process.cwd(), 'public', 'birthday template.png')
+  const templateBuffer = fs.readFileSync(templatePath)
+  const templateDataUrl = `data:image/png;base64,${templateBuffer.toString('base64')}`
 
   return new ImageResponse(
     (
@@ -26,14 +36,15 @@ export async function GET(req: Request) {
           backgroundColor: '#ffffff',
         }}
       >
+        {/* Background template */}
         <img
-          src={templateUrl.toString()}
+          src={templateDataUrl}
           width={size.width}
           height={size.height}
           style={{ position: 'absolute', inset: 0 }}
         />
 
-        {/* Partner Image Placeholder */}
+        {/* Partner photo */}
         <div
           style={{
             position: 'absolute',
@@ -71,7 +82,7 @@ export async function GET(req: Request) {
           )}
         </div>
 
-        {/* Partner Name */}
+        {/* Partner name */}
         <div
           style={{
             position: 'absolute',

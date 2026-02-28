@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { CheckCircle } from "lucide-react";
+import { useCountry } from "@/contexts/CountryContext";
 
 interface FormField {
   id: string;
@@ -41,6 +42,7 @@ interface FormSubmissionClientProps {
 
 export default function FormSubmissionClient({ initialForm }: FormSubmissionClientProps) {
   const router = useRouter();
+  const { currencySymbol } = useCountry();
 
   const [form] = useState<DynamicForm>(initialForm);
   const [submitting, setSubmitting] = useState(false);
@@ -347,7 +349,7 @@ export default function FormSubmissionClient({ initialForm }: FormSubmissionClie
             <div className="bg-white rounded-xl shadow-md p-6 mt-6 text-left">
               <h3 className="font-semibold text-green-600 mb-2">Payment Required</h3>
               <p className="text-gray-700 mb-2">
-                Amount: <span className="font-bold">Rs. {form.paymentAmount?.toLocaleString()}</span>
+                Amount: <span className="font-bold">{currencySymbol} {form.paymentAmount?.toLocaleString()}</span>
               </p>
               <p className="text-gray-700 whitespace-pre-wrap">{form.paymentAccount}</p>
             </div>
