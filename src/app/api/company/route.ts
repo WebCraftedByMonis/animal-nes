@@ -303,11 +303,11 @@ export async function PUT(request: NextRequest) {
     // Validate input if any field is provided
     if (companyName || mobileNumber || address || country || email) {
       const validation = updateCompanySchema.safeParse({
-        companyName,
-        mobileNumber,
-        address,
-        country,
-        email
+        companyName: companyName ?? undefined,
+        mobileNumber: mobileNumber ?? undefined,
+        address: address ?? undefined,
+        country: country ?? undefined,
+        email: email ?? undefined,
       })
       if (!validation.success) {
         return NextResponse.json(
