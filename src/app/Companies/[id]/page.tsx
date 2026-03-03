@@ -20,6 +20,7 @@ interface Company {
     productName: string
     category: string
   }[]
+  totalProducts: number
   createdAt: string
 }
 
@@ -44,7 +45,7 @@ export async function generateMetadata({
     const data: Company = await res.json()
 
     // Create a description with key information
-    const productCount = data.products.length
+    const productCount = data.totalProducts
     const categories = [...new Set(data.products.map(p => p.category))].slice(0, 3).join(', ')
     const description = `${data.companyName} - Partner company at Animal Wellness | ${productCount} products available${categories ? ` in ${categories}` : ''} | ${data.address || 'Contact us for more information'}`
 
@@ -129,7 +130,7 @@ export default async function Page({
         logo: data.image?.url
           ? { '@type': 'ImageObject', url: data.image.url }
           : undefined,
-        description: `${data.companyName} — veterinary product manufacturer with ${data.products.length} products across ${categories.join(', ')}.`,
+        description: `${data.companyName} — veterinary product manufacturer with ${data.totalProducts} products across ${categories.join(', ')}.`,
       }
     }
   } catch {

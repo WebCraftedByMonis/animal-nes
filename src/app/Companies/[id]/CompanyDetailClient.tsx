@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -41,37 +41,45 @@ interface Company {
   email: string | null
   image: { url: string; alt: string; publicId: string | null } | null
   products: Product[]
+  totalProducts: number
   createdAt: string
 }
-
-// Using imported getWhatsAppUrl from @/lib/whatsapp-utils
 
 export default function CompanyDetailClient() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pageLoading, setPageLoading] = useState(false)
   const [productPage, setProductPage] = useState(1)
+  const initialLoadDone = useRef(false)
   const PRODUCTS_PER_PAGE = 6
 
   useEffect(() => {
     if (!id) return
+    const numericId = parseInt(id)
+    if (isNaN(numericId)) return
 
-    const fetchCompany = async () => {
-      try {
-        const numericId = parseInt(id)
-        if (isNaN(numericId)) return
-        const { data } = await axios.get(`/api/company/${numericId}`)
-        setCompany(data)
-      } catch (error) {
-        console.error('Error fetching company details', error)
-      } finally {
-        setLoading(false)
-      }
+    if (!initialLoadDone.current) {
+      setLoading(true)
+    } else {
+      setPageLoading(true)
     }
 
-    fetchCompany()
-  }, [id])
+    axios
+      .get(`/api/company/${numericId}?page=${productPage}&limit=${PRODUCTS_PER_PAGE}`)
+      .then(({ data }) => {
+        setCompany(data)
+        initialLoadDone.current = true
+      })
+      .catch((error) => {
+        console.error('Error fetching company details', error)
+      })
+      .finally(() => {
+        setLoading(false)
+        setPageLoading(false)
+      })
+  }, [id, productPage])
 
   const navigateToProduct = (product: Product) => {
     const path = product.slug ? `/products/${product.slug}` : `/products/${product.id}`
@@ -201,7 +209,7 @@ export default function CompanyDetailClient() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 dark:text-green-400 font-medium">Total Products</p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{company.products.length}</p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{company.totalProducts}</p>
               </div>
               <Package className="w-12 h-12 text-green-600 dark:text-green-500" />
             </div>
@@ -213,15 +221,15 @@ export default function CompanyDetailClient() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{company.companyName}</h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Explore our complete range of {company.products.length} products from {company.companyName}
+              Explore our complete range of {company.totalProducts} products from {company.companyName}
             </p>
           </div>
 
-          {company.products.length > 0 ? (
+          {company.totalProducts > 0 ? (
             <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {company.products.slice((productPage - 1) * PRODUCTS_PER_PAGE, productPage * PRODUCTS_PER_PAGE).map((product) => (
-                <Card 
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+              {company.products.map((product) => (
+                <Card
                   key={product.id}
                   className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
                   onClick={() => navigateToProduct(product)}
@@ -272,19 +280,19 @@ export default function CompanyDetailClient() {
                 </Card>
               ))}
             </div>
-            {company.products.length > PRODUCTS_PER_PAGE && (
+            {company.totalProducts > PRODUCTS_PER_PAGE && (
               <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing {(productPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(productPage * PRODUCTS_PER_PAGE, company.products.length)} of {company.products.length}
+                  Showing {(productPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(productPage * PRODUCTS_PER_PAGE, company.totalProducts)} of {company.totalProducts}
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setProductPage(p => p - 1)} disabled={productPage === 1}>
+                  <Button variant="outline" size="sm" onClick={() => setProductPage(p => p - 1)} disabled={productPage === 1 || pageLoading}>
                     Previous
                   </Button>
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {productPage} / {Math.ceil(company.products.length / PRODUCTS_PER_PAGE)}
+                    {productPage} / {Math.ceil(company.totalProducts / PRODUCTS_PER_PAGE)}
                   </span>
-                  <Button variant="outline" size="sm" onClick={() => setProductPage(p => p + 1)} disabled={productPage === Math.ceil(company.products.length / PRODUCTS_PER_PAGE)}>
+                  <Button variant="outline" size="sm" onClick={() => setProductPage(p => p + 1)} disabled={productPage === Math.ceil(company.totalProducts / PRODUCTS_PER_PAGE) || pageLoading}>
                     Next
                   </Button>
                 </div>
