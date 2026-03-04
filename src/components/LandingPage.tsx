@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight } from "lucide-react"
@@ -12,10 +11,8 @@ import toast from 'react-hot-toast'
 import axios from "axios"
 import Image from "next/image"
 import { useSession } from "next-auth/react"
-import { signIn } from "next-auth/react"
 import FullScreenSlider from "./FullScreenSlider"
 import BannerContactBar from "./BannerContactBar"
-import SectionComponent, { SectionItem } from "./SectionComponent"
 import { useLoginModal } from "@/contexts/LoginModalContext"
 import StickyLogo from "./StickyLogo"
 
@@ -44,71 +41,7 @@ interface LandingPageProps {
   initialTestimonials?: InitialTestimonialsData
 }
 
-// Import framer-motion normally - dynamic import doesn't work well for hooks
-import { motion, useScroll, useTransform, type Variants } from "framer-motion"
-
-// Animation Variants - Optimized for performance
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut"
-    }
-  }
-}
-
-const fadeInScale: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.3,
-      ease: "easeOut"
-    }
-  }
-}
-
-const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05
-    }
-  }
-}
-
-const slideInFromLeft: Variants = {
-  hidden: { opacity: 0, x: -40 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut"
-    }
-  }
-}
-
-const slideInFromRight: Variants = {
-  hidden: { opacity: 0, x: 40 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut"
-    }
-  }
-}
-
-// Testimonial Card Component with Read More
-const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; index: number }) => {
+const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const maxLength = 120
   const shouldTruncate = testimonial.content.length > maxLength
@@ -124,73 +57,58 @@ const TestimonialCard = ({ testimonial, index }: { testimonial: Testimonial; ind
   }
 
   return (
-    <motion.div
-      variants={fadeInScale}
-      initial="hidden"
-      animate="visible"
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-    >
-      <Card className="hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
-        <CardContent className="p-4 sm:p-6 flex flex-col flex-1">
-          <Quote className="text-emerald-600 w-6 h-6 mb-3 opacity-30" />
-          <div className="flex-1">
-            <p className="text-sm sm:text-base italic text-gray-700 dark:text-gray-300">
-              "
-              {isExpanded || !shouldTruncate
-                ? testimonial.content
-                : `${testimonial.content.slice(0, maxLength)}...`}
-              "
-            </p>
-            {shouldTruncate && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-emerald-600 hover:text-emerald-700 text-sm font-medium mt-2 inline-flex items-center gap-1"
-              >
-                {isExpanded ? "Show less" : "Read more"}
-                <ChevronRight className={cn(
-                  "h-3 w-3 transition-transform",
-                  isExpanded && "rotate-90"
-                )} />
-              </button>
+    <Card className="h-full flex flex-col">
+      <CardContent className="p-4 sm:p-6 flex flex-col flex-1">
+        <Quote className="text-emerald-600 w-6 h-6 mb-3 opacity-30" />
+        <div className="flex-1">
+          <p className="text-sm sm:text-base italic text-gray-700 dark:text-gray-300">
+            "
+            {isExpanded || !shouldTruncate
+              ? testimonial.content
+              : `${testimonial.content.slice(0, maxLength)}...`}
+            "
+          </p>
+          {shouldTruncate && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium mt-2 inline-flex items-center gap-1"
+            >
+              {isExpanded ? "Show less" : "Read more"}
+              <ChevronRight className={cn("h-3 w-3", isExpanded && "rotate-90")} />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t">
+          <div className="flex-shrink-0">
+            {testimonial.user.image ? (
+              <Image
+                src={testimonial.user.image}
+                alt={testimonial.user.name || "User"}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full object-contain"
+                loading="lazy"
+                sizes="40px"
+                quality={60}
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                {getInitials(testimonial.user.name)}
+              </div>
             )}
           </div>
-
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.2, delay: index * 0.05 }}
-              className="flex-shrink-0"
-            >
-              {testimonial.user.image ? (
-                <Image
-                  src={testimonial.user.image}
-                  alt={testimonial.user.name || "User"}
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 rounded-full object-contain"
-                  loading="lazy"
-                  sizes="40px"
-                  quality={60}
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                  {getInitials(testimonial.user.name)}
-                </div>
-              )}
-            </motion.div>
-            <div className="min-w-0">
-              <p className="font-semibold text-sm break-words">{testimonial.user.name || "Anonymous"}</p>
-            </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm break-words">{testimonial.user.name || "Anonymous"}</p>
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
 export default function LandingPage({ initialTestimonials }: LandingPageProps) {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const { openModal } = useLoginModal()
   const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials?.data || [])
   const [newTestimonial, setNewTestimonial] = useState("")
@@ -200,9 +118,9 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const [page, setPage] = useState(initialTestimonials?.pagination.page || 1)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // Measure contact bar height so hero + contactBar + navbar = exactly 100vh
+  // Measure contact bar height so hero fills exactly the remaining viewport
   const contactBarRef = useRef<HTMLDivElement>(null)
-  const [contactBarH, setContactBarH] = useState(44) // sensible default while measuring
+  const [contactBarH, setContactBarH] = useState(44)
 
   useEffect(() => {
     const el = contactBarRef.current
@@ -214,11 +132,6 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     return () => ro.disconnect()
   }, [])
 
-  // Parallax scroll
-  const { scrollY } = useScroll()
-  const heroY = useTransform(scrollY, [0, 300], [0, 50])
-
-  // Fetch testimonials only if not provided initially (ISR optimization)
   useEffect(() => {
     if (!initialTestimonials) {
       fetchTestimonials()
@@ -235,10 +148,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
       const currentPage = loadMore ? page + 1 : 1
       const { data } = await axios.get('/api/testimonials', {
-        params: {
-          page: currentPage,
-          limit: 3
-        }
+        params: { page: currentPage, limit: 3 }
       })
 
       if (loadMore) {
@@ -275,10 +185,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
     setIsSubmitting(true)
     try {
-      await axios.post('/api/testimonials', {
-        content: newTestimonial
-      })
-
+      await axios.post('/api/testimonials', { content: newTestimonial })
       toast.success("Testimonial submitted! It will be visible after approval.")
       setNewTestimonial("")
       fetchTestimonials()
@@ -295,21 +202,18 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     }
   }
 
-
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Contact Bar — measured so hero can fill exactly the remaining viewport */}
+      {/* Contact Bar */}
       <div ref={contactBarRef}>
         <BannerContactBar />
       </div>
 
-      {/* Hero Section — fills 100vh minus navbar and contact bar */}
+      {/* Hero Section */}
       <section
         style={{ minHeight: `calc(100vh - var(--navbar-height) - ${contactBarH}px)` }}
         className="flex items-center relative overflow-hidden"
       >
-        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/hero-bg.jpg"
@@ -322,48 +226,23 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             sizes="100vw"
             quality={60}
           />
-          {/* Dark overlay for better text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40"></div>
         </div>
 
-        {/* Content Container */}
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              {/* Left Side - Text Content */}
-              <motion.div
-                style={{ y: heroY }}
-                className="text-white space-y-6"
-              >
-                <motion.h1
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight"
-                >
+              <div className="text-white space-y-6">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight">
                   <span className="block">Animal</span>
                   <span className="block text-emerald-400">Wellness</span>
-                </motion.h1>
+                </h1>
 
-                <motion.p
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                  className="text-lg sm:text-xl md:text-2xl font-medium text-gray-200 max-w-xl"
-                >
+                <p className="text-lg sm:text-xl md:text-2xl font-medium text-gray-200 max-w-xl">
                   The all-in-one platform revolutionizing animal care, commerce, and veterinary careers
-                </motion.p>
+                </p>
 
-                {/* Feature Points */}
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                  className="space-y-3"
-                >
+                <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                     <p className="text-gray-300">Find trusted veterinarians near you</p>
@@ -376,23 +255,16 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                     <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                     <p className="text-gray-300">Connect with animal care community</p>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* CTA Buttons */}
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-                  className="flex flex-col sm:flex-row gap-4 pt-4"
-                >
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <Link href="/products">
                     <Button
                       size="lg"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 text-lg group"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 text-lg"
                     >
                       Get Started
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
                   <Link href="/about">
@@ -404,33 +276,16 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                       Learn More About Us
                     </Button>
                   </Link>
-                </motion.div>
-              </motion.div>
-
-              {/* Right Side - Empty for visual balance or add decorative element */}
-              <div className="hidden lg:block">
-                {/* Optional: Add a floating card, stats, or leave empty for cleaner look */}
+                </div>
               </div>
+
+              <div className="hidden lg:block"></div>
             </div>
           </div>
         </div>
-
-        {/* Optional: Animated scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/60"
-        >
-          <ChevronDown className="w-8 h-8" />
-        </motion.div>
       </section>
 
-      {/* Slider — fills 100vh minus navbar so it snaps cleanly as the second viewport */}
+      {/* Slider */}
       <section
         style={{ height: 'calc(100vh - var(--navbar-height))' }}
         className="relative overflow-hidden"
@@ -438,85 +293,55 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <FullScreenSlider />
       </section>
 
-      {/* Features Grid - With Dark Background Image and Glassmorphic Cards */}
+      {/* Features Grid */}
       <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Background Image Layer - Darkened */}
         <div className="absolute inset-0 z-0">
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `url('/poultry-bg.jpg')`, // Replace with your image path
+              backgroundImage: `url('/poultry-bg.jpg')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              backgroundAttachment: 'fixed', // Optional: creates parallax effect
             }}
           />
-          {/* Dark overlay to darken the background image */}
           <div className="absolute inset-0 bg-black/50"></div>
         </div>
 
-        {/* Content Layer */}
         <div className="relative z-10 max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeInUp}
-            className="text-center mb-12 md:mb-16"
-          >
+          <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
               Everything You Need for Animal Care
             </h2>
             <p className="text-base md:text-lg text-gray-200 max-w-3xl mx-auto">
               Comprehensive solutions for pet owners, farmers, and veterinary professionals
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.1 }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInScale}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              >
-                {/* Glassmorphic Card */}
-                <Card className="hover:shadow-2xl transition-all duration-300 h-full bg-white/5 backdrop-blur-lg border-white/20">
-                  <CardHeader>
-                    <motion.div
-                      initial={{ rotate: -90, opacity: 0 }}
-                      whileInView={{ rotate: 0, opacity: 1 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="bg-emerald-400/20 backdrop-blur-sm p-3 rounded-full w-12 h-12 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-400/30"
-                    >
-                      {feature.icon}
-                    </motion.div>
-                    <CardTitle className="text-lg md:text-xl text-white">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm md:text-base text-gray-200 mb-4">{feature.description}</p>
-                    <Link href={feature.link}>
-                      <Button variant="link" className="px-0 text-emerald-400 hover:text-emerald-300 group p-0">
-                        Learn more about {feature.title}
-                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              </motion.div>
+              <Card key={index} className="h-full bg-white/5 backdrop-blur-lg border-white/20">
+                <CardHeader>
+                  <div className="bg-emerald-400/20 backdrop-blur-sm p-3 rounded-full w-12 h-12 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-400/30">
+                    {feature.icon}
+                  </div>
+                  <CardTitle className="text-lg md:text-xl text-white">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm md:text-base text-gray-200 mb-4">{feature.description}</p>
+                  <Link href={feature.link}>
+                    <Button variant="link" className="px-0 text-emerald-400 hover:text-emerald-300 p-0">
+                      Learn more about {feature.title}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Detailed Sections - Each takes appropriate space */}
-
-      {/* <SectionComponent />; */}
+      {/* Detailed Sections */}
       {sections.map((section, index) => (
         <section
           key={index}
@@ -527,81 +352,38 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         >
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-                variants={index % 2 === 0 ? slideInFromRight : slideInFromLeft}
-                className={cn("lg:w-1/2 space-y-6", index % 2 === 0 ? "lg:order-2" : "")}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4 }}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-100/30 px-3 py-1 rounded-full"
-                >
+              <div className={cn("lg:w-1/2 space-y-6", index % 2 === 0 ? "lg:order-2" : "")}>
+                <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-100/30 px-3 py-1 rounded-full">
                   {section.icon}
                   {section.category}
-                </motion.div>
+                </div>
 
                 <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">{section.title}</h2>
                 <p className="text-base md:text-lg text-muted-foreground leading-relaxed">{section.description}</p>
 
-                <motion.div
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={staggerContainer}
-                  className="space-y-3"
-                >
+                <div className="space-y-3">
                   {section.bullets.map((bullet, i) => (
-                    <motion.div
-                      key={i}
-                      variants={fadeInUp}
-                      className="flex items-start gap-3"
-                    >
+                    <div key={i} className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-1">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          whileInView={{ scale: 1 }}
-                          transition={{ duration: 0.3, delay: i * 0.1 }}
-                          className="w-2 h-2 rounded-full bg-emerald-500"
-                        />
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
                       </div>
                       <p className="text-sm md:text-base text-muted-foreground">{bullet}</p>
-                    </motion.div>
+                    </div>
                   ))}
-                </motion.div>
+                </div>
 
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="pt-4 inline-block"
-                >
+                <div className="pt-4 inline-block">
                   <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 font-medium">
                     <a href={section.link} className="flex items-center gap-2">
                       {section.cta}
                       <ArrowRight className="h-5 w-5" />
                     </a>
                   </Button>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
 
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-                variants={index % 2 === 0 ? slideInFromLeft : slideInFromRight}
-                className={cn(
-                  "lg:w-1/2 w-full",
-                  index % 2 === 0 ? "lg:order-1" : ""
-                )}
-              >
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.3 }}
-                  className="aspect-[4/3] lg:aspect-[16/10]"
-                >
+              <div className={cn("lg:w-1/2 w-full", index % 2 === 0 ? "lg:order-1" : "")}>
+                <div className="aspect-[4/3] lg:aspect-[16/10]">
                   <Image
                     alt={section.title}
                     src={section.src}
@@ -609,56 +391,37 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                     height={400}
                     className="w-full h-full object-contain"
                   />
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
       ))}
 
-      {/* Testimonials Section - Compact and organized */}
+      {/* Testimonials Section */}
       <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeInUp}
-            className="text-center mb-12"
-          >
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">What Our Community Says</h2>
             <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
               Hear from pet owners, veterinarians, and farmers who use AnimalWellness daily
             </p>
-          </motion.div>
+          </div>
 
-          {/* Testimonials Grid */}
           {isLoadingTestimonials ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
             </div>
           ) : testimonials.length > 0 ? (
             <>
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.1 }}
-                variants={staggerContainer}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
-                key={testimonials.length}
-              >
-                {testimonials.map((testimonial, index) => (
-                  <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {testimonials.map((testimonial) => (
+                  <TestimonialCard key={testimonial.id} testimonial={testimonial} />
                 ))}
-              </motion.div>
+              </div>
 
-              {/* Load More Button */}
               {hasMore && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-center"
-                >
+                <div className="flex justify-center">
                   <Button
                     onClick={() => fetchTestimonials(true)}
                     disabled={isLoadingMore}
@@ -678,7 +441,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                       </>
                     )}
                   </Button>
-                </motion.div>
+                </div>
               )}
             </>
           ) : (
@@ -687,14 +450,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             </div>
           )}
 
-          {/* Post Testimonial Form - Compact */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeInUp}
-            className="mt-12 max-w-2xl mx-auto"
-          >
+          {/* Post Testimonial Form */}
+          <div className="mt-12 max-w-2xl mx-auto">
             <Card className="border-emerald-200 shadow-lg">
               <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 py-4">
                 <CardTitle className="text-lg md:text-xl text-center">Share Your Experience</CardTitle>
@@ -706,32 +463,30 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                     value={newTestimonial}
                     onChange={(e) => setNewTestimonial(e.target.value)}
                     rows={3}
-                    className="resize-none focus:ring-emerald-500 focus:border-emerald-500"
+                    className="resize-none"
                     maxLength={275}
                   />
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                     <span className="text-sm text-muted-foreground">
                       {newTestimonial.length}/275 characters
                     </span>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        onClick={handleSubmitTestimonial}
-                        disabled={isSubmitting || !newTestimonial.trim()}
-                        className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="mr-2 h-4 w-4" />
-                            {session ? "Post Testimonial" : "Login to Post"}
-                          </>
-                        )}
-                      </Button>
-                    </motion.div>
+                    <Button
+                      onClick={handleSubmitTestimonial}
+                      disabled={isSubmitting || !newTestimonial.trim()}
+                      className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          {session ? "Post Testimonial" : "Login to Post"}
+                        </>
+                      )}
+                    </Button>
                   </div>
                   {!session && (
                     <p className="text-sm text-center text-muted-foreground">
@@ -741,57 +496,36 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* CTA Section - Final call to action */}
-      <motion.section
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={fadeInScale}
-        className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white py-16 md:py-24 px-4 sm:px-6 lg:px-8"
-      >
+      {/* CTA Section */}
+      <section className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white py-16 md:py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <motion.h2
-            variants={fadeInUp}
-            className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6"
-          >
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6">
             Ready to Transform Animal Care?
-          </motion.h2>
-          <motion.p
-            variants={fadeInUp}
-            className="text-lg md:text-xl mb-8 text-emerald-100 max-w-3xl mx-auto"
-          >
+          </h2>
+          <p className="text-lg md:text-xl mb-8 text-emerald-100 max-w-3xl mx-auto">
             Join thousands of animal lovers, professionals, and businesses in our growing community.
             Experience the future of animal wellness today.
-          </motion.p>
-          <motion.div
-            variants={fadeInUp}
-            className="flex flex-col sm:flex-row justify-center gap-4"
-          >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={() => openModal('button')} size="lg" className="bg-white dark:bg-zinc-100 text-emerald-800 hover:bg-gray-100 dark:hover:bg-zinc-200 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
-                Sign Up Free
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
-                <Link href="/contact">Contact Sales</Link>
-              </Button>
-            </motion.div>
-          </motion.div>
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button onClick={() => openModal('button')} size="lg" className="bg-white dark:bg-zinc-100 text-emerald-800 hover:bg-gray-100 dark:hover:bg-zinc-200 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
+              Sign Up Free
+            </Button>
+            <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
+              <Link href="/contact">Contact Sales</Link>
+            </Button>
+          </div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* Sticky Logo Component */}
       <StickyLogo />
     </div>
   )
 }
 
-// Keep your existing data arrays
 const features = [
   {
     title: "Veterinary Directory",
@@ -831,5 +565,4 @@ const features = [
   }
 ]
 
-
-const sections = [{ title: "Find the Perfect Veterinarian", description: "Our comprehensive vet directory connects you with licensed professionals specializing in everything from exotic pets to large farm animals. Filter by location, availability, services offered, and read authentic reviews from other pet owners.", category: "Veterinary Services", icon: <ShieldCheck className="h-4 w-4" />, cta: "Search Vets", link: "/Veternarians", bullets: ["Emergency vet services available 24/7", "Verified credentials and specialties", "Transparent pricing and reviews", "Video consultation options"], src: "/vet.jpg" }, { title: "Premium Veterinary Products", description: "Access a curated marketplace of veterinary-approved products, from prescription medications to premium pet food. All products are sourced from trusted manufacturers with quality guarantees.", category: "Animal Supplies", icon: <ShoppingCart className="h-4 w-4" />, cta: "Browse Products", link: "/products", bullets: ["Over 5,000 veterinary-approved products", "Auto-refill subscriptions available", "Verified product reviews", "Fast, reliable delivery"], src: "/products.jpg", useBackground: true,bgOverlay: 40, }, { title: "Trusted Animal Marketplace", description: "Whether you're looking to adopt a new pet or sell livestock, our secure marketplace connects responsible buyers and sellers with verified listings and health records.", category: "Buy & Sell", icon: <PawPrint className="h-4 w-4" />, cta: "Explore Listings", link: "/buy", bullets: [ "Mandatory health certifications", "Secure payment processing", "Adoption and rehoming services", "Breeder verification system" ], src: "/pets.jpg", useBackground: true,  bgOverlay: 40, }, { title: "Veterinary Career Advancement", description: "Find your next career opportunity or grow your veterinary practice with our specialized job platform. We connect qualified professionals with the best clinics, hospitals, and research facilities.", category: "Professional Network", icon: <Briefcase className="h-4 w-4" />, cta: "View Jobs", link: "/traditionaljobposts", bullets: [ "Exclusive job listings", "Resume and profile builder", "Continuing education resources", "Practice management tools" ], src: "/job.jpg", useBackground: true,  bgOverlay: 40, poster: "/jpb.jpg", } ]
+const sections = [{ title: "Find the Perfect Veterinarian", description: "Our comprehensive vet directory connects you with licensed professionals specializing in everything from exotic pets to large farm animals. Filter by location, availability, services offered, and read authentic reviews from other pet owners.", category: "Veterinary Services", icon: <ShieldCheck className="h-4 w-4" />, cta: "Search Vets", link: "/Veternarians", bullets: ["Emergency vet services available 24/7", "Verified credentials and specialties", "Transparent pricing and reviews", "Video consultation options"], src: "/vet.jpg" }, { title: "Premium Veterinary Products", description: "Access a curated marketplace of veterinary-approved products, from prescription medications to premium pet food. All products are sourced from trusted manufacturers with quality guarantees.", category: "Animal Supplies", icon: <ShoppingCart className="h-4 w-4" />, cta: "Browse Products", link: "/products", bullets: ["Over 5,000 veterinary-approved products", "Auto-refill subscriptions available", "Verified product reviews", "Fast, reliable delivery"], src: "/products.jpg", useBackground: true, bgOverlay: 40, }, { title: "Trusted Animal Marketplace", description: "Whether you're looking to adopt a new pet or sell livestock, our secure marketplace connects responsible buyers and sellers with verified listings and health records.", category: "Buy & Sell", icon: <PawPrint className="h-4 w-4" />, cta: "Explore Listings", link: "/buy", bullets: ["Mandatory health certifications", "Secure payment processing", "Adoption and rehoming services", "Breeder verification system"], src: "/pets.jpg", useBackground: true, bgOverlay: 40, }, { title: "Veterinary Career Advancement", description: "Find your next career opportunity or grow your veterinary practice with our specialized job platform. We connect qualified professionals with the best clinics, hospitals, and research facilities.", category: "Professional Network", icon: <Briefcase className="h-4 w-4" />, cta: "View Jobs", link: "/traditionaljobposts", bullets: ["Exclusive job listings", "Resume and profile builder", "Continuing education resources", "Practice management tools"], src: "/job.jpg", useBackground: true, bgOverlay: 40, poster: "/jpb.jpg", }]

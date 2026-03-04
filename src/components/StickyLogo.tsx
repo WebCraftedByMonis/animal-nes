@@ -58,6 +58,7 @@ function getBadgeSize(count: number) {
 export default function StickyLogo() {
   const [stickyLogos, setStickyLogos] = useState<StickyLogo[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [scrollSection, setScrollSection] = useState(0)
   const { country } = useCountry()
 
   useEffect(() => {
@@ -79,58 +80,62 @@ export default function StickyLogo() {
     fetchStickyLogos()
   }, [country])
 
-  if (isLoading || stickyLogos.length === 0) {
-    return null
-  }
+  // Track which 100vh "section" the user has scrolled into
+  useEffect(() => {
+    const handleScroll = () => {
+      const vh = window.innerHeight
+      if (vh > 0) {
+        setScrollSection(Math.floor(window.scrollY / vh))
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  if (isLoading || stickyLogos.length === 0) return null
 
   const validLogos = stickyLogos.filter(logo => logo.company.image)
+  if (validLogos.length === 0) return null
 
-  if (validLogos.length === 0) {
-    return null
-  }
-
-  // Split logos into sections of SECTION_SIZE
   const sections = chunkArray(validLogos, SECTION_SIZE)
 
+  // Show the section that matches the current scroll position.
+  // If the user has scrolled past all sections, keep showing the last one.
+  const currentIndex = Math.min(scrollSection, sections.length - 1)
+  const visibleLogos = sections[currentIndex]
+
   return (
-    // flex-row: sections sit side-by-side; flex-row-reverse so section 1 is rightmost
-    <div className="fixed bottom-6 right-6 z-50 flex flex-row-reverse gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {sections.map((sectionLogos, sectionIndex) => (
-        <div
-          key={sectionIndex}
-          className={`flex flex-col ${getGap(sectionLogos.length)}`}
+    // key={currentIndex} forces a remount when the section changes, re-triggering the animation
+    <div
+      key={currentIndex}
+      className={`fixed bottom-6 right-6 z-50 flex flex-col ${getGap(visibleLogos.length)}`}
+    >
+      {visibleLogos.map((logo) => (
+        <Link
+          key={logo.id}
+          href={`/Companies/${logo.companyId}`}
+          className="block group"
+          aria-label={`Visit ${logo.company.companyName}`}
         >
-          {sectionLogos.map((logo, index) => (
-            <Link
-              key={logo.id}
-              href={`/Companies/${logo.companyId}`}
-              className="block group"
-              aria-label={`Visit ${logo.company.companyName}`}
-              style={{
-                animationDelay: `${(sectionIndex * SECTION_SIZE + index) * 100}ms`,
-              }}
+          <div
+            className={`relative bg-white dark:bg-zinc-800 rounded-full ${getPadding(visibleLogos.length)} shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-500 hover:border-green-600 group-hover:scale-110`}
+          >
+            <div className={`relative ${getLogoSize(visibleLogos.length)}`}>
+              <Image
+                src={logo.company.image!.url}
+                alt={logo.company.image!.alt}
+                fill
+                className="object-contain rounded-full"
+                priority={currentIndex === 0 && index === 0}
+              />
+            </div>
+            <div
+              className={`absolute -top-1 -right-1 bg-green-500 text-white ${getBadgeSize(visibleLogos.length)} rounded-full shadow-md`}
             >
-              <div
-                className={`relative bg-white dark:bg-zinc-800 rounded-full ${getPadding(sectionLogos.length)} shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-500 hover:border-green-600 group-hover:scale-110`}
-              >
-                <div className={`relative ${getLogoSize(sectionLogos.length)}`}>
-                  <Image
-                    src={logo.company.image!.url}
-                    alt={logo.company.image!.alt}
-                    fill
-                    className="object-contain rounded-full"
-                    priority={sectionIndex === 0 && index === 0}
-                  />
-                </div>
-                <div
-                  className={`absolute -top-1 -right-1 bg-green-500 text-white ${getBadgeSize(sectionLogos.length)} rounded-full shadow-md`}
-                >
-                  Partner
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              Partner
+            </div>
+          </div>
+        </Link>
       ))}
     </div>
   )

@@ -118,7 +118,7 @@ export default function Navbar() {
                         asChild
                         className={cn(
                           navigationMenuTriggerStyle(),
-                          "text-xs font-medium hover:text-green-500 transition-colors px-2 py-1.5"
+                          "text-xs font-medium bg-transparent hover:bg-transparent hover:text-green-500 px-2 py-1.5"
                         )}
                       >
                         <Link href={href}>{label}</Link>
@@ -130,7 +130,7 @@ export default function Navbar() {
                     <DropdownMenu>
                       <DropdownMenuTrigger className={cn(
                         navigationMenuTriggerStyle(),
-                        "text-xs font-medium hover:text-green-500 transition-colors px-2 py-1.5 flex items-center gap-1"
+                        "text-xs font-medium bg-transparent hover:bg-transparent hover:text-green-500 px-2 py-1.5 flex items-center gap-1"
                       )}>
                         Wellness-News
                         <ChevronDown className="h-3 w-3" />
@@ -154,7 +154,7 @@ export default function Navbar() {
                     <DropdownMenu>
                       <DropdownMenuTrigger className={cn(
                         navigationMenuTriggerStyle(),
-                        "text-xs font-medium hover:text-green-500 transition-colors px-2 py-1.5 flex items-center gap-1"
+                        "text-xs font-medium bg-transparent hover:bg-transparent hover:text-green-500 px-2 py-1.5 flex items-center gap-1"
                       )}>
                         Dashboard
                         <ChevronDown className="h-3 w-3" />
