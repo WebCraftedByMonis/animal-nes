@@ -12,6 +12,7 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import { CountryProvider } from "@/contexts/CountryContext";
 import LoginModal from "@/components/LoginModal";
+import StickyLogo from "@/components/StickyLogo";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -117,6 +118,7 @@ export default function RootLayout({
                 <WishlistProvider>
                   <LoginModalProvider>
                     <ProgressBar />
+                    <StickyLogo />
                     {/* Main layout container */}
                     <div className="min-h-screen flex flex-col">
                       <Navbar />

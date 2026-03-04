@@ -14,7 +14,6 @@ import { useSession } from "next-auth/react"
 import FullScreenSlider from "./FullScreenSlider"
 import BannerContactBar from "./BannerContactBar"
 import { useLoginModal } from "@/contexts/LoginModalContext"
-import StickyLogo from "./StickyLogo"
 
 interface Testimonial {
   id: number
@@ -521,7 +520,6 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         </div>
       </section>
 
-      <StickyLogo />
     </div>
   )
 }

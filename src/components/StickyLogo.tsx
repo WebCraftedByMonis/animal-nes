@@ -99,18 +99,14 @@ export default function StickyLogo() {
 
   const sections = chunkArray(validLogos, SECTION_SIZE)
 
-  // Show the section that matches the current scroll position.
-  // If the user has scrolled past all sections, keep showing the last one.
-  const currentIndex = Math.min(scrollSection, sections.length - 1)
-  const visibleLogos = sections[currentIndex]
+  // Hide logos once the user has scrolled past all sections
+  if (scrollSection >= sections.length) return null
+
+  const visibleLogos = sections[scrollSection]
 
   return (
-    // key={currentIndex} forces a remount when the section changes, re-triggering the animation
-    <div
-      key={currentIndex}
-      className={`fixed bottom-6 right-6 z-50 flex flex-col ${getGap(visibleLogos.length)}`}
-    >
-      {visibleLogos.map((logo) => (
+    <div className={`fixed bottom-6 right-6 z-50 flex flex-col ${getGap(visibleLogos.length)}`}>
+      {visibleLogos.map((logo, index) => (
         <Link
           key={logo.id}
           href={`/Companies/${logo.companyId}`}
@@ -126,7 +122,7 @@ export default function StickyLogo() {
                 alt={logo.company.image!.alt}
                 fill
                 className="object-contain rounded-full"
-                priority={currentIndex === 0 && index === 0}
+                priority={scrollSection === 0 && index === 0}
               />
             </div>
             <div
