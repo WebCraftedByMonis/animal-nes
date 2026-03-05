@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import axios from 'axios'
 import { useCountry } from '@/contexts/CountryContext'
 
@@ -60,6 +61,9 @@ export default function StickyLogo() {
   const [isLoading, setIsLoading] = useState(true)
   const [scrollSection, setScrollSection] = useState(0)
   const { country } = useCountry()
+  const pathname = usePathname()
+
+  if (pathname !== '/') return null
 
   useEffect(() => {
     const fetchStickyLogos = async () => {
