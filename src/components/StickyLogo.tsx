@@ -63,8 +63,6 @@ export default function StickyLogo() {
   const { country } = useCountry()
   const pathname = usePathname()
 
-  if (pathname !== '/') return null
-
   useEffect(() => {
     const fetchStickyLogos = async () => {
       setIsLoading(true)
@@ -96,6 +94,7 @@ export default function StickyLogo() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  if (pathname !== '/') return null
   if (isLoading || stickyLogos.length === 0) return null
 
   const validLogos = stickyLogos.filter(logo => logo.company.image)
