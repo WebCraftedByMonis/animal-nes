@@ -361,6 +361,16 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
+              {/* Media Upload */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/media">
+                    <ImageIcon className="w-4 h-4" />
+                    <span className="hover:text-green-500">Media Upload</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Download Backups */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
