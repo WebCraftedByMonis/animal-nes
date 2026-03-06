@@ -14,6 +14,7 @@ import { useSession } from "next-auth/react"
 import FullScreenSlider from "./FullScreenSlider"
 import BannerContactBar from "./BannerContactBar"
 import { useLoginModal } from "@/contexts/LoginModalContext"
+import { useCountry } from "@/contexts/CountryContext"
 
 interface Testimonial {
   id: number
@@ -40,7 +41,7 @@ interface LandingPageProps {
   initialTestimonials?: InitialTestimonialsData
 }
 
-const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
+const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isUAE?: boolean }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const maxLength = 120
   const shouldTruncate = testimonial.content.length > maxLength
@@ -58,7 +59,7 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
   return (
     <Card className="h-full flex flex-col">
       <CardContent className="p-4 sm:p-6 flex flex-col flex-1">
-        <Quote className="text-emerald-600 w-6 h-6 mb-3 opacity-30" />
+        <Quote className={cn("w-6 h-6 mb-3 opacity-30", isUAE ? "text-[#EF3340]" : "text-emerald-600")} />
         <div className="flex-1">
           <p className="text-sm sm:text-base italic text-gray-700 dark:text-gray-300">
             "
@@ -70,7 +71,7 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
           {shouldTruncate && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium mt-2 inline-flex items-center gap-1"
+              className={cn("text-sm font-medium mt-2 inline-flex items-center gap-1", isUAE ? "text-[#EF3340] hover:text-[#CC1A28]" : "text-emerald-600 hover:text-emerald-700")}
             >
               {isExpanded ? "Show less" : "Read more"}
               <ChevronRight className={cn("h-3 w-3", isExpanded && "rotate-90")} />
@@ -92,7 +93,7 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
                 quality={60}
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+              <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm", isUAE ? "bg-[#EF3340]/10 text-[#EF3340]" : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400")}>
                 {getInitials(testimonial.user.name)}
               </div>
             )}
@@ -109,6 +110,45 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
 export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const { data: session } = useSession()
   const { openModal } = useLoginModal()
+  const { country } = useCountry()
+  const isUAE = country === 'UAE'
+
+  // UAE flag: red #EF3340, green #009A44, white, black
+  const c = isUAE ? {
+    heroOverlay:       'bg-gradient-to-r from-[#EF3340]/70 via-black/55 to-black/30',
+    wellnessText:      'text-[#EF3340]',
+    heroDot:           'bg-[#EF3340]',
+    btnPrimary:        'bg-[#EF3340] hover:bg-[#CC1A28] text-white font-bold px-8 py-6 text-lg',
+    iconWrap:          'bg-[#EF3340]/20 backdrop-blur-sm p-3 rounded-full w-12 h-12 flex items-center justify-center text-[#EF3340] mb-3 border border-[#EF3340]/30',
+    featureLink:       'text-[#EF3340] hover:text-[#CC1A28]',
+    badgeText:         'text-[#CE1126]',
+    badgeBg:           'bg-[#EF3340]/10',
+    sectionDot:        'bg-[#EF3340]',
+    sectionBtn:        'bg-[#EF3340] hover:bg-[#CC1A28]',
+    loader:            'text-[#EF3340]',
+    testimonialBorder: 'border-[#EF3340]/40',
+    testimonialHeader: 'bg-gradient-to-r from-[#EF3340]/10 to-[#EF3340]/5 dark:from-[#EF3340]/20 dark:to-[#EF3340]/10',
+    submitBtn:         'bg-[#EF3340] hover:bg-[#CC1A28]',
+    loginLink:         'text-[#EF3340]',
+    ctaSection:        'bg-gradient-to-br from-[#EF3340] via-[#CC1A28] to-[#8B0000]',
+  } : {
+    heroOverlay:       'bg-gradient-to-r from-black/80 via-black/60 to-black/40',
+    wellnessText:      'text-emerald-400',
+    heroDot:           'bg-emerald-400',
+    btnPrimary:        'bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 text-lg',
+    iconWrap:          'bg-emerald-400/20 backdrop-blur-sm p-3 rounded-full w-12 h-12 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-400/30',
+    featureLink:       'text-emerald-400 hover:text-emerald-300',
+    badgeText:         'text-emerald-600',
+    badgeBg:           'bg-emerald-100/30',
+    sectionDot:        'bg-emerald-500',
+    sectionBtn:        'bg-emerald-600 hover:bg-emerald-700',
+    loader:            'text-emerald-600',
+    testimonialBorder: 'border-emerald-200',
+    testimonialHeader: 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20',
+    submitBtn:         'bg-emerald-600 hover:bg-emerald-700',
+    loginLink:         'text-emerald-600',
+    ctaSection:        'bg-gradient-to-br from-emerald-600 to-emerald-800',
+  }
   const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials?.data || [])
   const [newTestimonial, setNewTestimonial] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -225,7 +265,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             sizes="100vw"
             quality={60}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40"></div>
+          <div className={`absolute inset-0 ${c.heroOverlay}`}></div>
         </div>
 
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
@@ -234,7 +274,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
               <div className="text-white space-y-6">
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight">
                   <span className="block">Animal</span>
-                  <span className="block text-emerald-400">Wellness</span>
+                  <span className={`block ${c.wellnessText}`}>Wellness</span>
                 </h1>
 
                 <p className="text-lg sm:text-xl md:text-2xl font-medium text-gray-200 max-w-xl">
@@ -243,15 +283,15 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    <div className={`w-2 h-2 ${c.heroDot} rounded-full`}></div>
                     <p className="text-gray-300">Find trusted veterinarians near you</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    <div className={`w-2 h-2 ${c.heroDot} rounded-full`}></div>
                     <p className="text-gray-300">Shop premium veterinary products</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    <div className={`w-2 h-2 ${c.heroDot} rounded-full`}></div>
                     <p className="text-gray-300">Connect with animal care community</p>
                   </div>
                 </div>
@@ -260,7 +300,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                   <Link href="/products">
                     <Button
                       size="lg"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 text-lg"
+                      className={c.btnPrimary}
                     >
                       Get Started
                       <ArrowRight className="ml-2 h-5 w-5" />
@@ -320,7 +360,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             {features.map((feature, index) => (
               <Card key={index} className="h-full bg-white/5 backdrop-blur-lg border-white/20">
                 <CardHeader>
-                  <div className="bg-emerald-400/20 backdrop-blur-sm p-3 rounded-full w-12 h-12 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-400/30">
+                  <div className={c.iconWrap}>
                     {feature.icon}
                   </div>
                   <CardTitle className="text-lg md:text-xl text-white">{feature.title}</CardTitle>
@@ -328,7 +368,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                 <CardContent>
                   <p className="text-sm md:text-base text-gray-200 mb-4">{feature.description}</p>
                   <Link href={feature.link}>
-                    <Button variant="link" className="px-0 text-emerald-400 hover:text-emerald-300 p-0">
+                    <Button variant="link" className={`px-0 p-0 ${c.featureLink}`}>
                       Learn more about {feature.title}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -352,7 +392,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
               <div className={cn("lg:w-1/2 space-y-6", index % 2 === 0 ? "lg:order-2" : "")}>
-                <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 bg-emerald-100/30 px-3 py-1 rounded-full">
+                <div className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full ${c.badgeText} ${c.badgeBg}`}>
                   {section.icon}
                   {section.category}
                 </div>
@@ -364,7 +404,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                   {section.bullets.map((bullet, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-1">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <div className={`w-2 h-2 rounded-full ${c.sectionDot}`} />
                       </div>
                       <p className="text-sm md:text-base text-muted-foreground">{bullet}</p>
                     </div>
@@ -372,7 +412,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                 </div>
 
                 <div className="pt-4 inline-block">
-                  <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 font-medium">
+                  <Button asChild size="lg" className={`${c.sectionBtn} font-medium`}>
                     <a href={section.link} className="flex items-center gap-2">
                       {section.cta}
                       <ArrowRight className="h-5 w-5" />
@@ -409,13 +449,13 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
           {isLoadingTestimonials ? (
             <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+              <Loader2 className={`h-8 w-8 animate-spin ${c.loader}`} />
             </div>
           ) : testimonials.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {testimonials.map((testimonial) => (
-                  <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+                  <TestimonialCard key={testimonial.id} testimonial={testimonial} isUAE={isUAE} />
                 ))}
               </div>
 
@@ -451,8 +491,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
           {/* Post Testimonial Form */}
           <div className="mt-12 max-w-2xl mx-auto">
-            <Card className="border-emerald-200 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 py-4">
+            <Card className={`${c.testimonialBorder} shadow-lg`}>
+              <CardHeader className={`${c.testimonialHeader} py-4`}>
                 <CardTitle className="text-lg md:text-xl text-center">Share Your Experience</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
@@ -472,7 +512,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                     <Button
                       onClick={handleSubmitTestimonial}
                       disabled={isSubmitting || !newTestimonial.trim()}
-                      className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+                      className={`${c.submitBtn} w-full sm:w-auto`}
                     >
                       {isSubmitting ? (
                         <>
@@ -489,7 +529,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                   </div>
                   {!session && (
                     <p className="text-sm text-center text-muted-foreground">
-                      Please <button onClick={() => openModal('button')} className="text-emerald-600 hover:underline">login</button> to post your testimonial
+                      Please <button onClick={() => openModal('button')} className={`${c.loginLink} hover:underline`}>login</button> to post your testimonial
                     </p>
                   )}
                 </div>
@@ -500,7 +540,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+      <section className={`${c.ctaSection} text-white py-16 md:py-24 px-4 sm:px-6 lg:px-8`}>
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6">
             Ready to Transform Animal Care?
@@ -510,7 +550,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             Experience the future of animal wellness today.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button onClick={() => openModal('button')} size="lg" className="bg-white dark:bg-zinc-100 text-emerald-800 hover:bg-gray-100 dark:hover:bg-zinc-200 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">
+            <Button onClick={() => openModal('button')} size="lg" className={`bg-white dark:bg-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-200 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto ${isUAE ? 'text-[#EF3340]' : 'text-emerald-800'}`}>
               Sign Up Free
             </Button>
             <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 font-medium px-6 md:px-8 py-5 md:py-6 text-base md:text-lg w-full sm:w-auto">

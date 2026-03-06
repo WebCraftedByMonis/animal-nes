@@ -658,10 +658,13 @@ model monis {
 
 model Banner {
   id        Int          @id @default(autoincrement())
-  position  Int          @unique
+  position  Int
+  device    String       @default("desktop")
   image     BannerImage?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  @@unique([position, device])
 }
 
 model BannerImage {

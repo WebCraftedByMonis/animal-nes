@@ -14,6 +14,7 @@ const bannerSchema = z.object({
     message: 'Position must be a positive integer',
   }),
   alt: z.string().min(1, 'Alt text is required'),
+  device: z.enum(['desktop', 'mobile']).default('desktop'),
 })
 
 const updateBannerSchema = z.object({
@@ -21,6 +22,7 @@ const updateBannerSchema = z.object({
     message: 'Position must be a positive integer',
   }).optional(),
   alt: z.string().min(1, 'Alt text is required').optional(),
+  device: z.enum(['desktop', 'mobile']).optional(),
 })
 
 // GET - Fetch all banners
@@ -29,13 +31,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc'
     const limitParam = searchParams.get('limit') || '10'
-    
+    const device = searchParams.get('device') || undefined
+
     const limit = limitParam === 'all' ? undefined : parseInt(limitParam, 10)
     const page = parseInt(searchParams.get('page') || '1', 10)
     const skip = limit ? (page - 1) * limit : undefined
 
+    const where = device ? { device } : {}
+
     const [banners, total] = await Promise.all([
       prisma.banner.findMany({
+        where,
         orderBy: {
           position: sortOrder,
         },
@@ -45,7 +51,7 @@ export async function GET(req: NextRequest) {
           image: true,
         },
       }),
-      prisma.banner.count(),
+      prisma.banner.count({ where }),
     ])
 
     return NextResponse.json({
@@ -67,12 +73,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const position = formData.get('position') as string
     const alt = formData.get('alt') as string
+    const device = (formData.get('device') as string) || 'desktop'
     const imageFile = formData.get('image') as File | null
 
     // Validate input
-    const validation = bannerSchema.safeParse({ 
+    const validation = bannerSchema.safeParse({
       position,
       alt,
+      device,
     })
 
     if (!validation.success) {
@@ -89,14 +97,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if position is already taken
+    // Check if position is already taken for this device
     const existingBanner = await prisma.banner.findUnique({
-      where: { position: validation.data.position },
+      where: { position_device: { position: validation.data.position, device: validation.data.device } },
     })
 
     if (existingBanner) {
       return NextResponse.json(
-        { error: 'A banner already exists at this position' },
+        { error: `A ${validation.data.device} banner already exists at this position` },
         { status: 400 }
       )
     }
@@ -126,6 +134,7 @@ export async function POST(request: NextRequest) {
       const banner = await prisma.banner.create({
         data: {
           position: validation.data.position,
+          device: validation.data.device,
         },
       })
 
@@ -227,6 +236,7 @@ export async function PUT(request: NextRequest) {
     const id = formData.get('id') as string
     const position = formData.get('position') as string | null
     const alt = formData.get('alt') as string | null
+    const device = formData.get('device') as string | null
     const imageFile = formData.get('image') as File | null
 
     if (!id) {
@@ -246,10 +256,11 @@ export async function PUT(request: NextRequest) {
 
     // Validate input if any field is provided
     let validatedData: any = {}
-    if (position || alt) {
-      const validation = updateBannerSchema.safeParse({ 
+    if (position || alt || device) {
+      const validation = updateBannerSchema.safeParse({
         position,
         alt,
+        device,
       })
       if (!validation.success) {
         return NextResponse.json(
@@ -273,14 +284,15 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Check if new position is already taken by another banner
-    if (validatedData.position && validatedData.position !== existingBanner.position) {
+    // Check if new position is already taken for this device
+    const effectiveDevice = validatedData.device || existingBanner.device
+    if (validatedData.position && (validatedData.position !== existingBanner.position || effectiveDevice !== existingBanner.device)) {
       const positionTaken = await prisma.banner.findUnique({
-        where: { position: validatedData.position },
+        where: { position_device: { position: validatedData.position, device: effectiveDevice } },
       })
-      if (positionTaken) {
+      if (positionTaken && positionTaken.id !== bannerId) {
         return NextResponse.json(
-          { error: 'A banner already exists at this position' },
+          { error: `A ${effectiveDevice} banner already exists at this position` },
           { status: 400 }
         )
       }
@@ -332,12 +344,13 @@ export async function PUT(request: NextRequest) {
 
     // Update banner and image in a transaction
     const result = await prisma.$transaction(async (prisma) => {
-      // Update the banner position if provided
-      if (validatedData.position) {
+      // Update the banner position/device if provided
+      if (validatedData.position || validatedData.device) {
         await prisma.banner.update({
           where: { id: bannerId },
           data: {
-            position: validatedData.position,
+            ...(validatedData.position && { position: validatedData.position }),
+            ...(validatedData.device && { device: validatedData.device }),
           },
         })
       }

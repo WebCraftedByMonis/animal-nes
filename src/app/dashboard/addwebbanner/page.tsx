@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud, Monitor, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,7 @@ const formSchema = z.object({
     message: "Position must be a positive number",
   }),
   alt: z.string().min(1, "Alt text is required for accessibility"),
+  device: z.enum(["desktop", "mobile"]).default("desktop"),
   image: z.instanceof(File).refine((file) => file.size > 0, {
     message: "Banner image is required",
   }),
@@ -41,6 +42,7 @@ export default function AddBannerPage() {
     defaultValues: {
       position: "",
       alt: "",
+      device: "desktop",
     },
   });
 
@@ -97,6 +99,7 @@ export default function AddBannerPage() {
       const formData = new FormData();
       formData.append("position", data.position);
       formData.append("alt", data.alt);
+      formData.append("device", data.device);
       formData.append("image", data.image);
 
       const response = await fetch("/api/banner", {
@@ -197,6 +200,51 @@ export default function AddBannerPage() {
               />
             </div>
 
+            {/* Device Selector */}
+            <FormField
+              control={form.control}
+              name="device"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-gray-700">Device Type *</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => field.onChange("desktop")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 font-medium text-sm transition-colors ${
+                          field.value === "desktop"
+                            ? "border-green-500 bg-green-50 text-green-700"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300"
+                        }`}
+                      >
+                        <Monitor className="h-5 w-5" />
+                        Desktop / Laptop
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => field.onChange("mobile")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 font-medium text-sm transition-colors ${
+                          field.value === "mobile"
+                            ? "border-green-500 bg-green-50 text-green-700"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300"
+                        }`}
+                      >
+                        <Smartphone className="h-5 w-5" />
+                        Mobile
+                      </button>
+                    </div>
+                  </FormControl>
+                  <p className="text-xs text-gray-500">
+                    {field.value === "mobile"
+                      ? "Recommended: 768x400 or portrait aspect ratio"
+                      : "Recommended: 1920x600 or wide aspect ratio"}
+                  </p>
+                  <FormMessage className="text-red-500" />
+                </FormItem>
+              )}
+            />
+
             {/* Image Upload */}
             <div className="space-y-2">
               <Label className="text-gray-700">Banner Image *</Label>
@@ -232,7 +280,9 @@ export default function AddBannerPage() {
                         Supports: JPEG, JPG, PNG, WEBP, GIF (Max 5MB)
                       </p>
                       <p className="text-xs text-gray-400 mt-2">
-                        Recommended dimensions: 1920x600 or similar aspect ratio
+                        {form.watch("device") === "mobile"
+                          ? "Recommended: 768x400 (mobile banner)"
+                          : "Recommended: 1920x600 (desktop banner)"}
                       </p>
                     </>
                   )}

@@ -16,6 +16,7 @@ interface BannerImage {
 interface Banner {
   id: number
   position: number
+  device: string
   image: BannerImage | null
 }
 
@@ -24,9 +25,18 @@ export default function FullScreenSlider() {
   const [current, setCurrent] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const delay = 5000 // milliseconds
+
+  // Detect device type on mount and window resize
+  useEffect(() => {
+    const detect = () => setDevice(window.innerWidth < 768 ? 'mobile' : 'desktop')
+    detect()
+    window.addEventListener('resize', detect)
+    return () => window.removeEventListener('resize', detect)
+  }, [])
 
   // Fetch banners from API
   useEffect(() => {
@@ -36,16 +46,19 @@ export default function FullScreenSlider() {
         const { data } = await axios.get('/api/banner', {
           params: {
             limit: 'all',
-            sortOrder: 'asc'
+            sortOrder: 'asc',
+            device,
           }
         })
         
         const validBanners = data.data.filter((banner: Banner) => banner.image?.url)
-        
+
         if (validBanners.length === 0) {
           setError("No banners available")
+          setBanners([])
         } else {
           setBanners(validBanners)
+          setCurrent(0)
           setError(null)
         }
       } catch (error) {
@@ -57,7 +70,7 @@ export default function FullScreenSlider() {
     }
 
     fetchBanners()
-  }, [])
+  }, [device])
 
   const nextSlide = () => {
     if (banners.length > 0) {

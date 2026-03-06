@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, ArrowUpDown, Loader2, Plus, MoveUp, MoveDown } from 'lucide-react'
+import { Pencil, Trash2, ArrowUpDown, Loader2, MoveUp, MoveDown, Monitor, Smartphone } from 'lucide-react'
 import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import {
   Select,
@@ -36,10 +36,11 @@ import Link from 'next/link'
 interface Banner {
   id: number
   position: number
-  image: { 
+  device: string
+  image: {
     url: string
     alt: string
-    publicId: string | null 
+    publicId: string | null
   } | null
   createdAt: string
   updatedAt: string
@@ -51,10 +52,12 @@ export default function ViewBannersPage() {
   const [limit, setLimit] = useState(10)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const [activeDevice, setActiveDevice] = useState<'desktop' | 'mobile'>('desktop')
 
   const [editId, setEditId] = useState<number | null>(null)
   const [editPosition, setEditPosition] = useState('')
   const [editAlt, setEditAlt] = useState('')
+  const [editDevice, setEditDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [editBannerImage, setEditBannerImage] = useState<File | null>(null)
   const [editBannerImagePreview, setEditBannerImagePreview] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
@@ -67,7 +70,7 @@ export default function ViewBannersPage() {
     setIsLoading(true)
     try {
       const { data } = await axios.get('/api/banner', {
-        params: { sortOrder, page, limit },
+        params: { sortOrder, page, limit, device: activeDevice },
       })
       setBanners(data.data)
       setTotal(data.total)
@@ -77,7 +80,7 @@ export default function ViewBannersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [sortOrder, page, limit])
+  }, [sortOrder, page, limit, activeDevice])
 
   useEffect(() => {
     fetchBanners()
@@ -92,6 +95,7 @@ export default function ViewBannersPage() {
       formData.append('id', editId.toString())
       if (editPosition) formData.append('position', editPosition)
       if (editAlt) formData.append('alt', editAlt)
+      formData.append('device', editDevice)
       if (editBannerImage) formData.append('image', editBannerImage)
 
       const response = await axios.put('/api/banner', formData)
@@ -134,6 +138,11 @@ export default function ViewBannersPage() {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
   }
 
+  const handleDeviceSwitch = (device: 'desktop' | 'mobile') => {
+    setActiveDevice(device)
+    setPage(1)
+  }
+
   const handleSwapPositions = async (banner1: Banner, banner2: Banner) => {
     try {
       // Swap positions by updating both banners
@@ -170,7 +179,32 @@ export default function ViewBannersPage() {
       <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-green-500">Banner Management</h1>
-          
+        </div>
+
+        {/* Device Tabs */}
+        <div className="flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => handleDeviceSwitch('desktop')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeDevice === 'desktop'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Monitor className="h-4 w-4" />
+            Desktop / Laptop
+          </button>
+          <button
+            onClick={() => handleDeviceSwitch('mobile')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeDevice === 'mobile'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Smartphone className="h-4 w-4" />
+            Mobile
+          </button>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -288,6 +322,7 @@ export default function ViewBannersPage() {
                               setEditId(banner.id)
                               setEditPosition(banner.position.toString())
                               setEditAlt(banner.image?.alt || '')
+                              setEditDevice((banner.device as 'desktop' | 'mobile') || 'desktop')
                               setEditBannerImagePreview(banner.image?.url || null)
                               setOpen(true)
                             }}
@@ -359,21 +394,51 @@ export default function ViewBannersPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Position *</label>
-                  <Input 
+                  <Input
                     type="number"
                     min="1"
-                    value={editPosition} 
-                    onChange={(e) => setEditPosition(e.target.value)} 
+                    value={editPosition}
+                    onChange={(e) => setEditPosition(e.target.value)}
                     placeholder="Banner position (1, 2, 3...)"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Alt Text *</label>
-                  <Input 
-                    value={editAlt} 
-                    onChange={(e) => setEditAlt(e.target.value)} 
+                  <Input
+                    value={editAlt}
+                    onChange={(e) => setEditAlt(e.target.value)}
                     placeholder="Image description for accessibility"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Device Type</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditDevice('desktop')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      editDevice === 'desktop'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <Monitor className="h-4 w-4" />
+                    Desktop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditDevice('mobile')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      editDevice === 'mobile'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    Mobile
+                  </button>
                 </div>
               </div>
               
