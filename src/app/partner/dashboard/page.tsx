@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
@@ -115,6 +115,15 @@ export default function PartnerDashboard() {
   });
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
 
+  // Paginated products state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [productPage, setProductPage] = useState(1);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productPageLoading, setProductPageLoading] = useState(false);
+  const productsInitialLoadDone = useRef(false);
+  const PRODUCTS_PER_PAGE = 20;
+
   // Product edit/delete state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showEditProductModal, setShowEditProductModal] = useState(false);
@@ -173,6 +182,34 @@ export default function PartnerDashboard() {
       setLoading(false);
     }
   };
+
+  const fetchProducts = async (page: number) => {
+    if (!productsInitialLoadDone.current) {
+      setProductsLoading(true);
+    } else {
+      setProductPageLoading(true);
+    }
+    try {
+      const response = await fetch(`/api/partner/products?page=${page}&limit=${PRODUCTS_PER_PAGE}`);
+      const data = await response.json();
+      if (response.ok) {
+        setProducts(data.products);
+        setTotalProducts(data.totalProducts);
+        productsInitialLoadDone.current = true;
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setProductsLoading(false);
+      setProductPageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'products') {
+      fetchProducts(productPage);
+    }
+  }, [activeTab, productPage]);
 
   const fetchCartCount = async () => {
     try {
@@ -488,7 +525,7 @@ export default function PartnerDashboard() {
         toast.success('Product updated successfully!');
         setShowEditProductModal(false);
         setEditingProduct(null);
-        checkAuth(); // Refresh data
+        fetchProducts(productPage); // Refresh data
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to update product');
@@ -514,7 +551,7 @@ export default function PartnerDashboard() {
         toast.success('Product deleted successfully!');
         setShowDeleteConfirm(false);
         setDeletingProductId(null);
-        checkAuth(); // Refresh data
+        fetchProducts(productPage); // Refresh data
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to delete product');
@@ -761,7 +798,7 @@ export default function PartnerDashboard() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                My Products ({partner.products?.length || 0})
+                My Products ({totalProducts})
               </button>
               <button
                 onClick={() => setActiveTab('shop')}
@@ -825,8 +862,13 @@ export default function PartnerDashboard() {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-green-600">My Products</h2>
 
-                {partner.products && partner.products.length > 0 ? (
-                  <div className="overflow-x-auto">
+                {productsLoading ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading products...</p>
+                  </div>
+                ) : products.length > 0 ? (
+                  <div className={`overflow-x-auto ${productPageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                     <table className="w-full">
                       <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
@@ -840,7 +882,7 @@ export default function PartnerDashboard() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {partner.products.map((product) => (
+                        {products.map((product) => (
                           <tr key={product.id} className="hover:bg-gray-50">
                             <td className="px-4 py-4 whitespace-nowrap">
                               {product.image ? (
@@ -946,6 +988,29 @@ export default function PartnerDashboard() {
                   <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                     <p className="text-gray-500 text-lg">No products assigned yet</p>
                     <p className="text-gray-400 text-sm mt-2">Contact admin to add products to your account</p>
+                  </div>
+                )}
+
+                {/* Products Pagination */}
+                {!productsLoading && totalProducts > PRODUCTS_PER_PAGE && (
+                  <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-gray-200 mt-4">
+                    <button
+                      disabled={productPage === 1 || productPageLoading}
+                      onClick={() => setProductPage(p => Math.max(p - 1, 1))}
+                      className="px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      Page {productPage} of {Math.ceil(totalProducts / PRODUCTS_PER_PAGE)} — Total: {totalProducts} products
+                    </span>
+                    <button
+                      disabled={productPage === Math.ceil(totalProducts / PRODUCTS_PER_PAGE) || productPageLoading}
+                      onClick={() => setProductPage(p => Math.min(p + 1, Math.ceil(totalProducts / PRODUCTS_PER_PAGE)))}
+                      className="px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
                   </div>
                 )}
               </div>

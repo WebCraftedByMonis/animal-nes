@@ -20,6 +20,40 @@ async function getCompanyFromSession() {
   }
 }
 
+// GET - Fetch paginated products for the authenticated company
+export async function GET(request: NextRequest) {
+  try {
+    const companyId = await getCompanyFromSession();
+    if (!companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+
+    const [products, totalProducts] = await Promise.all([
+      prisma.product.findMany({
+        where: { companyId },
+        include: { image: true, variants: true },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { productName: 'asc' },
+      }),
+      prisma.product.count({ where: { companyId } }),
+    ]);
+
+    return NextResponse.json({
+      products,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / limit),
+    });
+  } catch (error) {
+    console.error('Error fetching company products:', error);
+    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+  }
+}
+
 // PATCH - Update company price for a product variant
 export async function PATCH(request: NextRequest) {
   try {

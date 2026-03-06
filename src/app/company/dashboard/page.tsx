@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast, Toaster } from 'react-hot-toast';
@@ -75,6 +75,15 @@ export default function CompanyDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'partner-orders' | 'discounts' | 'payment-settings' | 'profile' | 'password'>('products');
 
+  // Products state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [productPage, setProductPage] = useState(1);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productPageLoading, setProductPageLoading] = useState(false);
+  const productsInitialLoadDone = useRef(false);
+  const PRODUCTS_PER_PAGE = 20;
+
   // Orders state
   const [orders, setOrders] = useState<CompanyOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -120,6 +129,34 @@ export default function CompanyDashboard() {
       setLoading(false);
     }
   };
+
+  const fetchProducts = useCallback(async (page: number) => {
+    if (!productsInitialLoadDone.current) {
+      setProductsLoading(true);
+    } else {
+      setProductPageLoading(true);
+    }
+    try {
+      const response = await fetch(`/api/company/products?page=${page}&limit=${PRODUCTS_PER_PAGE}`);
+      const data = await response.json();
+      if (response.ok) {
+        setProducts(data.products);
+        setTotalProducts(data.totalProducts);
+        productsInitialLoadDone.current = true;
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setProductsLoading(false);
+      setProductPageLoading(false);
+    }
+  }, [PRODUCTS_PER_PAGE]);
+
+  useEffect(() => {
+    if (activeTab === 'products') {
+      fetchProducts(productPage);
+    }
+  }, [activeTab, productPage]);
 
   const fetchOrders = useCallback(async (searchTerm = '', pageNum = ordersPage, limitNum = ordersLimit) => {
     setOrdersLoading(true);
@@ -231,22 +268,16 @@ export default function CompanyDashboard() {
 
       if (response.ok) {
         // Update local state
-        setCompany(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            products: prev.products?.map(product =>
-              product.id === productId
-                ? {
-                    ...product,
-                    variants: product.variants?.map(v =>
-                      v.id === variantId ? { ...v, companyPrice: editedCompanyPrice } : v
-                    )
-                  }
-                : product
-            )
-          };
-        });
+        setProducts(prev => prev.map(product =>
+          product.id === productId
+            ? {
+                ...product,
+                variants: product.variants?.map(v =>
+                  v.id === variantId ? { ...v, companyPrice: editedCompanyPrice } : v
+                )
+              }
+            : product
+        ));
         toast.success('Company price updated successfully!');
         setEditingVariantId(null);
       } else {
@@ -359,7 +390,7 @@ export default function CompanyDashboard() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Products ({company.products?.length || 0})
+              Products ({totalProducts})
             </button>
             <button
               onClick={() => setActiveTab('orders')}
@@ -436,13 +467,18 @@ export default function CompanyDashboard() {
               <p className="text-sm text-gray-500">Edit company price (purchased price) for each variant</p>
             </div>
 
-            {!company.products || company.products.length === 0 ? (
+            {productsLoading ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <Loader2 className="w-6 h-6 animate-spin inline-block text-blue-600" />
+                <p className="mt-2 text-gray-600">Loading products...</p>
+              </div>
+            ) : products.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg shadow">
                 <p className="text-gray-500">No products found</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {company.products.map((product) => (
+              <div className={`space-y-6 ${productPageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                {products.map((product) => (
                   <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="flex flex-col md:flex-row">
                       {/* Product Image */}
@@ -569,6 +605,29 @@ export default function CompanyDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Products Pagination */}
+            {!productsLoading && totalProducts > PRODUCTS_PER_PAGE && (
+              <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+                <button
+                  disabled={productPage === 1 || productPageLoading}
+                  onClick={() => setProductPage(p => Math.max(p - 1, 1))}
+                  className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                  Page {productPage} of {Math.ceil(totalProducts / PRODUCTS_PER_PAGE)} — Total: {totalProducts} products
+                </span>
+                <button
+                  disabled={productPage === Math.ceil(totalProducts / PRODUCTS_PER_PAGE) || productPageLoading}
+                  onClick={() => setProductPage(p => Math.min(p + 1, Math.ceil(totalProducts / PRODUCTS_PER_PAGE)))}
+                  className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
               </div>
             )}
           </div>

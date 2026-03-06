@@ -167,7 +167,7 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
   };
 
   const getCompanyPrice = (variant: ProductVariant) => {
-    return variant.companyPrice || variant.customerPrice;
+    return variant.companyPrice ?? variant.customerPrice ?? 0;
   };
 
   const getDiscountForVariant = (product: ShopProduct, variantId: number) => {
@@ -353,6 +353,7 @@ export default function PartnerShop({ onCartUpdate, cartCount, onViewCart }: Par
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((product) => {
+            if (!product.variants.length) return null;
             const cheapestVariant = product.variants.reduce((min, v) => {
               const price = getCompanyPrice(v);
               const minPrice = getCompanyPrice(min);

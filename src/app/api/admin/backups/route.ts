@@ -72,31 +72,47 @@ export async function GET(request: NextRequest) {
       include: {
         company: { select: { id: true, companyName: true } },
         partner: { select: { id: true, partnerName: true } },
+        variants: { orderBy: { id: 'asc' } },
       },
       orderBy: { id: 'asc' },
     });
 
-    rows = products.map((product) => ({
-      id: product.id,
-      productName: product.productName,
-      genericName: product.genericName,
-      category: product.category,
-      subCategory: product.subCategory,
-      subsubCategory: product.subsubCategory,
-      productType: product.productType,
-      companyId: product.companyId,
-      companyName: product.company?.companyName ?? null,
-      partnerId: product.partnerId,
-      partnerName: product.partner?.partnerName ?? null,
-      description: product.description,
-      productLink: product.productLink,
-      dosage: product.dosage,
-      outofstock: product.outofstock,
-      isFeatured: product.isFeatured,
-      isActive: product.isActive,
-      createdAt: toIso(product.createdAt),
-      updatedAt: toIso(product.updatedAt),
-    }));
+    // One row per variant (or one row for products with no variants)
+    rows = products.flatMap((product) => {
+      const base = {
+        id: product.id,
+        productName: product.productName,
+        genericName: product.genericName,
+        category: product.category,
+        subCategory: product.subCategory,
+        subsubCategory: product.subsubCategory,
+        productType: product.productType,
+        companyId: product.companyId,
+        companyName: product.company?.companyName ?? null,
+        partnerId: product.partnerId,
+        partnerName: product.partner?.partnerName ?? null,
+        description: product.description,
+        productLink: product.productLink,
+        dosage: product.dosage,
+        outofstock: product.outofstock,
+        isFeatured: product.isFeatured,
+        isActive: product.isActive,
+        createdAt: toIso(product.createdAt),
+        updatedAt: toIso(product.updatedAt),
+      };
+      if (product.variants.length === 0) {
+        return [{ ...base, variantId: null, packingVolume: null, companyPrice: null, dealerPrice: null, customerPrice: null, inventory: null }];
+      }
+      return product.variants.map((v) => ({
+        ...base,
+        variantId: v.id,
+        packingVolume: v.packingVolume,
+        companyPrice: v.companyPrice,
+        dealerPrice: v.dealerPrice,
+        customerPrice: v.customerPrice,
+        inventory: v.inventory,
+      }));
+    });
 
     sheetName = 'Products';
   }
@@ -227,7 +243,14 @@ export async function POST(request: NextRequest) {
           country:      s(row.country),
           email:        s(row.email),
         };
-        const existing = await prisma.company.findFirst({ where: { companyName } });
+        const rowId = row.id ? parseInt(String(row.id)) : null;
+        let existing = null;
+        if (rowId && !isNaN(rowId)) {
+          existing = await prisma.company.findUnique({ where: { id: rowId } });
+        }
+        if (!existing) {
+          existing = await prisma.company.findFirst({ where: { companyName } });
+        }
         if (existing) {
           await prisma.company.update({ where: { id: existing.id }, data });
         } else {
@@ -302,7 +325,14 @@ export async function POST(request: NextRequest) {
           failed++; errors.push(`Row skipped — not enough unique data to match "${partnerName}"`); continue;
         }
 
-        const existing = await prisma.partner.findFirst({ where });
+        const rowId = row.id ? parseInt(String(row.id)) : null;
+        let existing = null;
+        if (rowId && !isNaN(rowId)) {
+          existing = await prisma.partner.findUnique({ where: { id: rowId } });
+        }
+        if (!existing) {
+          existing = await prisma.partner.findFirst({ where });
+        }
         if (existing) {
           await prisma.partner.update({ where: { id: existing.id }, data });
         } else {
@@ -335,7 +365,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Resolve companyId by name (lookup or create)
+        // Resolve companyId — by name first, then by stored numeric id
         let resolvedCompanyId: number | null = null;
         if (companyName) {
           if (companyCache.has(companyName)) {
@@ -346,9 +376,15 @@ export async function POST(request: NextRequest) {
             resolvedCompanyId = company.id;
             companyCache.set(companyName, resolvedCompanyId);
           }
+        } else if (row.companyId) {
+          const numId = parseInt(String(row.companyId));
+          if (!isNaN(numId)) {
+            const company = await prisma.company.findUnique({ where: { id: numId } });
+            if (company) resolvedCompanyId = company.id;
+          }
         }
 
-        // Resolve partnerId by name (lookup or create)
+        // Resolve partnerId — by name first, then by stored numeric id
         let resolvedPartnerId: number | null = null;
         if (partnerName) {
           if (partnerCache.has(partnerName)) {
@@ -358,6 +394,12 @@ export async function POST(request: NextRequest) {
             if (!partner) partner = await prisma.partner.create({ data: { partnerName } });
             resolvedPartnerId = partner.id;
             partnerCache.set(partnerName, resolvedPartnerId);
+          }
+        } else if (row.partnerId) {
+          const numId = parseInt(String(row.partnerId));
+          if (!isNaN(numId)) {
+            const partner = await prisma.partner.findUnique({ where: { id: numId } });
+            if (partner) resolvedPartnerId = partner.id;
           }
         }
 
@@ -384,22 +426,57 @@ export async function POST(request: NextRequest) {
           partnerId: resolvedPartnerId,
         };
 
-        // Check if product already exists
-        const existing = await prisma.product.findFirst({
-          where: { productName, companyId: resolvedCompanyId, partnerId: resolvedPartnerId },
-        });
+        // Check if product already exists — try stored id first, then name+company+partner
+        const rowProductId = row.id ? parseInt(String(row.id)) : null;
+        let existing = null;
+        if (rowProductId && !isNaN(rowProductId)) {
+          existing = await prisma.product.findUnique({ where: { id: rowProductId } });
+        }
+        if (!existing) {
+          existing = await prisma.product.findFirst({
+            where: { productName, companyId: resolvedCompanyId, partnerId: resolvedPartnerId },
+          });
+        }
+
+        // Read variant columns (present in both new and existing rows)
+        const packingVolume  = s(row.packingVolume  ?? row.PackingVolume);
+        const companyPrice   = row.companyPrice  != null && row.companyPrice  !== '' ? parseFloat(row.companyPrice)  : (row.CompanyPrice  != null && row.CompanyPrice  !== '' ? parseFloat(row.CompanyPrice)  : null);
+        const dealerPrice    = row.dealerPrice   != null && row.dealerPrice   !== '' ? parseFloat(row.dealerPrice)   : (row.DealerPrice   != null && row.DealerPrice   !== '' ? parseFloat(row.DealerPrice)   : null);
+        const customerPrice  = row.customerPrice != null && row.customerPrice !== '' ? parseFloat(row.customerPrice) : (row['Customer Price'] != null && row['Customer Price'] !== '' ? parseFloat(row['Customer Price']) : null);
+        const inventory      = row.inventory != null && row.inventory !== '' ? parseInt(String(row.inventory)) : (row.Inventory != null && row.Inventory !== '' ? parseInt(String(row.Inventory)) : 0);
+        const hasVariant     = packingVolume || companyPrice != null || dealerPrice != null || customerPrice != null;
 
         if (existing) {
           await prisma.product.update({ where: { id: existing.id }, data: productData });
+          // Upsert variant — match by stored variantId, then by packingVolume, then update first variant
+          if (hasVariant) {
+            const variantData = {
+              packingVolume: packingVolume || productName,
+              companyPrice:  Number.isFinite(companyPrice!)  ? companyPrice  : null,
+              dealerPrice:   Number.isFinite(dealerPrice!)   ? dealerPrice   : null,
+              customerPrice: Number.isFinite(customerPrice!) ? customerPrice : null,
+              inventory:     Number.isFinite(inventory)      ? inventory     : 0,
+            };
+            const rowVariantId = row.variantId ? parseInt(String(row.variantId)) : null;
+            let existingVariant = null;
+            if (rowVariantId && !isNaN(rowVariantId)) {
+              existingVariant = await prisma.productVariant.findUnique({ where: { id: rowVariantId } });
+            }
+            if (!existingVariant && packingVolume) {
+              existingVariant = await prisma.productVariant.findFirst({
+                where: { productId: existing.id, packingVolume },
+              });
+            }
+            if (!existingVariant) {
+              existingVariant = await prisma.productVariant.findFirst({ where: { productId: existing.id } });
+            }
+            if (existingVariant) {
+              await prisma.productVariant.update({ where: { id: existingVariant.id }, data: variantData });
+            } else {
+              await prisma.productVariant.create({ data: { productId: existing.id, ...variantData } });
+            }
+          }
         } else {
-          // Create product with variant if variant columns are present
-          const packingVolume = s(row.PackingVolume ?? row.packingVolume);
-          const companyPrice  = parseFloat(row.CompanyPrice  ?? row.companyPrice)  || null;
-          const dealerPrice   = parseFloat(row.DealerPrice   ?? row.dealerPrice)   || null;
-          const customerPrice = parseFloat(row['Customer Price'] ?? row.customerPrice) || null;
-          const inventory     = parseInt(row.Inventory ?? row.inventory)            || 0;
-
-          const hasVariant = packingVolume || companyPrice || dealerPrice || customerPrice;
           await prisma.product.create({
             data: {
               ...productData,
@@ -407,10 +484,10 @@ export async function POST(request: NextRequest) {
                 variants: {
                   create: {
                     packingVolume: packingVolume || productName,
-                    companyPrice,
-                    dealerPrice,
-                    customerPrice,
-                    inventory,
+                    companyPrice:  Number.isFinite(companyPrice!)  ? companyPrice  : null,
+                    dealerPrice:   Number.isFinite(dealerPrice!)   ? dealerPrice   : null,
+                    customerPrice: Number.isFinite(customerPrice!) ? customerPrice : null,
+                    inventory:     Number.isFinite(inventory)      ? inventory     : 0,
                   },
                 },
               } : {}),

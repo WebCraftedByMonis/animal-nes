@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -60,6 +60,7 @@ interface Partner {
   startTime?: { time: string }[]
   partnerImage: { url: string; publicId: string } | null
   products: Product[]
+  totalProducts: number
   createdAt: string
 }
 
@@ -84,7 +85,9 @@ export default function VeterinaryPartnerDetailClient() {
   const { openModal } = useLoginModal()
   const [partner, setPartner] = useState<Partner | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pageLoading, setPageLoading] = useState(false)
   const [productPage, setProductPage] = useState(1)
+  const initialLoadDone = useRef(false)
   const PRODUCTS_PER_PAGE = 6
   const [reviews, setReviews] = useState<VetReview[]>([])
   const [averageRating, setAverageRating] = useState<number>(0)
@@ -94,22 +97,29 @@ export default function VeterinaryPartnerDetailClient() {
 
   useEffect(() => {
     if (!id) return
+    const numericId = parseInt(id)
+    if (isNaN(numericId)) return
 
-    const fetchPartner = async () => {
-      try {
-        const numericId = parseInt(id)
-        if (isNaN(numericId)) return
-        const { data } = await axios.get(`/api/partner/${numericId}`)
-        setPartner(data)
-      } catch (error) {
-        console.error('Error fetching partner details', error)
-      } finally {
-        setLoading(false)
-      }
+    if (!initialLoadDone.current) {
+      setLoading(true)
+    } else {
+      setPageLoading(true)
     }
 
-    fetchPartner()
-  }, [id])
+    axios
+      .get(`/api/partner/${numericId}?page=${productPage}&limit=${PRODUCTS_PER_PAGE}`)
+      .then(({ data }) => {
+        setPartner(data)
+        initialLoadDone.current = true
+      })
+      .catch((error) => {
+        console.error('Error fetching partner details', error)
+      })
+      .finally(() => {
+        setLoading(false)
+        setPageLoading(false)
+      })
+  }, [id, productPage])
 
   useEffect(() => {
     if (!id) return
@@ -415,13 +425,13 @@ export default function VeterinaryPartnerDetailClient() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <Package className="w-5 h-5 text-green-600 dark:text-green-500" />
-              Recommended Products ({partner.products.length})
+              Recommended Products ({partner.totalProducts})
             </h2>
 
-            {partner.products.length > 0 ? (
+            {partner.totalProducts > 0 ? (
               <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {partner.products.slice((productPage - 1) * PRODUCTS_PER_PAGE, productPage * PRODUCTS_PER_PAGE).map((product) => (
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${pageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                {partner.products.map((product) => (
                   <Card
                     key={product.id}
                     className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
@@ -465,19 +475,19 @@ export default function VeterinaryPartnerDetailClient() {
                   </Card>
                 ))}
               </div>
-              {partner.products.length > PRODUCTS_PER_PAGE && (
+              {partner.totalProducts > PRODUCTS_PER_PAGE && (
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Showing {(productPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(productPage * PRODUCTS_PER_PAGE, partner.products.length)} of {partner.products.length}
+                    Showing {(productPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(productPage * PRODUCTS_PER_PAGE, partner.totalProducts)} of {partner.totalProducts}
                   </p>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setProductPage(p => p - 1)} disabled={productPage === 1}>
+                    <Button variant="outline" size="sm" onClick={() => setProductPage(p => p - 1)} disabled={productPage === 1 || pageLoading}>
                       Previous
                     </Button>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {productPage} / {Math.ceil(partner.products.length / PRODUCTS_PER_PAGE)}
+                      {productPage} / {Math.ceil(partner.totalProducts / PRODUCTS_PER_PAGE)}
                     </span>
-                    <Button variant="outline" size="sm" onClick={() => setProductPage(p => p + 1)} disabled={productPage === Math.ceil(partner.products.length / PRODUCTS_PER_PAGE)}>
+                    <Button variant="outline" size="sm" onClick={() => setProductPage(p => p + 1)} disabled={productPage === Math.ceil(partner.totalProducts / PRODUCTS_PER_PAGE) || pageLoading}>
                       Next
                     </Button>
                   </div>
