@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { useCountry } from '@/contexts/CountryContext';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 type BackupType = 'products' | 'companies' | 'partners';
 
@@ -11,6 +12,13 @@ interface UploadResult {
   failed: number;
   errors: string[];
 }
+
+interface UploadProgress {
+  current: number;
+  total: number;
+}
+
+const BATCH_SIZE = 50;
 
 const backupItems: { type: BackupType; label: string; description: string }[] = [
   { type: 'products',  label: 'Products',  description: 'All products with company and partner references.' },
@@ -29,6 +37,12 @@ export default function BackupsPage() {
   const [uploadResult, setUploadResult] = useState<Record<BackupType, UploadResult | null>>({
     products: null, companies: null, partners: null,
   });
+  const [uploadProgress, setUploadProgress] = useState<Record<BackupType, UploadProgress>>({
+    products:  { current: 0, total: 0 },
+    companies: { current: 0, total: 0 },
+    partners:  { current: 0, total: 0 },
+  });
+
   const fileRefs = {
     products:  useRef<HTMLInputElement>(null),
     companies: useRef<HTMLInputElement>(null),
@@ -51,26 +65,60 @@ export default function BackupsPage() {
       return;
     }
 
+    // Read and parse the file client-side
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const allRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+
+    // Filter by country for non-products
+    const rows = type === 'products'
+      ? allRows
+      : allRows.filter((r: any) => !r.country || r.country === country);
+
+    if (rows.length === 0) {
+      setUploadResult(prev => ({ ...prev, [type]: { imported: 0, failed: 0, errors: ['File was empty or no matching rows found.'] } }));
+      if (input) input.value = '';
+      return;
+    }
+
+    // Split into batches
+    const batches: Record<string, unknown>[][] = [];
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      batches.push(rows.slice(i, i + BATCH_SIZE));
+    }
+
     setUploading(type);
     setUploadResult(prev => ({ ...prev, [type]: null }));
+    setUploadProgress(prev => ({ ...prev, [type]: { current: 0, total: batches.length } }));
 
-    const formData = new FormData();
-    formData.append('type', type);
-    formData.append('country', country);
-    formData.append('file', file);
+    let totalImported = 0;
+    let totalFailed = 0;
+    const totalErrors: string[] = [];
 
-    try {
-      const { data } = await axios.post('/api/admin/backups', formData);
-      setUploadResult(prev => ({ ...prev, [type]: data }));
-    } catch (err: any) {
-      setUploadResult(prev => ({
-        ...prev,
-        [type]: { imported: 0, failed: 0, errors: [err.response?.data?.error || 'Upload failed'] },
-      }));
-    } finally {
-      setUploading(null);
-      if (input) input.value = '';
+    for (let i = 0; i < batches.length; i++) {
+      try {
+        const { data } = await axios.post('/api/admin/backups/batch', {
+          type,
+          country,
+          rows: batches[i],
+        });
+        totalImported += data.imported ?? 0;
+        totalFailed   += data.failed   ?? 0;
+        if (Array.isArray(data.errors)) totalErrors.push(...data.errors);
+      } catch (err: any) {
+        totalFailed += batches[i].length;
+        totalErrors.push(err.response?.data?.error || `Batch ${i + 1} failed`);
+      }
+      setUploadProgress(prev => ({ ...prev, [type]: { current: i + 1, total: batches.length } }));
     }
+
+    setUploadResult(prev => ({
+      ...prev,
+      [type]: { imported: totalImported, failed: totalFailed, errors: totalErrors.slice(0, 20) },
+    }));
+    setUploading(null);
+    if (input) input.value = '';
   };
 
   return (
@@ -124,15 +172,17 @@ export default function BackupsPage() {
                 Restoring data for: {country}
               </p>
               <p className="text-sm font-medium text-amber-700 bg-amber-50 inline-block px-3 py-1 rounded-full">
-                ⚠ Rows from other countries are skipped automatically.
+                Rows from other countries are skipped automatically.
               </p>
             </div>
           </div>
 
           <div className="px-6 py-6 space-y-4">
             {backupItems.map((item) => {
-              const result = uploadResult[item.type];
+              const result     = uploadResult[item.type];
               const isUploading = uploading === item.type;
+              const progress   = uploadProgress[item.type];
+              const pct        = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
 
               return (
                 <div
@@ -146,7 +196,6 @@ export default function BackupsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* hidden file input */}
                       <input
                         ref={fileRefs[item.type]}
                         type="file"
@@ -164,6 +213,22 @@ export default function BackupsPage() {
                     </div>
                   </div>
 
+                  {/* Progress bar */}
+                  {isUploading && progress.total > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Batch {progress.current} of {progress.total}</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Result banner */}
                   {result && (
                     <div
@@ -178,7 +243,7 @@ export default function BackupsPage() {
                       <div className="font-semibold">
                         {result.imported === 0 && result.failed === 0
                           ? 'File was empty — no rows found.'
-                          : `✓ ${result.imported} record${result.imported !== 1 ? 's' : ''} imported / updated`}
+                          : `${result.imported} record${result.imported !== 1 ? 's' : ''} imported / updated`}
                         {result.failed > 0 && ` · ${result.failed} failed`}
                       </div>
                       {result.errors.length > 0 && (
