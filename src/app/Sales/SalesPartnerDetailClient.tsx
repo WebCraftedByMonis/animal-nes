@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import {
