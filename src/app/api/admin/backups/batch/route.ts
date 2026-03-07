@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
           partnerId: resolvedPartnerId,
         };
 
-        const rowProductId = row.id ? parseInt(String(row.id)) : null;
+        const rowProductId = (row.id ?? row.ProductID) ? parseInt(String(row.id ?? row.ProductID)) : null;
         let existing = null;
         if (rowProductId && !isNaN(rowProductId)) {
           existing = await prisma.product.findUnique({ where: { id: rowProductId } });
@@ -242,6 +242,9 @@ export async function POST(request: NextRequest) {
         const customerPrice  = row.customerPrice != null && row.customerPrice !== '' ? parseFloat(row.customerPrice) : (row['Customer Price'] != null && row['Customer Price'] !== '' ? parseFloat(row['Customer Price']) : null);
         const inventory      = row.inventory != null && row.inventory !== '' ? parseInt(String(row.inventory)) : (row.Inventory != null && row.Inventory !== '' ? parseInt(String(row.Inventory)) : 0);
         const hasVariant     = packingVolume || companyPrice != null || dealerPrice != null || customerPrice != null;
+        const imageUrl       = s(row.imageUrl ?? row.imageURL ?? row.ImageUrl ?? row.ImageURL ?? row.image_url ?? row.image ?? row.Image);
+        const imageAlt       = s(row.imageAlt ?? row.ImageAlt ?? row.image_alt) || productName;
+        const imagePublicId  = s(row.imagePublicId ?? row.ImagePublicId ?? row.image_public_id);
 
         if (existing) {
           await prisma.product.update({ where: { id: existing.id }, data: productData });
@@ -253,7 +256,7 @@ export async function POST(request: NextRequest) {
               customerPrice: Number.isFinite(customerPrice!) ? customerPrice : null,
               inventory:     Number.isFinite(inventory)      ? inventory     : 0,
             };
-            const rowVariantId = row.variantId ? parseInt(String(row.variantId)) : null;
+            const rowVariantId = row.variantId ?? row.VariantID ? parseInt(String(row.variantId ?? row.VariantID)) : null;
             let existingVariant = null;
             if (rowVariantId && !isNaN(rowVariantId)) {
               existingVariant = await prisma.productVariant.findUnique({ where: { id: rowVariantId } });
@@ -272,8 +275,15 @@ export async function POST(request: NextRequest) {
               await prisma.productVariant.create({ data: { productId: existing.id, ...variantData } });
             }
           }
+          if (imageUrl) {
+            await prisma.productImage.upsert({
+              where: { productId: existing.id },
+              update: { url: imageUrl, alt: imageAlt, publicId: imagePublicId },
+              create: { url: imageUrl, alt: imageAlt, publicId: imagePublicId, productId: existing.id },
+            });
+          }
         } else {
-          await prisma.product.create({
+          const newProduct = await prisma.product.create({
             data: {
               ...productData,
               ...(hasVariant ? {
@@ -289,6 +299,11 @@ export async function POST(request: NextRequest) {
               } : {}),
             },
           });
+          if (imageUrl) {
+            await prisma.productImage.create({
+              data: { url: imageUrl, alt: imageAlt, publicId: imagePublicId, productId: newProduct.id },
+            });
+          }
         }
         imported++;
       } catch (e: any) {

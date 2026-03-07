@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
         company: { select: { id: true, companyName: true } },
         partner: { select: { id: true, partnerName: true } },
         variants: { orderBy: { id: 'asc' } },
+        image: true,
       },
       orderBy: { id: 'asc' },
     });
@@ -80,37 +81,41 @@ export async function GET(request: NextRequest) {
     // One row per variant (or one row for products with no variants)
     rows = products.flatMap((product) => {
       const base = {
-        id: product.id,
-        productName: product.productName,
-        genericName: product.genericName,
-        category: product.category,
-        subCategory: product.subCategory,
-        subsubCategory: product.subsubCategory,
-        productType: product.productType,
-        companyId: product.companyId,
-        companyName: product.company?.companyName ?? null,
-        partnerId: product.partnerId,
-        partnerName: product.partner?.partnerName ?? null,
-        description: product.description,
-        productLink: product.productLink,
-        dosage: product.dosage,
-        outofstock: product.outofstock,
-        isFeatured: product.isFeatured,
-        isActive: product.isActive,
-        createdAt: toIso(product.createdAt),
-        updatedAt: toIso(product.updatedAt),
+        ProductID: product.id,
+        ProductName: product.productName,
+        GenericName: product.genericName,
+        Category: product.category,
+        SubCategory: product.subCategory,
+        SubSubCategory: product.subsubCategory,
+        ProductType: product.productType,
+        CompanyID: product.companyId,
+        CompanyName: product.company?.companyName ?? null,
+        PartnerID: product.partnerId,
+        PartnerName: product.partner?.partnerName ?? null,
+        Description: product.description,
+        ProductLink: product.productLink,
+        Dosage: product.dosage,
+        OutOfStock: product.outofstock,
+        IsFeatured: product.isFeatured,
+        IsActive: product.isActive,
+        ImageID: product.image?.id ?? null,
+        ImageURL: product.image?.url ?? null,
+        ImageAlt: product.image?.alt ?? null,
+        ImagePublicId: product.image?.publicId ?? null,
+        CreatedAt: toIso(product.createdAt),
+        UpdatedAt: toIso(product.updatedAt),
       };
       if (product.variants.length === 0) {
-        return [{ ...base, variantId: null, packingVolume: null, companyPrice: null, dealerPrice: null, customerPrice: null, inventory: null }];
+        return [{ ...base, VariantID: null, PackingVolume: null, CompanyPrice: null, DealerPrice: null, 'Customer Price': null, Inventory: null }];
       }
       return product.variants.map((v) => ({
         ...base,
-        variantId: v.id,
-        packingVolume: v.packingVolume,
-        companyPrice: v.companyPrice,
-        dealerPrice: v.dealerPrice,
-        customerPrice: v.customerPrice,
-        inventory: v.inventory,
+        VariantID: v.id,
+        PackingVolume: v.packingVolume,
+        CompanyPrice: v.companyPrice,
+        DealerPrice: v.dealerPrice,
+        'Customer Price': v.customerPrice,
+        Inventory: v.inventory,
       }));
     });
 
@@ -357,6 +362,9 @@ export async function POST(request: NextRequest) {
       const productName = s(row.productName ?? row.ProductName);
       const companyName = s(row.companyName ?? row.CompanyName);
       const partnerName = s(row.partnerName ?? row.PartnerName);
+      const imageUrl    = s(row.imageUrl ?? row.imageURL ?? row.ImageUrl ?? row.ImageURL ?? row.image_url ?? row.image ?? row.Image);
+      const imageAlt    = s(row.imageAlt ?? row.ImageAlt ?? row.image_alt) || productName;
+      const imagePublicId = s(row.imagePublicId ?? row.ImagePublicId ?? row.image_public_id);
 
       if (!productName) {
         failed++;
@@ -427,7 +435,7 @@ export async function POST(request: NextRequest) {
         };
 
         // Check if product already exists — try stored id first, then name+company+partner
-        const rowProductId = row.id ? parseInt(String(row.id)) : null;
+        const rowProductId = (row.id ?? row.ProductID) ? parseInt(String(row.id ?? row.ProductID)) : null;
         let existing = null;
         if (rowProductId && !isNaN(rowProductId)) {
           existing = await prisma.product.findUnique({ where: { id: rowProductId } });
@@ -457,7 +465,7 @@ export async function POST(request: NextRequest) {
               customerPrice: Number.isFinite(customerPrice!) ? customerPrice : null,
               inventory:     Number.isFinite(inventory)      ? inventory     : 0,
             };
-            const rowVariantId = row.variantId ? parseInt(String(row.variantId)) : null;
+            const rowVariantId = (row.variantId ?? row.VariantID) ? parseInt(String(row.variantId ?? row.VariantID)) : null;
             let existingVariant = null;
             if (rowVariantId && !isNaN(rowVariantId)) {
               existingVariant = await prisma.productVariant.findUnique({ where: { id: rowVariantId } });
@@ -476,8 +484,15 @@ export async function POST(request: NextRequest) {
               await prisma.productVariant.create({ data: { productId: existing.id, ...variantData } });
             }
           }
+          if (imageUrl) {
+            await prisma.productImage.upsert({
+              where: { productId: existing.id },
+              update: { url: imageUrl, alt: imageAlt, publicId: imagePublicId },
+              create: { url: imageUrl, alt: imageAlt, publicId: imagePublicId, productId: existing.id },
+            });
+          }
         } else {
-          await prisma.product.create({
+          const newProduct = await prisma.product.create({
             data: {
               ...productData,
               ...(hasVariant ? {
@@ -493,6 +508,11 @@ export async function POST(request: NextRequest) {
               } : {}),
             },
           });
+          if (imageUrl) {
+            await prisma.productImage.create({
+              data: { url: imageUrl, alt: imageAlt, publicId: imagePublicId, productId: newProduct.id },
+            });
+          }
         }
         imported++;
       } catch (e: any) {
