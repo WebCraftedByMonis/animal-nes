@@ -735,12 +735,13 @@ export default function ProductsClient() {
                     {product.image && (
                       <div className="relative aspect-square w-full">
                         <Image
-                          src={product.image.url}
+                          src={product.image.url.replace(/^http:\/\//, 'https://')}
                           alt={product.image.alt || product.productName}
                           fill
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                           priority={false}
+                          referrerPolicy="no-referrer"
                         />
                         {/* Discount Badge */}
                         {discount && (

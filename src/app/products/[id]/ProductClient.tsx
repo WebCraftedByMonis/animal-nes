@@ -123,12 +123,13 @@ export default function ProductClient({ product }: { product: Product }) {
             {product.image ? (
               <>
                 <Image
-                  src={product.image.url}
+                  src={product.image.url.replace(/^http:\/\//, 'https://')}
                   alt={product.image.alt || product.productName}
                   width={600}
                   height={600}
                   className="w-full h-auto object-contain"
                   priority
+                  referrerPolicy="no-referrer"
                 />
                 <WishlistButton productId={product.id} />
               </>

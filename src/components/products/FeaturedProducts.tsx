@@ -51,11 +51,12 @@ export default function FeaturedProducts() {
             {product.image && (
               <div className="relative aspect-square w-full">
                 <Image
-                  src={product.image.url}
+                  src={product.image.url.replace(/^http:\/\//, 'https://')}
                   alt={product.image.alt || product.productName}
                   fill
                   className="rounded-lg object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  referrerPolicy="no-referrer"
                 />
               </div>
             )}
