@@ -106,11 +106,11 @@ const containerClasses = "absolute inset-0 w-full h-full"
           src="/fallback-slider.jpg"
           alt="Loading"
           layout="fill"
-          objectFit="cover"
+          objectFit="contain"
           objectPosition="center"
           priority
         />
-       
+
       </div>
     )
   }
@@ -149,16 +149,16 @@ const containerClasses = "absolute inset-0 w-full h-full"
     return (
       <div className={containerClasses}>
         <Image
-          src={optimizeCloudinaryUrl(banners[0].image!.url, { 
-            width: 1920, 
-            height: 1080, 
+          src={optimizeCloudinaryUrl(banners[0].image!.url, {
+            width: 1920,
+            height: 1080,
             quality: 75,
             format: 'auto',
-            crop: 'fill'
+            crop: 'fit'
           })}
           alt={banners[0].image!.alt}
           layout="fill"
-          objectFit="cover"
+          objectFit="contain"
           objectPosition="center"
           priority
           sizes="100vw"
@@ -179,16 +179,16 @@ const containerClasses = "absolute inset-0 w-full h-full"
         >
           {banner.image && (
             <Image
-              src={optimizeCloudinaryUrl(banner.image.url, { 
-                width: 1920, 
-                height: 1080, 
+              src={optimizeCloudinaryUrl(banner.image.url, {
+                width: 1920,
+                height: 1080,
                 quality: 75,
                 format: 'auto',
-                crop: 'fill'
+                crop: 'fit'
               })}
               alt={banner.image.alt}
               layout="fill"
-              objectFit="cover"
+              objectFit="contain"
               objectPosition="center"
               className="transition-all duration-1000"
               priority={index === 0}
