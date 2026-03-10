@@ -5,7 +5,6 @@ import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import axios from "axios"
-import { optimizeCloudinaryUrl } from "@/lib/cloudinary-client"
 
 interface BannerImage {
   url: string
@@ -149,13 +148,7 @@ const containerClasses = "absolute inset-0 w-full h-full"
     return (
       <div className={containerClasses}>
         <Image
-          src={optimizeCloudinaryUrl(banners[0].image!.url, {
-            width: 1920,
-            height: 1080,
-            quality: 75,
-            format: 'auto',
-            crop: 'fit'
-          })}
+          src={banners[0].image!.url}
           alt={banners[0].image!.alt}
           layout="fill"
           objectFit="contain"
@@ -179,13 +172,7 @@ const containerClasses = "absolute inset-0 w-full h-full"
         >
           {banner.image && (
             <Image
-              src={optimizeCloudinaryUrl(banner.image.url, {
-                width: 1920,
-                height: 1080,
-                quality: 75,
-                format: 'auto',
-                crop: 'fit'
-              })}
+              src={banner.image.url}
               alt={banner.image.alt}
               layout="fill"
               objectFit="contain"
