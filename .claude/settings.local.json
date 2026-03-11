@@ -12,7 +12,11 @@
       "Bash(for file in  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\app\\\\dashboard\\\\backups\\\\page.tsx\"  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\app\\\\thankyou\\\\page.tsx\"  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\components\\\\AddToCartButton.tsx\"  \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\components\\\\WishlistButton.tsx\")",
       "Bash(ls:*)",
       "Bash(head:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | head -40)",
+      "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | grep -E \"\\(ProductExtractor|scrape-products|product-extractor\\)\" || echo \"No errors in new files\")",
+      "WebFetch(domain:www.petsouqonline.com)",
+      "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | grep -E \"\\(scrape-products|ProductExtractor\\)\" || echo \"No errors in new files\")"
     ],
     "deny": [],
     "ask": []

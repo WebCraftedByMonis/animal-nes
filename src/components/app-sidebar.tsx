@@ -32,7 +32,8 @@ import {
   FormInput,
   Pin,
   Mail,
-  Star
+  Star,
+  ScanSearch
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -339,6 +340,16 @@ export function AppSidebar() {
                   <Link href="/dashboard/cross-poster">
                     <Share2 className="w-4 h-4" />
                     <span className="hover:text-green-500">Cross Poster</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Product Extractor */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/product-extractor">
+                    <ScanSearch className="w-4 h-4" />
+                    <span className="hover:text-green-500">Product Extractor</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
