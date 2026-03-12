@@ -660,11 +660,12 @@ model Banner {
   id        Int          @id @default(autoincrement())
   position  Int
   device    String       @default("desktop")
+  country   String       @default("Pakistan")
   image     BannerImage?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  @@unique([position, device])
+  @@unique([position, device, country])
 }
 
 model BannerImage {

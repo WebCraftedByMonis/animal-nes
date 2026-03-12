@@ -37,6 +37,7 @@ interface Banner {
   id: number
   position: number
   device: string
+  country: string
   image: {
     url: string
     alt: string
@@ -53,11 +54,13 @@ export default function ViewBannersPage() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [activeDevice, setActiveDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [activeCountry, setActiveCountry] = useState<'Pakistan' | 'UAE'>('Pakistan')
 
   const [editId, setEditId] = useState<number | null>(null)
   const [editPosition, setEditPosition] = useState('')
   const [editAlt, setEditAlt] = useState('')
   const [editDevice, setEditDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [editCountry, setEditCountry] = useState<'Pakistan' | 'UAE'>('Pakistan')
   const [editBannerImage, setEditBannerImage] = useState<File | null>(null)
   const [editBannerImagePreview, setEditBannerImagePreview] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
@@ -70,7 +73,7 @@ export default function ViewBannersPage() {
     setIsLoading(true)
     try {
       const { data } = await axios.get('/api/banner', {
-        params: { sortOrder, page, limit, device: activeDevice },
+        params: { sortOrder, page, limit, device: activeDevice, country: activeCountry },
       })
       setBanners(data.data)
       setTotal(data.total)
@@ -80,7 +83,7 @@ export default function ViewBannersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [sortOrder, page, limit, activeDevice])
+  }, [sortOrder, page, limit, activeDevice, activeCountry])
 
   useEffect(() => {
     fetchBanners()
@@ -96,6 +99,7 @@ export default function ViewBannersPage() {
       if (editPosition) formData.append('position', editPosition)
       if (editAlt) formData.append('alt', editAlt)
       formData.append('device', editDevice)
+      formData.append('country', editCountry)
       if (editBannerImage) formData.append('image', editBannerImage)
 
       const response = await axios.put('/api/banner', formData)
@@ -140,6 +144,11 @@ export default function ViewBannersPage() {
 
   const handleDeviceSwitch = (device: 'desktop' | 'mobile') => {
     setActiveDevice(device)
+    setPage(1)
+  }
+
+  const handleCountrySwitch = (country: 'Pakistan' | 'UAE') => {
+    setActiveCountry(country)
     setPage(1)
   }
 
@@ -207,6 +216,30 @@ export default function ViewBannersPage() {
           </button>
         </div>
 
+        {/* Country Tabs */}
+        <div className="flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => handleCountrySwitch('Pakistan')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeCountry === 'Pakistan'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🇵🇰 Pakistan
+          </button>
+          <button
+            onClick={() => handleCountrySwitch('UAE')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeCountry === 'UAE'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🇦🇪 UAE
+          </button>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex gap-2 items-center">
             <span>Show</span>
@@ -243,6 +276,7 @@ export default function ViewBannersPage() {
                     Position <ArrowUpDown className="inline h-4 w-4" />
                   </TableHead>
                   <TableHead className="px-4 py-2">Alt Text</TableHead>
+                  <TableHead className="px-4 py-2">Country</TableHead>
                   <TableHead className="px-4 py-2">Created</TableHead>
                   <TableHead className="px-4 py-2">Updated</TableHead>
                   <TableHead className="px-4 py-2">Quick Actions</TableHead>
@@ -252,7 +286,7 @@ export default function ViewBannersPage() {
               <TableBody>
                 {banners.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                       No banners found. Add your first banner to get started.
                     </TableCell>
                   </TableRow>
@@ -283,6 +317,11 @@ export default function ViewBannersPage() {
                         <span className="font-semibold text-green-600">{banner.position}</span>
                       </TableCell>
                       <TableCell className="px-4 py-2">{banner.image?.alt || '-'}</TableCell>
+                      <TableCell className="px-4 py-2">
+                        <span className="inline-flex items-center gap-1 text-sm">
+                          {banner.country === 'Pakistan' ? '🇵🇰' : '🇦🇪'} {banner.country}
+                        </span>
+                      </TableCell>
                       <TableCell className="px-4 py-2 text-sm text-gray-600">
                         {formatDistanceToNow(new Date(banner.createdAt), { addSuffix: true })}
                       </TableCell>
@@ -323,6 +362,7 @@ export default function ViewBannersPage() {
                               setEditPosition(banner.position.toString())
                               setEditAlt(banner.image?.alt || '')
                               setEditDevice((banner.device as 'desktop' | 'mobile') || 'desktop')
+                              setEditCountry((banner.country as 'Pakistan' | 'UAE') || 'Pakistan')
                               setEditBannerImagePreview(banner.image?.url || null)
                               setOpen(true)
                             }}
@@ -442,6 +482,34 @@ export default function ViewBannersPage() {
                 </div>
               </div>
               
+              <div>
+                <label className="block text-sm font-medium mb-2">Country</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditCountry('Pakistan')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      editCountry === 'Pakistan'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    🇵🇰 Pakistan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCountry('UAE')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      editCountry === 'UAE'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    🇦🇪 UAE
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Banner Image</label>
                 <Input 

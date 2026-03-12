@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import axios from "axios"
+import { useCountry } from "@/contexts/CountryContext"
 
 interface BannerImage {
   url: string
@@ -26,6 +27,7 @@ export default function FullScreenSlider() {
   const [error, setError] = useState<string | null>(null)
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { country } = useCountry()
 
   const delay = 5000 // milliseconds
 
@@ -47,6 +49,7 @@ export default function FullScreenSlider() {
             limit: 'all',
             sortOrder: 'asc',
             device,
+            country,
           }
         })
         
@@ -69,7 +72,7 @@ export default function FullScreenSlider() {
     }
 
     fetchBanners()
-  }, [device])
+  }, [device, country])
 
   const nextSlide = () => {
     if (banners.length > 0) {

@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { Loader2, UploadCloud, Monitor, Smartphone } from "lucide-react";
+import { Loader2, UploadCloud, Monitor, Smartphone, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ const formSchema = z.object({
   }),
   alt: z.string().min(1, "Alt text is required for accessibility"),
   device: z.enum(["desktop", "mobile"]).default("desktop"),
+  country: z.enum(["Pakistan", "UAE"]).default("Pakistan"),
   image: z.instanceof(File).refine((file) => file.size > 0, {
     message: "Banner image is required",
   }),
@@ -43,6 +44,7 @@ export default function AddBannerPage() {
       position: "",
       alt: "",
       device: "desktop",
+      country: "Pakistan",
     },
   });
 
@@ -100,6 +102,7 @@ export default function AddBannerPage() {
       formData.append("position", data.position);
       formData.append("alt", data.alt);
       formData.append("device", data.device);
+      formData.append("country", data.country);
       formData.append("image", data.image);
 
       const response = await fetch("/api/banner", {
@@ -239,6 +242,47 @@ export default function AddBannerPage() {
                     {field.value === "mobile"
                       ? "Recommended: 768x400 or portrait aspect ratio"
                       : "Recommended: 1920x600 or wide aspect ratio"}
+                  </p>
+                  <FormMessage className="text-red-500" />
+                </FormItem>
+              )}
+            />
+
+            {/* Country Selector */}
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-gray-700">Country *</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => field.onChange("Pakistan")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 font-medium text-sm transition-colors ${
+                          field.value === "Pakistan"
+                            ? "border-green-500 bg-green-50 text-green-700"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300"
+                        }`}
+                      >
+                        🇵🇰 Pakistan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => field.onChange("UAE")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 font-medium text-sm transition-colors ${
+                          field.value === "UAE"
+                            ? "border-green-500 bg-green-50 text-green-700"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300"
+                        }`}
+                      >
+                        🇦🇪 UAE
+                      </button>
+                    </div>
+                  </FormControl>
+                  <p className="text-xs text-gray-500">
+                    This banner will only be shown to users who have selected {field.value} in the country selector.
                   </p>
                   <FormMessage className="text-red-500" />
                 </FormItem>
