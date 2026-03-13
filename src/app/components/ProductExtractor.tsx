@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2, XCircle, CheckCircle, ImageOff, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Loader2, XCircle, CheckCircle, ImageOff, ExternalLink, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { SearchableCombobox } from "@/components/shared/SearchableCombobox";
 import { useCountry } from "@/contexts/CountryContext";
 
-interface Variant { packingVolume: string; customerPrice: string; }
+interface Variant { packingVolume: string; customerPrice: string; companyPrice: string; dealerPrice: string; }
 
 interface Product {
   productName: string;
@@ -16,6 +16,7 @@ interface Product {
   productType: string;
   description: string;
   dosage: string;
+  pdfUrl: string;
   productLink: string;
   imageUrl: string;
   outofstock: boolean;
@@ -23,11 +24,13 @@ interface Product {
 }
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
+type FillStatus = "idle" | "filling" | "done" | "error";
 
 interface Row extends Product {
   id: number;
   saveStatus: SaveStatus;
   saveError: string;
+  fillStatus: FillStatus;
 }
 
 export default function ProductExtractor() {
@@ -57,7 +60,13 @@ export default function ProductExtractor() {
       if (!data.products.length) { setFetchError("No products found on this page."); return; }
       setTotalLinks(data.totalLinks || data.count);
       setRows(data.products.map((p: Product, i: number) => ({
-        ...p, id: i, saveStatus: "idle" as SaveStatus, saveError: "",
+        ...p,
+        id: i,
+        pdfUrl: "",
+        variants: (p.variants || []).map(v => ({ packingVolume: v.packingVolume, customerPrice: v.customerPrice, companyPrice: "", dealerPrice: "" })),
+        saveStatus: "idle" as SaveStatus,
+        saveError: "",
+        fillStatus: "idle" as FillStatus,
       })));
     } catch (e: any) {
       setFetchError(e.message || "Network error.");
@@ -77,9 +86,51 @@ export default function ProductExtractor() {
     }));
   };
 
+  const addVariant = (rowId: number) => {
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, variants: [...r.variants, { packingVolume: "", customerPrice: "", companyPrice: "", dealerPrice: "" }] } : r));
+  };
+
+  const removeVariant = (rowId: number, vIdx: number) => {
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, variants: r.variants.filter((_, i) => i !== vIdx) } : r));
+  };
+
   const toggleDesc = (id: number) => setExpandedDesc(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
+
+  // ── AI Fill missing fields ────────────────────────────────────────────────
+  const aiFill = async (row: Row) => {
+    setRows(prev => prev.map(r => r.id === row.id ? { ...r, fillStatus: "filling" } : r));
+    try {
+      const res = await fetch("/api/ai-fill-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product: row, productLink: row.productLink }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setRows(prev => prev.map(r => r.id === row.id ? { ...r, fillStatus: "error" } : r));
+        return;
+      }
+      const f = data.filled;
+      setRows(prev => prev.map(r => {
+        if (r.id !== row.id) return r;
+        return {
+          ...r,
+          fillStatus: "done",
+          genericName:     f.genericName     != null && f.genericName     !== "" ? f.genericName     : r.genericName,
+          category:        f.category        != null && f.category        !== "" ? f.category        : r.category,
+          subCategory:     f.subCategory     != null && f.subCategory     !== "" ? f.subCategory     : r.subCategory,
+          subsubCategory:  f.subsubCategory  != null && f.subsubCategory  !== "" ? f.subsubCategory  : r.subsubCategory,
+          productType:     f.productType     != null && f.productType     !== "" ? f.productType     : r.productType,
+          description:     f.description     != null && f.description     !== "" ? f.description     : r.description,
+          dosage:          f.dosage          != null && f.dosage          !== "" ? f.dosage          : r.dosage,
+        };
+      }));
+    } catch {
+      setRows(prev => prev.map(r => r.id === row.id ? { ...r, fillStatus: "error" } : r));
+    }
+  };
 
   // ── Save a single product ─────────────────────────────────────────────────
   const addProduct = async (row: Row) => {
@@ -99,6 +150,7 @@ export default function ProductExtractor() {
       fd.append("description",    row.description || "");
       fd.append("dosage",         row.dosage || "");
       fd.append("productLink",    row.productLink || "");
+      fd.append("pdfUrl",         row.pdfUrl || "");
       fd.append("imageUrl",       row.imageUrl || "");
       fd.append("companyId",      companyId);
       fd.append("partnerId",      partnerId);
@@ -108,9 +160,9 @@ export default function ProductExtractor() {
       row.variants.forEach((v, i) => {
         fd.append(`variants[${i}][packingVolume]`, v.packingVolume || "Standard");
         fd.append(`variants[${i}][customerPrice]`, v.customerPrice || "0");
-        fd.append(`variants[${i}][companyPrice]`,  "");
-        fd.append(`variants[${i}][dealerPrice]`,   "");
-        fd.append(`variants[${i}][inventory]`,     "100");
+        fd.append(`variants[${i}][companyPrice]`,  v.companyPrice || "");
+        fd.append(`variants[${i}][dealerPrice]`,   v.dealerPrice || "");
+        fd.append(`variants[${i}][inventory]`,     "10");
       });
       const res = await fetch("/api/product", { method: "POST", body: fd });
       const data = await res.json();
@@ -258,7 +310,8 @@ export default function ProductExtractor() {
                     <th className="px-3 py-2.5 text-left w-28">Product Type *</th>
                     <th className="px-3 py-2.5 text-left min-w-[180px]">Description</th>
                     <th className="px-3 py-2.5 text-left min-w-[120px]">Dosage</th>
-                    <th className="px-3 py-2.5 text-left min-w-[140px]">Variants (Size → Price)</th>
+                    <th className="px-3 py-2.5 text-left min-w-[140px]">PDF URL</th>
+                    <th className="px-3 py-2.5 text-left min-w-[260px]">Variants</th>
                     <th className="px-3 py-2.5 text-left w-28">Action</th>
                   </tr>
                 </thead>
@@ -350,26 +403,57 @@ export default function ProductExtractor() {
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 resize-none min-w-[110px]" />
                         </td>
 
+                        {/* PDF URL */}
+                        <td className="px-3 py-2.5">
+                          <input
+                            value={row.pdfUrl}
+                            onChange={e => updateRow(row.id, "pdfUrl", e.target.value)}
+                            placeholder="https://…/product.pdf"
+                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 min-w-[130px]"
+                          />
+                        </td>
+
                         {/* Variants */}
                         <td className="px-3 py-2.5">
-                          <div className="space-y-1.5 min-w-[130px]">
+                          <div className="space-y-2 min-w-[250px]">
+                            {/* Header labels */}
+                            {row.variants.length > 0 && (
+                              <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
+                                <span className="w-14">Size</span>
+                                <span className="w-14">Customer</span>
+                                <span className="w-14">Company</span>
+                                <span className="w-14">Dealer</span>
+                              </div>
+                            )}
                             {row.variants.map((v, vi) => (
                               <div key={vi} className="flex items-center gap-1">
                                 <input value={v.packingVolume}
                                   onChange={e => updateVariant(row.id, vi, "packingVolume", e.target.value)}
                                   placeholder="Size"
-                                  className="w-16 border border-gray-200 rounded px-1.5 py-1 text-xs focus:ring-1 focus:ring-green-400" />
-                                <span className="text-gray-400">→</span>
+                                  className="w-14 border border-gray-200 rounded px-1.5 py-1 text-xs focus:ring-1 focus:ring-green-400" />
                                 <input value={v.customerPrice}
                                   onChange={e => updateVariant(row.id, vi, "customerPrice", e.target.value)}
-                                  placeholder="Price"
-                                  className="w-16 border border-gray-200 rounded px-1.5 py-1 text-xs focus:ring-1 focus:ring-green-400" />
+                                  placeholder="0"
+                                  className="w-14 border border-gray-200 rounded px-1.5 py-1 text-xs focus:ring-1 focus:ring-green-400" />
+                                <input value={v.companyPrice}
+                                  onChange={e => updateVariant(row.id, vi, "companyPrice", e.target.value)}
+                                  placeholder="0"
+                                  className="w-14 border border-gray-200 rounded px-1.5 py-1 text-xs focus:ring-1 focus:ring-green-400" />
+                                <input value={v.dealerPrice}
+                                  onChange={e => updateVariant(row.id, vi, "dealerPrice", e.target.value)}
+                                  placeholder="0"
+                                  className="w-14 border border-gray-200 rounded px-1.5 py-1 text-xs focus:ring-1 focus:ring-green-400" />
+                                <button onClick={() => removeVariant(row.id, vi)}
+                                  className="text-red-400 hover:text-red-600 font-bold text-sm leading-none flex-shrink-0">×</button>
                               </div>
                             ))}
-                            {/* View on source site */}
+                            <button onClick={() => addVariant(row.id)}
+                              className="text-green-600 hover:text-green-800 text-xs font-medium flex items-center gap-0.5 mt-1">
+                              + add variant
+                            </button>
                             {row.productLink && (
                               <a href={row.productLink} target="_blank" rel="noopener noreferrer"
-                                className="text-green-600 hover:text-green-800 inline-flex items-center gap-0.5 mt-1">
+                                className="text-gray-400 hover:text-gray-600 inline-flex items-center gap-0.5 mt-0.5">
                                 source <ExternalLink className="w-3 h-3" />
                               </a>
                             )}
@@ -378,30 +462,50 @@ export default function ProductExtractor() {
 
                         {/* Action */}
                         <td className="px-3 py-2.5">
-                          {row.saveStatus === "saved" ? (
-                            <span className="flex items-center gap-1 text-green-600 font-medium text-xs whitespace-nowrap">
-                              <CheckCircle className="w-4 h-4" />Added
-                            </span>
-                          ) : row.saveStatus === "saving" ? (
-                            <span className="flex items-center gap-1 text-blue-500 text-xs whitespace-nowrap">
-                              <Loader2 className="w-4 h-4 animate-spin" />Adding…
-                            </span>
-                          ) : (
-                            <div className="flex flex-col gap-1">
-                              <button
-                                onClick={() => addProduct(row)}
-                                disabled={!companyId || !partnerId}
-                                className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-                              >
-                                + Add to Website
-                              </button>
-                              {row.saveStatus === "error" && (
-                                <span className="text-red-500 text-xs" title={row.saveError}>
-                                  <XCircle className="w-3 h-3 inline mr-0.5" />Failed — retry?
-                                </span>
-                              )}
-                            </div>
-                          )}
+                          <div className="flex flex-col gap-1.5">
+                            {/* AI Fill button */}
+                            <button
+                              onClick={() => aiFill(row)}
+                              disabled={row.fillStatus === "filling" || row.saveStatus === "saved"}
+                              className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                            >
+                              {row.fillStatus === "filling"
+                                ? <><Loader2 className="w-3 h-3 animate-spin" />Filling…</>
+                                : row.fillStatus === "done"
+                                ? <><Sparkles className="w-3 h-3" />Re-fill</>
+                                : <><Sparkles className="w-3 h-3" />AI Fill</>
+                              }
+                            </button>
+                            {row.fillStatus === "error" && (
+                              <span className="text-red-500 text-xs">AI failed</span>
+                            )}
+
+                            {/* Save button */}
+                            {row.saveStatus === "saved" ? (
+                              <span className="flex items-center gap-1 text-green-600 font-medium text-xs whitespace-nowrap">
+                                <CheckCircle className="w-4 h-4" />Added
+                              </span>
+                            ) : row.saveStatus === "saving" ? (
+                              <span className="flex items-center gap-1 text-blue-500 text-xs whitespace-nowrap">
+                                <Loader2 className="w-4 h-4 animate-spin" />Adding…
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => addProduct(row)}
+                                  disabled={!companyId || !partnerId}
+                                  className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                                >
+                                  + Add to Website
+                                </button>
+                                {row.saveStatus === "error" && (
+                                  <span className="text-red-500 text-xs" title={row.saveError}>
+                                    <XCircle className="w-3 h-3 inline mr-0.5" />Failed — retry?
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

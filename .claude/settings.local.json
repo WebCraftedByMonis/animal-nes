@@ -16,7 +16,8 @@
       "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | head -40)",
       "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | grep -E \"\\(ProductExtractor|scrape-products|product-extractor\\)\" || echo \"No errors in new files\")",
       "WebFetch(domain:www.petsouqonline.com)",
-      "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | grep -E \"\\(scrape-products|ProductExtractor\\)\" || echo \"No errors in new files\")"
+      "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | grep -E \"\\(scrape-products|ProductExtractor\\)\" || echo \"No errors in new files\")",
+      "Bash(find \"D:/Projects/maphunter\" -type f \\\\\\( -name \"*.ts\" -o -name \"*.js\" -o -name \".env*\" \\\\\\) 2>/dev/null | head -30)"
     ],
     "deny": [],
     "ask": []
