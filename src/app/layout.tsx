@@ -13,6 +13,7 @@ import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import { CountryProvider } from "@/contexts/CountryContext";
 import LoginModal from "@/components/LoginModal";
 import StickyLogo from "@/components/StickyLogo";
+import WhatsAppPromoModal from "@/components/WhatsAppPromoModal";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -124,6 +125,7 @@ export default function RootLayout({
                       <Navbar />
                       <Toaster position="top-center" />
                       <LoginModal />
+                      <WhatsAppPromoModal />
 
                       {/* Main content with padding-top to account for fixed navbar */}
                       <main className="flex-1 pt-14 sm:pt-16">
