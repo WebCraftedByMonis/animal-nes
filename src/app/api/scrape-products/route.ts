@@ -499,8 +499,8 @@ async function parseProduct(html: string, url: string, listingPrice?: string): P
 
 export async function POST(req: NextRequest) {
   try {
-    const { url, maxProducts = 20 } = await req.json();
-    console.log(`\n${"#".repeat(60)}\n[SCRAPE] Starting — url: ${url}, maxProducts: ${maxProducts}\n${"#".repeat(60)}`);
+    const { url } = await req.json();
+    console.log(`\n${"#".repeat(60)}\n[SCRAPE] Starting — url: ${url}\n${"#".repeat(60)}`);
 
     if (!url) return NextResponse.json({ error: "URL is required" }, { status: 400 });
 
@@ -523,8 +523,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No products found on this page." }, { status: 400 });
     }
 
-    const toFetch = links.slice(0, Math.min(maxProducts, 50));
-    console.log(`\n[SCRAPE] Will fetch ${toFetch.length} product pages (of ${links.length} total)`);
+    const toFetch = links;
+    console.log(`\n[SCRAPE] Will fetch all ${toFetch.length} product pages`);
 
     const products: ExtractedProduct[] = [];
 

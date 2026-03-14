@@ -36,7 +36,6 @@ interface Row extends Product {
 export default function ProductExtractor() {
   const { country } = useCountry();
   const [url, setUrl] = useState("");
-  const [maxProducts, setMaxProducts] = useState(20);
   const [companyId, setCompanyId] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +52,7 @@ export default function ProductExtractor() {
       const res = await fetch("/api/scrape-products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim(), maxProducts }),
+        body: JSON.stringify({ url: url.trim() }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) { setFetchError(data.error || "Extraction failed."); return; }
@@ -214,13 +213,6 @@ export default function ProductExtractor() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Max products</label>
-            <select value={maxProducts} onChange={e => setMaxProducts(Number(e.target.value))}
-              disabled={loading} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-              {[5, 10, 20, 30, 50].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
           </div>
           <button type="submit" disabled={loading || !url.trim()}
             className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
