@@ -156,11 +156,17 @@ function extractListingPrices(html: string, origin: string): Map<string, string>
   return priceMap;
 }
 
-// ── Grok AI extraction ─────────────────────────────────────────────────────────
-async function extractWithGrok(html: string, url: string): Promise<Partial<ExtractedProduct> | null> {
-  const apiKey = process.env.GROK_API_KEY;
+const SCRAPE_MODELS = [
+  "google/gemma-3-4b-it:free",
+  "google/gemma-3-12b-it:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+];
+
+// ── OpenRouter AI extraction ───────────────────────────────────────────────────
+async function extractWithOpenRouter(html: string, url: string): Promise<Partial<ExtractedProduct> | null> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.log(`[GROK] ✗ GROK_API_KEY not set — skipping AI extraction`);
+    console.log(`[OPENROUTER] ✗ OPENROUTER_API_KEY not set — skipping AI extraction`);
     return null;
   }
 
@@ -169,8 +175,8 @@ async function extractWithGrok(html: string, url: string): Promise<Partial<Extra
   const bodyText = clean($("body").text()).substring(0, 8000);
   const mainHtml = ($(".product, #product, [class*='product'], main, article").first().html() || $("body").html() || "").substring(0, 6000);
 
-  console.log(`[GROK] Sending to Grok — bodyText: ${bodyText.length} chars, mainHtml: ${mainHtml.length} chars`);
-  console.log(`[GROK] Body text preview: ${bodyText.substring(0, 300)}...`);
+  console.log(`[OPENROUTER] Sending — bodyText: ${bodyText.length} chars, mainHtml: ${mainHtml.length} chars`);
+  console.log(`[OPENROUTER] Body text preview: ${bodyText.substring(0, 300)}...`);
 
   const prompt = `You are a product data extractor for a pet/animal products e-commerce site.
 
@@ -207,41 +213,54 @@ ${bodyText}
 Main product HTML:
 ${mainHtml}`;
 
-  try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const callWithFallback = async (modelIndex = 0): Promise<string | null> => {
+    const model = SCRAPE_MODELS[modelIndex];
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://petszee.com",
+        "X-Title": "Petszee Product Extractor",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
         max_tokens: 2000,
       }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(30000),
     });
 
-    console.log(`[GROK] API response status: ${res.status}`);
+    console.log(`[OPENROUTER] ${model} response status: ${res.status}`);
     if (!res.ok) {
       const errText = await res.text();
-      console.log(`[GROK] ✗ API error: ${errText}`);
+      const errData = JSON.parse(errText)?.error;
+      if (errData?.code === 429 && modelIndex < SCRAPE_MODELS.length - 1) {
+        console.log(`[OPENROUTER] ${model} rate-limited, falling back to ${SCRAPE_MODELS[modelIndex + 1]}`);
+        return callWithFallback(modelIndex + 1);
+      }
+      console.log(`[OPENROUTER] ✗ API error: ${errText}`);
       return null;
     }
 
     const data = await res.json();
-    const content: string = data.choices?.[0]?.message?.content || "";
-    console.log(`[GROK] Raw response:\n${content}`);
+    return data.choices?.[0]?.message?.content || "";
+  };
+
+  try {
+    const content = await callWithFallback();
+    if (!content) return null;
+    console.log(`[OPENROUTER] Raw response:\n${content}`);
 
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.log(`[GROK] ✗ No JSON found in response`);
+      console.log(`[OPENROUTER] ✗ No JSON found in response`);
       return null;
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
-    console.log(`[GROK] ✓ Parsed result:`, JSON.stringify(parsed, null, 2));
+    console.log(`[OPENROUTER] ✓ Parsed result:`, JSON.stringify(parsed, null, 2));
 
     if (Array.isArray(parsed.variants)) {
       parsed.variants = parsed.variants
@@ -254,7 +273,7 @@ ${mainHtml}`;
 
     return parsed;
   } catch (e: any) {
-    console.log(`[GROK] ✗ Exception: ${e.message}`);
+    console.log(`[OPENROUTER] ✗ Exception: ${e.message}`);
     return null;
   }
 }
@@ -460,19 +479,19 @@ function parseProductCheerio(html: string, url: string, listingPrice?: string): 
   return result;
 }
 
-// ── Main product parser (Grok first, cheerio fallback) ────────────────────────
+// ── Main product parser (OpenRouter first, cheerio fallback) ──────────────────
 async function parseProduct(html: string, url: string, listingPrice?: string): Promise<ExtractedProduct | null> {
   console.log(`\n${"=".repeat(60)}\n[PARSE] ${url}\n${"=".repeat(60)}`);
   const origin = new URL(url).origin;
   const resolveImage = (src: string) => resolveUrl(origin, src);
 
   const [grokResult, cheerioResult] = await Promise.all([
-    extractWithGrok(html, url),
+    extractWithOpenRouter(html, url),
     Promise.resolve(parseProductCheerio(html, url, listingPrice)),
   ]);
 
   if (grokResult && grokResult.productName) {
-    console.log(`\n[PARSE] ✓ Using Grok result (with cheerio fill-ins for missing fields)`);
+    console.log(`\n[PARSE] ✓ Using OpenRouter result (with cheerio fill-ins for missing fields)`);
     return {
       productName:     grokResult.productName    || cheerioResult?.productName    || "",
       genericName:     grokResult.genericName    || cheerioResult?.genericName    || "",

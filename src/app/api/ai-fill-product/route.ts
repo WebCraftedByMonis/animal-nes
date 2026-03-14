@@ -1,9 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const MODELS = [
+  "google/gemma-3-4b-it:free",
+  "google/gemma-3-12b-it:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+];
+
+async function callOpenRouter(apiKey: string, prompt: string, modelIndex = 0): Promise<string> {
+  const model = MODELS[modelIndex];
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://petszee.com",
+      "X-Title": "Petszee AI Fill Product",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      max_tokens: 1000,
+    }),
+    signal: AbortSignal.timeout(25000),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    const errData = JSON.parse(err).error;
+    // 429 rate limit — try next model in fallback list
+    if (errData?.code === 429 && modelIndex < MODELS.length - 1) {
+      console.log(`[AI-FILL] ${model} rate-limited, falling back to ${MODELS[modelIndex + 1]}`);
+      return callOpenRouter(apiKey, prompt, modelIndex + 1);
+    }
+    throw new Error(`OpenRouter API error: ${err}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GROK_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GROK_API_KEY not configured" }, { status: 500 });
+    return NextResponse.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
   }
 
   const { product, productLink } = await req.json();
@@ -36,28 +76,7 @@ Rules:
 - Return ONLY the JSON, no markdown or explanation`;
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2,
-        max_tokens: 1000,
-      }),
-      signal: AbortSignal.timeout(20000),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: `Groq API error: ${err}` }, { status: 500 });
-    }
-
-    const data = await res.json();
-    const content: string = data.choices?.[0]?.message?.content || "";
+    const content = await callOpenRouter(apiKey, prompt);
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return NextResponse.json({ error: "No JSON in AI response" }, { status: 500 });
 
