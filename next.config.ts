@@ -28,24 +28,7 @@ eslint: {
   transpilePackages: [],
 
   images: {
-    unoptimized: true, // Keep this for Cloudinary free plan to avoid bandwidth limits
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "**",
-      },
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-        pathname: "**",
-      },
-      {
-        protocol: "https",
-        hostname: "**",
-        pathname: "**",
-      },
-    ],
+    unoptimized: true,
   },
 };
 
