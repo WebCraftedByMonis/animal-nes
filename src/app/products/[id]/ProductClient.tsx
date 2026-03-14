@@ -195,7 +195,7 @@ export default function ProductClient({ product }: { product: Product }) {
                   </div>
                 ) : (
                   <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    {currencySymbol} {selectedVariant.customerPrice.toLocaleString()}
+                    {currencySymbol} {(selectedVariant.customerPrice ?? 0).toLocaleString()}
                   </p>
                 )}
               </div>
