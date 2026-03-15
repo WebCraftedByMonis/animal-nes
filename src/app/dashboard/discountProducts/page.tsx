@@ -36,6 +36,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Pencil, Trash2, Search, RefreshCw, Building2 } from 'lucide-react'
 import { SearchableCombobox } from '@/components/shared/SearchableCombobox'
+import { useCountry } from '@/contexts/CountryContext'
 
 interface Company {
   id: number
@@ -110,6 +111,7 @@ const initialFormData: DiscountFormData = {
 }
 
 export default function DiscountProductsPage() {
+  const { country } = useCountry()
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyProducts, setCompanyProducts] = useState<Product[]>([])
@@ -144,6 +146,7 @@ export default function DiscountProductsPage() {
           status: statusFilter !== 'all' ? statusFilter : undefined,
           companyId: companyFilter !== 'all' ? companyFilter : undefined,
           search: searchQuery || undefined,
+          country,
         },
       })
       setDiscounts(data.data)
@@ -153,16 +156,16 @@ export default function DiscountProductsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, statusFilter, companyFilter, searchQuery])
+  }, [page, statusFilter, companyFilter, searchQuery, country])
 
   const fetchCompanies = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/company')
+      const { data } = await axios.get('/api/company', { params: { country } })
       setCompanies(data.data || data || [])
     } catch (error) {
       console.error('Failed to fetch companies:', error)
     }
-  }, [])
+  }, [country])
 
   const fetchCompanyProducts = useCallback(async (companyId: number) => {
     setLoadingProducts(true)
@@ -395,7 +398,7 @@ export default function DiscountProductsPage() {
         <div>
           <h1 className="text-2xl font-bold">Discount Management</h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Manage product discounts and promotions
+            Manage product discounts and promotions &mdash; <span className="font-medium text-gray-700 dark:text-gray-300">{country === 'Pakistan' ? '🇵🇰' : '🇦🇪'} {country}</span>
           </p>
         </div>
         <Button onClick={openCreateModal} className="bg-green-600 hover:bg-green-700">
@@ -622,6 +625,7 @@ export default function DiscountProductsPage() {
                       onChange={handleCompanyChange}
                       placeholder="Select company"
                       searchKey="companyName"
+                      extraParams={{ country }}
                     />
                   </div>
 

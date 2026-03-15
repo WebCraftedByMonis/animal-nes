@@ -192,8 +192,11 @@ export default function ProductExtractor() {
   return (
     <div className="max-w-full p-6">
       <h1 className="text-3xl font-bold mb-1">Product Extractor</h1>
-      <p className="text-gray-500 text-sm mb-6">
-        Extract products from any website and add them directly to your store.
+      <p className="text-gray-500 text-sm mb-1">
+        Extract products from <span className="font-semibold text-gray-700">b2b.smbros.org</span> and add them directly to your store.
+      </p>
+      <p className="text-xs text-gray-400 mb-6">
+        This extractor is configured for <span className="font-medium">SMBros B2B</span> — paste a category URL to extract all products from that page.
       </p>
 
       {/* ── Step 1: URL + Company + Partner ─────────────────────────────── */}

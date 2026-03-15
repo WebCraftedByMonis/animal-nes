@@ -29,10 +29,12 @@ export async function GET(request: NextRequest) {
     const companyId = searchParams.get('companyId')
     const productId = searchParams.get('productId')
     const search = searchParams.get('search')
+    const country = searchParams.get('country')
 
     // Build where clause
     const where: any = {}
     const now = new Date()
+    const andConditions: any[] = []
 
     if (status && status !== 'all') {
       if (status === 'active') {
@@ -49,19 +51,37 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (country && country !== 'all') {
+      andConditions.push({
+        OR: [
+          { company: { country } },
+          { product: { company: { country } } },
+          { variant: { product: { company: { country } } } }
+        ]
+      })
+    }
+
     if (companyId) {
-      where.OR = [
-        { companyId: parseInt(companyId) },
-        { product: { companyId: parseInt(companyId) } },
-        { variant: { product: { companyId: parseInt(companyId) } } }
-      ]
+      andConditions.push({
+        OR: [
+          { companyId: parseInt(companyId) },
+          { product: { companyId: parseInt(companyId) } },
+          { variant: { product: { companyId: parseInt(companyId) } } }
+        ]
+      })
     }
 
     if (productId) {
-      where.OR = [
-        { productId: parseInt(productId) },
-        { variant: { productId: parseInt(productId) } }
-      ]
+      andConditions.push({
+        OR: [
+          { productId: parseInt(productId) },
+          { variant: { productId: parseInt(productId) } }
+        ]
+      })
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions
     }
 
     if (search) {

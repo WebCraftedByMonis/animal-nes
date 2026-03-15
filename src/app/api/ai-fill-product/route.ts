@@ -1,89 +1,121 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODELS = [
-  "google/gemma-3-4b-it:free",
-  "google/gemma-3-12b-it:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-];
-
-async function callOpenRouter(apiKey: string, prompt: string, modelIndex = 0): Promise<string> {
-  const model = MODELS[modelIndex];
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://petszee.com",
-      "X-Title": "Petszee AI Fill Product",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2,
-      max_tokens: 1000,
-    }),
-    signal: AbortSignal.timeout(25000),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    const errData = JSON.parse(err).error;
-    // 429 rate limit — try next model in fallback list
-    if (errData?.code === 429 && modelIndex < MODELS.length - 1) {
-      console.log(`[AI-FILL] ${model} rate-limited, falling back to ${MODELS[modelIndex + 1]}`);
-      return callOpenRouter(apiKey, prompt, modelIndex + 1);
-    }
-    throw new Error(`OpenRouter API error: ${err}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
-}
-
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
+    return NextResponse.json({ error: "GROQ_API_KEY not configured" }, { status: 500 });
   }
 
   const { product, productLink } = await req.json();
 
-  const prompt = `You are a product data expert for a pet/animal products e-commerce store.
+  const CATEGORIES = [
+    "Veterinary", "Poultry", "Pets", "Equine", "Livestock Feed",
+    "Poultry Feed", "Instruments & Equipment", "Fisheries & Aquaculture",
+    "Vaccination Services / Kits", "Herbal / Organic Products",
+  ];
 
-Below is a partially filled product record. Some fields may be empty or wrong. Your job is to intelligently fill in the missing or empty fields based on the product name, any filled fields, and your knowledge of animal products.
+  const SUB_CATEGORIES = [
+    "Antiparasitics", "Antibiotics & Antibacterials", "Vaccines & Immunologicals",
+    "Nutritional Supplements", "Growth Promoters", "Coccidiostats",
+    "Pain Management / NSAIDs", "Reproductive Health / Hormones",
+    "Liver & Kidney Tonics", "Respiratory Health / Expectorants",
+  ];
+
+  const SUB_SUB_CATEGORIES = [
+    "Medicine", "Supplements", "Broad-Spectrum Dewormers",
+    "Multivitamins & Trace Elements", "Electrolytes & Hydration Solutions",
+    "Mineral Mixtures / Salt Licks", "Probiotics & Enzymes",
+    "Calcium / Phosphorus Supplements", "Immuno-Stimulants", "Hepato-Renal Protectants",
+    "Endoparasiticides (e.g., dewormers)", "Ectoparasiticides (e.g., tick/flea/mite treatment)",
+  ];
+
+  const PRODUCT_TYPES = [
+    "Injection (IV, IM, SC)", "Tablet / Bolus / Pill", "Oral Powder / Sachet",
+    "Oral Suspension / Syrup", "Spray / Aerosol", "Oral Solution / Drops",
+    "Topical Application / Pour-on / Spot-on", "Premix (for feed inclusion)",
+    "Intrauterine / Intra-mammary", "Transdermal Patch / Ointment / Cream",
+  ];
+
+  const prompt = `You are a product data expert for a veterinary/animal products e-commerce store.
+
+Below is a partially filled product record. Fill in the missing or empty fields based on the product name and your knowledge.
 
 Current product data:
 ${JSON.stringify(product, null, 2)}
 
 Product source URL: ${productLink || ""}
 
-Return ONLY a valid JSON object with ONLY these fields (fill empty ones, improve vague ones, keep good ones as-is):
+Preferred category values (use one of these if it fits):
+${CATEGORIES.map(c => `- "${c}"`).join("\n")}
+
+Preferred subCategory values (use one of these if it fits):
+${SUB_CATEGORIES.map(c => `- "${c}"`).join("\n")}
+
+Preferred subsubCategory values (use one of these if it fits):
+${SUB_SUB_CATEGORIES.map(c => `- "${c}"`).join("\n")}
+
+Preferred productType values (use one of these if it fits):
+${PRODUCT_TYPES.map(c => `- "${c}"`).join("\n")}
+
+Return ONLY a valid JSON object with these fields:
 {
   "genericName": "brand name or manufacturer",
-  "category": "main animal/product category e.g. Cat Food, Dog Supplements, Bird Toys, Fish Supplies",
-  "subCategory": "sub-category e.g. Dry Food, Wet Food, Treats, Shampoo, Litter, Toys",
-  "subsubCategory": "more specific e.g. Grain Free, Indoor, Senior, Kitten, Natural",
-  "productType": "product form e.g. Dry, Wet, Liquid, Tablet, Powder, Spray, Gel",
+  "category": "pick from preferred list if a good match exists, otherwise use your best short label",
+  "subCategory": "pick from preferred list if a good match exists, otherwise use your best short label",
+  "subsubCategory": "pick from preferred list if a good match exists, otherwise use your best short label",
+  "productType": "pick from preferred list if a good match exists, otherwise use your best short label",
   "description": "comprehensive product description — what it is, key benefits, ingredients if known",
-  "dosage": "feeding or usage instructions based on product type — e.g. serving size per kg body weight, frequency, age suitability. Leave empty string for toys or accessories."
+  "dosage": "for food/medicine/supplements: feeding or dosage instructions. For toys/accessories/equipment/grooming products: describe how to use the product (application method, frequency, tips). Never leave empty — always provide either dosage or usage instructions."
 }
 
 Rules:
-- Use the product name and URL as strong hints
+- Prefer the listed values but use free text if the product genuinely doesn't fit any option
 - Do NOT change fields that are already well-filled
-- description should be at least 2-3 sentences if you can infer it
-- dosage: fill only for food, treats, supplements, medicine — leave empty string for toys/litter/accessories
+- description should be at least 2-3 sentences
+- dosage field = dosage instructions for medicines/food, OR usage instructions for everything else
 - Return ONLY the JSON, no markdown or explanation`;
 
   try {
-    const content = await callOpenRouter(apiKey, prompt);
+    console.log(`[AI-FILL] Calling Groq for: "${product.productName}"`);
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        max_tokens: 1000,
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+
+    console.log(`[AI-FILL] Groq status: ${res.status}`);
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.log(`[AI-FILL] ✗ Groq error: ${err.substring(0, 300)}`);
+      throw new Error(`Groq API error ${res.status}: ${err.substring(0, 200)}`);
+    }
+
+    const data = await res.json();
+    const content: string = data.choices?.[0]?.message?.content || "";
+    console.log(`[AI-FILL] Groq replied (${content.length} chars): ${content.substring(0, 150)}`);
+
     const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return NextResponse.json({ error: "No JSON in AI response" }, { status: 500 });
+    if (!jsonMatch) {
+      console.log(`[AI-FILL] ✗ No JSON in response`);
+      return NextResponse.json({ error: "No JSON in AI response" }, { status: 500 });
+    }
 
     const filled = JSON.parse(jsonMatch[0]);
-    console.log(`[AI-FILL] product: "${product.productName}" → dosage: "${filled.dosage}" | category: "${filled.category}"`);
+    console.log(`[AI-FILL] ✓ category:"${filled.category}" dosage(${(filled.dosage || "").length} chars)`);
     return NextResponse.json({ success: true, filled });
   } catch (e: any) {
+    console.log(`[AI-FILL] ✗ Exception: ${e.message}`);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
