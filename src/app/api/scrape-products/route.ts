@@ -499,6 +499,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
     }
 
+    // Always start from page 1 — strip /page/N if present in the URL
+    if (/\/page\/\d+\/?$/.test(parsed.pathname)) {
+      parsed.pathname = parsed.pathname.replace(/\/page\/\d+\/?$/, "");
+      console.log(`[SCRAPE] Stripped pagination from URL → starting from: ${parsed.href}`);
+    }
+
     // ── Fetch first listing page ──────────────────────────────────────────────
     const html = await fetchHtml(parsed.href);
     if (!html) return NextResponse.json({ error: "Could not fetch the URL." }, { status: 400 });
