@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Home, ArrowRight, FileText } from 'lucide-react';
+import { CheckCircle, Home, ArrowRight, FileText, Users, Radio } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ThankYouPrescriptionPage() {
@@ -35,6 +35,37 @@ export default function ThankYouPrescriptionPage() {
             </div>
           </div>
         </div>
+
+        {/* WhatsApp */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-gray-400 font-medium">Stay connected</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        <a href="https://chat.whatsapp.com/CqLyuyp92ex6cZ7EtpfwaU" target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-3 p-3 border-2 border-[#25D366] rounded-xl hover:bg-[#25D366]/5 transition-colors group">
+          <div className="w-9 h-9 bg-[#25D366] rounded-full flex items-center justify-center flex-shrink-0">
+            <Users className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 group-hover:text-[#25D366] transition-colors">Join Community</p>
+            <p className="text-xs text-gray-500">Chat with animal lovers &amp; get support</p>
+          </div>
+          <span className="text-[#25D366] text-xs font-bold">JOIN →</span>
+        </a>
+
+        <a href="https://whatsapp.com/channel/0029VaeV6OQ9mrGjhvOQkW2t" target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-xl hover:border-[#25D366] hover:bg-[#25D366]/5 transition-colors group">
+          <div className="w-9 h-9 bg-gray-100 group-hover:bg-[#25D366] rounded-full flex items-center justify-center flex-shrink-0 transition-colors">
+            <Radio className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 group-hover:text-[#25D366] transition-colors">Follow Channel</p>
+            <p className="text-xs text-gray-500">Get exclusive deals &amp; updates</p>
+          </div>
+          <span className="text-gray-300 group-hover:text-[#25D366] text-xs font-bold transition-colors">FOLLOW →</span>
+        </a>
 
         {/* Action Buttons */}
         <div className="space-y-3">
