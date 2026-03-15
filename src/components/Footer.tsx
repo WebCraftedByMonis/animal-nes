@@ -3,16 +3,33 @@
 import { Briefcase, PawPrint, ShieldCheck, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
-export default function Footer( ) {
+export default function Footer() {
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith('/dashboard');
+  const [email, setEmail] = useState("");
+  const [subStatus, setSubStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [subMsg, setSubMsg] = useState("");
 
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubStatus("loading");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) { setSubStatus("done"); setSubMsg("You're subscribed!"); setEmail(""); }
+      else { setSubStatus("error"); setSubMsg(data.error || "Something went wrong"); }
+    } catch {
+      setSubStatus("error"); setSubMsg("Failed to subscribe");
+    }
+  };
 
-    const pathname = usePathname();
-      const isDashboard = pathname.startsWith('/dashboard');
-    
-     
-    
-      if (isDashboard) return null;
+  if (isDashboard) return null;
     return <>
        {/* Footer */}
       <footer className="bg-foreground text-background py-16 px-6">
@@ -82,21 +99,45 @@ export default function Footer( ) {
           </div>
           
           <div>
-            <h4 className="font-semibold text-lg mb-4">Company</h4>
-            <ul className="space-y-2">
-              
-                <li >
-                  <Link href="/contact" className="text-muted-foreground-dark hover:text-background transition-colors">
-                    Contact
-                  </Link>
-                </li>
-
-                <li>
-                  Address: 67-K Block, Commercial Market, DHA Phase-1, Lahore
-
-                </li>
-            
+            <h4 className="font-semibold text-lg mb-2">Company</h4>
+            <ul className="space-y-2 mb-6">
+              <li>
+                <Link href="/contact" className="text-muted-foreground-dark hover:text-background transition-colors">
+                  Contact
+                </Link>
+              </li>
+              <li className="text-muted-foreground-dark text-sm">
+                Address: 67-K Block, Commercial Market, DHA Phase-1, Lahore
+              </li>
             </ul>
+
+            {/* Newsletter */}
+            <h4 className="font-semibold text-lg mb-2">Newsletter</h4>
+            <p className="text-muted-foreground-dark text-sm mb-3">
+              Get the latest updates on animal health & products.
+            </p>
+            {subStatus === "done" ? (
+              <p className="text-emerald-400 text-sm font-medium">✓ {subMsg}</p>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="Your email address"
+                  className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-background placeholder:text-muted-foreground-dark text-sm focus:outline-none focus:border-emerald-400"
+                />
+                <button
+                  type="submit"
+                  disabled={subStatus === "loading"}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+                >
+                  {subStatus === "loading" ? "Subscribing..." : "Subscribe"}
+                </button>
+                {subStatus === "error" && <p className="text-red-400 text-xs">{subMsg}</p>}
+              </form>
+            )}
           </div>
         </div>
         

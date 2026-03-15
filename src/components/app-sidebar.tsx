@@ -354,6 +354,16 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Newsletter */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/newsletter">
+                    <Mail className="w-4 h-4" />
+                    <span className="hover:text-green-500">Newsletter</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Finance / Accounting */}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setOpenFinance(!openFinance)}>

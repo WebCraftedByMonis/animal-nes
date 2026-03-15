@@ -1383,3 +1383,10 @@ model CompanyPaymentSettings {
 
   @@index([companyId])
 }
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  subscribedAt DateTime @default(now())
+}
