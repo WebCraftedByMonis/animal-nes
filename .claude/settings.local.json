@@ -19,7 +19,10 @@
       "Bash(cd \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" && npx tsc --noEmit 2>&1 | grep -E \"\\(scrape-products|ProductExtractor\\)\" || echo \"No errors in new files\")",
       "Bash(find \"D:/Projects/maphunter\" -type f \\\\\\( -name \"*.ts\" -o -name \"*.js\" -o -name \".env*\" \\\\\\) 2>/dev/null | head -30)",
       "Bash(curl:*)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:wisdomvet.ae)",
+      "WebFetch(domain:vetpharmacy.ae)",
+      "WebFetch(domain:www.eurovets.ae)"
     ],
     "deny": [],
     "ask": []
