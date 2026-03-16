@@ -33,7 +33,10 @@ interface Row extends Product {
   fillStatus: FillStatus;
 }
 
-export default function ProductExtractor() {
+const proxyImg = (url: string) =>
+  url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : "";
+
+export default function PetzseeExtractor() {
   const { country } = useCountry();
   const [url, setUrl] = useState("");
   const [companyId, setCompanyId] = useState("");
@@ -49,7 +52,7 @@ export default function ProductExtractor() {
     e.preventDefault();
     setLoading(true); setFetchError(null); setRows([]); setTotalLinks(0);
     try {
-      const res = await fetch("/api/scrape-products", {
+      const res = await fetch("/api/scrape-products-petzsee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
@@ -57,7 +60,7 @@ export default function ProductExtractor() {
       const data = await res.json();
       if (!res.ok || !data.success) { setFetchError(data.error || "Extraction failed."); return; }
       if (!data.products.length) { setFetchError("No products found on this page."); return; }
-      setTotalLinks(data.totalLinks || data.count);
+setTotalLinks(data.totalLinks || data.count);
       setRows(data.products.map((p: Product, i: number) => ({
         ...p,
         id: i,
@@ -97,7 +100,7 @@ export default function ProductExtractor() {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
 
-  // ── AI Fill missing fields ────────────────────────────────────────────────
+  // ── AI Fill ───────────────────────────────────────────────────────────────
   const aiFill = async (row: Row) => {
     setRows(prev => prev.map(r => r.id === row.id ? { ...r, fillStatus: "filling" } : r));
     try {
@@ -192,25 +195,24 @@ export default function ProductExtractor() {
   return (
     <div className="max-w-full">
       <p className="text-gray-500 text-sm mb-1">
-        Extract products from <span className="font-semibold text-gray-700">b2b.smbros.org</span> and add them directly to your store.
+        Extract products from <span className="font-semibold text-gray-700">petzsee.com</span> and add them directly to your store.
       </p>
       <p className="text-xs text-gray-400 mb-6">
-        This extractor is configured for <span className="font-medium">SMBros B2B</span> — paste a category URL to extract all products from that page.
+        This extractor is configured for <span className="font-medium">Petzsee</span> — paste a product category URL to extract all products.
       </p>
 
       {/* ── Step 1: URL + Company + Partner ─────────────────────────────── */}
       <form onSubmit={handleExtract} className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 space-y-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Step 1 — Source &amp; Assignment</p>
 
-        {/* URL row */}
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[260px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Product listing URL *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Product category URL *</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="url" value={url} onChange={e => setUrl(e.target.value)}
-                placeholder="https://example.com/shop/category/products"
+                placeholder="https://petzsee.com/product-category/cat/"
                 required disabled={loading}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
               />
@@ -222,7 +224,6 @@ export default function ProductExtractor() {
           </button>
         </div>
 
-        {/* Company + Partner row */}
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-medium text-gray-600 mb-1">Company * <span className="text-gray-400">(required to save)</span></label>
@@ -249,15 +250,13 @@ export default function ProductExtractor() {
         </div>
       </form>
 
-      {/* Loading */}
       {loading && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-          Fetching listing → collecting product links → visiting each product page for details…
+          Fetching products via WooCommerce API → enriching with product page details…
         </div>
       )}
 
-      {/* Fetch error */}
       {fetchError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-2">
           <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />{fetchError}
@@ -267,7 +266,6 @@ export default function ProductExtractor() {
       {/* ── Step 2: Results table ─────────────────────────────────────────── */}
       {rows.length > 0 && (
         <>
-          {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <p className="text-sm text-gray-600">
               <span className="font-semibold text-gray-900">{rows.length}</span> of{" "}
@@ -289,7 +287,6 @@ export default function ProductExtractor() {
             )}
           </div>
 
-          {/* Table */}
           <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -315,10 +312,9 @@ export default function ProductExtractor() {
                     return (
                       <tr key={row.id} className="border-b border-gray-100 align-top hover:bg-gray-50 transition-colors">
 
-                        {/* Image */}
                         <td className="px-3 py-2.5">
                           {row.imageUrl ? (
-                            <img src={row.imageUrl} alt={row.productName}
+                            <img src={proxyImg(row.imageUrl)} alt={row.productName}
                               onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                               className="w-14 h-14 object-cover rounded-lg border border-gray-200" />
                           ) : (
@@ -328,49 +324,42 @@ export default function ProductExtractor() {
                           )}
                         </td>
 
-                        {/* Product Name */}
                         <td className="px-3 py-2.5">
                           <input value={row.productName}
                             onChange={e => updateRow(row.id, "productName", e.target.value)}
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 focus:border-green-400 min-w-[150px]" />
                         </td>
 
-                        {/* Generic Name */}
                         <td className="px-3 py-2.5">
                           <input value={row.genericName}
                             onChange={e => updateRow(row.id, "genericName", e.target.value)}
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400" />
                         </td>
 
-                        {/* Category */}
                         <td className="px-3 py-2.5">
                           <input value={row.category}
                             onChange={e => updateRow(row.id, "category", e.target.value)}
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400" />
                         </td>
 
-                        {/* Sub Category */}
                         <td className="px-3 py-2.5">
                           <input value={row.subCategory}
                             onChange={e => updateRow(row.id, "subCategory", e.target.value)}
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400" />
                         </td>
 
-                        {/* Sub-Sub Category */}
                         <td className="px-3 py-2.5">
                           <input value={row.subsubCategory}
                             onChange={e => updateRow(row.id, "subsubCategory", e.target.value)}
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400" />
                         </td>
 
-                        {/* Product Type */}
                         <td className="px-3 py-2.5">
                           <input value={row.productType}
                             onChange={e => updateRow(row.id, "productType", e.target.value)}
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400" />
                         </td>
 
-                        {/* Description */}
                         <td className="px-3 py-2.5 max-w-[200px]">
                           <div className="text-xs text-gray-600">
                             {descExpanded
@@ -389,7 +378,6 @@ export default function ProductExtractor() {
                           </div>
                         </td>
 
-                        {/* Dosage */}
                         <td className="px-3 py-2.5">
                           <textarea value={row.dosage}
                             onChange={e => updateRow(row.id, "dosage", e.target.value)}
@@ -397,7 +385,6 @@ export default function ProductExtractor() {
                             className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 resize-none min-w-[110px]" />
                         </td>
 
-                        {/* PDF URL */}
                         <td className="px-3 py-2.5">
                           <input
                             value={row.pdfUrl}
@@ -407,10 +394,8 @@ export default function ProductExtractor() {
                           />
                         </td>
 
-                        {/* Variants */}
                         <td className="px-3 py-2.5">
                           <div className="space-y-2 min-w-[250px]">
-                            {/* Header labels */}
                             {row.variants.length > 0 && (
                               <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
                                 <span className="w-14">Size</span>
@@ -454,10 +439,8 @@ export default function ProductExtractor() {
                           </div>
                         </td>
 
-                        {/* Action */}
                         <td className="px-3 py-2.5">
                           <div className="flex flex-col gap-1.5">
-                            {/* AI Fill button */}
                             <button
                               onClick={() => aiFill(row)}
                               disabled={row.fillStatus === "filling" || row.saveStatus === "saved"}
@@ -474,7 +457,6 @@ export default function ProductExtractor() {
                               <span className="text-red-500 text-xs">AI failed</span>
                             )}
 
-                            {/* Save button */}
                             {row.saveStatus === "saved" ? (
                               <span className="flex items-center gap-1 text-green-600 font-medium text-xs whitespace-nowrap">
                                 <CheckCircle className="w-4 h-4" />Added
@@ -508,15 +490,14 @@ export default function ProductExtractor() {
               </table>
             </div>
           </div>
-
         </>
       )}
 
-      {/* Empty state */}
       {!loading && !rows.length && !fetchError && (
         <div className="text-center py-16 text-gray-400">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Enter a product listing URL above to get started.</p>
+          <p className="text-sm">Enter a Petzsee product category URL above to get started.</p>
+          <p className="text-xs mt-1 opacity-70">e.g. https://petzsee.com/product-category/cat/</p>
         </div>
       )}
     </div>

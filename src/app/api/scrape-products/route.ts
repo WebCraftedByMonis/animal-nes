@@ -87,6 +87,10 @@ function getProductLinks(html: string, origin: string, currentPath: string): str
       if (/^\/(web|website|page|pages|blog|news|about|contact|faq|terms|privacy|r|my)\b/i.test(p)) {
         skipped["non-shop"] = (skipped["non-shop"] || 0) + 1; return;
       }
+      // Skip WooCommerce category/taxonomy pages
+      if (/\/product-category\/|\/product-tag\//i.test(p)) {
+        skipped["wc-category"] = (skipped["wc-category"] || 0) + 1; return;
+      }
       if (/\/(cart|checkout|wishlist|account|search|login|register|compare|tag|brands|change_pricelist|reset_password)\b/i.test(p)) {
         skipped["utility"] = (skipped["utility"] || 0) + 1; return;
       }
