@@ -6,6 +6,7 @@ import PetzseeExtractor from "@/app/components/PetzseeExtractor";
 import WisdomvetExtractor from "@/app/components/WisdomvetExtractor";
 import VetpharmacyExtractor from "@/app/components/VetpharmacyExtractor";
 import EurovetsExtractor from "@/app/components/EurovetsExtractor";
+import PetshubExtractor from "@/app/components/PetshubExtractor";
 
 const TABS = [
   { id: "smbros",       label: "SMBros B2B",    sub: "b2b.smbros.org" },
@@ -13,6 +14,7 @@ const TABS = [
   { id: "wisdomvet",   label: "WisdomVet",     sub: "wisdomvet.ae" },
   { id: "vetpharmacy", label: "VetPharmacy",   sub: "vetpharmacy.ae" },
   { id: "eurovets",    label: "Eurovets",      sub: "eurovets.ae" },
+  { id: "petshub",     label: "PetsHub PK",    sub: "petshub.pk" },
 ];
 
 export default function ProductExtractorPage() {
@@ -49,6 +51,7 @@ export default function ProductExtractorPage() {
       {active === "wisdomvet"   && <WisdomvetExtractor />}
       {active === "vetpharmacy" && <VetpharmacyExtractor />}
       {active === "eurovets"    && <EurovetsExtractor />}
+      {active === "petshub"     && <PetshubExtractor />}
     </div>
   );
 }

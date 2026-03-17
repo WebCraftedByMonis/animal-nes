@@ -22,7 +22,8 @@
       "WebFetch(domain:ai.google.dev)",
       "WebFetch(domain:wisdomvet.ae)",
       "WebFetch(domain:vetpharmacy.ae)",
-      "WebFetch(domain:www.eurovets.ae)"
+      "WebFetch(domain:www.eurovets.ae)",
+      "WebFetch(domain:www.petshub.pk)"
     ],
     "deny": [],
     "ask": []
