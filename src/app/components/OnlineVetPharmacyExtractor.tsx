@@ -36,7 +36,7 @@ interface Row extends Product {
 const proxyImg = (url: string) =>
   url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : "";
 
-export default function WisdomvetExtractor() {
+export default function OnlineVetPharmacyExtractor() {
   const { country } = useCountry();
   const [url, setUrl] = useState("");
   const [companyId, setCompanyId] = useState("");
@@ -47,12 +47,11 @@ export default function WisdomvetExtractor() {
   const [totalLinks, setTotalLinks] = useState(0);
   const [expandedDesc, setExpandedDesc] = useState<Set<number>>(new Set());
 
-  // ── Extract ──────────────────────────────────────────────────────────────
   const handleExtract = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setFetchError(null); setRows([]); setTotalLinks(0);
     try {
-      const res = await fetch("/api/scrape-products-wisdomvet", {
+      const res = await fetch("/api/scrape-products-onlinevetpharmacy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
@@ -75,7 +74,6 @@ export default function WisdomvetExtractor() {
     } finally { setLoading(false); }
   };
 
-  // ── Field editing ─────────────────────────────────────────────────────────
   const updateRow = (id: number, field: keyof Product, value: string | boolean) => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
@@ -89,18 +87,21 @@ export default function WisdomvetExtractor() {
   };
 
   const addVariant = (rowId: number) => {
-    setRows(prev => prev.map(r => r.id === rowId ? { ...r, variants: [...r.variants, { packingVolume: "", customerPrice: "", companyPrice: "", dealerPrice: "" }] } : r));
+    setRows(prev => prev.map(r => r.id === rowId
+      ? { ...r, variants: [...r.variants, { packingVolume: "", customerPrice: "", companyPrice: "", dealerPrice: "" }] }
+      : r));
   };
 
   const removeVariant = (rowId: number, vIdx: number) => {
-    setRows(prev => prev.map(r => r.id === rowId ? { ...r, variants: r.variants.filter((_, i) => i !== vIdx) } : r));
+    setRows(prev => prev.map(r => r.id === rowId
+      ? { ...r, variants: r.variants.filter((_, i) => i !== vIdx) }
+      : r));
   };
 
   const toggleDesc = (id: number) => setExpandedDesc(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
 
-  // ── AI Fill ───────────────────────────────────────────────────────────────
   const aiFill = async (row: Row) => {
     setRows(prev => prev.map(r => r.id === row.id ? { ...r, fillStatus: "filling" } : r));
     try {
@@ -118,15 +119,14 @@ export default function WisdomvetExtractor() {
       setRows(prev => prev.map(r => {
         if (r.id !== row.id) return r;
         return {
-          ...r,
-          fillStatus: "done",
-          genericName:     f.genericName     != null && f.genericName     !== "" ? f.genericName     : r.genericName,
-          category:        f.category        != null && f.category        !== "" ? f.category        : r.category,
-          subCategory:     f.subCategory     != null && f.subCategory     !== "" ? f.subCategory     : r.subCategory,
-          subsubCategory:  f.subsubCategory  != null && f.subsubCategory  !== "" ? f.subsubCategory  : r.subsubCategory,
-          productType:     f.productType     != null && f.productType     !== "" ? f.productType     : r.productType,
-          description:     r.description !== "" ? r.description : (f.description ?? ""),
-          dosage:          f.dosage          != null && f.dosage          !== "" ? f.dosage          : r.dosage,
+          ...r, fillStatus: "done",
+          genericName:    f.genericName    != null && f.genericName    !== "" ? f.genericName    : r.genericName,
+          category:       f.category       != null && f.category       !== "" ? f.category       : r.category,
+          subCategory:    f.subCategory    != null && f.subCategory    !== "" ? f.subCategory    : r.subCategory,
+          subsubCategory: f.subsubCategory != null && f.subsubCategory !== "" ? f.subsubCategory : r.subsubCategory,
+          productType:    f.productType    != null && f.productType    !== "" ? f.productType    : r.productType,
+          description:    r.description !== "" ? r.description : (f.description ?? ""),
+          dosage:         f.dosage         != null && f.dosage         !== "" ? f.dosage         : r.dosage,
         };
       }));
     } catch {
@@ -134,12 +134,8 @@ export default function WisdomvetExtractor() {
     }
   };
 
-  // ── Save a single product ─────────────────────────────────────────────────
   const addProduct = async (row: Row) => {
-    if (!companyId || !partnerId) {
-      alert("Please select a Company and Partner before adding.");
-      return;
-    }
+    if (!companyId || !partnerId) { alert("Please select a Company and Partner before adding."); return; }
     setRows(prev => prev.map(r => r.id === row.id ? { ...r, saveStatus: "saving" } : r));
     try {
       const fd = new FormData();
@@ -182,37 +178,31 @@ export default function WisdomvetExtractor() {
   const errorCount = rows.filter(r => r.saveStatus === "error").length;
 
   const addAll = async () => {
-    if (!companyId || !partnerId) {
-      alert("Please select a Company and Partner before adding.");
-      return;
-    }
-    const pending = rows.filter(r => r.saveStatus === "idle" || r.saveStatus === "error");
-    for (const row of pending) {
+    if (!companyId || !partnerId) { alert("Please select a Company and Partner before adding."); return; }
+    for (const row of rows.filter(r => r.saveStatus === "idle" || r.saveStatus === "error"))
       await addProduct(row);
-    }
   };
 
   return (
     <div className="max-w-full">
       <p className="text-gray-500 text-sm mb-1">
-        Extract products from <span className="font-semibold text-gray-700">wisdomvet.ae</span> and add them directly to your store.
+        Extract products from <span className="font-semibold text-gray-700">onlinevetpharmacy.com</span> and add them directly to your store.
       </p>
       <p className="text-xs text-gray-400 mb-6">
-        This extractor is configured for <span className="font-medium">WisdomVet</span> — paste a product category or products URL to extract all products.
+        This extractor is configured for <span className="font-medium">OnlineVetPharmacy</span> (WooCommerce/Divi) — paste a product category URL. Descriptions from the product detail tab are extracted automatically.
       </p>
 
-      {/* ── Step 1: URL + Company + Partner ─────────────────────────────── */}
       <form onSubmit={handleExtract} className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 space-y-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Step 1 — Source &amp; Assignment</p>
 
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[260px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Products URL *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Category URL *</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="url" value={url} onChange={e => setUrl(e.target.value)}
-                placeholder="https://wisdomvet.ae/products/"
+                placeholder="https://onlinevetpharmacy.com/product-category/medicine/"
                 required disabled={loading}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
               />
@@ -253,7 +243,7 @@ export default function WisdomvetExtractor() {
       {loading && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-          Fetching products via WooCommerce API → enriching with product page details…
+          Scraping product pages — extracting descriptions, variants, and images…
         </div>
       )}
 
@@ -263,7 +253,6 @@ export default function WisdomvetExtractor() {
         </div>
       )}
 
-      {/* ── Step 2: Results table ─────────────────────────────────────────── */}
       {rows.length > 0 && (
         <>
           <div className="flex flex-wrap items-center gap-3 mb-3">
@@ -386,12 +375,10 @@ export default function WisdomvetExtractor() {
                         </td>
 
                         <td className="px-3 py-2.5">
-                          <input
-                            value={row.pdfUrl}
+                          <input value={row.pdfUrl}
                             onChange={e => updateRow(row.id, "pdfUrl", e.target.value)}
                             placeholder="https://…/product.pdf"
-                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 min-w-[130px]"
-                          />
+                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 min-w-[130px]" />
                         </td>
 
                         <td className="px-3 py-2.5">
@@ -453,9 +440,7 @@ export default function WisdomvetExtractor() {
                                 : <><Sparkles className="w-3 h-3" />AI Fill</>
                               }
                             </button>
-                            {row.fillStatus === "error" && (
-                              <span className="text-red-500 text-xs">AI failed</span>
-                            )}
+                            {row.fillStatus === "error" && <span className="text-red-500 text-xs">AI failed</span>}
 
                             {row.saveStatus === "saved" ? (
                               <span className="flex items-center gap-1 text-green-600 font-medium text-xs whitespace-nowrap">
@@ -496,8 +481,8 @@ export default function WisdomvetExtractor() {
       {!loading && !rows.length && !fetchError && (
         <div className="text-center py-16 text-gray-400">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Enter a WisdomVet products URL above to get started.</p>
-          <p className="text-xs mt-1 opacity-70">e.g. https://wisdomvet.ae/products/</p>
+          <p className="text-sm">Enter an OnlineVetPharmacy category URL above to get started.</p>
+          <p className="text-xs mt-1 opacity-70">e.g. https://onlinevetpharmacy.com/product-category/medicine/</p>
         </div>
       )}
     </div>

@@ -122,7 +122,7 @@ export default function EurovetsExtractor() {
           subCategory:     f.subCategory     != null && f.subCategory     !== "" ? f.subCategory     : r.subCategory,
           subsubCategory:  f.subsubCategory  != null && f.subsubCategory  !== "" ? f.subsubCategory  : r.subsubCategory,
           productType:     f.productType     != null && f.productType     !== "" ? f.productType     : r.productType,
-          description:     f.description     != null && f.description     !== "" ? f.description     : r.description,
+          description:     r.description !== "" ? r.description : (f.description ?? ""),
           dosage:          f.dosage          != null && f.dosage          !== "" ? f.dosage          : r.dosage,
         };
       }));

@@ -23,7 +23,10 @@
       "WebFetch(domain:wisdomvet.ae)",
       "WebFetch(domain:vetpharmacy.ae)",
       "WebFetch(domain:www.eurovets.ae)",
-      "WebFetch(domain:www.petshub.pk)"
+      "WebFetch(domain:www.petshub.pk)",
+      "WebFetch(domain:onlinevetpharmacy.com)",
+      "Bash(sed -i 's/description:    f\\\\.description    != null && f\\\\.description    !== \"\"\"\" ? f\\\\.description    : r\\\\.description,/description:    r.description !== \"\"\"\" ? r.description : \\(f.description ?? \"\"\"\"\\),/g' OnlineVetPharmacyExtractor.tsx)",
+      "Bash(sed -i 's/description:     f\\\\.description     != null && f\\\\.description     !== \"\"\"\" ? f\\\\.description     : r\\\\.description,/description:     r.description !== \"\"\"\" ? r.description : \\(f.description ?? \"\"\"\"\\),/g' PetshubExtractor.tsx EurovetsExtractor.tsx VetpharmacyExtractor.tsx WisdomvetExtractor.tsx PetzseeExtractor.tsx ProductExtractor.tsx)"
     ],
     "deny": [],
     "ask": []
