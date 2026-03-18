@@ -26,7 +26,10 @@
       "WebFetch(domain:www.petshub.pk)",
       "WebFetch(domain:onlinevetpharmacy.com)",
       "Bash(sed -i 's/description:    f\\\\.description    != null && f\\\\.description    !== \"\"\"\" ? f\\\\.description    : r\\\\.description,/description:    r.description !== \"\"\"\" ? r.description : \\(f.description ?? \"\"\"\"\\),/g' OnlineVetPharmacyExtractor.tsx)",
-      "Bash(sed -i 's/description:     f\\\\.description     != null && f\\\\.description     !== \"\"\"\" ? f\\\\.description     : r\\\\.description,/description:     r.description !== \"\"\"\" ? r.description : \\(f.description ?? \"\"\"\"\\),/g' PetshubExtractor.tsx EurovetsExtractor.tsx VetpharmacyExtractor.tsx WisdomvetExtractor.tsx PetzseeExtractor.tsx ProductExtractor.tsx)"
+      "Bash(sed -i 's/description:     f\\\\.description     != null && f\\\\.description     !== \"\"\"\" ? f\\\\.description     : r\\\\.description,/description:     r.description !== \"\"\"\" ? r.description : \\(f.description ?? \"\"\"\"\\),/g' PetshubExtractor.tsx EurovetsExtractor.tsx VetpharmacyExtractor.tsx WisdomvetExtractor.tsx PetzseeExtractor.tsx ProductExtractor.tsx)",
+      "WebFetch(domain:vet-shop.net)",
+      "Bash(sed 's|scrape-products-petshub|scrape-products-vetshop|g; s|PetshubExtractor|VetshopExtractor|g; s|petshub\\\\.pk|vet-shop\\\\.net|g; s|PetsHub \\(WooCommerce\\)|VetShop \\(WooCommerce\\)|g; s|PetsHub|VetShop|g; s|https://www\\\\.petshub\\\\.pk/royal-canin-cat-food/|https://vet-shop.net/product-category/livestock/|g; s|e\\\\.g\\\\. https://www\\\\.petshub\\\\.pk/royal-canin-cat-food/|e.g. https://vet-shop.net/product-category/livestock/|g; s|paste any product category URL to extract products with all size variants and prices\\\\.|paste any product category URL. Description, dosage, composition, and packaging sizes are extracted from product pages.|g' \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\app\\\\components\\\\PetshubExtractor.tsx\")",
+      "Bash(\"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\\\\src\\\\app\\\\components\\\\VetshopExtractor.tsx\")"
     ],
     "deny": [],
     "ask": []

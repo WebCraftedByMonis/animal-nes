@@ -8,19 +8,32 @@ import VetpharmacyExtractor from "@/app/components/VetpharmacyExtractor";
 import EurovetsExtractor from "@/app/components/EurovetsExtractor";
 import PetshubExtractor from "@/app/components/PetshubExtractor";
 import OnlineVetPharmacyExtractor from "@/app/components/OnlineVetPharmacyExtractor";
+import VetshopExtractor from "@/app/components/VetshopExtractor";
 
-const TABS = [
-  { id: "smbros",       label: "SMBros B2B",    sub: "b2b.smbros.org" },
+const UAE_TABS = [
+  { id: "smbros",       label: "SMBros B2B",   sub: "b2b.smbros.org" },
   { id: "petzsee",     label: "Petzsee",       sub: "petzsee.com" },
   { id: "wisdomvet",   label: "WisdomVet",     sub: "wisdomvet.ae" },
   { id: "vetpharmacy", label: "VetPharmacy",   sub: "vetpharmacy.ae" },
   { id: "eurovets",    label: "Eurovets",      sub: "eurovets.ae" },
-  { id: "petshub",             label: "PetsHub PK",         sub: "petshub.pk" },
-  { id: "onlinevetpharmacy",  label: "OnlineVetPharmacy",  sub: "onlinevetpharmacy.com" },
+];
+
+const PK_TABS = [
+  { id: "petshub",            label: "PetsHub PK",        sub: "petshub.pk" },
+  { id: "onlinevetpharmacy",  label: "OnlineVetPharmacy", sub: "onlinevetpharmacy.com" },
+  { id: "vetshop",            label: "VetShop",           sub: "vet-shop.net" },
 ];
 
 export default function ProductExtractorPage() {
+  const [country, setCountry] = useState<"uae" | "pk">("uae");
   const [active, setActive] = useState("smbros");
+
+  const switchCountry = (c: "uae" | "pk") => {
+    setCountry(c);
+    setActive(c === "uae" ? "smbros" : "petshub");
+  };
+
+  const tabs = country === "uae" ? UAE_TABS : PK_TABS;
 
   return (
     <div className="max-w-full p-6">
@@ -29,9 +42,33 @@ export default function ProductExtractorPage() {
         Extract products from supported websites and add them directly to your store.
       </p>
 
+      {/* Country toggle */}
+      <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1 mb-5">
+        <button
+          onClick={() => switchCountry("uae")}
+          className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+            country === "uae"
+              ? "bg-white text-gray-800 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          🇦🇪 UAE
+        </button>
+        <button
+          onClick={() => switchCountry("pk")}
+          className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+            country === "pk"
+              ? "bg-white text-gray-800 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          🇵🇰 Pakistan
+        </button>
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-gray-200">
-        {TABS.map(tab => (
+        {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActive(tab.id)}
@@ -48,13 +85,14 @@ export default function ProductExtractorPage() {
       </div>
 
       {/* Content */}
-      {active === "smbros"       && <ProductExtractor />}
-      {active === "petzsee"     && <PetzseeExtractor />}
-      {active === "wisdomvet"   && <WisdomvetExtractor />}
-      {active === "vetpharmacy" && <VetpharmacyExtractor />}
-      {active === "eurovets"    && <EurovetsExtractor />}
-      {active === "petshub"            && <PetshubExtractor />}
+      {active === "smbros"            && <ProductExtractor />}
+      {active === "petzsee"           && <PetzseeExtractor />}
+      {active === "wisdomvet"         && <WisdomvetExtractor />}
+      {active === "vetpharmacy"       && <VetpharmacyExtractor />}
+      {active === "eurovets"          && <EurovetsExtractor />}
+      {active === "petshub"           && <PetshubExtractor />}
       {active === "onlinevetpharmacy" && <OnlineVetPharmacyExtractor />}
+      {active === "vetshop"           && <VetshopExtractor />}
     </div>
   );
 }

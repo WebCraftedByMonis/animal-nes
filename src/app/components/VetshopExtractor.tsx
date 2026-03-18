@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Search, Loader2, XCircle, CheckCircle, ImageOff, ExternalLink, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { SearchableCombobox } from "@/components/shared/SearchableCombobox";
 import { useCountry } from "@/contexts/CountryContext";
@@ -36,102 +36,42 @@ interface Row extends Product {
 const proxyImg = (url: string) =>
   url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : "";
 
-export default function OnlineVetPharmacyExtractor() {
+export default function VetshopExtractor() {
   const { country } = useCountry();
   const [url, setUrl] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
-  const [pageTotal, setPageTotal] = useState(0);   // products on current page
-  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
-  const [currentPageUrl, setCurrentPageUrl] = useState("");
+  const [totalLinks, setTotalLinks] = useState(0);
   const [expandedDesc, setExpandedDesc] = useState<Set<number>>(new Set());
-
-  const idCounterRef = useRef(0);
-
-  const makeRow = (p: Product): Row => ({
-    ...p,
-    id: idCounterRef.current++,
-    pdfUrl: "",
-    variants: (p.variants || []).map(v => ({
-      packingVolume: v.packingVolume,
-      customerPrice: v.customerPrice,
-      companyPrice: "",
-      dealerPrice: "",
-    })),
-    saveStatus: "idle",
-    saveError: "",
-    fillStatus: "idle",
-  });
-
-  const streamPage = async (pageUrl: string, isFirstPage: boolean) => {
-    setLoading(true);
-    setFetchError(null);
-    setNextPageUrl(null);
-    setPageTotal(0);
-    setStatusMsg("Fetching listing page…");
-    if (isFirstPage) { setRows([]); idCounterRef.current = 0; }
-
-    try {
-      const res = await fetch("/api/scrape-products-onlinevetpharmacy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: pageUrl }),
-      });
-
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        setFetchError((data as any).error || "Extraction failed.");
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "status")    setStatusMsg(event.message);
-            if (event.type === "total")     setPageTotal(event.total);
-            if (event.type === "product")   setRows(prev => [...prev, makeRow(event.product)]);
-            if (event.type === "next_page") setNextPageUrl(event.url);
-            if (event.type === "error")     setFetchError(event.message);
-            if (event.type === "done")      setStatusMsg("");
-          } catch { /* skip */ }
-        }
-      }
-    } catch (e: any) {
-      setFetchError(e.message || "Network error.");
-    } finally {
-      setLoading(false);
-      setStatusMsg("");
-    }
-  };
 
   const handleExtract = async (e: React.FormEvent) => {
     e.preventDefault();
-    const pageUrl = url.trim();
-    setCurrentPageUrl(pageUrl);
-    await streamPage(pageUrl, true);
-  };
-
-  const handleNextPage = async () => {
-    if (!nextPageUrl) return;
-    setCurrentPageUrl(nextPageUrl);
-    await streamPage(nextPageUrl, false);
+    setLoading(true); setFetchError(null); setRows([]); setTotalLinks(0);
+    try {
+      const res = await fetch("/api/scrape-products-vetshop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) { setFetchError(data.error || "Extraction failed."); return; }
+      if (!data.products.length) { setFetchError("No products found on this page."); return; }
+      setTotalLinks(data.totalLinks || data.count);
+      setRows(data.products.map((p: Product, i: number) => ({
+        ...p,
+        id: i,
+        pdfUrl: "",
+        variants: (p.variants || []).map(v => ({ packingVolume: v.packingVolume, customerPrice: v.customerPrice, companyPrice: "", dealerPrice: "" })),
+        saveStatus: "idle" as SaveStatus,
+        saveError: "",
+        fillStatus: "idle" as FillStatus,
+      })));
+    } catch (e: any) {
+      setFetchError(e.message || "Network error.");
+    } finally { setLoading(false); }
   };
 
   const updateRow = (id: number, field: keyof Product, value: string | boolean) => {
@@ -147,15 +87,11 @@ export default function OnlineVetPharmacyExtractor() {
   };
 
   const addVariant = (rowId: number) => {
-    setRows(prev => prev.map(r => r.id === rowId
-      ? { ...r, variants: [...r.variants, { packingVolume: "", customerPrice: "", companyPrice: "", dealerPrice: "" }] }
-      : r));
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, variants: [...r.variants, { packingVolume: "", customerPrice: "", companyPrice: "", dealerPrice: "" }] } : r));
   };
 
   const removeVariant = (rowId: number, vIdx: number) => {
-    setRows(prev => prev.map(r => r.id === rowId
-      ? { ...r, variants: r.variants.filter((_, i) => i !== vIdx) }
-      : r));
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, variants: r.variants.filter((_, i) => i !== vIdx) } : r));
   };
 
   const toggleDesc = (id: number) => setExpandedDesc(prev => {
@@ -179,14 +115,15 @@ export default function OnlineVetPharmacyExtractor() {
       setRows(prev => prev.map(r => {
         if (r.id !== row.id) return r;
         return {
-          ...r, fillStatus: "done",
-          genericName:    f.genericName    != null && f.genericName    !== "" ? f.genericName    : r.genericName,
-          category:       f.category       != null && f.category       !== "" ? f.category       : r.category,
-          subCategory:    f.subCategory    != null && f.subCategory    !== "" ? f.subCategory    : r.subCategory,
-          subsubCategory: f.subsubCategory != null && f.subsubCategory !== "" ? f.subsubCategory : r.subsubCategory,
-          productType:    f.productType    != null && f.productType    !== "" ? f.productType    : r.productType,
-          description:    r.description !== "" ? r.description : (f.description ?? ""),
-          dosage:         r.dosage         !== "" ? r.dosage         : (f.dosage         ?? ""),
+          ...r,
+          fillStatus: "done",
+          genericName:     f.genericName     != null && f.genericName     !== "" ? f.genericName     : r.genericName,
+          category:        f.category        != null && f.category        !== "" ? f.category        : r.category,
+          subCategory:     f.subCategory     != null && f.subCategory     !== "" ? f.subCategory     : r.subCategory,
+          subsubCategory:  f.subsubCategory  != null && f.subsubCategory  !== "" ? f.subsubCategory  : r.subsubCategory,
+          productType:     f.productType     != null && f.productType     !== "" ? f.productType     : r.productType,
+          description:     r.description !== "" ? r.description : (f.description ?? ""),
+          dosage:          r.dosage          !== "" ? r.dosage          : (f.dosage          ?? ""),
         };
       }));
     } catch {
@@ -239,17 +176,18 @@ export default function OnlineVetPharmacyExtractor() {
 
   const addAll = async () => {
     if (!companyId || !partnerId) { alert("Please select a Company and Partner before adding."); return; }
-    for (const row of rows.filter(r => r.saveStatus === "idle" || r.saveStatus === "error"))
+    for (const row of rows.filter(r => r.saveStatus === "idle" || r.saveStatus === "error")) {
       await addProduct(row);
+    }
   };
 
   return (
     <div className="max-w-full">
       <p className="text-gray-500 text-sm mb-1">
-        Extract products from <span className="font-semibold text-gray-700">onlinevetpharmacy.com</span> and add them directly to your store.
+        Extract products from <span className="font-semibold text-gray-700">vet-shop.net</span> and add them directly to your store.
       </p>
       <p className="text-xs text-gray-400 mb-6">
-        This extractor is configured for <span className="font-medium">OnlineVetPharmacy</span> (WooCommerce/Divi) — paste a product category URL. Descriptions from the product detail tab are extracted automatically.
+        This extractor is configured for <span className="font-medium">VetShop</span> (WooCommerce) — paste any product category URL. Description, dosage, composition, and packaging sizes are extracted from product pages.
       </p>
 
       <form onSubmit={handleExtract} className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 space-y-4">
@@ -262,7 +200,7 @@ export default function OnlineVetPharmacyExtractor() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="url" value={url} onChange={e => setUrl(e.target.value)}
-                placeholder="https://onlinevetpharmacy.com/product-category/medicine/"
+                placeholder="https://www.vet-shop.net/royal-canin-cat-food/"
                 required disabled={loading}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
               />
@@ -303,14 +241,7 @@ export default function OnlineVetPharmacyExtractor() {
       {loading && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-          <span>
-            {statusMsg || "Scraping product pages…"}
-            {pageTotal > 0 && (
-              <span className="ml-2 font-semibold">
-                {Math.min(rows.length, rows.length)} / {pageTotal} on this page
-              </span>
-            )}
-          </span>
+          Fetching products via WooCommerce API → enriching variant prices from product pages…
         </div>
       )}
 
@@ -324,32 +255,18 @@ export default function OnlineVetPharmacyExtractor() {
         <>
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <p className="text-sm text-gray-600">
-              <span className="font-semibold text-gray-900">{rows.length}</span> products extracted
+              <span className="font-semibold text-gray-900">{rows.length}</span> of{" "}
+              <span className="font-semibold text-gray-900">{totalLinks}</span> products extracted
               {savedCount > 0 && <span className="ml-2 text-green-600 font-medium">· {savedCount} added</span>}
               {errorCount > 0 && <span className="ml-2 text-red-600 font-medium">· {errorCount} failed</span>}
-              {currentPageUrl && (
-                <span className="ml-2 text-xs text-gray-400 truncate max-w-[200px] inline-block align-bottom" title={currentPageUrl}>
-                  — {currentPageUrl.replace(/^https?:\/\/[^/]+/, "")}
-                </span>
-              )}
             </p>
-            <div className="ml-auto flex items-center gap-2">
-              {nextPageUrl && !loading && (
-                <button
-                  onClick={handleNextPage}
-                  className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Load Next Page →
-                </button>
-              )}
-              <button
-                onClick={addAll}
-                disabled={!companyId || !partnerId || rows.every(r => r.saveStatus === "saved" || r.saveStatus === "saving")}
-                className="flex items-center gap-1.5 bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                + Add All
-              </button>
-            </div>
+            <button
+              onClick={addAll}
+              disabled={!companyId || !partnerId || rows.every(r => r.saveStatus === "saved" || r.saveStatus === "saving")}
+              className="ml-auto flex items-center gap-1.5 bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              + Add All
+            </button>
             {(!companyId || !partnerId) && (
               <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
                 Select a Company and Partner above before adding products.
@@ -456,10 +373,12 @@ export default function OnlineVetPharmacyExtractor() {
                         </td>
 
                         <td className="px-3 py-2.5">
-                          <input value={row.pdfUrl}
+                          <input
+                            value={row.pdfUrl}
                             onChange={e => updateRow(row.id, "pdfUrl", e.target.value)}
                             placeholder="https://…/product.pdf"
-                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 min-w-[130px]" />
+                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-400 min-w-[130px]"
+                          />
                         </td>
 
                         <td className="px-3 py-2.5">
@@ -562,8 +481,8 @@ export default function OnlineVetPharmacyExtractor() {
       {!loading && !rows.length && !fetchError && (
         <div className="text-center py-16 text-gray-400">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Enter an OnlineVetPharmacy category URL above to get started.</p>
-          <p className="text-xs mt-1 opacity-70">e.g. https://onlinevetpharmacy.com/product-category/medicine/</p>
+          <p className="text-sm">Enter a VetShop category URL above to get started.</p>
+          <p className="text-xs mt-1 opacity-70">e.g. https://www.vet-shop.net/royal-canin-cat-food/</p>
         </div>
       )}
     </div>

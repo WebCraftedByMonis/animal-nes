@@ -123,7 +123,7 @@ export default function PetshubExtractor() {
           subsubCategory:  f.subsubCategory  != null && f.subsubCategory  !== "" ? f.subsubCategory  : r.subsubCategory,
           productType:     f.productType     != null && f.productType     !== "" ? f.productType     : r.productType,
           description:     r.description !== "" ? r.description : (f.description ?? ""),
-          dosage:          f.dosage          != null && f.dosage          !== "" ? f.dosage          : r.dosage,
+          dosage:          r.dosage          !== "" ? r.dosage          : (f.dosage          ?? ""),
         };
       }));
     } catch {
