@@ -20,15 +20,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Exchange for long-lived token
+    // Exchange for long-lived user token
     const tokenData = await exchangeForLongLivedToken(shortLivedToken);
 
-    // Get token expiration info
+    // Fetch the Page Access Token for this specific page using /me/accounts
+    const accountsUrl = new URL("https://graph.facebook.com/v18.0/me/accounts");
+    accountsUrl.searchParams.append("access_token", tokenData.access_token);
+    const accountsRes = await fetch(accountsUrl.toString());
+    const accountsData = await accountsRes.json();
+
+    if (!accountsRes.ok || accountsData.error) {
+      throw new Error(
+        accountsData.error?.message ||
+          "Failed to fetch page accounts. Make sure pages_read_engagement and pages_manage_posts permissions are granted."
+      );
+    }
+
+    const page = (accountsData.data as Array<{ id: string; access_token: string }>).find(
+      (p) => p.id === pageId
+    );
+
+    if (!page) {
+      throw new Error(
+        `Page ID ${pageId} not found in your accounts. Make sure you are an admin of this page and the correct Page ID is used.`
+      );
+    }
+
+    // page.access_token is a Page Access Token (never expires when derived from a long-lived user token)
+    const pageAccessToken = page.access_token;
+
+    // Get token expiration info (debug the user token for expiry reference)
     const debugInfo = await debugToken(tokenData.access_token);
 
-    // Save to database
+    // Save the Page Access Token (not the user token) to the database
     await saveFacebookToken(
-      tokenData.access_token,
+      pageAccessToken,
       pageId,
       tokenData.expires_in
     );
