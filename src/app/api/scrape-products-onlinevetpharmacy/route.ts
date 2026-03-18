@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import * as cheerio from "cheerio";
 import axios from "axios";
 import https from "https";
@@ -62,7 +62,7 @@ function toBaseUrl(url: string): string {
 }
 
 async function fetchHtml(url: string): Promise<string | null> {
-  console.log(`\n[FETCH] → ${url}`);
+  console.log(`[FETCH] → ${url}`);
   try {
     const res = await axios.get(url, {
       headers: HEADERS,
@@ -72,7 +72,6 @@ async function fetchHtml(url: string): Promise<string | null> {
       responseType: "text",
       validateStatus: (s) => s < 500,
     });
-    console.log(`[FETCH] ← ${res.status}, ${String(res.data).length} chars`);
     if (res.status >= 400) return null;
     return typeof res.data === "string" ? res.data : String(res.data);
   } catch (e: any) {
@@ -81,7 +80,6 @@ async function fetchHtml(url: string): Promise<string | null> {
   }
 }
 
-// ── Extract product links from a WooCommerce listing/category page ─────────────
 function getProductLinks(html: string, origin: string): string[] {
   const $ = cheerio.load(html);
   const seen = new Set<string>();
@@ -92,7 +90,6 @@ function getProductLinks(html: string, origin: string): string[] {
     "li.product a",
     ".products .product a",
     "a.woocommerce-loop-product__link",
-    ".woocommerce-loop-product__link",
   ].join(", ")).each((_, el) => {
     const href = $(el).attr("href") || "";
     const full = resolveUrl(origin, href);
@@ -106,12 +103,10 @@ function getProductLinks(html: string, origin: string): string[] {
     } catch { /* skip */ }
   });
 
-  console.log(`[LINKS] Found ${links.length} product links`);
   return links;
 }
 
-// ── Extract all paginated page URLs ───────────────────────────────────────────
-function getPaginationUrls(html: string, origin: string, baseUrl: string): string[] {
+function getPaginationUrls(html: string, origin: string): string[] {
   const $ = cheerio.load(html);
   const seen = new Set<string>();
   const pages: string[] = [];
@@ -128,7 +123,6 @@ function getPaginationUrls(html: string, origin: string, baseUrl: string): strin
     } catch { /* skip */ }
   });
 
-  // If no explicit pagination links found, try to infer from "next" link
   if (!pages.length) {
     const next = $("a.next.page-numbers, a[rel='next']").attr("href");
     if (next) {
@@ -137,24 +131,18 @@ function getPaginationUrls(html: string, origin: string, baseUrl: string): strin
     }
   }
 
-  console.log(`[PAGINATION] Found ${pages.length} additional pages`);
   return pages;
 }
 
-// ── Parse a WooCommerce product detail page ────────────────────────────────────
 function parseProductDetail(html: string, url: string): ExtractedProduct | null {
-  console.log(`\n[DETAIL] ${url}`);
   const $raw = cheerio.load(html);
   const origin = new URL(url).origin;
 
-  // ── Product name ──────────────────────────────────────────────────────────
   const productName =
     clean($raw("h1.product_title, h1.product-title, h1.entry-title, h1").first().text()) ||
     clean($raw('meta[property="og:title"]').attr("content") || "");
-  if (!productName) { console.log(`[DETAIL] ✗ No name`); return null; }
-  console.log(`[DETAIL] name: "${productName}"`);
+  if (!productName) return null;
 
-  // ── Image — prioritise data-large_image for full-size ────────────────────
   const galleryImg = $raw(".woocommerce-product-gallery img, .wp-post-image").first();
   const imgCandidates = [
     galleryImg.attr("data-large_image"),
@@ -167,9 +155,7 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
   ];
   const rawImage = imgCandidates.find(c => c && isImageUrl(c)) || "";
   const imageUrl = rawImage ? resolveUrl(origin, rawImage) : "";
-  console.log(`[DETAIL] image: "${imageUrl}"`);
 
-  // ── Price ─────────────────────────────────────────────────────────────────
   let price = "";
   for (const sel of [
     ".woocommerce-Price-amount bdi",
@@ -177,14 +163,11 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
     ".price ins .woocommerce-Price-amount",
     ".price .woocommerce-Price-amount",
     "[itemprop='price']",
-    ".price",
   ]) {
     const raw = clean($raw(sel).first().text()).replace(/[^\d.]/g, "");
     if (raw && parseFloat(raw) > 0) { price = raw; break; }
   }
-  console.log(`[DETAIL] price: "${price}"`);
 
-  // ── Categories from breadcrumb ─────────────────────────────────────────────
   const breadcrumb: string[] = [];
   $raw(".woocommerce-breadcrumb, .breadcrumb, nav.woocommerce-breadcrumb")
     .find("a, span").each((_, el) => {
@@ -192,12 +175,7 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
       if (t && t !== "Home" && t !== productName) breadcrumb.push(t);
     });
   const uniqueBread = [...new Set(breadcrumb)];
-  const category       = uniqueBread[0] || "";
-  const subCategory    = uniqueBread[1] || "";
-  const subsubCategory = uniqueBread[2] || "";
 
-  // ── Description — from the "Description" tab ─────────────────────────────
-  // WooCommerce injects description in #tab-description / .woocommerce-Tabs-panel--description
   const $clean = cheerio.load(html);
   $clean("script, style, nav, header, footer, noscript, .woocommerce-tabs .tabs").remove();
 
@@ -207,9 +185,7 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
     clean($clean(".woocommerce-product-details__short-description").text()) ||
     clean($clean('meta[property="og:description"]').attr("content") || "");
   description = description.substring(0, 3000);
-  console.log(`[DETAIL] description: ${description.length} chars`);
 
-  // ── Dosage / directions from other tabs ───────────────────────────────────
   let dosage = "";
   $clean(".woocommerce-Tabs-panel, .tab-pane, .wc-tab").each((_, el) => {
     const heading = clean($clean(el).find("h2, h3, h4, .panel-title").first().text());
@@ -219,13 +195,11 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
     }
   });
 
-  // ── Generic name / brand ──────────────────────────────────────────────────
   const genericName = clean(
     $raw(".product_meta .brand a, .product_meta [class*='brand'] a").first().text() ||
     $raw('meta[property="product:brand"]').attr("content") || ""
   );
 
-  // ── Variants from WooCommerce variation JSON ──────────────────────────────
   const variants: ExtractedVariant[] = [];
   const variationAttr = $raw("form.variations_form").attr("data-product_variations") || "";
   if (variationAttr && variationAttr !== "false") {
@@ -233,18 +207,14 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
       const variations = JSON.parse(variationAttr);
       if (Array.isArray(variations) && variations.length > 0) {
         for (const v of variations) {
-          const label = Object.values(v.attributes || {})
-            .filter((val: any) => val)
-            .join(" / ");
+          const label = Object.values(v.attributes || {}).filter((val: any) => val).join(" / ");
           const vPrice = v.display_price != null ? String(Math.round(v.display_price)) : price;
           if (label || vPrice) variants.push({ packingVolume: label, customerPrice: vPrice });
         }
-        console.log(`[DETAIL] ${variants.length} variants from JSON`);
       }
     } catch { /* skip */ }
   }
 
-  // Fallback: parse <select> options
   if (!variants.length) {
     $raw(".variations select option, select[name*='attribute'] option").each((_, el) => {
       const val = clean($raw(el).text());
@@ -255,17 +225,16 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
 
   if (!variants.length) variants.push({ packingVolume: "", customerPrice: price });
 
-  // ── Out of stock ──────────────────────────────────────────────────────────
   const outofstock =
-    $raw(".out-of-stock, .stock.out-of-stock, .woocommerce-out-of-stock").length > 0 ||
+    $raw(".out-of-stock, .stock.out-of-stock").length > 0 ||
     /out.?of.?stock/i.test($raw(".stock").first().text());
-
-  console.log(`[DETAIL] variants: ${variants.length}, outofstock: ${outofstock}`);
 
   return {
     productName: clean(productName),
     genericName,
-    category, subCategory, subsubCategory,
+    category:       uniqueBread[0] || "",
+    subCategory:    uniqueBread[1] || "",
+    subsubCategory: uniqueBread[2] || "",
     productType: "",
     description,
     dosage,
@@ -276,85 +245,104 @@ function parseProductDetail(html: string, url: string): ExtractedProduct | null 
   };
 }
 
-// ── POST handler ───────────────────────────────────────────────────────────────
+// ── SSE helper ────────────────────────────────────────────────────────────────
+function sseEvent(enc: TextEncoder, data: object): Uint8Array {
+  return enc.encode(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+// ── POST handler — streams products from ONE listing page as SSE ──────────────
+// Accepts { url } — always scrapes only that single listing page.
+// Sends { type: "next_page", url } if a next page exists, so the frontend
+// can offer a "Load Next Page" button without fetching everything upfront.
 export async function POST(req: NextRequest) {
-  try {
-    const { url } = await req.json();
-    console.log(`\n${"#".repeat(60)}\n[ONLINEVETPHARMACY] url: ${url}\n${"#".repeat(60)}`);
+  const { url } = await req.json().catch(() => ({}));
 
-    if (!url) return NextResponse.json({ error: "URL is required" }, { status: 400 });
-
-    let parsed: URL;
-    try { parsed = new URL(url); } catch {
-      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-    }
-
-    const origin = parsed.origin;
-    const baseUrl = toBaseUrl(url);
-    console.log(`[ONLINEVETPHARMACY] Base URL: ${baseUrl}`);
-
-    // ── Fetch first page ──────────────────────────────────────────────────────
-    const html1 = await fetchHtml(baseUrl);
-    if (!html1) return NextResponse.json({ error: "Could not fetch the URL." }, { status: 400 });
-
-    let allLinks = getProductLinks(html1, origin);
-
-    // ── Discover and fetch all pagination pages ───────────────────────────────
-    const paginationUrls = getPaginationUrls(html1, origin, baseUrl);
-    const visitedPages = new Set<string>([normalizeUrl(baseUrl)]);
-
-    for (const pageUrl of paginationUrls) {
-      const key = normalizeUrl(pageUrl);
-      if (visitedPages.has(key)) continue;
-      visitedPages.add(key);
-
-      const pageHtml = await fetchHtml(pageUrl);
-      if (!pageHtml) continue;
-
-      const pageLinks = getProductLinks(pageHtml, origin);
-      for (const l of pageLinks) if (!allLinks.includes(l)) allLinks.push(l);
-      console.log(`[ONLINEVETPHARMACY] Page ${pageUrl}: +${pageLinks.length}, total: ${allLinks.length}`);
-
-      // Discover further pages from this page (handles cases where only adjacent pages are linked)
-      const furtherPages = getPaginationUrls(pageHtml, origin, baseUrl);
-      for (const fp of furtherPages) {
-        if (!visitedPages.has(normalizeUrl(fp)) && !paginationUrls.includes(fp)) {
-          paginationUrls.push(fp);
-        }
-      }
-    }
-
-    if (!allLinks.length) {
-      // Maybe it's a single product URL
-      const single = parseProductDetail(html1, baseUrl);
-      if (single) return NextResponse.json({ success: true, count: 1, totalLinks: 1, products: [single] });
-      return NextResponse.json({ error: "No products found on this page." }, { status: 400 });
-    }
-
-    console.log(`\n[ONLINEVETPHARMACY] Total: ${allLinks.length} product links`);
-    const products: ExtractedProduct[] = [];
-
-    // ── Scrape detail pages in batches of 3 ──────────────────────────────────
-    for (let i = 0; i < allLinks.length; i += 3) {
-      const batch = allLinks.slice(i, i + 3);
-      const results = await Promise.all(batch.map(async link => {
-        const h = await fetchHtml(link);
-        return h ? parseProductDetail(h, link) : null;
-      }));
-      results.forEach(r => r && products.push(r));
-      console.log(`[ONLINEVETPHARMACY] Batch ${Math.floor(i / 3) + 1}, total: ${products.length}`);
-    }
-
-    console.log(`[ONLINEVETPHARMACY] ✓ Done — ${products.length} products`);
-    return NextResponse.json({
-      success: true,
-      count: products.length,
-      totalLinks: allLinks.length,
-      products,
-    });
-
-  } catch (e: any) {
-    console.log(`[ONLINEVETPHARMACY] ✗ Fatal: ${e.message}`, e.stack);
-    return NextResponse.json({ error: e.message || "Scraping failed" }, { status: 500 });
+  if (!url) {
+    return new Response(
+      JSON.stringify({ error: "URL is required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
+
+  let parsed: URL;
+  try { parsed = new URL(url); } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid URL" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const origin = parsed.origin;
+  const enc = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data: object) => {
+        try { controller.enqueue(sseEvent(enc, data)); } catch { /* client disconnected */ }
+      };
+
+      try {
+        send({ type: "status", message: "Fetching listing page…" });
+
+        // Fetch exactly the URL given — no auto-pagination
+        const html = await fetchHtml(url);
+        if (!html) {
+          send({ type: "error", message: "Could not fetch the URL." });
+          controller.close();
+          return;
+        }
+
+        const links = getProductLinks(html, origin);
+
+        if (!links.length) {
+          // Maybe it's a single product URL
+          const single = parseProductDetail(html, url);
+          if (single) {
+            send({ type: "total", total: 1 });
+            send({ type: "product", product: single });
+          } else {
+            send({ type: "error", message: "No products found on this page." });
+          }
+          controller.close();
+          return;
+        }
+
+        send({ type: "total", total: links.length });
+
+        // Detect next page link from THIS page only
+        const $ = cheerio.load(html);
+        const nextHref = $("a.next.page-numbers, a[rel='next']").attr("href") || "";
+        const nextPageUrl = nextHref ? resolveUrl(origin, nextHref) : null;
+
+        // Scrape each product detail page, streaming results
+        for (let i = 0; i < links.length; i += 3) {
+          const batch = links.slice(i, i + 3);
+          const results = await Promise.all(batch.map(async link => {
+            const h = await fetchHtml(link);
+            return h ? parseProductDetail(h, link) : null;
+          }));
+          for (const product of results) {
+            if (product) send({ type: "product", product });
+          }
+        }
+
+        // Tell the frontend what the next page URL is (if any)
+        if (nextPageUrl) send({ type: "next_page", url: nextPageUrl });
+
+        send({ type: "done" });
+      } catch (e: any) {
+        send({ type: "error", message: e.message || "Scraping failed" });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
