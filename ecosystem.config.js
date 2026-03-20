@@ -27,7 +27,7 @@ module.exports = {
     // ── Social media auto-poster ─────────────────────────────────────────────
     {
       name: 'social-auto-poster',
-      script: 'scripts/social-auto-poster.js',
+      script: 'social-auto-poster.js',
       cwd: './',
       instances: 1,        // MUST be 1 — multiple instances would double-post
       autorestart: true,
