@@ -1390,3 +1390,20 @@ model NewsletterSubscriber {
   name         String?
   subscribedAt DateTime @default(now())
 }
+
+// Social Media Auto-Posting Log
+model SocialAutoPostLog {
+  id          Int       @id @default(autoincrement())
+  contentType String    // product, news, job, animal, form
+  contentId   String    // ID as string (supports both Int and cuid)
+  platform    String    // facebook, instagram, linkedin
+  status      String    @default("pending") // posted, failed, skipped
+  error       String?   @db.Text
+  postedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([contentType, contentId, platform])
+  @@index([platform, status])
+  @@index([contentType, contentId])
+}

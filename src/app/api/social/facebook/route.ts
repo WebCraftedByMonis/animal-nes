@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
     const content = formData.get("content") as string;
     const link = formData.get("link") as string | null;
     const image = formData.get("image") as File | null;
+    const imageUrl = formData.get("imageUrl") as string | null;
 
     // Get token from database (with fallback to environment variables)
     let pageId: string;
@@ -42,34 +43,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare message with link if provided
-    let message = content;
-    if (link) {
-      message = `${content}\n\n${link}`;
-    }
-
     let postId: string;
     let endpoint: string;
     let body: FormData;
 
     if (image) {
-      // Post with image to /{page-id}/photos
+      // Photo upload post — link appended to caption as text (photos endpoint doesn't support link preview)
       endpoint = `https://graph.facebook.com/v18.0/${pageId}/photos`;
 
-      // Convert File to Blob for Facebook API
       const arrayBuffer = await image.arrayBuffer();
       const blob = new Blob([arrayBuffer], { type: image.type });
+      const caption = link ? `${content}\n\n${link}` : content;
 
       body = new FormData();
       body.append("source", blob, image.name);
-      body.append("message", message);
+      body.append("message", caption);
       body.append("access_token", accessToken);
-    } else {
-      // Text-only post to /{page-id}/feed
+    } else if (link) {
+      // Link post — Facebook generates a clickable rich preview card from the URL's OG tags.
+      // Clicking the card takes users to the product page.
       endpoint = `https://graph.facebook.com/v18.0/${pageId}/feed`;
 
       body = new FormData();
-      body.append("message", message);
+      body.append("message", content);
+      body.append("link", link);
+      body.append("access_token", accessToken);
+    } else if (imageUrl) {
+      // Image URL post (no link) — post photo via URL
+      endpoint = `https://graph.facebook.com/v18.0/${pageId}/photos`;
+
+      body = new FormData();
+      body.append("url", imageUrl);
+      body.append("message", content);
+      body.append("access_token", accessToken);
+    } else {
+      // Text-only post
+      endpoint = `https://graph.facebook.com/v18.0/${pageId}/feed`;
+
+      body = new FormData();
+      body.append("message", content);
       body.append("access_token", accessToken);
     }
 

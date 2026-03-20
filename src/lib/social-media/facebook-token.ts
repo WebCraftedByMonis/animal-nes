@@ -90,7 +90,8 @@ export async function debugToken(
 export async function saveFacebookToken(
   accessToken: string,
   pageId: string,
-  expiresIn?: number
+  expiresIn?: number,
+  instagramAccountId?: string
 ): Promise<void> {
   const encryptedToken = encryptToken(accessToken);
 
@@ -123,24 +124,49 @@ export async function saveFacebookToken(
     },
   });
 
-  // Also update Instagram token if it exists (Instagram uses same token as Facebook)
-  const instagramToken = await prisma.socialMediaToken.findUnique({
-    where: { platform: "instagram" },
-  });
-
-  if (instagramToken) {
-    await prisma.socialMediaToken.update({
+  // Upsert Instagram token — same access token as Facebook Page token,
+  // but needs its own record with the Instagram Business Account ID (accountId).
+  if (instagramAccountId) {
+    await prisma.socialMediaToken.upsert({
       where: { platform: "instagram" },
-      data: {
+      update: {
         accessToken: encryptedToken,
+        accountId: instagramAccountId,
         expiresAt: expiresAt,
         lastRefreshed: new Date(),
         isActive: true,
         errorCount: 0,
         lastError: null,
       },
+      create: {
+        platform: "instagram",
+        accessToken: encryptedToken,
+        accountId: instagramAccountId,
+        expiresAt: expiresAt,
+        tokenType: "Bearer",
+        isActive: true,
+        autoRefresh: true,
+        refreshBeforeDays: 5,
+      },
     });
-    console.log("✅ Instagram token also updated with new Facebook token");
+    console.log("✅ Instagram token upserted with account ID:", instagramAccountId);
+  } else {
+    // No Instagram account ID provided — just update the token on existing record if present
+    const existing = await prisma.socialMediaToken.findUnique({ where: { platform: "instagram" } });
+    if (existing) {
+      await prisma.socialMediaToken.update({
+        where: { platform: "instagram" },
+        data: {
+          accessToken: encryptedToken,
+          expiresAt: expiresAt,
+          lastRefreshed: new Date(),
+          isActive: true,
+          errorCount: 0,
+          lastError: null,
+        },
+      });
+      console.log("✅ Instagram token updated with new Facebook token");
+    }
   }
 }
 

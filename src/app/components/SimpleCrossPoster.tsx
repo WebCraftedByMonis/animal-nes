@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent, DragEvent } from "react";
-import { CheckCircle, XCircle, Upload, AlertTriangle, Image as ImageIcon, Video as VideoIcon, Info } from "lucide-react";
+import { CheckCircle, XCircle, Upload, AlertTriangle, Image as ImageIcon, Video as VideoIcon, Info, Search, Package } from "lucide-react";
 
 interface Platform {
   id: string;
@@ -29,7 +29,19 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB in bytes
 const MAX_FILES = 10;
 
+interface ProductPreview {
+  id: number;
+  productName: string;
+  description: string | null;
+  productLink: string | null;
+  image: { url: string; alt: string } | null;
+  variants: { packingVolume: string | null; customerPrice: number | null }[];
+}
+
 export default function SimpleCrossPoster() {
+  const [activeTab, setActiveTab] = useState<"manual" | "product">("manual");
+
+  // Manual post state
   const [content, setContent] = useState("");
   const [link, setLink] = useState("");
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -38,8 +50,126 @@ export default function SimpleCrossPoster() {
   const [postStatuses, setPostStatuses] = useState<PostStatus[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+
+  // Product post state
+  const [productId, setProductId] = useState("");
+  const [productPreview, setProductPreview] = useState<ProductPreview | null>(null);
+  const [isFetchingProduct, setIsFetchingProduct] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isPostingProduct, setIsPostingProduct] = useState<"facebook" | "instagram" | "linkedin" | null>(null);
+  const [productPostStatuses, setProductPostStatuses] = useState<PostStatus[]>([]);
+
+  const fetchProduct = async () => {
+    if (!productId.trim()) return;
+    setIsFetchingProduct(true);
+    setFetchError(null);
+    setProductPreview(null);
+    setProductPostStatuses([]);
+
+    try {
+      const res = await fetch(`/api/product/${productId.trim()}`);
+      const json = await res.json();
+
+      if (!res.ok || json.error) {
+        setFetchError(json.error || "Product not found");
+        return;
+      }
+
+      const p = json.data;
+      setProductPreview({
+        id: p.id,
+        productName: p.productName,
+        description: p.description,
+        productLink: p.productLink,
+        image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
+        variants: p.variants || [],
+      });
+    } catch {
+      setFetchError("Failed to fetch product");
+    } finally {
+      setIsFetchingProduct(false);
+    }
+  };
+
+  const buildProductPostText = (product: ProductPreview): string => {
+    const lines: string[] = [];
+    lines.push(product.productName);
+    if (product.description) lines.push("", product.description);
+    if (product.variants.length > 0) {
+      lines.push("");
+      product.variants.forEach((v) => {
+        const parts: string[] = [];
+        if (v.packingVolume) parts.push(v.packingVolume);
+        if (v.customerPrice != null) parts.push(`Rs. ${v.customerPrice.toLocaleString()}`);
+        if (parts.length > 0) lines.push(`• ${parts.join(" — ")}`);
+      });
+    }
+    // productLink is sent as a separate "link" param to Facebook so it renders
+    // as a clickable preview card — no need to include it in the caption text.
+    return lines.join("\n");
+  };
+
+  const buildProductPageUrl = (id: number) => {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://animalwellness.shop";
+    return `${baseUrl}/products/${id}`;
+  };
+
+  const handlePostProduct = async (platform: "facebook" | "instagram" | "linkedin") => {
+    if (!productPreview) return;
+    setIsPostingProduct(platform);
+    setProductPostStatuses((prev) => prev.filter((s) => s.platform.toLowerCase() !== platform));
+
+    try {
+      const formData = new FormData();
+      const productPageUrl = buildProductPageUrl(productPreview.id);
+
+      if (platform === "facebook") {
+        formData.append("content", buildProductPostText(productPreview));
+        formData.append("link", productPageUrl);
+      } else if (platform === "linkedin") {
+        // LinkedIn: article link post — shows rich preview card, clickable
+        formData.append("content", buildProductPostText(productPreview));
+        formData.append("link", productPageUrl);
+      } else {
+        // Instagram: image is required, link goes in caption as text (not clickable)
+        if (!productPreview.image?.url) {
+          setProductPostStatuses((prev) => [
+            ...prev.filter((s) => s.platform !== "Instagram"),
+            { platform: "Instagram", status: "error", message: "This product has no image — Instagram requires an image to post." },
+          ]);
+          return;
+        }
+        const caption = `${buildProductPostText(productPreview)}\n\n${productPageUrl}`;
+        formData.append("content", caption);
+        formData.append("imageUrl", productPreview.image.url);
+      }
+
+      const res = await fetch(`/api/social/${platform}`, { method: "POST", body: formData });
+      const data = await res.json();
+      const platformLabel = platform === "facebook" ? "Facebook" : platform === "instagram" ? "Instagram" : "LinkedIn";
+
+      setProductPostStatuses((prev) => [
+        ...prev.filter((s) => s.platform !== platformLabel),
+        {
+          platform: platformLabel,
+          status: data.success ? "success" : "error",
+          message: data.success
+            ? `Posted successfully to ${platformLabel}`
+            : data.error || `Failed to post to ${platformLabel}`,
+        },
+      ]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to post";
+      const platformLabel = platform === "facebook" ? "Facebook" : platform === "instagram" ? "Instagram" : "LinkedIn";
+      setProductPostStatuses((prev) => [
+        ...prev.filter((s) => s.platform !== platformLabel),
+        { platform: platformLabel, status: "error", message },
+      ]);
+    } finally {
+      setIsPostingProduct(null);
+    }
+  };
 
   const [platforms, setPlatforms] = useState<Platform[]>([
     {
@@ -448,6 +578,166 @@ export default function SimpleCrossPoster() {
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Cross-Platform Poster</h1>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button
+          onClick={() => setActiveTab("manual")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "manual"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <Upload className="w-4 h-4" />
+          Manual Post
+        </button>
+        <button
+          onClick={() => setActiveTab("product")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "product"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          Post Product
+        </button>
+      </div>
+
+      {/* Product Post Tab */}
+      {activeTab === "product" && (
+        <div className="space-y-6">
+          {/* Product ID Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Product ID</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={productId}
+                onChange={(e) => setProductId(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && fetchProduct()}
+                placeholder="Enter product ID (e.g. 1)"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={fetchProduct}
+                disabled={isFetchingProduct || !productId.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                <Search className="w-4 h-4" />
+                {isFetchingProduct ? "Fetching..." : "Fetch"}
+              </button>
+            </div>
+          </div>
+
+          {/* Fetch Error */}
+          {fetchError && (
+            <div className="p-4 bg-red-100 text-red-800 border border-red-200 rounded-lg flex items-start gap-2">
+              <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <span>{fetchError}</span>
+            </div>
+          )}
+
+          {/* Product Preview */}
+          {productPreview && (
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Post Preview — Facebook
+              </div>
+
+              <div className="p-4 space-y-3">
+                {/* Image */}
+                {productPreview.image && (
+                  <img
+                    src={productPreview.image.url}
+                    alt={productPreview.image.alt}
+                    className="w-full rounded-lg object-cover max-h-64"
+                  />
+                )}
+
+                {/* Post text preview */}
+                <div className="text-sm text-gray-800 whitespace-pre-line border border-gray-100 rounded-lg p-3 bg-white">
+                  {buildProductPostText(productPreview)}
+                </div>
+
+                {/* Link info */}
+                {(() => {
+                  const productPageUrl = buildProductPageUrl(productPreview.id);
+                  return (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <div className="text-xs text-blue-700">
+                        <span className="font-medium">Product page:</span>{" "}
+                        <a href={productPageUrl} target="_blank" rel="noopener noreferrer" className="underline break-all">
+                          {productPageUrl}
+                        </a>
+                        <span className="block mt-1 text-blue-600">Facebook: clickable preview card · Instagram: link in caption</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Post Buttons */}
+              <div className="px-4 pb-4 flex gap-3">
+                <button
+                  onClick={() => handlePostProduct("facebook")}
+                  disabled={isPostingProduct !== null}
+                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  {isPostingProduct === "facebook" ? "Posting..." : "👤 Facebook"}
+                </button>
+                <button
+                  onClick={() => handlePostProduct("instagram")}
+                  disabled={isPostingProduct !== null || !productPreview.image}
+                  title={!productPreview.image ? "This product has no image — Instagram requires one" : ""}
+                  className="flex-1 bg-pink-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  {isPostingProduct === "instagram" ? "Posting..." : "📷 Instagram"}
+                </button>
+                <button
+                  onClick={() => handlePostProduct("linkedin")}
+                  disabled={isPostingProduct !== null}
+                  className="flex-1 bg-sky-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-sky-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  {isPostingProduct === "linkedin" ? "Posting..." : "💼 LinkedIn"}
+                </button>
+              </div>
+
+              {/* Results */}
+              {productPostStatuses.length > 0 && (
+                <div className="mx-4 mb-4 space-y-2">
+                  {productPostStatuses.map((s, i) => (
+                    <div
+                      key={i}
+                      className={`p-3 rounded-lg flex items-start gap-3 ${
+                        s.status === "success"
+                          ? "bg-green-100 text-green-800 border border-green-200"
+                          : "bg-red-100 text-red-800 border border-red-200"
+                      }`}
+                    >
+                      {s.status === "success" ? (
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{s.platform}</p>
+                        <p className="text-xs">{s.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manual Post Tab */}
+      {activeTab === "manual" && (
+      <div className="space-y-6">
+
       {/* Validation Error */}
       {validationError && (
         <div className="mb-4 p-4 bg-red-100 text-red-800 border border-red-200 rounded-lg flex items-start gap-2">
@@ -774,6 +1064,8 @@ export default function SimpleCrossPoster() {
             </div>
           ))}
         </div>
+      )}
+      </div>
       )}
     </div>
   );

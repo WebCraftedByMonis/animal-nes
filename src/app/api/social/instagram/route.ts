@@ -13,6 +13,9 @@ export async function POST(request: NextRequest) {
 
     // Get the first media file (Instagram API route currently handles single image)
     const image = formData.get("media_0") as File | null;
+    // imageUrl can be passed directly (e.g. existing Cloudinary URL from a product)
+    // skipping the upload step entirely
+    const imageUrl = formData.get("imageUrl") as string | null;
 
     // Fetch Instagram credentials from database
     const instagramToken = await prisma.socialMediaToken.findUnique({
@@ -36,30 +39,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Instagram requires an image
-    if (!image || mediaCount === 0) {
+    // Instagram requires an image (either uploaded file or direct URL)
+    if (!image && !imageUrl && mediaCount === 0) {
       return NextResponse.json(
         { success: false, error: "Instagram requires an image to post" },
         { status: 400 }
       );
     }
 
-    // Step 1: Upload image to Cloudinary
-    const arrayBuffer = await image.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    let finalImageUrl: string;
 
-    const cloudinaryResult = await uploadImage(
-      buffer,
-      "social-media/instagram",
-      image.name
-    );
+    if (imageUrl) {
+      // Use the provided URL directly (e.g. existing Cloudinary product image)
+      finalImageUrl = imageUrl;
+    } else {
+      // Step 1: Upload image file to Cloudinary
+      const arrayBuffer = await image!.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    const imageUrl = cloudinaryResult.secure_url;
-    cloudinaryPublicId = cloudinaryResult.public_id;
+      const cloudinaryResult = await uploadImage(
+        buffer,
+        "social-media/instagram",
+        image!.name
+      );
+
+      finalImageUrl = cloudinaryResult.secure_url;
+      cloudinaryPublicId = cloudinaryResult.public_id;
+    }
 
     // Step 2: Create media container
     const containerParams = new URLSearchParams({
-      image_url: imageUrl,
+      image_url: finalImageUrl,
       caption: content || "",
       access_token: accessToken,
     });

@@ -344,6 +344,16 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Auto Post Log */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/auto-post-log">
+                    <FileText className="w-4 h-4" />
+                    <span className="hover:text-green-500">Auto Post Log</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Product Extractor */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
