@@ -104,7 +104,9 @@ function formatForm(f) {
 
 async function getPostedIds(platform, contentType) {
   const logs = await prisma.socialAutoPostLog.findMany({
-    where: { platform, contentType, status: { in: ['posted', 'skipped'] } },
+    // include 'failed' — prevents infinite retry loop on the same broken item
+    // user can hit Re-queue in the dashboard to retry a specific failed item
+    where: { platform, contentType, status: { in: ['posted', 'skipped', 'failed'] } },
     select: { contentId: true },
   });
   return new Set(logs.map(l => l.contentId));
@@ -177,7 +179,14 @@ const CONTENT_TYPES = [
     type: 'product',
     getter: getNextProduct,
     formatter: formatProduct,
-    linkFn:  item => `${SITE_URL}/products/${item.id}`,
+    // Only attach a link if the product has some real content to show.
+    // Empty products (name-only) post as plain text — no link card.
+    // LinkedIn never gets a link to avoid pharmaceutical policy flags.
+    linkFn: (item, platform) => {
+      if (platform === 'linkedin') return null;
+      const hasContent = item.image || item.description || item.variants?.[0]?.customerPrice;
+      return hasContent ? `${SITE_URL}/products/${item.id}` : null;
+    },
     imageFn: item => item.image?.url || null,
   },
   {
@@ -220,7 +229,7 @@ async function getNextItem(platform) {
       contentType: type,
       contentId:   String(item.id),
       content:     formatter(item),
-      link:        linkFn ? linkFn(item) : null,
+      link:        linkFn ? linkFn(item, platform) : null,
       imageUrl:    imageFn(item),
     };
   }
