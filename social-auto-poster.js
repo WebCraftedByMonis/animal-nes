@@ -273,8 +273,34 @@ async function postLinkedIn(content, link) {
   return callRoute('/api/social/linkedin', fields);
 }
 
+// ── Throttle detection ────────────────────────────────────────────────────────
+
+// How long to back off when a platform throttles us (ms)
+const THROTTLE_BACKOFF = {
+  facebook:  2 * 60 * 60 * 1000,  // 2 hours
+  instagram: 2 * 60 * 60 * 1000,  // 2 hours
+  linkedin:  6 * 60 * 60 * 1000,  // 6 hours (daily limit resets at midnight UTC)
+};
+
+const THROTTLE_PHRASES = [
+  'we limit how often',
+  'rate limit',
+  'throttle',
+  'too many requests',
+  'spam',
+  'day limit',
+  'application_and_member',
+];
+
+function isThrottleError(msg) {
+  if (!msg) return false;
+  const lower = msg.toLowerCase();
+  return THROTTLE_PHRASES.some(p => lower.includes(p));
+}
+
 // ── Core posting logic ────────────────────────────────────────────────────────
 
+// Returns: true (posted/skipped/failed), false (no content left), 'throttled'
 async function postNextItem(platform) {
   const item = await getNextItem(platform);
 
@@ -304,10 +330,19 @@ async function postNextItem(platform) {
       console.log(`[${platform}] ✅ Posted ${contentType} #${contentId}`);
     } else {
       const err = result?.error || 'Unknown error';
+      // Throttle / rate-limit — do NOT mark item as failed, just back off
+      if (isThrottleError(err)) {
+        console.warn(`[${platform}] ⏳ Throttled by platform — backing off ${THROTTLE_BACKOFF[platform] / 3600000}h. Item #${contentId} will be retried.`);
+        return 'throttled';
+      }
       await markLog(contentType, contentId, platform, 'failed', err);
       console.error(`[${platform}] ❌ Failed ${contentType} #${contentId}: ${err}`);
     }
   } catch (err) {
+    if (isThrottleError(err.message)) {
+      console.warn(`[${platform}] ⏳ Throttled — backing off. Item #${contentId} will be retried.`);
+      return 'throttled';
+    }
     await markLog(contentType, contentId, platform, 'failed', err.message);
     console.error(`[${platform}] ❌ Error posting ${contentType} #${contentId}:`, err.message);
   }
@@ -323,8 +358,14 @@ async function runPlatformLoop(platform) {
 
   async function tick() {
     try {
-      const hasMore = await postNextItem(platform);
-      setTimeout(tick, hasMore ? interval : POLL_INTERVAL_MS);
+      const result = await postNextItem(platform);
+      if (result === 'throttled') {
+        const backoff = THROTTLE_BACKOFF[platform];
+        console.log(`[${platform}] 💤 Sleeping ${backoff / 3600000}h before retrying…`);
+        setTimeout(tick, backoff);
+      } else {
+        setTimeout(tick, result ? interval : POLL_INTERVAL_MS);
+      }
     } catch (err) {
       console.error(`[${platform}] Loop error:`, err.message);
       setTimeout(tick, interval);
