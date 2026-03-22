@@ -12,6 +12,9 @@ import VetshopExtractor from "@/app/components/VetshopExtractor";
 import PetplaceExtractor from "@/app/components/PetplaceExtractor";
 import PetsgroceryExtractor from "@/app/components/PetsgroceryExtractor";
 import VeterianhubExtractor from "@/app/components/VeterianhubExtractor";
+import MuslimherbalExtractor from "@/app/components/MuslimherbalExtractor";
+import YallapetsExtractor from "@/app/components/YallapetsExtractor";
+import PetworlduaeExtractor from "@/app/components/PetworlduaeExtractor";
 
 const UAE_TABS = [
   { id: "smbros",       label: "SMBros B2B",   sub: "b2b.smbros.org" },
@@ -19,6 +22,8 @@ const UAE_TABS = [
   { id: "wisdomvet",   label: "WisdomVet",     sub: "wisdomvet.ae" },
   { id: "vetpharmacy", label: "VetPharmacy",   sub: "vetpharmacy.ae" },
   { id: "eurovets",    label: "Eurovets",      sub: "eurovets.ae" },
+  { id: "yallapets",    label: "Yalla Pets",     sub: "yallapets.com" },
+  { id: "petworlduae",  label: "Pet World UAE",  sub: "petworlduae.com" },
 ];
 
 const PK_TABS = [
@@ -26,6 +31,7 @@ const PK_TABS = [
   { id: "petplace",           label: "PetPlace PK",       sub: "petplace.pk" },
   { id: "petsgrocery",        label: "PetsGrocery PK",    sub: "petsgrocery.pk" },
   { id: "veterianhub",        label: "VeterianHub",       sub: "veterianhub.com" },
+  { id: "muslimherbal",       label: "Muslim Herbal",     sub: "muslimherbalandnutraceutical.com" },
   { id: "onlinevetpharmacy",  label: "OnlineVetPharmacy", sub: "onlinevetpharmacy.com" },
   { id: "vetshop",            label: "VetShop",           sub: "vet-shop.net" },
 ];
@@ -96,10 +102,13 @@ export default function ProductExtractorPage() {
       {active === "wisdomvet"         && <WisdomvetExtractor />}
       {active === "vetpharmacy"       && <VetpharmacyExtractor />}
       {active === "eurovets"          && <EurovetsExtractor />}
+      {active === "yallapets"         && <YallapetsExtractor />}
+      {active === "petworlduae"       && <PetworlduaeExtractor />}
       {active === "petshub"           && <PetshubExtractor />}
       {active === "petplace"          && <PetplaceExtractor />}
       {active === "petsgrocery"       && <PetsgroceryExtractor />}
       {active === "veterianhub"       && <VeterianhubExtractor />}
+      {active === "muslimherbal"      && <MuslimherbalExtractor />}
       {active === "onlinevetpharmacy" && <OnlineVetPharmacyExtractor />}
       {active === "vetshop"           && <VetshopExtractor />}
     </div>
