@@ -178,14 +178,27 @@ function parseDetailPage(html: string, url: string, bodlPriceMap: Map<string, nu
   }
   if (!variants.length) variants.push({ packingVolume: "", customerPrice: price });
 
-  // Description
+  // Description — try JSON-LD first (most reliable on BigCommerce)
+  let description = "";
+  try {
+    const ldMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i);
+    if (ldMatch) {
+      const ld = JSON.parse(ldMatch[1]);
+      if (ld.description) description = clean(ld.description).substring(0, 3000);
+    }
+  } catch { /* fallback */ }
+
+  // DOM fallbacks
   $("script, style, nav, header, footer, noscript").remove();
-  const description = clean(
-    $(".productView-description .productView-description-tabContent").text() ||
-    $(".productView-description").text() ||
-    $('[data-tab-content="description"]').text() ||
-    $('meta[property="og:description"]').attr("content") || ""
-  ).substring(0, 3000);
+  if (!description) {
+    description = clean(
+      $(".productView-description .productView-description-tabContent").text() ||
+      $(".productView-description").text() ||
+      $('[data-tab-content="description"]').text() ||
+      $("#tab-description").text() ||
+      $('meta[property="og:description"]').attr("content") || ""
+    ).substring(0, 3000);
+  }
 
   // Dosage tab
   let dosage = "";
