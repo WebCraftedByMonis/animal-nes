@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import * as cheerio from "cheerio";
 import axios from "axios";
 import https from "https";
@@ -64,115 +64,87 @@ async function fetchHtml(url: string): Promise<string | null> {
   }
 }
 
-// ── Decode BigCommerce BODL Base64 JSON from listing page ─────────────────────
-interface BodlProduct {
-  product_id: string;
-  product_name: string;
-  purchase_price: number;
-  sale_price: number | null;
-  brand_name: string;
-  category_names: string[];
-  quantity: number;
-}
-
-function decodeBodl(html: string): BodlProduct[] {
-  // window.bodl_v1 = JSON.parse(atob("BASE64")) or similar
-  const match = html.match(/JSON\.parse\s*\(\s*(?:atob|decodeBase64)\s*\(\s*["']([A-Za-z0-9+/=]+)["']\s*\)\s*\)/);
-  if (!match) return [];
-  try {
-    const decoded = Buffer.from(match[1], "base64").toString("utf-8");
-    const obj = JSON.parse(decoded);
-    // BODL structure: { product_impression: [...] } or { page: { product_impression: [...] } }
-    const list: any[] =
-      obj?.product_impression ||
-      obj?.page?.product_impression ||
-      obj?.ecommerce?.impressions ||
-      [];
-    return list;
-  } catch { return []; }
-}
-
-// ── Collect product links + BODL data from listing pages ─────────────────────
-async function collectListingData(startUrl: string, origin: string): Promise<{ links: string[]; bodlMap: Map<string, BodlProduct> }> {
-  const links: string[] = [];
+// ── Collect product links from ONE BigCommerce listing page ───────────────────
+function getProductLinks(html: string, origin: string, listingPath: string): string[] {
+  const $ = cheerio.load(html);
   const seen = new Set<string>();
-  const bodlMap = new Map<string, BodlProduct>();
-  let pageNum = 1;
+  const links: string[] = [];
 
-  // Non-product paths to exclude
-  const excluded = /\/(cart|account|login|wishlist|search|blog|contact|about|category|brands|sitemap)/i;
+  $("li.product a[href], article.product a[href]").each((_, el) => {
+    const href = $(el).attr("href") || "";
+    if (!href) return;
+    const abs = resolveUrl(origin, href);
+    try {
+      const u = new URL(abs);
+      if (u.origin !== origin) return;
+      // Skip if same as listing page, or cart/account/etc
+      if (u.pathname === listingPath) return;
+      if (/\/(cart|account|login|wishlist|search|blog|contact|brands|sitemap)/i.test(u.pathname)) return;
+      const key = `${u.origin}${u.pathname}`.replace(/\/$/, "");
+      if (!seen.has(key)) { seen.add(key); links.push(key); }
+    } catch { /* skip */ }
+  });
 
-  while (true) {
-    const pageUrl = pageNum === 1 ? startUrl : `${startUrl.replace(/\/$/, "")}/?page=${pageNum}`;
-    const html = await fetchHtml(pageUrl);
-    if (!html) break;
+  return links;
+}
 
-    const $ = cheerio.load(html);
+// ── Detect next page for BigCommerce (?page=N) ────────────────────────────────
+function getNextPage(html: string, currentUrl: string, origin: string): string | null {
+  const $ = cheerio.load(html);
 
-    // Decode BODL for price/brand/category data
-    const bodlItems = decodeBodl(html);
-    for (const item of bodlItems) {
-      if (item.product_name) bodlMap.set(clean(item.product_name).toLowerCase(), item);
-    }
+  // Standard pagination link
+  const nextHref = $("a.pagination-item--next, li.pagination-item--next a").attr("href") || "";
+  if (nextHref) return resolveUrl(origin, nextHref);
 
-    // Collect product links from cards
-    let found = 0;
-    $("li.product a[href], article.product a[href]").each((_, el) => {
-      const href = $(el).attr("href") || "";
-      if (!href || excluded.test(href)) return;
-      const abs = resolveUrl(origin, href);
-      // Must be same origin, not a category/filter URL (no query params for filters)
-      if (!abs.startsWith(origin)) return;
-      const path = new URL(abs).pathname;
-      // Skip if it's clearly a category (contains the listing path)
-      if (path === new URL(startUrl).pathname) return;
-      if (!seen.has(abs)) {
-        seen.add(abs);
-        links.push(abs);
-        found++;
-      }
-    });
-
-    console.log(`[LISTING] page=${pageNum}, found=${found} links, total=${links.length}`);
-
-    // Check for next page
-    const hasNext = $("a.pagination-item--next, a[data-page], li.pagination-item--next a").length > 0 ||
-      $("a").filter((_, el) => /page=\d+/.test($(el).attr("href") || "")).length > 0;
-
-    // Stop if no new products found or no next page indicator
-    if (found === 0 || !hasNext) break;
-    pageNum++;
-    if (pageNum > 20) break; // safety limit
+  // Numbered pages: find current page number and build next
+  const parsed = new URL(currentUrl);
+  const currentPage = parseInt(parsed.searchParams.get("page") || "1", 10);
+  const hasMorePages = $(`a[href*='page=${currentPage + 1}'], a[href*='?page=']`).length > 0;
+  if (hasMorePages) {
+    parsed.searchParams.set("page", String(currentPage + 1));
+    return parsed.href;
   }
 
-  return { links, bodlMap };
+  return null;
 }
 
-// ── Parse BigCommerce product detail page ─────────────────────────────────────
-function parseDetailPage(html: string, url: string, bodlItem?: BodlProduct): ExtractedProduct | null {
+// ── Decode BODL Base64 JSON (optional — for price/brand/category hints) ───────
+function decodeBodlPriceMap(html: string): Map<string, number> {
+  const map = new Map<string, number>();
+  const match = html.match(/JSON\.parse\s*\(\s*(?:atob|decodeBase64)\s*\(\s*["']([A-Za-z0-9+/=]+)["']\s*\)\s*\)/);
+  if (!match) return map;
+  try {
+    const obj = JSON.parse(Buffer.from(match[1], "base64").toString("utf-8"));
+    const list: any[] = obj?.product_impression || obj?.page?.product_impression || [];
+    for (const item of list) {
+      if (item.product_name && item.purchase_price != null)
+        map.set(clean(item.product_name).toLowerCase(), item.sale_price ?? item.purchase_price);
+    }
+  } catch { /* skip */ }
+  return map;
+}
+
+// ── Parse a BigCommerce detail page ──────────────────────────────────────────
+function parseDetailPage(html: string, url: string, bodlPriceMap: Map<string, number>): ExtractedProduct | null {
   const $ = cheerio.load(html);
   const origin = new URL(url).origin;
 
-  // Product name
   const name = clean(
-    $(".productView-title, h1.product-title, h1[itemprop='name'], [data-product-title]").first().text() ||
+    $(".productView-title, h1.product-title, h1[itemprop='name']").first().text() ||
     $('meta[property="og:title"]').attr("content") || ""
   );
   if (!name) return null;
 
-  // Image — BigCommerce CDN pattern
+  // Image
   const imgCandidates = [
     $(".productView-image img, .productView-img-container img").first().attr("data-zoom-image"),
     $(".productView-image img, .productView-img-container img").first().attr("src"),
     $('meta[property="og:image"]').attr("content"),
   ];
   const rawImage = imgCandidates.find(c => c && isImageUrl(c)) || "";
-  // Upgrade to 1280px if possible
-  const imageUrl = rawImage
-    ? rawImage.replace(/\/\d+x\d+\//, "/1280x1280/")
-    : "";
+  const imageUrl = rawImage ? rawImage.replace(/\/\d+x\d+\//, "/1280x1280/") : "";
 
-  // Price — try window.BCData JSON first (most reliable), then DOM
+  // Price — BCData JSON → DOM → BODL
   let price = "";
   const bcDataMatch = html.match(/window\.BCData\s*=\s*({[\s\S]*?})(?:\s*;|\s*<\/script>)/);
   if (bcDataMatch) {
@@ -183,39 +155,27 @@ function parseDetailPage(html: string, url: string, bodlItem?: BodlProduct): Ext
       if (val != null) price = String(Math.round(val));
     } catch { /* fallback */ }
   }
+  if (!price) price = clean($("span.price.sale-price-cal, .price.sale-price-cal").first().text()).replace(/[^\d.]/g, "");
+  if (!price) price = clean($("span.price, .price").first().text()).replace(/[^\d.]/g, "");
   if (!price) {
-    // DOM fallbacks
-    price = clean($("span.price.sale-price-cal, span.sale-price-cal, .price.sale-price-cal").first().text()).replace(/[^\d.]/g, "");
-  }
-  if (!price) {
-    price = clean($("span.price, .price").first().text()).replace(/[^\d.]/g, "");
-  }
-  // Also try BODL listing data
-  if (!price) {
-    const bodlPrice = bodlItem?.sale_price ?? bodlItem?.purchase_price;
-    if (bodlPrice != null) price = String(Math.round(bodlPrice));
+    const bodlVal = bodlPriceMap.get(name.toLowerCase());
+    if (bodlVal != null) price = String(Math.round(bodlVal));
   }
 
-  // Variants — BigCommerce attribute selects or radio swatches
+  // Variants
   const variants: ExtractedVariant[] = [];
   $("select[data-product-attribute] option, select[name*='attribute'] option, select[name*='modifier'] option").each((_, el) => {
     const val = clean($(el).text());
     const dataPrice = $(el).attr("data-calculated-price") || "";
-    if (val && !/choose|select|pick/i.test(val)) {
-      variants.push({
-        packingVolume: val,
-        customerPrice: dataPrice ? String(Math.round(parseFloat(dataPrice))) : price,
-      });
-    }
+    if (val && !/choose|select|pick/i.test(val))
+      variants.push({ packingVolume: val, customerPrice: dataPrice ? String(Math.round(parseFloat(dataPrice))) : price });
   });
-
   if (!variants.length) {
-    $("input[type='radio'][data-product-attribute], input[type='radio'][name*='attribute']").each((_, el) => {
+    $("input[type='radio'][data-product-attribute]").each((_, el) => {
       const val = clean($(el).attr("value") || "");
       if (val) variants.push({ packingVolume: val, customerPrice: price });
     });
   }
-
   if (!variants.length) variants.push({ packingVolume: "", customerPrice: price });
 
   // Description
@@ -223,7 +183,6 @@ function parseDetailPage(html: string, url: string, bodlItem?: BodlProduct): Ext
   const description = clean(
     $(".productView-description .productView-description-tabContent").text() ||
     $(".productView-description").text() ||
-    $("#tab-description").text() ||
     $('[data-tab-content="description"]').text() ||
     $('meta[property="og:description"]').attr("content") || ""
   ).substring(0, 3000);
@@ -238,75 +197,80 @@ function parseDetailPage(html: string, url: string, bodlItem?: BodlProduct): Ext
     }
   });
 
-  // Categories + brand from BODL
-  const cats = bodlItem?.category_names || [];
-  const genericName = bodlItem?.brand_name
-    ? clean(bodlItem.brand_name)
-    : clean($('[data-product-brand], .productView-brand a').first().text());
-
-  const outofstock = bodlItem ? bodlItem.quantity === 0 : $(".out-of-stock, .stock-unavailable").length > 0;
-
-  console.log(`[DETAIL] "${name}" img=${imageUrl ? "✓" : "✗"} variants=${variants.length} desc=${description.length}c`);
+  const genericName = clean($('[data-product-brand], .productView-brand a').first().text());
+  const outofstock = $(".out-of-stock, .stock-unavailable").length > 0;
 
   return {
-    productName: name,
-    genericName,
-    category:       cats[0] || "",
-    subCategory:    cats[1] || "",
-    subsubCategory: cats[2] || "",
-    productType: "",
-    description,
-    dosage,
-    productLink: url,
-    imageUrl,
-    outofstock,
-    variants,
+    productName: name, genericName,
+    category: "", subCategory: "", subsubCategory: "", productType: "",
+    description, dosage,
+    productLink: url, imageUrl, outofstock, variants,
   };
 }
 
-// ── POST handler ───────────────────────────────────────────────────────────────
+// ── SSE helper ────────────────────────────────────────────────────────────────
+function sseEvent(enc: TextEncoder, data: object): Uint8Array {
+  return enc.encode(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+// ── POST — SSE stream, ONE listing page at a time ─────────────────────────────
 export async function POST(req: NextRequest) {
-  try {
-    const { url } = await req.json();
-    if (!url) return NextResponse.json({ error: "URL is required" }, { status: 400 });
+  const { url } = await req.json().catch(() => ({}));
+  if (!url) return new Response(JSON.stringify({ error: "URL is required" }), { status: 400 });
 
-    let parsed: URL;
-    try { parsed = new URL(url); } catch {
-      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-    }
-
-    const origin = parsed.origin;
-    console.log(`[PETWORLDUAE] origin=${origin}, url=${url}`);
-
-    // Collect product links + BODL data from listing pages
-    const { links, bodlMap } = await collectListingData(url, origin);
-    console.log(`[PETWORLDUAE] ${links.length} product links, ${bodlMap.size} BODL entries`);
-
-    if (!links.length)
-      return NextResponse.json({ error: "No products found. Check the URL." }, { status: 400 });
-
-    // Parse detail pages in batches of 3
-    const products: ExtractedProduct[] = [];
-    for (let i = 0; i < links.length; i += 3) {
-      const batch = links.slice(i, i + 3);
-      const results = await Promise.all(batch.map(async (link) => {
-        const h = await fetchHtml(link);
-        if (!h) return null;
-        // Try to match BODL data by product name
-        const bodlItem = [...bodlMap.values()].find(b =>
-          link.includes(b.product_name.toLowerCase().replace(/\s+/g, "-").substring(0, 20))
-        );
-        return parseDetailPage(h, link, bodlItem);
-      }));
-      results.forEach(r => { if (r) products.push(r); });
-      console.log(`[PETWORLDUAE] batch ${Math.floor(i / 3) + 1}, total: ${products.length}`);
-    }
-
-    if (!products.length)
-      return NextResponse.json({ error: "Products found but could not be parsed." }, { status: 400 });
-
-    return NextResponse.json({ success: true, count: products.length, totalLinks: products.length, products });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || "Scraping failed" }, { status: 500 });
+  let parsed: URL;
+  try { parsed = new URL(url); } catch {
+    return new Response(JSON.stringify({ error: "Invalid URL" }), { status: 400 });
   }
+
+  const origin = parsed.origin;
+  const listingPath = parsed.pathname.replace(/\/$/, "");
+  const enc = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data: object) => {
+        try { controller.enqueue(sseEvent(enc, data)); } catch { /* disconnected */ }
+      };
+
+      try {
+        send({ type: "status", message: "Fetching listing page…" });
+
+        const html = await fetchHtml(url);
+        if (!html) { send({ type: "error", message: "Could not fetch the page." }); controller.close(); return; }
+
+        const links = getProductLinks(html, origin, listingPath);
+        if (!links.length) { send({ type: "error", message: "No products found on this page." }); controller.close(); return; }
+
+        send({ type: "total", total: links.length });
+
+        // Decode BODL for price hints
+        const bodlPriceMap = decodeBodlPriceMap(html);
+
+        // Detect next page
+        const nextPage = getNextPage(html, url, origin);
+
+        // Scrape detail pages in batches of 3
+        for (let i = 0; i < links.length; i += 3) {
+          const batch = links.slice(i, i + 3);
+          const results = await Promise.all(batch.map(async (link) => {
+            const h = await fetchHtml(link);
+            return h ? parseDetailPage(h, link, bodlPriceMap) : null;
+          }));
+          for (const p of results) if (p) send({ type: "product", product: p });
+        }
+
+        if (nextPage) send({ type: "next_page", url: nextPage });
+        send({ type: "done" });
+      } catch (e: any) {
+        send({ type: "error", message: e.message || "Scraping failed" });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
+  });
 }
