@@ -65,13 +65,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function NewsPage({ params }: PageProps) {
   const { id } = await params;
   let jsonLd = null
+  let newsData: NewsItem | null = null
 
   try {
     const res = await fetch(`${getApiUrl()}/api/animal-news/${id}`, {
       next: { revalidate: 3600 },
     })
     if (res.ok) {
-      const data: NewsItem = await res.json()
+      newsData = await res.json()
+      const data = newsData!
       jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
@@ -105,7 +107,7 @@ export default async function NewsPage({ params }: PageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <NewsDetailPage id={id} />
+      <NewsDetailPage id={id} initialData={newsData} />
     </>
   )
 }

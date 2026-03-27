@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
@@ -38,11 +38,12 @@ interface SellAnimal {
   videos: { id: number; url: string; alt: string }[]
 }
 
-export default function AnimalDetailClient() {
+export default function AnimalDetailClient({ initialData }: { initialData?: SellAnimal | null }) {
   const { id } = useParams<{ id: string }>()
   const { country: contextCountry } = useCountry()
-  const [animal, setAnimal] = useState<SellAnimal | null>(null)
-  const [loading, setLoading] = useState(true)
+  const skipInitialFetch = useRef(!!initialData)
+  const [animal, setAnimal] = useState<SellAnimal | null>(initialData ?? null)
+  const [loading, setLoading] = useState(!initialData)
   const [activeImage, setActiveImage] = useState(0)
 
   // Use animal's country if available, otherwise fall back to context country
@@ -52,7 +53,13 @@ export default function AnimalDetailClient() {
   useEffect(() => {
     if (!id) return
 
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false
+      return
+    }
+
     const fetchAnimal = async () => {
+      setLoading(true)
       try {
         const numericId = parseInt(id)
         if (isNaN(numericId)) {

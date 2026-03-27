@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -25,14 +25,22 @@ type NewsItem = {
 
 type NewsDetailPageProps = {
   id: string;
+  initialData?: NewsItem | null;
 };
 
-export default function NewsDetailPage({ id }: NewsDetailPageProps) {
-  const [news, setNews] = useState<NewsItem | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function NewsDetailPage({ id, initialData }: NewsDetailPageProps) {
+  const skipInitialFetch = useRef(!!initialData);
+  const [news, setNews] = useState<NewsItem | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
 
   useEffect(() => {
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
+
     async function fetchNewsItem() {
+      setLoading(true);
       try {
         const { data } = await axios.get(`/api/animal-news/${id}`);
         setNews(data);

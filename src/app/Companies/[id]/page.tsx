@@ -106,12 +106,14 @@ export default async function Page({
   const { id } = await params
   let jsonLd = null
 
+  let companyData: any = null
   try {
     const res = await fetch(`${getApiUrl()}/api/company/${id}`, {
       next: { revalidate: 1800 },
     })
     if (res.ok) {
-      const data: Company = await res.json()
+      companyData = await res.json()
+      const data = companyData
       const categories = [...new Set(data.products.map((p) => p.category))]
       jsonLd = {
         '@context': 'https://schema.org',
@@ -145,7 +147,7 @@ export default async function Page({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <CompanyDetailClient />
+      <CompanyDetailClient initialData={companyData} />
     </>
   )
 }

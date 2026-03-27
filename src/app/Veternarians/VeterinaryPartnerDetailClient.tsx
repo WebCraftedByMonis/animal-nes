@@ -78,16 +78,17 @@ interface VetReview {
   }
 }
 
-export default function VeterinaryPartnerDetailClient() {
+export default function VeterinaryPartnerDetailClient({ initialData }: { initialData?: Partner | null }) {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data: session } = useSession()
   const { openModal } = useLoginModal()
-  const [partner, setPartner] = useState<Partner | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [partner, setPartner] = useState<Partner | null>(initialData ?? null)
+  const [loading, setLoading] = useState(!initialData)
   const [pageLoading, setPageLoading] = useState(false)
   const [productPage, setProductPage] = useState(1)
-  const initialLoadDone = useRef(false)
+  const initialLoadDone = useRef(!!initialData)
+  const skipInitialFetch = useRef(!!initialData)
   const PRODUCTS_PER_PAGE = 6
   const [reviews, setReviews] = useState<VetReview[]>([])
   const [averageRating, setAverageRating] = useState<number>(0)
@@ -99,6 +100,11 @@ export default function VeterinaryPartnerDetailClient() {
     if (!id) return
     const numericId = parseInt(id)
     if (isNaN(numericId)) return
+
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false
+      return
+    }
 
     if (!initialLoadDone.current) {
       setLoading(true)

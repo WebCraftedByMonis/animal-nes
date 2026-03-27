@@ -107,6 +107,22 @@ export async function generateMetadata({
   }
 }
 
-export default function Page() {
-  return <SalesPartnerDetailClient />
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  let partnerData: any = null
+  try {
+    const res = await fetch(`${getApiUrl()}/api/partner/${id}`, {
+      next: { revalidate: 1800 },
+    })
+    if (res.ok) {
+      partnerData = await res.json()
+    }
+  } catch {
+    // non-critical
+  }
+  return <SalesPartnerDetailClient initialData={partnerData} />
 }

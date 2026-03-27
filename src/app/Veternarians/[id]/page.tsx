@@ -120,12 +120,14 @@ export default async function Page({
   const { id } = await params
   let jsonLd = null
 
+  let partnerData: any = null
   try {
     const res = await fetch(`${getApiUrl()}/api/partner/${id}`, {
       next: { revalidate: 1800 },
     })
     if (res.ok) {
-      const data: Partner = await res.json()
+      partnerData = await res.json()
+      const data = partnerData
       const location = [data.areaTown, data.cityName, data.state].filter(Boolean).join(', ')
       jsonLd = {
         '@context': 'https://schema.org',
@@ -162,7 +164,7 @@ export default async function Page({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <VeterinaryPartnerDetailClient />
+      <VeterinaryPartnerDetailClient initialData={partnerData} />
     </>
   )
 }

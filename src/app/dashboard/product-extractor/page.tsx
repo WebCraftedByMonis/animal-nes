@@ -15,15 +15,17 @@ import VeterianhubExtractor from "@/app/components/VeterianhubExtractor";
 import MuslimherbalExtractor from "@/app/components/MuslimherbalExtractor";
 import YallapetsExtractor from "@/app/components/YallapetsExtractor";
 import PetworlduaeExtractor from "@/app/components/PetworlduaeExtractor";
+import PetcornerdubaiExtractor from "@/app/components/PetcornerdubaiExtractor";
 
 const UAE_TABS = [
-  { id: "smbros",       label: "SMBros B2B",   sub: "b2b.smbros.org" },
-  { id: "petzsee",     label: "Petzsee",       sub: "petzsee.com" },
-  { id: "wisdomvet",   label: "WisdomVet",     sub: "wisdomvet.ae" },
-  { id: "vetpharmacy", label: "VetPharmacy",   sub: "vetpharmacy.ae" },
-  { id: "eurovets",    label: "Eurovets",      sub: "eurovets.ae" },
-  { id: "yallapets",    label: "Yalla Pets",     sub: "yallapets.com" },
-  { id: "petworlduae",  label: "Pet World UAE",  sub: "petworlduae.com" },
+  { id: "smbros",          label: "SMBros B2B",      sub: "b2b.smbros.org" },
+  { id: "petzsee",         label: "Petzsee",          sub: "petzsee.com" },
+  { id: "wisdomvet",       label: "WisdomVet",        sub: "wisdomvet.ae" },
+  { id: "vetpharmacy",     label: "VetPharmacy",      sub: "vetpharmacy.ae" },
+  { id: "eurovets",        label: "Eurovets",         sub: "eurovets.ae" },
+  { id: "yallapets",       label: "Yalla Pets",       sub: "yallapets.com" },
+  { id: "petworlduae",     label: "Pet World UAE",    sub: "petworlduae.com" },
+  { id: "petcornerdubai",  label: "Pet Corner Dubai", sub: "petcornerdubai.com" },
 ];
 
 const PK_TABS = [
@@ -104,6 +106,7 @@ export default function ProductExtractorPage() {
       {active === "eurovets"          && <EurovetsExtractor />}
       {active === "yallapets"         && <YallapetsExtractor />}
       {active === "petworlduae"       && <PetworlduaeExtractor />}
+      {active === "petcornerdubai"    && <PetcornerdubaiExtractor />}
       {active === "petshub"           && <PetshubExtractor />}
       {active === "petplace"          && <PetplaceExtractor />}
       {active === "petsgrocery"       && <PetsgroceryExtractor />}

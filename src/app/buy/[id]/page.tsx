@@ -111,6 +111,22 @@ export async function generateMetadata({
   }
 }
 
-export default function Page() {
-  return <AnimalDetailClient />
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  let animalData: any = null
+  try {
+    const res = await fetch(`${getApiUrl()}/api/sell-animal/${id}`, {
+      next: { revalidate: 3600 },
+    })
+    if (res.ok) {
+      animalData = await res.json()
+    }
+  } catch {
+    // non-critical
+  }
+  return <AnimalDetailClient initialData={animalData} />
 }

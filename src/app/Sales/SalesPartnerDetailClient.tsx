@@ -65,20 +65,26 @@ const formatWhatsAppNumber = (number: string) => {
   return number.startsWith('+') ? number : '+' + number;
 };
 
-export default function SalesPartnerDetailClient() {
+export default function SalesPartnerDetailClient({ initialData }: { initialData?: Partner | null }) {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const [partner, setPartner] = useState<Partner | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [partner, setPartner] = useState<Partner | null>(initialData ?? null)
+  const [loading, setLoading] = useState(!initialData)
   const [pageLoading, setPageLoading] = useState(false)
   const [productPage, setProductPage] = useState(1)
-  const initialLoadDone = useRef(false)
+  const initialLoadDone = useRef(!!initialData)
+  const skipInitialFetch = useRef(!!initialData)
   const PRODUCTS_PER_PAGE = 6
 
   useEffect(() => {
     if (!id) return
     const numericId = parseInt(id)
     if (isNaN(numericId)) return
+
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false
+      return
+    }
 
     if (!initialLoadDone.current) {
       setLoading(true)

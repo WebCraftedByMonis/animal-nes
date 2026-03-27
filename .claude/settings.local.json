@@ -34,7 +34,8 @@
       "Bash(npx eslint:*)",
       "Bash(find /c/Users/as/Downloads/animal-nes-main/animal-nes-main/src/app -type f \\\\\\(-name *sidebar* -o -name *nav* -o -name *menu* \\\\\\) -iname *.tsx -o -iname *.ts)",
       "Bash(find:*)",
-      "WebFetch(domain:petworlduae.com)"
+      "WebFetch(domain:petworlduae.com)",
+      "WebFetch(domain:petcornerdubai.com)"
     ],
     "deny": [],
     "ask": []
