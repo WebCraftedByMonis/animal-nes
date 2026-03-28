@@ -41,13 +41,13 @@ module.exports = {
         POSTER_STARTUP_DELAY: '25000',
         // How often to poll when all content is exhausted (ms) — default 5min
         POSTER_POLL_INTERVAL: String(5 * 60 * 1000),
+        // Active platforms (comma-separated) — remove linkedin until ready
+        POSTER_PLATFORMS: 'facebook,instagram',
         // Per-platform posting intervals (ms)
-        // Facebook  : 1 post / 2min  → 30/hr, 720/day  (spam-safe)
+        // Facebook  : 1 post / 5min  → 12/hr, 288/day  (conservative, spam-safe)
         // Instagram : 1 post / 72min → 20/day           (hard daily limit)
-        // LinkedIn  : 1 post / 10min → 144/day          (under 150/day hard limit)
-        POSTER_FB_INTERVAL:  String(2 * 60 * 1000),   // 2 min
+        POSTER_FB_INTERVAL:  String(5 * 60 * 1000),   // 5 min
         POSTER_IG_INTERVAL:  String(72 * 60 * 1000),  // 72 min
-        POSTER_LI_INTERVAL:  String(10 * 60 * 1000),  // 10 min
       },
     },
   ],

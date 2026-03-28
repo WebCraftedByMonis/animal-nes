@@ -28,12 +28,13 @@ const POLL_INTERVAL_MS  = parseInt(process.env.POSTER_POLL_INTERVAL || String(5 
 
 // Milliseconds between posts per platform
 const INTERVALS = {
-  facebook:  parseInt(process.env.POSTER_FB_INTERVAL  || '20000',       10), // 20s
+  facebook:  parseInt(process.env.POSTER_FB_INTERVAL  || String(5 * 60 * 1000), 10), // 5min
   instagram: parseInt(process.env.POSTER_IG_INTERVAL  || String(72 * 60 * 1000), 10), // 72min
-  linkedin:  parseInt(process.env.POSTER_LI_INTERVAL  || '40000',       10), // 40s
+  // linkedin removed — re-add when ready
 };
 
-const PLATFORMS = Object.keys(INTERVALS);
+// Platforms that are currently active
+const PLATFORMS = (process.env.POSTER_PLATFORMS || 'facebook,instagram').split(',').map(p => p.trim());
 
 // ── Character limits per platform ────────────────────────────────────────────
 // These are the official API hard limits for post captions/text.
