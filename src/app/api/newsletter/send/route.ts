@@ -17,20 +17,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
     }
 
-    // Collect emails from all sources in DB
-    const [newsletterSubs, users, partners, companies] = await Promise.all([
+    // Collect emails from users and newsletter subscribers only
+    const [newsletterSubs, users] = await Promise.all([
       (prisma as any).newsletterSubscriber.findMany({ select: { email: true, name: true } }),
       prisma.user.findMany({ where: { email: { not: null } }, select: { email: true, name: true } }),
-      prisma.partner.findMany({ select: { partnerEmail: true, partnerName: true } }),
-      prisma.company.findMany({ select: { email: true, companyName: true } }),
     ]);
 
     // Merge and deduplicate by email
     const emailMap = new Map<string, string>();
     for (const s of newsletterSubs) if (s.email) emailMap.set(s.email.toLowerCase(), s.name || "");
     for (const u of users) if (u.email) emailMap.set(u.email.toLowerCase(), u.name || "");
-    for (const p of partners) if (p.partnerEmail) emailMap.set(p.partnerEmail.toLowerCase(), p.partnerName || "");
-    for (const c of companies) if (c.email) emailMap.set(c.email.toLowerCase(), c.companyName || "");
 
     const allRecipients = [...emailMap.entries()].map(([email, name]) => ({ email, name }));
 

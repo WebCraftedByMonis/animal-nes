@@ -7,7 +7,7 @@ interface Subscriber {
   id: string;
   email: string;
   name: string | null;
-  source: "Newsletter" | "User" | "Partner" | "Company";
+  source: "Newsletter" | "User";
   subscribedAt: string;
 }
 
@@ -172,9 +172,7 @@ export default function NewsletterPage() {
                       {sub.name && <span>{sub.name}</span>}
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                         sub.source === "Newsletter" ? "bg-emerald-100 text-emerald-700" :
-                        sub.source === "User" ? "bg-blue-100 text-blue-700" :
-                        sub.source === "Partner" ? "bg-purple-100 text-purple-700" :
-                        "bg-orange-100 text-orange-700"
+                        "bg-blue-100 text-blue-700"
                       }`}>{sub.source}</span>
                       <span>{sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : ""}</span>
                     </p>
