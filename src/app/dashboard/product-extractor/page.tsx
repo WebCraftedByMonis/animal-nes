@@ -16,6 +16,7 @@ import MuslimherbalExtractor from "@/app/components/MuslimherbalExtractor";
 import YallapetsExtractor from "@/app/components/YallapetsExtractor";
 import PetworlduaeExtractor from "@/app/components/PetworlduaeExtractor";
 import PetcornerdubaiExtractor from "@/app/components/PetcornerdubaiExtractor";
+import PetzoneExtractor from "@/app/components/PetzoneExtractor";
 
 const UAE_TABS = [
   { id: "smbros",          label: "SMBros B2B",      sub: "b2b.smbros.org" },
@@ -26,6 +27,7 @@ const UAE_TABS = [
   { id: "yallapets",       label: "Yalla Pets",       sub: "yallapets.com" },
   { id: "petworlduae",     label: "Pet World UAE",    sub: "petworlduae.com" },
   { id: "petcornerdubai",  label: "Pet Corner Dubai", sub: "petcornerdubai.com" },
+  { id: "petzone",         label: "Petzone",          sub: "petzone.com" },
 ];
 
 const PK_TABS = [
@@ -107,6 +109,7 @@ export default function ProductExtractorPage() {
       {active === "yallapets"         && <YallapetsExtractor />}
       {active === "petworlduae"       && <PetworlduaeExtractor />}
       {active === "petcornerdubai"    && <PetcornerdubaiExtractor />}
+      {active === "petzone"           && <PetzoneExtractor />}
       {active === "petshub"           && <PetshubExtractor />}
       {active === "petplace"          && <PetplaceExtractor />}
       {active === "petsgrocery"       && <PetsgroceryExtractor />}
