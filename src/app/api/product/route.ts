@@ -202,7 +202,35 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const ids = searchParams.get('ids')
 
+    // Bulk delete
+    if (ids) {
+      const productIds = ids.split(',').map(Number).filter(n => !isNaN(n))
+      if (productIds.length === 0) {
+        return NextResponse.json({ error: 'No valid product IDs provided' }, { status: 400 })
+      }
+
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        include: { image: true, pdf: true }
+      })
+
+      const cloudinaryDeletes = products.flatMap(p => [
+        p.image?.publicId ? deleteFromCloudinary(p.image.publicId, 'image') : null,
+        p.pdf?.publicId ? deleteFromCloudinary(p.pdf.publicId, 'raw') : null,
+      ]).filter((p): p is Promise<unknown> => p !== null)
+
+      if (cloudinaryDeletes.length > 0) {
+        await Promise.all(cloudinaryDeletes)
+      }
+
+      await prisma.product.deleteMany({ where: { id: { in: productIds } } })
+
+      return NextResponse.json({ message: `${productIds.length} products deleted` }, { status: 200 })
+    }
+
+    // Single delete
     if (!id) {
       return NextResponse.json(
         { error: 'Product ID is required' },
@@ -231,11 +259,15 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Delete files from Cloudinary
-    await Promise.all([
+    // Delete files from Cloudinary (only if hosted there — external URL images have no publicId)
+    const toDelete = [
       product.image?.publicId ? deleteFromCloudinary(product.image.publicId, 'image') : null,
-      product.pdf?.publicId ? deleteFromCloudinary(product.pdf.publicId, 'raw') : null
-    ])
+      product.pdf?.publicId ? deleteFromCloudinary(product.pdf.publicId, 'raw') : null,
+    ].filter((p): p is Promise<unknown> => p !== null)
+
+    if (toDelete.length > 0) {
+      await Promise.all(toDelete)
+    }
 
     // Delete product (relations will cascade)
     await prisma.product.delete({

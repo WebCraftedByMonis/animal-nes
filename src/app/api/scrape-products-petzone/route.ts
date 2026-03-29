@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import * as cheerio from "cheerio";
 import axios from "axios";
 import https from "https";
 
@@ -25,30 +24,6 @@ export interface ExtractedProduct {
 
 const clean = (s: string) => (s || "").replace(/\s+/g, " ").trim();
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
-
-const FETCH_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.5",
-};
-
-async function fetchHtml(url: string): Promise<string | null> {
-  try {
-    const res = await axios.get(url, {
-      headers: FETCH_HEADERS,
-      timeout: 20000,
-      httpsAgent,
-      maxRedirects: 5,
-      responseType: "text",
-      validateStatus: s => s < 500,
-    });
-    if (res.status >= 400) return null;
-    return typeof res.data === "string" ? res.data : String(res.data);
-  } catch (e: any) {
-    console.log(`[petzone] fetch fail: ${e.message}`);
-    return null;
-  }
-}
 
 // ── GraphQL helper ────────────────────────────────────────────────────────────
 async function gqlQuery(baseUrl: string, query: string): Promise<any> {
@@ -136,141 +111,33 @@ async function fetchProductPage(
   };
 }
 
-// ── Parse product detail page (Hyvä/Magento 2) ───────────────────────────────
-function parseTabContent(html: string): { description: string; dosage: string } {
-  const $ = cheerio.load(html);
-
-  // Remove noise
-  $("script, style, noscript, nav, header, footer").remove();
-
-  let description = "";
-  let dosage = "";
-
-  // ── Try standard Magento 2 tab/accordion selectors ──────────────────────
-  // Magento 2 with Luma: [data-role="content"] inside [data-role="tablist"]
-  // Hyvä: tab panels often use x-show / x-data, content is in the DOM
-
-  // Look for sections labelled "Ingredients" / "Nutrients" / "Composition"
-  // and "Feeding" / "Directions" / "Usage"
-  const allText = (el: any) => clean($(el).text());
-
-  // Magento 2 collapsible tabs pattern
-  $("[data-role='content'], [role='tabpanel'], .tab-content, .product-info-detail-tabs .tab-pane").each((_, el) => {
-    const label = clean(
-      $(el).attr("aria-label") ||
-      $(el).prev("[data-role='title'], .tab-title, button").text() ||
-      $(el).find("h2, h3, h4").first().text()
-    ).toLowerCase();
-
-    const text = allText(el);
-    if (!text) return;
-
-    if (/ingredient|nutri|composit|analyti|constituent/i.test(label) && !description) {
-      description = text.substring(0, 3000);
-    } else if (/feed|direction|usage|instruct|dosage|how to/i.test(label) && !dosage) {
-      dosage = text.substring(0, 1000);
-    }
-  });
-
-  // Hyvä tabs: look for divs with id or x-show bound to tab names
-  if (!description) {
-    $("div[id], section[id]").each((_, el) => {
-      const id = ($(el).attr("id") || "").toLowerCase();
-      const text = allText(el);
-      if (!text) return;
-      if (/ingredient|nutri|composit|analyti/i.test(id) && !description) {
-        description = text.substring(0, 3000);
-      } else if (/feed|direction|usage|instruct/i.test(id) && !dosage) {
-        dosage = text.substring(0, 1000);
-      }
-    });
-  }
-
-  // Hyvä: look for headings followed by content
-  if (!description) {
-    $("h2, h3, h4, strong").each((_, heading) => {
-      const headText = clean($(heading).text()).toLowerCase();
-      if (/ingredient|nutri|composit|analyti/i.test(headText)) {
-        // Gather siblings/next elements
-        let content = "";
-        $(heading).nextAll().each((_, sib) => {
-          const t = clean($(sib).text());
-          if (!t || /^(description|feeding|direction|usage|instruct)/i.test(t)) return false;
-          content += " " + t;
-        });
-        if (content && !description) description = content.trim().substring(0, 3000);
-      } else if (/feeding|direction|usage|instruct|how to/i.test(headText)) {
-        let content = "";
-        $(heading).nextAll().each((_, sib) => {
-          const t = clean($(sib).text());
-          if (!t || /^(description|ingredient|nutri|composit)/i.test(t)) return false;
-          content += " " + t;
-        });
-        if (content && !dosage) dosage = content.trim().substring(0, 1000);
-      }
-    });
-  }
-
-  return { description, dosage };
+// Strip HTML tags to plain text
+function stripHtml(html: string): string {
+  return (html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// ── Build AED price string from GraphQL price_range ──────────────────────────
-function buildPrice(priceRange: any, html?: string): string {
-  // Try DOM first — AED price on the page is accurate
-  if (html) {
-    const $ = cheerio.load(html);
-    const priceEl =
-      $("[data-price-type='finalPrice'] .price, .price-box .price--final .price, [itemprop='price']")
-        .first();
-    const priceAttr = priceEl.attr("content") || priceEl.attr("data-price-amount");
-    if (priceAttr) return String(Math.round(parseFloat(priceAttr)));
-
-    // Regex: "AED XX" or "AED XX.XX"
-    const m = html.match(/AED\s*([\d,]+(?:\.\d+)?)/);
-    if (m) return String(Math.round(parseFloat(m[1].replace(/,/g, ""))));
-  }
-
-  // Fall back to GraphQL value (may be KWD; at least gives a number)
+// Price from GraphQL price_range
+function buildPrice(priceRange: any): string {
   const val = priceRange?.minimum_price?.final_price?.value;
   if (val != null) return String(Math.round(val));
   return "";
 }
 
-// ── Convert one GraphQL product item + optional detail HTML → ExtractedProduct
-async function buildProduct(
-  item: any,
-  baseUrl: string,
-): Promise<ExtractedProduct | null> {
+// Convert one GraphQL product item → ExtractedProduct (no detail page fetch)
+function buildProduct(item: any, baseUrl: string): ExtractedProduct | null {
   if (!item?.name) return null;
 
-  // Build product URL from url_rewrites (shortest non-shop-by-pet path preferred)
-  let productPath = item.url_rewrites?.[0]?.url || `${item.url_key}.html`;
-  const rewrites: string[] = (item.url_rewrites || []).map((r: any) => r.url);
-  const preferred = rewrites.find(u => !/shop-by-pet/i.test(u));
-  if (preferred) productPath = preferred;
-  const productUrl = `${baseUrl}/${productPath}`;
+  // Build product URL — prefer shortest non-shop-by-pet rewrite
+  const rewrites: string[] = (item.url_rewrites || []).map((r: any) => r.url as string);
+  const preferred = rewrites.find(u => !/shop-by-pet/i.test(u)) || rewrites[0] || `${item.url_key}.html`;
+  const productUrl = `${baseUrl}/${preferred}`;
 
   // Image
   let imageUrl = item.small_image?.url || "";
   if (imageUrl.startsWith("//")) imageUrl = "https:" + imageUrl;
 
-  // Attempt to get tab content from detail page
-  let description = clean(item.description?.html ? stripHtml(item.description.html) : "");
-  let dosage = "";
-
-  const detailHtml = await fetchHtml(productUrl);
-  if (detailHtml) {
-    const tabs = parseTabContent(detailHtml);
-    if (tabs.description) description = tabs.description;
-    if (tabs.dosage)      dosage       = tabs.dosage;
-
-    // Price from page
-    if (!item._resolvedPrice) {
-      item._resolvedPrice = buildPrice(item.price_range, detailHtml);
-    }
-  }
-
-  const price = item._resolvedPrice || buildPrice(item.price_range);
+  const description = stripHtml(item.description?.html || "").substring(0, 3000);
+  const price = buildPrice(item.price_range);
 
   return {
     productName:    clean(item.name),
@@ -279,18 +146,13 @@ async function buildProduct(
     subCategory:    "",
     subsubCategory: "",
     productType:    "",
-    description:    description.substring(0, 3000),
-    dosage:         dosage.substring(0, 1000),
+    description,
+    dosage:         "",
     productLink:    productUrl,
     imageUrl,
     outofstock:     false,
     variants:       [{ packingVolume: "", customerPrice: price }],
   };
-}
-
-// Strip basic HTML tags
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // ── SSE helper ────────────────────────────────────────────────────────────────
@@ -299,7 +161,7 @@ function sseEvent(enc: TextEncoder, data: object): Uint8Array {
 }
 
 // ── POST ──────────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 48;
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -347,11 +209,10 @@ export async function POST(req: NextRequest) {
         send({ type: "total", total: items.length });
         send({ type: "page_info", currentPage: page, totalPages, totalCount });
 
-        // Build products in batches of 3 (each fetches a detail page)
-        for (let i = 0; i < items.length; i += 3) {
-          const batch = items.slice(i, i + 3);
-          const results = await Promise.all(batch.map(item => buildProduct(item, baseUrl)));
-          for (const p of results) if (p) send({ type: "product", product: p });
+        // No detail page fetches — build all products directly from GraphQL data
+        for (const item of items) {
+          const p = buildProduct(item, baseUrl);
+          if (p) send({ type: "product", product: p });
         }
 
         if (page < totalPages) {

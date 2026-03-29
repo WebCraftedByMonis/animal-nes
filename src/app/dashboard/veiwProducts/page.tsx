@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Loader2, Link, Plus, X, Eye, Search } from 'lucide-react'
+import { Pencil, Trash2, Loader2, Link, Plus, X, Eye, Search, CheckSquare } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -30,6 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
 import { ComboboxSelect } from '@/components/shared/ComboboxSelect'
 import { useCountry } from '@/contexts/CountryContext'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface ProductVariant {
   id?: number
@@ -113,14 +114,21 @@ export default function ViewProductsPage() {
 
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [companies, setCompanies] = useState<{id: number, companyName: string}[]>([])
   const [partners, setPartners] = useState<{id: number, partnerName: string}[]>([])
+
+  const [filterCompanyId, setFilterCompanyId] = useState('')
+  const [filterPartnerId, setFilterPartnerId] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   const fetchProducts = useCallback(async () => {
     try {
       const params: any = { search, sortBy, sortOrder, page, limit, includeVariants: true, country }
       if (minPrice) params.minPrice = parseFloat(minPrice)
       if (maxPrice) params.maxPrice = parseFloat(maxPrice)
+      if (filterCompanyId) params.companyId = parseInt(filterCompanyId)
+      if (filterPartnerId) params.partnerId = parseInt(filterPartnerId)
 
       const { data } = await axios.get('/api/product', {
         params,
@@ -129,11 +137,12 @@ export default function ViewProductsPage() {
       setProducts(data.data)
       setTotal(data.total)
       setLastCreatedAt(data.lastSubmittedAt)
+      setSelectedIds(new Set())
     } catch (error) {
       console.log(error)
       toast.error('Failed to fetch products')
     }
-  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice, country])
+  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice, country, filterCompanyId, filterPartnerId])
 
   const fetchCompaniesAndPartners = useCallback(async () => {
     try {
@@ -235,6 +244,39 @@ export default function ViewProductsPage() {
     }
   }
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    if (!confirm(`Delete ${selectedIds.size} selected product(s)?`)) return
+
+    setIsBulkDeleting(true)
+    try {
+      await axios.delete('/api/product', { params: { ids: Array.from(selectedIds).join(',') } })
+      toast.success(`${selectedIds.size} products deleted`)
+      setSelectedIds(new Set())
+      fetchProducts()
+    } catch {
+      toast.error('Failed to delete selected products')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === products.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(products.map(p => p.id)))
+    }
+  }
+
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split('-')
     setSortBy(sortBy as 'id' | 'productName')
@@ -283,8 +325,9 @@ export default function ViewProductsPage() {
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-center text-green-500">Products</h1>
 
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap">
-  <div className="flex flex-col sm:flex-row gap-2 flex-wrap w-full sm:w-auto">
+    <div className="flex flex-col gap-3 flex-wrap">
+  {/* Row 1: Search + Price Filter */}
+  <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
     <div className="flex gap-1 w-full sm:w-auto">
       <Input
         placeholder="Search products..."
@@ -324,6 +367,26 @@ export default function ViewProductsPage() {
         Filter
       </Button>
     </div>
+  </div>
+
+  {/* Row 2: Company + Partner filters + Sort + Limit */}
+  <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center">
+    <div className="w-full sm:w-[220px]">
+      <ComboboxSelect
+        options={[{ id: 0, label: 'All Companies' }, ...companies.map(c => ({ id: c.id, label: c.companyName }))]}
+        value={filterCompanyId}
+        onChange={(v) => { setFilterCompanyId(v === '0' ? '' : v); setPage(1) }}
+        placeholder="Filter by company"
+      />
+    </div>
+    <div className="w-full sm:w-[220px]">
+      <ComboboxSelect
+        options={[{ id: 0, label: 'All Partners' }, ...partners.map(p => ({ id: p.id, label: p.partnerName }))]}
+        value={filterPartnerId}
+        onChange={(v) => { setFilterPartnerId(v === '0' ? '' : v); setPage(1) }}
+        placeholder="Filter by partner"
+      />
+    </div>
     <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
       <SelectTrigger className="w-full sm:w-[180px]">
         <SelectValue placeholder="Sort by" />
@@ -349,6 +412,22 @@ export default function ViewProductsPage() {
       </Select>
       <span>entries</span>
     </div>
+    {selectedIds.size > 0 && (
+      <Button
+        size="sm"
+        variant="destructive"
+        onClick={handleBulkDelete}
+        disabled={isBulkDeleting}
+        className="ml-auto"
+      >
+        {isBulkDeleting ? (
+          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+        ) : (
+          <Trash2 className="h-4 w-4 mr-1" />
+        )}
+        Delete selected ({selectedIds.size})
+      </Button>
+    )}
   </div>
 </div>
 
@@ -357,6 +436,12 @@ export default function ViewProductsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={products.length > 0 && selectedIds.size === products.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[50px]">ID</TableHead>
               <TableHead className="w-[80px]">Image</TableHead>
               <TableHead>Product Name</TableHead>
@@ -371,7 +456,13 @@ export default function ViewProductsPage() {
           </TableHeader>
           <TableBody>
             {products.map((product) => (
-              <TableRow key={product.id}>
+              <TableRow key={product.id} className={selectedIds.has(product.id) ? 'bg-muted/50' : ''}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedIds.has(product.id)}
+                    onCheckedChange={() => toggleSelect(product.id)}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{product.id}</TableCell>
                 <TableCell>
                   {product.image ? (
