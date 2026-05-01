@@ -36,7 +36,8 @@
       "Bash(find:*)",
       "WebFetch(domain:petworlduae.com)",
       "WebFetch(domain:petcornerdubai.com)",
-      "WebFetch(domain:petzone.com)"
+      "WebFetch(domain:petzone.com)",
+      "WebFetch(domain:thepetshop.pk)"
     ],
     "deny": [],
     "ask": []

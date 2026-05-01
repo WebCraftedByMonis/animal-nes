@@ -17,6 +17,7 @@ import YallapetsExtractor from "@/app/components/YallapetsExtractor";
 import PetworlduaeExtractor from "@/app/components/PetworlduaeExtractor";
 import PetcornerdubaiExtractor from "@/app/components/PetcornerdubaiExtractor";
 import PetzoneExtractor from "@/app/components/PetzoneExtractor";
+import ThepetshopExtractor from "@/app/components/ThepetshopExtractor";
 
 const UAE_TABS = [
   { id: "smbros",          label: "SMBros B2B",      sub: "b2b.smbros.org" },
@@ -38,6 +39,7 @@ const PK_TABS = [
   { id: "muslimherbal",       label: "Muslim Herbal",     sub: "muslimherbalandnutraceutical.com" },
   { id: "onlinevetpharmacy",  label: "OnlineVetPharmacy", sub: "onlinevetpharmacy.com" },
   { id: "vetshop",            label: "VetShop",           sub: "vet-shop.net" },
+  { id: "thepetshop",         label: "The Pet Shop",      sub: "thepetshop.pk" },
 ];
 
 export default function ProductExtractorPage() {
@@ -117,6 +119,7 @@ export default function ProductExtractorPage() {
       {active === "muslimherbal"      && <MuslimherbalExtractor />}
       {active === "onlinevetpharmacy" && <OnlineVetPharmacyExtractor />}
       {active === "vetshop"           && <VetshopExtractor />}
+      {active === "thepetshop"        && <ThepetshopExtractor />}
     </div>
   );
 }
