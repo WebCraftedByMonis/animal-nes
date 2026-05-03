@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import ProductsClient from '@/components/ProductsClient'
 import { getApiUrl } from '@/lib/utils'
 
@@ -99,7 +100,9 @@ export default async function AllProductsPage() {
         </nav>
       )}
 
-      <ProductsClient />
+      <Suspense fallback={<div className="text-center py-12 text-muted-foreground">Loading products...</div>}>
+        <ProductsClient />
+      </Suspense>
     </div>
   )
 }
