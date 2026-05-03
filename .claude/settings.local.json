@@ -37,7 +37,10 @@
       "WebFetch(domain:petworlduae.com)",
       "WebFetch(domain:petcornerdubai.com)",
       "WebFetch(domain:petzone.com)",
-      "WebFetch(domain:thepetshop.pk)"
+      "WebFetch(domain:thepetshop.pk)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "WebFetch(domain:www.thepetshop.com)"
     ],
     "deny": [],
     "ask": []

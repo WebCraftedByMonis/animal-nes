@@ -68,9 +68,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  verification: {
-    google: "your-google-verification-code", // Add your Google verification code
-  },
+  // To verify with Google Search Console, replace the value below with your
+  // HTML-tag verification code from https://search.google.com/search-console
+  // verification: { google: "YOUR_ACTUAL_CODE_HERE" },
 };
 
 export default function RootLayout({
@@ -81,10 +81,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preconnect to external domains for faster loading */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-        {/* Preload critical fonts */}
         <link
           rel="preload"
           href="/_next/static/media/fe0777f1195381cb-s.woff2"
@@ -92,6 +90,7 @@ export default function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
+        <link rel="sitemap" type="application/xml" href="https://www.animalwellness.shop/sitemap.xml" />
       </head>
       {/* Google Analytics */}
       <Script

@@ -5,7 +5,18 @@ import { getApiUrl } from '@/lib/utils';
 export const revalidate = 1800
 
 export async function generateStaticParams() {
-  return []
+  try {
+    const res = await fetch(`${getApiUrl()}/api/product?limit=1000`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return []
+    const { data } = await res.json()
+    return (data || [])
+      .filter((p: any) => p.isActive !== false)
+      .map((p: any) => ({ id: String(p.id) }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -82,46 +93,60 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
     const { data } = await res.json();
 
-    // Generate structured data for SEO
-    const structuredData = {
-      "@context": "https://schema.org/",
-      "@type": "Product",
+    const baseUrl = 'https://www.animalwellness.shop'
+
+    const productSchema = {
+      '@context': 'https://schema.org/',
+      '@type': 'Product',
       name: data.productName,
       description: data.description || `${data.productName} - Quality veterinary product`,
-      image: data.image?.url || '',
+      ...(data.image?.url && { image: data.image.url }),
       brand: {
-        "@type": "Brand",
-        name: data.company?.companyName || "Animal Wellness"
+        '@type': 'Brand',
+        name: data.company?.companyName || 'Animal Wellness',
       },
       manufacturer: {
-        "@type": "Organization",
-        name: data.company?.companyName || "Animal Wellness"
+        '@type': 'Organization',
+        name: data.company?.companyName || 'Animal Wellness',
       },
-      category: data.category || "Veterinary Products",
-      ...(data.variants?.[0]?.customerPrice && {
+      category: data.category || 'Veterinary Products',
+      ...(data.variants?.length > 0 && {
         offers: {
-          "@type": "Offer",
-          price: data.variants[0].customerPrice,
-          priceCurrency: "PKR",
-          availability: data.outofstock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-          seller: {
-            "@type": "Organization",
-            name: "Animal Wellness"
-          }
-        }
+          '@type': 'AggregateOffer',
+          lowPrice: Math.min(...data.variants.map((v: any) => v.customerPrice).filter(Boolean)),
+          highPrice: Math.max(...data.variants.map((v: any) => v.customerPrice).filter(Boolean)),
+          priceCurrency: 'PKR',
+          offerCount: data.variants.length,
+          availability: data.outofstock
+            ? 'https://schema.org/OutOfStock'
+            : 'https://schema.org/InStock',
+          seller: { '@type': 'Organization', name: 'Animal Wellness' },
+        },
       }),
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.5",
-        reviewCount: "10"
-      }
-    };
+    }
+
+    const breadcrumbSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: baseUrl },
+        { '@type': 'ListItem', position: 2, name: 'Products', item: `${baseUrl}/products` },
+        ...(data.category
+          ? [{ '@type': 'ListItem', position: 3, name: data.category, item: `${baseUrl}/products?category=${encodeURIComponent(data.category)}` }]
+          : []),
+        { '@type': 'ListItem', position: data.category ? 4 : 3, name: data.productName, item: `${baseUrl}/products/${id}` },
+      ],
+    }
 
     return (
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         <ProductClient product={data} />
       </>

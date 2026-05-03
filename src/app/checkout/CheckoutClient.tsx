@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,20 @@ interface CheckoutProps {
     animalCartItems: AnimalCartItem[]
 }
 
-const FIXED_DELIVERY_CHARGE = 350;
+const COUNTRY_CONFIG = {
+    pakistan: {
+        currency: 'PKR',
+        deliveryCharge: 350,
+        provinces: ['Punjab', 'Sindh', 'Balochistan', 'Khyber Pakhtunkhwa', 'Gilgit Baltistan', 'Kashmir', 'Islamabad'],
+    },
+    uae: {
+        currency: 'AED',
+        deliveryCharge: 25,
+        provinces: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah'],
+    },
+} as const
+
+type CountryKey = keyof typeof COUNTRY_CONFIG
 
 // Helper to get active discount for an item
 // Priority: variant-level > product-level > company-level
@@ -73,8 +86,24 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     const [showFullTerms, setShowFullTerms] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    // City state - now just a simple string input
+    // Country and city state
+    const [country, setCountry] = useState<CountryKey>('pakistan')
     const [city, setCity] = useState('')
+
+    // Load saved country from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('selectedCountry') as CountryKey | null
+        if (saved && saved in COUNTRY_CONFIG) setCountry(saved)
+    }, [])
+
+    const handleCountryChange = (value: CountryKey) => {
+        setCountry(value)
+        setProvince('')
+        localStorage.setItem('selectedCountry', value)
+    }
+
+    const config = COUNTRY_CONFIG[country]
+    const { currency, deliveryCharge } = config
 
     // Calculate subtotal with discounted prices
     const subtotal =
@@ -88,8 +117,8 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
 
     const totalSavings = originalSubtotal - subtotal
 
-    // Calculate total with fixed shipping charge
-    const total = subtotal + FIXED_DELIVERY_CHARGE
+    // Calculate total with country-based shipping charge
+    const total = subtotal + deliveryCharge
 
     const handleSubmit = async () => {
         if (!termsAccepted || !paymentMethod) {
@@ -113,7 +142,9 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 cart: cartItems,
                 animalCart: animalCartItems,
                 subtotal,
-                shippingCharges: FIXED_DELIVERY_CHARGE,
+                shippingCharges: deliveryCharge,
+                currency,
+                country,
                 total,
             }),
         })
@@ -129,56 +160,61 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
             <h1 className="text-3xl font-bold text-green-500 mb-6">Checkout Form</h1>
 
             <form className="space-y-4">
-                <input 
-                    type="text" 
-                    value={session?.user?.name || ''} 
-                    disabled 
+                <input
+                    type="text"
+                    value={session?.user?.name || ''}
+                    disabled
                     className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                 />
-                <input 
-                    type="email" 
-                    value={session?.user?.email || ''} 
-                    disabled 
-                    className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
-                />
-
-                <input 
-                    type="text" 
-                    placeholder="Mobile No." 
-                    value={shippingAddress} 
-                    onChange={e => setShippingAddress(e.target.value)} 
+                <input
+                    type="email"
+                    value={session?.user?.email || ''}
+                    disabled
                     className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                 />
 
-                {/* City input - now manual text input */}
+                <input
+                    type="text"
+                    placeholder="Mobile No."
+                    value={shippingAddress}
+                    onChange={e => setShippingAddress(e.target.value)}
+                    className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
+                />
+
+                {/* Country selector */}
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Country *</label>
+                    <select
+                        value={country}
+                        onChange={e => handleCountryChange(e.target.value as CountryKey)}
+                        className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
+                    >
+                        <option value="pakistan">Pakistan</option>
+                        <option value="uae">United Arab Emirates (UAE)</option>
+                    </select>
+                </div>
+
+                {/* City input */}
                 <div className="space-y-2">
                     <label className="text-sm font-medium">City *</label>
-                    <input 
-                        type="text" 
-                        placeholder="Enter your city" 
-                        value={city} 
-                        onChange={e => setCity(e.target.value)} 
+                    <input
+                        type="text"
+                        placeholder="Enter your city"
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
                         className="w-full border dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-100 p-2 rounded"
                         required
                     />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Delivery charges: <span className="font-semibold text-green-500">PKR {FIXED_DELIVERY_CHARGE.toFixed(2)}</span>
+                        Delivery charges: <span className="font-semibold text-green-500">{currency} {deliveryCharge.toFixed(2)}</span>
                     </p>
                 </div>
 
                 <SuggestiveInput
-                    suggestions={[
-                        "Punjab",
-                        "Sindh",
-                        "Balochistan",
-                        "Khyber Pakhtunkhwa",
-                        "Gilgit Baltistan",
-                        "Kashmir",
-                        "Islamabad",
-                    ]}
+                    suggestions={config.provinces as unknown as string[]}
                     value={province}
                     onChange={(v) => setProvince(v)}
-                    placeholder="Province"
+                    placeholder={country === 'uae' ? 'Emirate' : 'Province'}
                 />
 
                 <input 
@@ -217,13 +253,13 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                                         <td className="p-2 text-right">
                                             {discount ? (
                                                 <div>
-                                                    <span className="text-green-600 font-medium">PKR {(finalPrice * item.quantity).toFixed(2)}</span>
+                                                    <span className="text-green-600 font-medium">{currency} {(finalPrice * item.quantity).toFixed(2)}</span>
                                                     <span className="text-gray-400 line-through text-sm ml-2">
-                                                        PKR {(item.variant.customerPrice * item.quantity).toFixed(2)}
+                                                        {currency} {(item.variant.customerPrice * item.quantity).toFixed(2)}
                                                     </span>
                                                 </div>
                                             ) : (
-                                                <span>PKR {(item.variant.customerPrice * item.quantity).toFixed(2)}</span>
+                                                <span>{currency} {(item.variant.customerPrice * item.quantity).toFixed(2)}</span>
                                             )}
                                         </td>
                                     </tr>
@@ -233,28 +269,28 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                                 <tr key={`animal-${item.id}`} className="border-b">
                                     <td className="p-2">{item.animal.specie} - {item.animal.breed}</td>
                                     <td className="p-2">Qty: {item.quantity}</td>
-                                    <td className="p-2 text-right">PKR {(item.animal.totalPrice * item.quantity).toFixed(2)}</td>
+                                    <td className="p-2 text-right">{currency} {(item.animal.totalPrice * item.quantity).toFixed(2)}</td>
                                 </tr>
                             ))}
                             <tr className="border-t-2">
                                 <td colSpan={2} className="text-right p-2">Subtotal:</td>
-                                <td className="text-right p-2">PKR {subtotal.toFixed(2)}</td>
+                                <td className="text-right p-2">{currency} {subtotal.toFixed(2)}</td>
                             </tr>
                             {totalSavings > 0 && (
                                 <tr className="text-green-600">
                                     <td colSpan={2} className="text-right p-2">Discount Savings:</td>
-                                    <td className="text-right p-2">- PKR {totalSavings.toFixed(2)}</td>
+                                    <td className="text-right p-2">- {currency} {totalSavings.toFixed(2)}</td>
                                 </tr>
                             )}
                             <tr>
                                 <td colSpan={2} className="text-right p-2">
                                     Delivery Charges:
                                 </td>
-                                <td className="text-right p-2">PKR {FIXED_DELIVERY_CHARGE.toFixed(2)}</td>
+                                <td className="text-right p-2">{currency} {deliveryCharge.toFixed(2)}</td>
                             </tr>
                             <tr className="font-bold bg-gray-50 dark:bg-gray-800">
                                 <td colSpan={2} className="text-right p-2">Total:</td>
-                                <td className="text-right p-2 text-green-500">PKR {total.toFixed(2)}</td>
+                                <td className="text-right p-2 text-green-500">{currency} {total.toFixed(2)}</td>
                             </tr>
                         </tbody>
                     </table>

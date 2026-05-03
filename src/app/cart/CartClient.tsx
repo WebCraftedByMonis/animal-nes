@@ -1,10 +1,15 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/contexts/CartContext'
+
+const CURRENCY_BY_COUNTRY: Record<string, string> = {
+  pakistan: 'PKR',
+  uae: 'AED',
+}
 
 interface ProductImage {
   url: string
@@ -95,6 +100,14 @@ export default function CartClient({ cartItems }: CartClientProps) {
   const [cart, setCart] = useState<CartItem[]>(cartItems)
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
   const { decrementProductCount } = useCart()
+  const [currency, setCurrency] = useState('PKR')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedCountry')
+    if (saved && CURRENCY_BY_COUNTRY[saved]) {
+      setCurrency(CURRENCY_BY_COUNTRY[saved])
+    }
+  }, [])
 
   const updateQuantity = async (id: number, newQuantity: string) => {
     // Parse the quantity and validate
@@ -254,19 +267,19 @@ export default function CartClient({ cartItems }: CartClientProps) {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                            PKR {getFinalPrice(item).toLocaleString()}
+                            {currency} {getFinalPrice(item).toLocaleString()}
                           </p>
                           <p className="text-sm text-gray-500 line-through">
-                            PKR {item.variant.customerPrice.toLocaleString()}
+                            {currency} {item.variant.customerPrice.toLocaleString()}
                           </p>
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400">
-                          You save PKR {(item.variant.customerPrice - getFinalPrice(item)).toLocaleString()} per item
+                          You save {currency} {(item.variant.customerPrice - getFinalPrice(item)).toLocaleString()} per item
                         </p>
                       </div>
                     ) : (
                       <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                        PKR {item.variant.customerPrice.toLocaleString()}
+                        {currency} {item.variant.customerPrice.toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -333,12 +346,12 @@ export default function CartClient({ cartItems }: CartClientProps) {
             <div className="space-y-4 mb-6">
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Subtotal ({cart.length} {cart.length === 1 ? 'item' : 'items'})</span>
-                <span className="font-medium">PKR {subtotal.toLocaleString()}</span>
+                <span className="font-medium">{currency} {subtotal.toLocaleString()}</span>
               </div>
               {totalSavings > 0 && (
                 <div className="flex justify-between text-green-600 dark:text-green-400">
                   <span>Discount Savings</span>
-                  <span className="font-medium">- PKR {totalSavings.toLocaleString()}</span>
+                  <span className="font-medium">- {currency} {totalSavings.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
@@ -349,12 +362,12 @@ export default function CartClient({ cartItems }: CartClientProps) {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold text-gray-900 dark:text-white">Total</span>
                   <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    PKR {subtotal.toLocaleString()}
+                    {currency} {subtotal.toLocaleString()}
                   </span>
                 </div>
                 {totalSavings > 0 && (
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    You are saving PKR {totalSavings.toLocaleString()} with discounts!
+                    You are saving {currency} {totalSavings.toLocaleString()} with discounts!
                   </p>
                 )}
               </div>
