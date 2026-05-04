@@ -19,6 +19,7 @@ import PetcornerdubaiExtractor from "@/app/components/PetcornerdubaiExtractor";
 import PetzoneExtractor from "@/app/components/PetzoneExtractor";
 import ThepetshopExtractor from "@/app/components/ThepetshopExtractor";
 import ThepetshopuaeExtractor from "@/app/components/ThepetshopuaeExtractor";
+import AlreemvetExtractor from "@/app/components/AlreemvetExtractor";
 
 const UAE_TABS = [
   { id: "smbros",          label: "SMBros B2B",      sub: "b2b.smbros.org" },
@@ -31,6 +32,7 @@ const UAE_TABS = [
   { id: "petcornerdubai",  label: "Pet Corner Dubai", sub: "petcornerdubai.com" },
   { id: "petzone",         label: "Petzone",          sub: "petzone.com" },
   { id: "thepetshopuae",  label: "The Pet Shop UAE", sub: "thepetshop.com" },
+  { id: "alreemvet",      label: "Alreem Vet",       sub: "alreemvet.net" },
 ];
 
 const PK_TABS = [
@@ -115,6 +117,7 @@ export default function ProductExtractorPage() {
       {active === "petcornerdubai"    && <PetcornerdubaiExtractor />}
       {active === "petzone"           && <PetzoneExtractor />}
       {active === "thepetshopuae"     && <ThepetshopuaeExtractor />}
+      {active === "alreemvet"         && <AlreemvetExtractor />}
       {active === "petshub"           && <PetshubExtractor />}
       {active === "petplace"          && <PetplaceExtractor />}
       {active === "petsgrocery"       && <PetsgroceryExtractor />}

@@ -40,7 +40,8 @@
       "WebFetch(domain:thepetshop.pk)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" -Force)",
       "Bash(Select-Object Name, Mode)",
-      "WebFetch(domain:www.thepetshop.com)"
+      "WebFetch(domain:www.thepetshop.com)",
+      "WebFetch(domain:alreemvet.net)"
     ],
     "deny": [],
     "ask": []
