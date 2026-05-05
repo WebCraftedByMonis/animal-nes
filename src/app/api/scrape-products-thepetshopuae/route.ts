@@ -49,18 +49,45 @@ function parseProduct(html: string, url: string): ExtractedProduct | null {
   const name = clean($("h1").first().text());
   if (!name) return null;
 
-  // Image — og:image is reliable
-  const imageUrl =
-    $('meta[property="og:image"]').attr("content") ||
-    $('meta[name="og:image"]').attr("content") ||
-    $("img").first().attr("src") || "";
+  // ── Image ──────────────────────────────────────────────────────────────────
+  let imageUrl = "";
 
-  // Price — find first "AED XX.XX" occurrence in the page
+  // JSON-LD Product schema (most reliable — Shopify always includes this)
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (imageUrl) return;
+    try {
+      const ld = JSON.parse($(el).html() || "");
+      const node: any = ld["@type"] === "Product" ? ld
+        : Array.isArray(ld["@graph"]) ? (ld["@graph"] as any[]).find((n: any) => n["@type"] === "Product") : null;
+      if (!node) return;
+      const img = node.image;
+      if (typeof img === "string") imageUrl = img;
+      else if (Array.isArray(img) && img[0]) imageUrl = typeof img[0] === "string" ? img[0] : (img[0].url || "");
+      else if (img?.url) imageUrl = String(img.url);
+    } catch {}
+  });
+
+  if (!imageUrl) {
+    imageUrl = $('meta[property="og:image"]').attr("content") ||
+               $('meta[name="og:image"]').attr("content") || "";
+  }
+
+  // Shopify CDN product image (handles headless sites where og:image isn't in static HTML)
+  if (!imageUrl) {
+    $('img[src*="cdn.shopify.com"][src*="/products/"], img[data-src*="cdn.shopify.com"][data-src*="/products/"]').each((_, el) => {
+      if (imageUrl) return;
+      imageUrl = $(el).attr("src") || $(el).attr("data-src") || "";
+    });
+  }
+
+  if (imageUrl.startsWith("//")) imageUrl = "https:" + imageUrl;
+
+  // ── Price ──────────────────────────────────────────────────────────────────
   let price = "";
   const priceMatch = html.match(/AED\s*([\d,]+(?:\.\d+)?)/);
   if (priceMatch) price = String(Math.round(parseFloat(priceMatch[1].replace(/,/g, ""))));
 
-  // Variants — look for buttons or elements showing weight/size patterns like "3KG", "400g", "1.5kg"
+  // ── Variants ──────────────────────────────────────────────────────────────
   const variants: ExtractedVariant[] = [];
   const sizeRe = /^\s*(\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|lb|oz|gm|grams?|litre?s?|pack|pc|pcs|pieces?|count|tabs?|capsules?)\s*(?:x\s*\d+)?)\s*$/i;
 
@@ -74,32 +101,59 @@ function parseProduct(html: string, url: string): ExtractedProduct | null {
 
   if (!variants.length) variants.push({ packingVolume: "", customerPrice: price });
 
-  // Description — remove script/style/nav noise, grab meaningful paragraphs
-  $("script, style, noscript, nav, header, footer, [class*='nav'], [class*='header'], [class*='footer']").remove();
-
+  // ── Description ───────────────────────────────────────────────────────────
   let description = "";
 
-  // Try common description selectors
-  const descEl =
-    $("[class*='description'], [class*='Description'], [data-tab='description'], #description, .product-description, .pdp-description")
-      .first();
-  if (descEl.length) {
-    description = clean(descEl.text()).substring(0, 3000);
+  // 1. JSON-LD description (clean, no nav garbage)
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (description) return;
+    try {
+      const ld = JSON.parse($(el).html() || "");
+      const node: any = ld["@type"] === "Product" ? ld
+        : Array.isArray(ld["@graph"]) ? (ld["@graph"] as any[]).find((n: any) => n["@type"] === "Product") : null;
+      if (node?.description) description = clean(String(node.description)).substring(0, 3000);
+    } catch {}
+  });
+
+  // 2. Text-based: extract between "Product Description" heading and next section
+  if (!description) {
+    $("script, style, noscript").remove();
+    const bodyText = clean($("body").text());
+    const idx = bodyText.search(/Product\s+Description/i);
+    if (idx >= 0) {
+      let chunk = bodyText.slice(idx).replace(/^Product\s+Description\s*/i, "").trimStart();
+      if (chunk.toLowerCase().startsWith(name.toLowerCase())) {
+        chunk = chunk.slice(name.length).trimStart();
+      }
+      const cutoff = chunk.search(/Nutritional\s+Info|Feeding\s+Instructions?|Technical\s+details|Ingredients\s*[-–—]/i);
+      if (cutoff > 50) chunk = chunk.slice(0, cutoff);
+      if (chunk.length > 80) description = clean(chunk).substring(0, 3000);
+    }
   }
 
-  // Fallback: find the longest paragraph block on the page
+  // 3. Specific CSS selectors (no broad class* wildcards that match the full page)
+  if (!description) {
+    $("nav, header, footer").remove();
+    const descEl = $(
+      ".product__description, .product-description, #description, #tab-description, " +
+      "[data-tab-content='description'], [data-product-description]"
+    ).first();
+    if (descEl.length) description = clean(descEl.text()).substring(0, 3000);
+  }
+
+  // 4. Longest <p> fallback
   if (!description) {
     let longest = "";
-    $("p, [class*='text'], [class*='content'], [class*='body']").each((_, el) => {
+    $("p").each((_, el) => {
       const t = clean($(el).text());
-      if (t.length > longest.length && t.length > 60) longest = t;
+      if (t.length > longest.length && t.length > 100) longest = t;
     });
     description = longest.substring(0, 3000);
   }
 
-  // Category from breadcrumb or og:type
+  // ── Category ──────────────────────────────────────────────────────────────
   const category = clean(
-    $("[class*='breadcrumb'] a, [class*='Breadcrumb'] a, nav[aria-label*='read'] a").last().text() ||
+    $("[class*='breadcrumb'] a, [class*='Breadcrumb'] a").last().text() ||
     $('meta[property="product:category"]').attr("content") || ""
   );
 
@@ -117,7 +171,7 @@ function sseEvent(enc: TextEncoder, data: object) {
   return enc.encode(`data: ${JSON.stringify(data)}\n\n`);
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 48;
 
 export async function POST(req: NextRequest) {
   const { url, page = 1 } = await req.json().catch(() => ({}));
