@@ -50,9 +50,17 @@ const productSchema = z.object({
 
 const updateProductSchema = productSchema.partial()
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
 // Helper function for file uploads
 async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
-    if (!file || file.size === 0) return null
+  if (!file || file.size === 0) return null
+
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(
+      `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`
+    )
+  }
 
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)

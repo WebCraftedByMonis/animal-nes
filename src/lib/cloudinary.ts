@@ -29,6 +29,8 @@ function sanitizePublicId(filename: string): string {
     .toLowerCase()
 }
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10MB — Cloudinary free plan limit
+
 /**
  * Uploads a file buffer to Cloudinary.
  */
@@ -38,6 +40,12 @@ export async function uploadFileToCloudinary(
   resourceType: 'image' | 'raw' = 'image',
   originalFileName?: string
 ): Promise<CloudinaryUploadResult> {
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `File too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB. Maximum allowed is 10MB.`
+    )
+  }
+
   const baseFileName = originalFileName
     ? sanitizePublicId(originalFileName)
     : `file-${Date.now()}`
@@ -72,6 +80,7 @@ export async function uploadFileToCloudinary(
       }
     )
 
+    uploadStream.on('error', reject)
     uploadStream.end(buffer)
   })
 }
