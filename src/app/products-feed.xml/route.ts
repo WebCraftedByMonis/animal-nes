@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // Requires Node.js runtime — Prisma doesn't run in the Edge runtime.
-// maxDuration of 300 needs Vercel Pro / Enterprise.
-// On Vercel Hobby the hard cap is 60 s; upgrade if the feed times out.
 export const runtime = "nodejs";
-export const maxDuration = 300;
+// Never pre-render during build — always generate at request time.
+// This prevents next build from hitting the DB from the build machine.
+export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://www.animalwellness.shop";
 

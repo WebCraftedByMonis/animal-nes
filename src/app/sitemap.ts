@@ -33,10 +33,13 @@ export default async function sitemap({
 }: {
   id: number;
 }): Promise<MetadataRoute.Sitemap> {
-  if (id === 0) {
+  // Next.js passes route-segment params as strings at runtime despite the
+  // TypeScript type saying number — coerce explicitly so === 0 works correctly.
+  const numId = Number(id);
+  if (numId === 0) {
     return buildNonProductSitemap();
   }
-  return buildProductSitemap(id);
+  return buildProductSitemap(numId);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -294,6 +297,7 @@ async function buildNonProductSitemap(): Promise<MetadataRoute.Sitemap> {
 
 // ─── Sitemaps 1…N: product pages ─────────────────────────────────────────────
 async function buildProductSitemap(id: number): Promise<MetadataRoute.Sitemap> {
+  // id is 1-based (ID 0 = non-product sitemap, IDs 1..N = product chunks).
   const skip = (id - 1) * PRODUCTS_PER_SITEMAP;
 
   const products = await prisma.product.findMany({
