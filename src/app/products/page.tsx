@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import ProductsClient from '@/components/ProductsClient'
-import { getApiUrl } from '@/lib/utils'
+import { prisma } from '@/lib/prisma'
 
 export const revalidate = 1800
 
@@ -27,15 +27,23 @@ export const metadata: Metadata = {
   },
 }
 
+// Query the DB directly for the server-rendered product index.
+// This list is used only for SEO link discovery (sr-only nav below) —
+// the interactive product browser is handled client-side by ProductsClient.
+// We select only the minimal fields needed and order by featured-first so the
+// most important products appear earliest in the HTML.
 async function getAllProducts() {
   try {
-    const res = await fetch(`${getApiUrl()}/api/product?limit=500&sortBy=createdAt&sortOrder=desc`, {
-      next: { revalidate: 1800 },
+    return await prisma.product.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        productName: true,
+        genericName: true,
+        category: true,
+      },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
     })
-    if (!res.ok) return []
-    const json = await res.json()
-    const data = json.data || json
-    return Array.isArray(data) ? data.filter((p: any) => p.isActive !== false) : []
   } catch {
     return []
   }
@@ -51,7 +59,7 @@ export default async function AllProductsPage() {
     description: 'Browse our extensive collection of veterinary products, medicines, and pet care supplies.',
     url: `${BASE_URL}/products`,
     numberOfItems: products.length,
-    itemListElement: products.map((p: any, index: number) => ({
+    itemListElement: products.map((p, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       item: {
@@ -59,18 +67,7 @@ export default async function AllProductsPage() {
         '@id': `${BASE_URL}/products/${p.id}`,
         name: p.productName,
         url: `${BASE_URL}/products/${p.id}`,
-        ...(p.image?.url && { image: p.image.url }),
         ...(p.category && { category: p.category }),
-        ...(p.variants?.[0]?.customerPrice && {
-          offers: {
-            '@type': 'Offer',
-            price: p.variants[0].customerPrice,
-            priceCurrency: 'PKR',
-            availability: p.outofstock
-              ? 'https://schema.org/OutOfStock'
-              : 'https://schema.org/InStock',
-          },
-        }),
       },
     })),
   }

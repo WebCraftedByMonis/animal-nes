@@ -1,331 +1,313 @@
 import { MetadataRoute } from "next";
+import { prisma } from "@/lib/prisma";
+import { PARTNER_TYPE_GROUPS } from "@/lib/partner-constants";
+import { SellStatus } from "@prisma/client";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.animalwellness.shop";
+// Revalidate the sitemap index and all child sitemaps every hour.
+export const revalidate = 3600;
 
-  async function fetchData<T>(endpoint: string): Promise<T[]> {
-    try {
-      const res = await fetch(`${baseUrl}/api/${endpoint}`, {
-        next: { revalidate: 3600 }
-      });
-      if (!res.ok) return [];
-      const json = await res.json();
-      const data = json.data || json;
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error(`Failed to fetch ${endpoint}:`, error);
-      return [];
-    }
+const BASE_URL = "https://www.animalwellness.shop";
+
+// Each product-chunk sitemap contains at most this many URLs.
+// Google's per-file limit is 50,000; 5,000 keeps individual files small and
+// makes ISR revalidation faster.
+const PRODUCTS_PER_SITEMAP = 5000;
+
+// ─── Sitemap index ────────────────────────────────────────────────────────────
+// Next.js 15 generates a sitemap *index* at /sitemap.xml pointing to
+// /sitemap/0.xml, /sitemap/1.xml … automatically when generateSitemaps is
+// exported.  ID 0 = static + non-product dynamic pages.  IDs 1-N = product
+// chunks of PRODUCTS_PER_SITEMAP each.
+export async function generateSitemaps() {
+  const productCount = await prisma.product.count({ where: { isActive: true } });
+  const productChunks = Math.max(1, Math.ceil(productCount / PRODUCTS_PER_SITEMAP));
+  return [
+    { id: 0 },
+    ...Array.from({ length: productChunks }, (_, i) => ({ id: i + 1 })),
+  ];
+}
+
+// ─── Main export ─────────────────────────────────────────────────────────────
+export default async function sitemap({
+  id,
+}: {
+  id: number;
+}): Promise<MetadataRoute.Sitemap> {
+  if (id === 0) {
+    return buildNonProductSitemap();
   }
+  return buildProductSitemap(id);
+}
 
-  // Custom fetcher for sell-animal API which returns { items: [...], total: N }
-  async function fetchSellAnimals(): Promise<any[]> {
-    try {
-      const res = await fetch(`${baseUrl}/api/sell-animal?limit=1000&status=ACCEPTED`, {
-        next: { revalidate: 3600 }
-      });
-      if (!res.ok) return [];
-      const json = await res.json();
-      return Array.isArray(json.items) ? json.items : [];
-    } catch (error) {
-      console.error("Failed to fetch sell-animal:", error);
-      return [];
-    }
-  }
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  // Fetch dynamic content
+function getPartnerUrl(
+  partnerType: string | null | undefined,
+  id: number
+): string | null {
+  if (!partnerType) return null;
+  // Cast so TypeScript doesn't complain about readonly string[] vs string[]
+  const g = PARTNER_TYPE_GROUPS as Record<string, readonly string[]>;
+  if (g.veterinarian.includes(partnerType))
+    return `${BASE_URL}/Veternarians/${id}`;
+  if (g.sales.includes(partnerType)) return `${BASE_URL}/Sales/${id}`;
+  if (g.veterinary_assistant.includes(partnerType))
+    return `${BASE_URL}/VeterinaryAssistants/${id}`;
+  if (g.student.includes(partnerType)) return `${BASE_URL}/Students/${id}`;
+  if (g.faculty.includes(partnerType)) return `${BASE_URL}/Faculty/${id}`;
+  if (g.farmer.includes(partnerType)) return `${BASE_URL}/Farmers/${id}`;
+  return null;
+}
+
+// ─── Sitemap 0: static + all non-product dynamic pages ───────────────────────
+async function buildNonProductSitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
+
+  // All queries run in parallel; we only select the fields we actually use
+  // so this stays fast even on large tables.
   const [
-    products,
-    vetPartners,
-    salesPartners,
-    vaPartners,
-    studentPartners,
+    partners,
     companies,
     news,
     vacancies,
     jobPosts,
-    facultyPartners,
-    farmerPartners,
-    dynamicForms,
     sellAnimals,
+    dynamicForms,
   ] = await Promise.all([
-    fetchData<any>("product"),
-    fetchData<any>("partner?partnerTypeGroup=veterinarian"),
-    fetchData<any>("partner?partnerTypeGroup=sales"),
-    fetchData<any>("partner?partnerTypeGroup=veterinary_assistant"),
-    fetchData<any>("partner?partnerTypeGroup=student"),
-    fetchData<any>("company"),
-    fetchData<any>("animal-news"),
-    fetchData<any>("vacancyForm"),
-    fetchData<any>("traditionaljobpost"),
-    fetchData<any>("partner?partnerTypeGroup=faculty"),
-    fetchData<any>("partner?partnerTypeGroup=farmer"),
-    fetchData<any>("dynamic-forms"),
-    fetchSellAnimals(),
+    prisma.partner.findMany({
+      select: { id: true, partnerType: true, updatedAt: true },
+    }),
+    prisma.company.findMany({
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.animalNews.findMany({
+      where: { isActive: true },
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.jobForm.findMany({
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.traditionalJobPost.findMany({
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.sellAnimal.findMany({
+      where: { status: SellStatus.ACCEPTED },
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.dynamicForm.findMany({
+      where: { isActive: true },
+      select: { slug: true, updatedAt: true },
+    }),
   ]);
 
-  // High-priority static pages
+  // ── Static pages ──────────────────────────────────────────────────────────
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: baseUrl,
-      lastModified: new Date(),
+      url: BASE_URL,
+      lastModified: now,
       changeFrequency: "daily",
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/products`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/products`,
+      lastModified: now,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/findDoctor`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/findDoctor`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/about`,
+      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/contact`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/contact`,
+      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/jobvacancy`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/jobvacancy`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/traditionaljobposts`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/traditionaljobposts`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/Veternarians`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Veternarians`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/VeterinaryAssistants`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/VeterinaryAssistants`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/Students`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Students`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/Sales`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Sales`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/Companies`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Companies`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/buy`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/buy`,
+      lastModified: now,
       changeFrequency: "daily",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/animal-news`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/animal-news`,
+      lastModified: now,
       changeFrequency: "daily",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/Applicants`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Applicants`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/Faculty`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Faculty`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/Farmers`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/Farmers`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/master-trainer`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/master-trainer`,
+      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/forms`,
-      lastModified: new Date(),
+      url: `${BASE_URL}/forms`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
     },
   ];
 
-  // Dynamic product pages
-  const productPages: MetadataRoute.Sitemap = products
-    .filter((product: any) => product.id && product.isActive !== false)
-    .map((product: any) => ({
-      url: `${baseUrl}/products/${product.id}`,
-      lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    }));
+  // ── Partner pages (veterinarians, sales, VAs, students, faculty, farmers) ─
+  const partnerPages: MetadataRoute.Sitemap = partners
+    .map((p) => {
+      const url = getPartnerUrl(p.partnerType, p.id);
+      if (!url) return null;
+      return {
+        url,
+        lastModified: p.updatedAt ?? now,
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
 
-  // Veterinarian partner pages
-  const vetPages: MetadataRoute.Sitemap = vetPartners
-    .filter((p: any) => p.id)
-    .map((p: any) => ({
-      url: `${baseUrl}/Veternarians/${p.id}`,
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
+  // ── Company pages ─────────────────────────────────────────────────────────
+  const companyPages: MetadataRoute.Sitemap = companies.map((c) => ({
+    url: `${BASE_URL}/Companies/${c.id}`,
+    lastModified: c.updatedAt ?? now,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
 
-  // Sales partner pages
-  const salesPages: MetadataRoute.Sitemap = salesPartners
-    .filter((p: any) => p.id)
-    .map((p: any) => ({
-      url: `${baseUrl}/Sales/${p.id}`,
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
+  // ── Animal news pages ─────────────────────────────────────────────────────
+  const newsPages: MetadataRoute.Sitemap = news.map((n) => ({
+    url: `${BASE_URL}/animal-news/${n.id}`,
+    lastModified: n.updatedAt,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
 
-  // Veterinary assistant pages
-  const vaPages: MetadataRoute.Sitemap = vaPartners
-    .filter((p: any) => p.id)
-    .map((p: any) => ({
-      url: `${baseUrl}/VeterinaryAssistants/${p.id}`,
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
+  // ── Job vacancy pages ─────────────────────────────────────────────────────
+  const vacancyPages: MetadataRoute.Sitemap = vacancies.map((v) => ({
+    url: `${BASE_URL}/jobvacancy/${v.id}`,
+    lastModified: v.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
 
-  // Student pages
-  const studentPages: MetadataRoute.Sitemap = studentPartners
-    .filter((p: any) => p.id)
-    .map((p: any) => ({
-      url: `${baseUrl}/Students/${p.id}`,
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-    }));
+  // ── Traditional job post pages ────────────────────────────────────────────
+  const jobPostPages: MetadataRoute.Sitemap = jobPosts.map((j) => ({
+    url: `${BASE_URL}/traditionaljobposts/${j.id}`,
+    lastModified: j.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
 
-  // Company pages
-  const companyPages: MetadataRoute.Sitemap = companies
-    .filter((company: any) => company.id)
-    .map((company: any) => ({
-      url: `${baseUrl}/Companies/${company.id}`,
-      lastModified: company.updatedAt ? new Date(company.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-    }));
+  // ── Buy / sell-animal listing pages ──────────────────────────────────────
+  const animalPages: MetadataRoute.Sitemap = sellAnimals.map((a) => ({
+    url: `${BASE_URL}/buy/${a.id}`,
+    lastModified: a.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
 
-  // Animal news pages
-  const newsPages: MetadataRoute.Sitemap = news
-    .filter((article: any) => article.id)
-    .map((article: any) => ({
-      url: `${baseUrl}/animal-news/${article.id}`,
-      lastModified: article.updatedAt ? new Date(article.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
-
-  // Job vacancy pages
-  const vacancyPages: MetadataRoute.Sitemap = vacancies
-    .filter((vacancy: any) => vacancy.id)
-    .map((vacancy: any) => ({
-      url: `${baseUrl}/jobvacancy/${vacancy.id}`,
-      lastModified: vacancy.updatedAt ? new Date(vacancy.updatedAt) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-
-  // Traditional job post pages
-  const jobPostPages: MetadataRoute.Sitemap = jobPosts
-    .filter((job: any) => job.id)
-    .map((job: any) => ({
-      url: `${baseUrl}/traditionaljobposts/${job.id}`,
-      lastModified: job.updatedAt ? new Date(job.updatedAt) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-
-  // Buy/animal listing pages (from sell-animal API, not products)
-  const animalPages: MetadataRoute.Sitemap = sellAnimals
-    .filter((a: any) => a.id)
-    .map((a: any) => ({
-      url: `${baseUrl}/buy/${a.id}`,
-      lastModified: a.updatedAt ? new Date(a.updatedAt) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-
-  // Faculty pages
-  const facultyPages: MetadataRoute.Sitemap = facultyPartners
-    .filter((partner: any) => partner.id)
-    .map((partner: any) => ({
-      url: `${baseUrl}/Faculty/${partner.id}`,
-      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
-
-  // Farmer pages
-  const farmerPages: MetadataRoute.Sitemap = farmerPartners
-    .filter((partner: any) => partner.id)
-    .map((partner: any) => ({
-      url: `${baseUrl}/Farmers/${partner.id}`,
-      lastModified: partner.updatedAt ? new Date(partner.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
-
-  // Dynamic form pages
-  const formPages: MetadataRoute.Sitemap = dynamicForms
-    .filter((form: any) => form.slug && form.isActive !== false)
-    .map((form: any) => ({
-      url: `${baseUrl}/forms/${form.slug}`,
-      lastModified: form.updatedAt ? new Date(form.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
+  // ── Dynamic form pages ────────────────────────────────────────────────────
+  const formPages: MetadataRoute.Sitemap = dynamicForms.map((f) => ({
+    url: `${BASE_URL}/forms/${f.slug}`,
+    lastModified: f.updatedAt,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
 
   return [
     ...staticPages,
-    ...productPages,
-    ...vetPages,
-    ...salesPages,
-    ...vaPages,
-    ...studentPages,
+    ...partnerPages,
     ...companyPages,
     ...newsPages,
     ...vacancyPages,
     ...jobPostPages,
     ...animalPages,
-    ...facultyPages,
-    ...farmerPages,
     ...formPages,
-  ].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  ].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+}
+
+// ─── Sitemaps 1…N: product pages ─────────────────────────────────────────────
+async function buildProductSitemap(id: number): Promise<MetadataRoute.Sitemap> {
+  const skip = (id - 1) * PRODUCTS_PER_SITEMAP;
+
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    select: { id: true, updatedAt: true },
+    skip,
+    take: PRODUCTS_PER_SITEMAP,
+    orderBy: { id: "asc" },
+  });
+
+  return products.map((p) => ({
+    url: `${BASE_URL}/products/${p.id}`,
+    lastModified: p.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
 }

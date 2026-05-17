@@ -2,22 +2,11 @@ import { notFound } from 'next/navigation'
 import ProductClient from './ProductClient';
 import { getApiUrl } from '@/lib/utils';
 
+// ISR: pages are built on first request then cached for 30 minutes.
+// With 60k+ products, pre-building every page at deploy time would make builds
+// prohibitively slow, so generateStaticParams is intentionally omitted here.
+// Next.js dynamicParams=true (the default) handles unknown IDs at request time.
 export const revalidate = 1800
-
-export async function generateStaticParams() {
-  try {
-    const res = await fetch(`${getApiUrl()}/api/product?limit=1000`, {
-      next: { revalidate: 3600 },
-    })
-    if (!res.ok) return []
-    const { data } = await res.json()
-    return (data || [])
-      .filter((p: any) => p.isActive !== false)
-      .map((p: any) => ({ id: String(p.id) }))
-  } catch {
-    return []
-  }
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   try {
