@@ -35,6 +35,7 @@ interface Product {
   }[]
   company: {
     companyName: string
+    country?: string | null
   }
 }
 
@@ -471,7 +472,7 @@ export default function VeterinaryPartnerDetailClient({ initialData }: { initial
                           </div>
                           <div className="flex items-center justify-between pt-1">
                             <p className="text-sm text-green-600 dark:text-green-500 font-medium">
-                              PKR {product.variants[0]?.customerPrice || 0}
+                              {product.company?.country === 'UAE' ? 'AED' : 'PKR'} {product.variants[0]?.customerPrice || 0}
                             </p>
                             <ExternalLink className="w-4 h-4 text-gray-400" />
                           </div>

@@ -297,24 +297,26 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Link href="/products">
-                    <Button
-                      size="lg"
-                      className={c.btnPrimary}
-                    >
+                  <Button
+                    asChild
+                    size="lg"
+                    className={`${c.btnPrimary} w-full sm:w-auto`}
+                  >
+                    <Link href="/products">
                       Get Started
                       <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link href="/about">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 font-medium px-8 py-6 text-lg"
-                    >
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 font-medium px-8 py-6 text-lg w-full sm:w-auto"
+                  >
+                    <Link href="/about">
                       Learn More About Us
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               </div>
 
