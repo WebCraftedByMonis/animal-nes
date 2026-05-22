@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Requires Node.js runtime — Prisma doesn't run in the Edge runtime.
 export const runtime = "nodejs";
-// Never pre-render during build — always generate at request time.
-// This prevents next build from hitting the DB from the build machine.
 export const dynamic = "force-dynamic";
 
-const BASE_URL = "https://www.animalwellness.shop";
+// Correct canonical domain — must match what nginx actually serves (no www).
+// The www domain 301-redirects to this, so Merchant Center landing page
+// checks will fail if we use www here.
+const BASE_URL = "https://animalwellness.shop";
 
 const GOOGLE_CATEGORY_MAP: Record<string, string> = {
   "Veterinary": "Animals &amp; Pet Supplies &gt; Pet Supplies",
@@ -59,21 +59,65 @@ function buildDescription(p: {
     : `${p.productName} - Quality veterinary product available at Animal Wellness Shop.`;
 }
 
-// GET /products-feed.xml
-// GET /products-feed.xml?country=PK   → prices in PKR  (default)
-// GET /products-feed.xml?country=AE   → prices in AED
-//
-// Register BOTH URLs as separate data sources in Google Merchant Center:
-//   Pakistan feed : /products-feed.xml?country=PK
-//   UAE feed      : /products-feed.xml?country=AE
+function buildItemXml(p: any, currency: string): string {
+  const imageUrl = p.image?.url ? ensureHttps(p.image.url) : null;
+  if (!imageUrl) return "";
+
+  const availability = p.outofstock ? "out of stock" : "in stock";
+  const description = escapeXml(buildDescription(p));
+  const brand = escapeXml(
+    p.company?.companyName || p.partner?.partnerName || "Animal Wellness"
+  );
+  const productType = [p.category, p.subCategory, p.subsubCategory]
+    .filter(Boolean)
+    .map((s: string) => escapeXml(s))
+    .join(" &gt; ");
+  const googleCategory =
+    GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
+    "Animals &amp; Pet Supplies &gt; Pet Supplies";
+
+  const pricedVariants = p.variants.filter((v: any) => v.customerPrice != null);
+  const feedVariants =
+    pricedVariants.length > 0 ? pricedVariants : p.variants.slice(0, 1);
+  const hasMultipleVariants = feedVariants.length > 1;
+
+  let xml = "";
+  for (const v of feedVariants) {
+    const price =
+      v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
+    const variantSuffix = v.packingVolume ? ` ${v.packingVolume}` : "";
+    const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
+    const title = escapeXml(`${p.productName}${variantSuffix}`);
+
+    xml += `    <item>
+      <g:id>${itemId}</g:id>
+      <g:title><![CDATA[${title}]]></g:title>
+      <g:description><![CDATA[${description}]]></g:description>
+      <g:link>${BASE_URL}/products/${p.id}</g:link>
+      <g:image_link>${imageUrl}</g:image_link>
+      <g:availability>${availability}</g:availability>
+      ${price ? `<g:price>${price}</g:price>` : ""}
+      <g:condition>new</g:condition>
+      <g:brand><![CDATA[${brand}]]></g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      ${p.genericName ? `<g:mpn><![CDATA[${escapeXml(p.genericName)}]]></g:mpn>` : ""}
+      ${productType ? `<g:product_type><![CDATA[${productType}]]></g:product_type>` : ""}
+      <g:google_product_category>${googleCategory}</g:google_product_category>
+      ${v.packingVolume ? `<g:size><![CDATA[${escapeXml(v.packingVolume)}]]></g:size>` : ""}
+      ${hasMultipleVariants ? `<g:item_group_id>${p.id}</g:item_group_id>` : ""}
+    </item>\n`;
+  }
+  return xml;
+}
+
+// GET /products-feed.xml?country=PK  → PKR (default)
+// GET /products-feed.xml?country=AE  → AED
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const countryParam = (searchParams.get("country") ?? "PK").toUpperCase();
   const currency = countryParam === "AE" ? "AED" : "PKR";
 
-  // Query the database directly.
-  // No HTTP self-call, no hardcoded limit — all active products are exported.
-  // Only the columns required to build the feed are selected to keep memory usage low.
+  // Fetch all products in one DB query (efficient with indexed columns).
   const products = await prisma.product.findMany({
     where: { isActive: true },
     select: {
@@ -97,82 +141,41 @@ export async function GET(req: NextRequest) {
     orderBy: { id: "asc" },
   });
 
-  // Build the XML response by appending string segments rather than building
-  // one giant in-memory string, which keeps peak memory lower for large catalogs.
-  const xmlParts: string[] = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">',
-    "  <channel>",
-    "    <title>Animal Wellness Shop - Veterinary Products</title>",
-    `    <link>${BASE_URL}</link>`,
-    "    <description>Quality veterinary products, pet care supplies and animal health solutions from Animal Wellness Shop.</description>",
-  ];
+  // Stream the XML response so the first byte reaches Google immediately
+  // after the DB query completes — rather than assembling the full 100 MB+
+  // string in memory before sending anything.
+  const encoder = new TextEncoder();
 
-  for (const p of products) {
-    const imageUrl = p.image?.url ? ensureHttps(p.image.url) : null;
-    // Google Merchant Center rejects items without an image.
-    if (!imageUrl) continue;
+  const stream = new ReadableStream({
+    async start(controller) {
+      const header = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Animal Wellness Shop - Veterinary Products</title>
+    <link>${BASE_URL}</link>
+    <description>Quality veterinary products, pet care supplies and animal health solutions from Animal Wellness Shop.</description>\n`;
 
-    const availability = p.outofstock ? "out of stock" : "in stock";
-    const description = escapeXml(buildDescription(p));
-    const brand = escapeXml(
-      p.company?.companyName || p.partner?.partnerName || "Animal Wellness"
-    );
-    const productType = [p.category, p.subCategory, p.subsubCategory]
-      .filter(Boolean)
-      .map((s) => escapeXml(s!))
-      .join(" &gt; ");
-    const googleCategory =
-      GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
-      "Animals &amp; Pet Supplies &gt; Pet Supplies";
+      controller.enqueue(encoder.encode(header));
 
-    // Prefer variants that actually have a customer price set.
-    // Fall back to the first variant so the product isn't silently dropped.
-    const pricedVariants = p.variants.filter((v) => v.customerPrice != null);
-    const feedVariants =
-      pricedVariants.length > 0 ? pricedVariants : p.variants.slice(0, 1);
+      for (const p of products) {
+        const chunk = buildItemXml(p, currency);
+        if (chunk) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+      }
 
-    // When a product has multiple variants they share an item_group_id so
-    // Google can group them as colour/size variants in Shopping.
-    const hasMultipleVariants = feedVariants.length > 1;
+      controller.enqueue(encoder.encode("  </channel>\n</rss>"));
+      controller.close();
+    },
+  });
 
-    for (const v of feedVariants) {
-      const price =
-        v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
-      const variantSuffix = v.packingVolume ? ` ${v.packingVolume}` : "";
-      const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
-      const title = escapeXml(`${p.productName}${variantSuffix}`);
-
-      xmlParts.push(
-        `    <item>
-      <g:id>${itemId}</g:id>
-      <g:title><![CDATA[${title}]]></g:title>
-      <g:description><![CDATA[${description}]]></g:description>
-      <g:link>${BASE_URL}/products/${p.id}</g:link>
-      <g:image_link>${imageUrl}</g:image_link>
-      <g:availability>${availability}</g:availability>
-      ${price ? `<g:price>${price}</g:price>` : ""}
-      <g:condition>new</g:condition>
-      <g:brand><![CDATA[${brand}]]></g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      ${p.genericName ? `<g:mpn><![CDATA[${escapeXml(p.genericName)}]]></g:mpn>` : ""}
-      ${productType ? `<g:product_type><![CDATA[${productType}]]></g:product_type>` : ""}
-      <g:google_product_category>${googleCategory}</g:google_product_category>
-      ${v.packingVolume ? `<g:size><![CDATA[${escapeXml(v.packingVolume)}]]></g:size>` : ""}
-      ${hasMultipleVariants ? `<g:item_group_id>${p.id}</g:item_group_id>` : ""}
-    </item>`
-      );
-    }
-  }
-
-  xmlParts.push("  </channel>", "</rss>");
-
-  return new NextResponse(xmlParts.join("\n"), {
+  return new Response(stream, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      // Cache for 1 hour at the CDN layer. Google re-fetches feeds every 24 h
-      // so a 1-hour CDN TTL means near-fresh data without hammering the DB.
+      // Nginx will cache this at the proxy layer for 1 hour.
+      // Google re-fetches feeds every 24 h so 1-hour CDN TTL keeps data fresh.
       "Cache-Control": "public, max-age=3600, s-maxage=3600",
+      // Transfer-Encoding: chunked is set automatically by the streaming response.
     },
   });
 }
