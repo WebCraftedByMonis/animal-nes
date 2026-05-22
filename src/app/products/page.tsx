@@ -4,7 +4,9 @@ import { Suspense } from 'react'
 import ProductsClient from '@/components/ProductsClient'
 import { prisma } from '@/lib/prisma'
 
-export const revalidate = 1800
+// Never pre-render at build time — 60k product rows time out the 60s build
+// worker. Page is rendered on first request and cached by nginx/ISR.
+export const dynamic = "force-dynamic"
 
 const BASE_URL = 'https://www.animalwellness.shop'
 
@@ -34,6 +36,8 @@ export const metadata: Metadata = {
 // most important products appear earliest in the HTML.
 async function getAllProducts() {
   try {
+    // 5 000 featured-first links is enough for Googlebot to discover products.
+    // Full discovery is handled by the sitemap index (/sitemap/1.xml … N.xml).
     return await prisma.product.findMany({
       where: { isActive: true },
       select: {
@@ -43,6 +47,7 @@ async function getAllProducts() {
         category: true,
       },
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      take: 5000,
     })
   } catch {
     return []
