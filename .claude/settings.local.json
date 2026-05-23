@@ -42,7 +42,8 @@
       "Bash(Select-Object Name, Mode)",
       "WebFetch(domain:www.thepetshop.com)",
       "WebFetch(domain:alreemvet.net)",
-      "WebFetch(domain:www.animalwellness.shop)"
+      "WebFetch(domain:www.animalwellness.shop)",
+      "Read(//etc/nginx/**)"
     ],
     "deny": [],
     "ask": []
