@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma'
 // worker. Page is rendered on first request and cached by nginx/ISR.
 export const dynamic = "force-dynamic"
 
-const BASE_URL = 'https://www.animalwellness.shop'
+const BASE_URL = 'https://animalwellness.shop'
 
 export const metadata: Metadata = {
   title: 'Veterinary Products & Pet Care Supplies - Buy Online',

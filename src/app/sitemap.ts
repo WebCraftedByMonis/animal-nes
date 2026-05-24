@@ -6,7 +6,7 @@ import { SellStatus } from "@prisma/client";
 // Revalidate the sitemap index and all child sitemaps every hour.
 export const revalidate = 3600;
 
-const BASE_URL = "https://www.animalwellness.shop";
+const BASE_URL = "https://animalwellness.shop";
 
 // Each product-chunk sitemap contains at most this many URLs.
 // Google's per-file limit is 50,000; 5,000 keeps individual files small and

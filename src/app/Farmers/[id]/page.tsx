@@ -135,7 +135,7 @@ export async function generateMetadata({
         'Animal Wellness',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://www.animalwellness.shop/Farmers/${id}`,
+        canonical: `https://animalwellness.shop/Farmers/${id}`,
       },
     }
   } catch (e) {

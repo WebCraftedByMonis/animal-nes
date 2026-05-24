@@ -16,40 +16,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: 'https://www.animalwellness.shop',
+      url: 'https://animalwellness.shop',
       lastModified: now,
       changeFrequency: 'yearly',
       priority: 1,
     },
     {
-      url: 'https://www.animalwellness.shop/products',
+      url: 'https://animalwellness.shop/products',
       lastModified: now,
     },
     {
-      url: 'https://www.animalwellness.shop/buy',
+      url: 'https://animalwellness.shop/buy',
       lastModified: now,
     },
     {
-      url: 'https://www.animalwellness.shop/findDoctor',
+      url: 'https://animalwellness.shop/findDoctor',
       lastModified: now,
     },
     {
-      url: 'https://www.animalwellness.shop/jobApplicantForm',
+      url: 'https://animalwellness.shop/jobApplicantForm',
       lastModified: now,
     },
     {
-      url: 'https://www.animalwellness.shop/animal-news',
+      url: 'https://animalwellness.shop/animal-news',
       lastModified: now,
     },
     {
-      url: 'https://www.animalwellness.shop/sell',
+      url: 'https://animalwellness.shop/sell',
       lastModified: now,
     },
   ]
 
   // Dynamic product pages
   const productPages: MetadataRoute.Sitemap = data.map((product) => ({
-    url: `https://www.animalwellness.shop/products/${product.id}`,
+    url: `https://animalwellness.shop/products/${product.id}`,
     lastModified: now,
   }))
 

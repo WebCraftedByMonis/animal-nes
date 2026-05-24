@@ -17,7 +17,7 @@ import WhatsAppPromoModal from "@/components/WhatsAppPromoModal";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.animalwellness.shop"),
+  metadataBase: new URL("https://animalwellness.shop"),
   title: {
     template: "%s | Animal Wellness - Complete Veterinary Solutions",
     default: "Animal Wellness - Complete Veterinary Solutions & Pet Care Products",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://www.animalwellness.shop",
+    url: "https://animalwellness.shop",
     title: "Animal Wellness - Complete Veterinary Solutions & Pet Care",
     description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
     images: [
@@ -90,7 +90,7 @@ export default function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
-        <link rel="sitemap" type="application/xml" href="https://www.animalwellness.shop/sitemap.xml" />
+        <link rel="sitemap" type="application/xml" href="https://animalwellness.shop/sitemap.xml" />
       </head>
       {/* Google Analytics */}
       <Script

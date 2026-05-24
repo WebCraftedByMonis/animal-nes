@@ -100,7 +100,7 @@ export async function generateMetadata({
         'Animal Wellness',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://www.animalwellness.shop/Veternarians/${id}`,
+        canonical: `https://animalwellness.shop/Veternarians/${id}`,
       },
     }
   } catch (e) {
@@ -133,7 +133,7 @@ export default async function Page({
         '@context': 'https://schema.org',
         '@type': 'Physician',
         name: data.partnerName,
-        url: `https://www.animalwellness.shop/Veternarians/${id}`,
+        url: `https://animalwellness.shop/Veternarians/${id}`,
         telephone: data.partnerMobileNumber || undefined,
         email: data.partnerEmail || undefined,
         image: data.partnerImage?.url || undefined,

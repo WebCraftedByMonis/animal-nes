@@ -25,7 +25,7 @@ const contactItems = [
   {
     icon: <FaGlobe className="text-green-600" />,
     label: "Website",
-    href: "https://www.animalwellness.shop/",
+    href: "https://animalwellness.shop/",
   },
   {
     icon: <FaWhatsapp className="text-green-500" />,

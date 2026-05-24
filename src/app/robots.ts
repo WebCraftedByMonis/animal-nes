@@ -64,6 +64,6 @@ export default function robots(): MetadataRoute.Robots {
         crawlDelay: 1,
       },
     ],
-    sitemap: "https://www.animalwellness.shop/sitemap.xml",
+    sitemap: "https://animalwellness.shop/sitemap.xml",
   };
 }

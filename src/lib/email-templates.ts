@@ -240,7 +240,7 @@ export function getPatientDoctorAssignmentEmail(appointment: any, doctor: any) {
     city: doctor.cityName
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
   const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
 
   const consultationType =

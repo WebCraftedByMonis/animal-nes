@@ -133,7 +133,7 @@ export async function generateMetadata({
         'Animal Wellness',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://www.animalwellness.shop/Students/${id}`,
+        canonical: `https://animalwellness.shop/Students/${id}`,
       },
     }
   } catch (e) {

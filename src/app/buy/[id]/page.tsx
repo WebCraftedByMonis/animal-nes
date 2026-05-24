@@ -99,7 +99,7 @@ export async function generateMetadata({
         images: data.images.length > 0 ? [data.images[0].url] : [],
       },
       alternates: {
-        canonical: `https://www.animalwellness.shop/buy/${id}`,
+        canonical: `https://animalwellness.shop/buy/${id}`,
       },
     }
   } catch (error) {

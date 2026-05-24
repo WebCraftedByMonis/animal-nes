@@ -86,7 +86,7 @@ export async function generateMetadata({
         'veterinary manufacturer',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://www.animalwellness.shop/Companies/${id}`,
+        canonical: `https://animalwellness.shop/Companies/${id}`,
       },
     }
   } catch (e) {
@@ -119,7 +119,7 @@ export default async function Page({
         '@context': 'https://schema.org',
         '@type': 'Organization',
         name: data.companyName,
-        url: `https://www.animalwellness.shop/Companies/${id}`,
+        url: `https://animalwellness.shop/Companies/${id}`,
         email: data.email || undefined,
         telephone: data.mobileNumber || undefined,
         address: data.address

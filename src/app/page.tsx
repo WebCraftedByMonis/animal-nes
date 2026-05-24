@@ -81,15 +81,15 @@ export default async function Home() {
     "@type": "Organization",
     name: "Animal Wellness",
     description: "Complete veterinary solutions and pet care products marketplace",
-    url: "https://www.animalwellness.shop",
-    logo: "https://www.animalwellness.shop/logo.jpg",
+    url: "https://animalwellness.shop",
+    logo: "https://animalwellness.shop/logo.jpg",
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer service",
       availableLanguage: "English"
     },
     sameAs: [
-      "https://www.animalwellness.shop"
+      "https://animalwellness.shop"
     ],
     serviceArea: {
       "@type": "Country",
@@ -102,11 +102,11 @@ export default async function Home() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Animal Wellness",
-    url: "https://www.animalwellness.shop",
+    url: "https://animalwellness.shop",
     description: "Your trusted partner for comprehensive animal wellness solutions",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://www.animalwellness.shop/products?search={search_term_string}",
+      target: "https://animalwellness.shop/products?search={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };

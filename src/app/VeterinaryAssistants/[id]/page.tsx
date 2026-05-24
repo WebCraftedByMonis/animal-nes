@@ -100,7 +100,7 @@ export async function generateMetadata({
         'Animal Wellness',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://www.animalwellness.shop/VeterinaryAssistants/${id}`,
+        canonical: `https://animalwellness.shop/VeterinaryAssistants/${id}`,
       },
     }
   } catch (e) {

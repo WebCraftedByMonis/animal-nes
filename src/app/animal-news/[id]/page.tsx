@@ -51,13 +51,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: data.title,
       description: data.description,
-      url: `https://www.animalwellness.shop/animal-news/${id}`,
+      url: `https://animalwellness.shop/animal-news/${id}`,
       images: data.image?.url
         ? [{ url: data.image.url, alt: data.image.alt || data.title }]
         : [],
     },
     alternates: {
-      canonical: `https://www.animalwellness.shop/animal-news/${id}`,
+      canonical: `https://animalwellness.shop/animal-news/${id}`,
     },
   };
 }
@@ -79,7 +79,7 @@ export default async function NewsPage({ params }: PageProps) {
         '@type': 'NewsArticle',
         headline: data.title,
         description: data.description,
-        url: `https://www.animalwellness.shop/animal-news/${id}`,
+        url: `https://animalwellness.shop/animal-news/${id}`,
         datePublished: data.createdAt || undefined,
         author: data.author
           ? { '@type': 'Person', name: data.author }
@@ -87,7 +87,7 @@ export default async function NewsPage({ params }: PageProps) {
         publisher: {
           '@type': 'Organization',
           name: 'Animal Wellness',
-          url: 'https://www.animalwellness.shop',
+          url: 'https://animalwellness.shop',
         },
         image: data.image?.url
           ? { '@type': 'ImageObject', url: data.image.url }

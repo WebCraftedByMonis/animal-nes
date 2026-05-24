@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
       };
       
       // Prepare history form link - prescription form link will be sent after history submission
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
       const historyFormLink = `${baseUrl}/historyform?appointmentId=${appointmentId}`;
 
       // Send full details email with history form link to doctor

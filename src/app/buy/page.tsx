@@ -14,12 +14,12 @@ export const metadata: Metadata = {
     'animal marketplace Pakistan', 'animal wellness', 'buy farm animals',
   ],
   alternates: {
-    canonical: 'https://www.animalwellness.shop/buy',
+    canonical: 'https://animalwellness.shop/buy',
   },
   openGraph: {
     title: 'Buy Animals | Animal Wellness',
     description: 'Browse and buy verified livestock and animals from trusted sellers. Cows, buffaloes, goats, poultry, horses and more.',
-    url: 'https://www.animalwellness.shop/buy',
+    url: 'https://animalwellness.shop/buy',
     siteName: 'Animal Wellness',
     type: 'website',
   },

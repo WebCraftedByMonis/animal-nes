@@ -791,7 +791,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const urls = [
       'https://wa.me/923354145431',
-      'https://www.animalwellness.shop/',
+      'https://animalwellness.shop/',
       'https://www.youtube.com/@AnimalWellNessShop/videos',
       'https://x.com/c9d55c82df9b4da',
       'https://www.linkedin.com/in/muhammad-fiaz-qamar-195208a2/',

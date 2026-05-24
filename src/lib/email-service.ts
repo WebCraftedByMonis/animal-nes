@@ -499,7 +499,7 @@ export async function sendPrescriptionFormLink(
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
     const prescriptionLink = `${baseUrl}/prescriptionform?historyFormId=${historyFormId}`;
 
     const emailHtml = `
@@ -612,7 +612,7 @@ export async function sendPrescriptionCompletionToPatient(
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
     const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
 
     const emailHtml = `
@@ -735,7 +735,7 @@ export async function sendPrescriptionCompletionToPatient(
 
 // Main function to notify all veterinarians (PHASE 1 only)
 export async function notifyVeterinarians(appointment: any, veterinarians: any[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
   const results = [];
 
   for (const vet of veterinarians) {
@@ -928,7 +928,7 @@ export async function sendReviewNotificationToDoctor(
     return { success: false, error: 'Rate limit exceeded' };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
   const dashboardLink = `${baseUrl}/partner/dashboard`;
 
   // Create star rating display
@@ -1083,7 +1083,7 @@ export async function sendReviewRequestToPatient(
     return { success: false, error: 'Rate limit exceeded' };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.animalwellness.shop';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
   const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
 
   try {

@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare message with appointment details
-    const baseUrl = 'http://www.animalwellness.shop';
+    const baseUrl = 'https://animalwellness.shop';
     const historyFormLink = `${baseUrl}/historyform?appointmentId=${appointmentId}`;
     const prescriptionFormLink = appointment.historyForm 
       ? `${baseUrl}/prescriptionform?historyFormId=${appointment.historyForm.id}`

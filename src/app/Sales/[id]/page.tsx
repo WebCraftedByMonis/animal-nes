@@ -95,7 +95,7 @@ export async function generateMetadata({
         'veterinary distributor',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://www.animalwellness.shop/Sales/${id}`,
+        canonical: `https://animalwellness.shop/Sales/${id}`,
       },
     }
   } catch (e) {

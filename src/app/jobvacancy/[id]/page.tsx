@@ -110,7 +110,7 @@ export async function generateMetadata({
         images: data.jobFormImage?.url ? [data.jobFormImage.url] : [],
       },
       alternates: {
-        canonical: `https://www.animalwellness.shop/jobvacancy/${id}`,
+        canonical: `https://animalwellness.shop/jobvacancy/${id}`,
       }
     }
   } catch (e) {
@@ -152,7 +152,7 @@ export default async function JobVacancyDetailPage({
         validThrough: jobVacancy.deadline,
         totalJobOpenings: jobVacancy.noofpositions || undefined,
         datePosted: jobVacancy.createdAt,
-        url: `https://www.animalwellness.shop/jobvacancy/${id}`,
+        url: `https://animalwellness.shop/jobvacancy/${id}`,
         applicationContact: {
           '@type': 'ContactPoint',
           telephone: jobVacancy.mobileNumber,
