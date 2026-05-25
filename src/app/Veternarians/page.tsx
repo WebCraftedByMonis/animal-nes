@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   title: 'Veterinary Partners',
   description: 'Connect with qualified veterinary professionals in your area. Find experienced veterinarians for your animal care needs.',
   keywords: ['veterinary partners', 'veterinarians', 'animal doctors', 'pet care professionals', 'livestock veterinarians'],
+  alternates: {
+    canonical: 'https://animalwellness.shop/Veternarians',
+  },
+  openGraph: {
+    url: 'https://animalwellness.shop/Veternarians',
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
 }
 
 function VeterinariansPageSkeleton() {

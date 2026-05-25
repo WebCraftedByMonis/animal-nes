@@ -1,5 +1,19 @@
+import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import AnimalNewsClient from '@/components/AnimalNewsClient'
+
+export const metadata: Metadata = {
+  title: 'Animal News & Updates | Animal Wellness',
+  description: 'Latest news, updates, and insights on animal health, veterinary advances, and livestock care from Animal Wellness.',
+  alternates: {
+    canonical: 'https://animalwellness.shop/animal-news',
+  },
+  openGraph: {
+    url: 'https://animalwellness.shop/animal-news',
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
+}
 
 interface NewsItem {
   id: number;
