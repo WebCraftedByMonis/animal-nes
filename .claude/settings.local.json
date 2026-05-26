@@ -43,7 +43,8 @@
       "WebFetch(domain:www.thepetshop.com)",
       "WebFetch(domain:alreemvet.net)",
       "WebFetch(domain:www.animalwellness.shop)",
-      "Read(//etc/nginx/**)"
+      "Read(//etc/nginx/**)",
+      "PowerShell(try { $r = Invoke-WebRequest -Method Head -Uri \"https://animalwellness.shop/sitemap.xml\" -UseBasicParsing; Write-Output \"Status: $\\($r.StatusCode\\)\"; $r.Headers.GetEnumerator\\(\\) | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" } } catch [System.Net.WebException] { $resp = $_.Exception.Response; if \\($resp\\) { Write-Output \"Status: $\\([int]$resp.StatusCode\\) $\\($resp.StatusCode\\)\"; $resp.Headers.AllKeys | ForEach-Object { \"$_`: $\\($resp.Headers[$_]\\)\" } } else { Write-Output \"Error: $_\" } })"
     ],
     "deny": [],
     "ask": []
