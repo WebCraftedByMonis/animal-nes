@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sanitizeForXml } from "@/lib/xml-sanitize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,15 +21,6 @@ const GOOGLE_CATEGORY_MAP: Record<string, string> = {
   "Fisheries & Aquaculture": "Animals &amp; Pet Supplies &gt; Pet Supplies",
   "Herbal / Organic Products": "Animals &amp; Pet Supplies &gt; Pet Supplies",
 };
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
 
 function ensureHttps(url: string): string {
   return url.replace(/^http:\/\//, "https://");
@@ -64,13 +56,16 @@ function buildItemXml(p: any, currency: string): string {
   if (!imageUrl) return "";
 
   const availability = p.outofstock ? "out of stock" : "in stock";
-  const description = escapeXml(buildDescription(p));
-  const brand = escapeXml(
+  const description = sanitizeForXml(buildDescription(p));
+  const brand = sanitizeForXml(
     p.company?.companyName || p.partner?.partnerName || "Animal Wellness"
   );
+  // Product type hierarchy — each segment sanitized individually, joined with
+  // the literal text " > " which sanitizeForXml would escape to " &gt; ".
+  // We build the escaped string manually so the separator is preserved.
   const productType = [p.category, p.subCategory, p.subsubCategory]
     .filter(Boolean)
-    .map((s: string) => escapeXml(s))
+    .map((s: string) => sanitizeForXml(s))
     .join(" &gt; ");
   const googleCategory =
     GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
@@ -85,25 +80,24 @@ function buildItemXml(p: any, currency: string): string {
   for (const v of feedVariants) {
     const price =
       v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
-    const variantSuffix = v.packingVolume ? ` ${v.packingVolume}` : "";
     const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
-    const title = escapeXml(`${p.productName}${variantSuffix}`);
+    const title = sanitizeForXml(`${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
 
     xml += `    <item>
       <g:id>${itemId}</g:id>
-      <g:title><![CDATA[${title}]]></g:title>
-      <g:description><![CDATA[${description}]]></g:description>
+      <g:title>${title}</g:title>
+      <g:description>${description}</g:description>
       <g:link>${BASE_URL}/products/${p.id}</g:link>
       <g:image_link>${imageUrl}</g:image_link>
       <g:availability>${availability}</g:availability>
       ${price ? `<g:price>${price}</g:price>` : ""}
       <g:condition>new</g:condition>
-      <g:brand><![CDATA[${brand}]]></g:brand>
+      <g:brand>${brand}</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      ${p.genericName ? `<g:mpn><![CDATA[${escapeXml(p.genericName)}]]></g:mpn>` : ""}
-      ${productType ? `<g:product_type><![CDATA[${productType}]]></g:product_type>` : ""}
+      ${p.genericName ? `<g:mpn>${sanitizeForXml(p.genericName)}</g:mpn>` : ""}
+      ${productType ? `<g:product_type>${productType}</g:product_type>` : ""}
       <g:google_product_category>${googleCategory}</g:google_product_category>
-      ${v.packingVolume ? `<g:size><![CDATA[${escapeXml(v.packingVolume)}]]></g:size>` : ""}
+      ${v.packingVolume ? `<g:size>${sanitizeForXml(v.packingVolume)}</g:size>` : ""}
       ${hasMultipleVariants ? `<g:item_group_id>${p.id}</g:item_group_id>` : ""}
     </item>\n`;
   }

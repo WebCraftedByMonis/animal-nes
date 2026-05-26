@@ -3,8 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { PARTNER_TYPE_GROUPS } from "@/lib/partner-constants";
 import { SellStatus } from "@prisma/client";
 
-// Revalidate the sitemap index and all child sitemaps every hour.
-export const revalidate = 3600;
+// Force dynamic rendering so the sitemap index is never pre-rendered at build
+// time. Build environments typically lack database access, which causes
+// generateSitemaps() to throw and leaves /sitemap.xml permanently unregistered
+// (no ISR fallback exists for root metadata routes). At runtime the DB is
+// reachable and every request generates fresh XML.
+export const dynamic = 'force-dynamic';
 
 const BASE_URL = "https://animalwellness.shop";
 
