@@ -1,13 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sanitizeForXml } from "@/lib/xml-sanitize";
+import { sanitizeText, xmlEscape } from "@/lib/xml-sanitize";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Correct canonical domain — must match what nginx actually serves (no www).
-// The www domain 301-redirects to this, so Merchant Center landing page
-// checks will fail if we use www here.
 const BASE_URL = "https://animalwellness.shop";
 
 const GOOGLE_CATEGORY_MAP: Record<string, string> = {
@@ -21,6 +19,30 @@ const GOOGLE_CATEGORY_MAP: Record<string, string> = {
   "Fisheries & Aquaculture": "Animals &amp; Pet Supplies &gt; Pet Supplies",
   "Herbal / Organic Products": "Animals &amp; Pet Supplies &gt; Pet Supplies",
 };
+
+// ─── Debug-aware sanitizer ────────────────────────────────────────────────────
+// Logs to stderr whenever sanitization actually changes a value so you can
+// identify which product IDs and fields have corrupted data.
+// Remove the console.warn block (not the function) once xmllint is clean.
+function sf(productId: number, field: string, raw: unknown): string {
+  const rawStr = raw == null ? "" : String(raw);
+  const cleaned = sanitizeText(rawStr);
+  if (cleaned !== rawStr) {
+    const rawBytes  = Buffer.byteLength(rawStr,  "utf8");
+    const cleanBytes = Buffer.byteLength(cleaned, "utf8");
+    console.warn(
+      `[feed-sanitize] id=${productId} field=${field} ` +
+      `raw_bytes=${rawBytes} clean_bytes=${cleanBytes}`
+    );
+  }
+  // XML-escape after sanitization — & must be first to avoid double-escaping.
+  return cleaned
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 function ensureHttps(url: string): string {
   return url.replace(/^http:\/\//, "https://");
@@ -40,11 +62,11 @@ function buildDescription(p: {
     return p.description.trim();
   }
   const parts: string[] = [];
-  if (p.genericName) parts.push(`Generic: ${p.genericName}`);
-  if (p.category) parts.push(`Category: ${p.category}`);
-  if (p.subCategory) parts.push(`Type: ${p.subCategory}`);
-  if (p.productType) parts.push(`Form: ${p.productType}`);
-  if (p.dosage) parts.push(`Dosage: ${p.dosage}`);
+  if (p.genericName)       parts.push(`Generic: ${p.genericName}`);
+  if (p.category)          parts.push(`Category: ${p.category}`);
+  if (p.subCategory)       parts.push(`Type: ${p.subCategory}`);
+  if (p.productType)       parts.push(`Form: ${p.productType}`);
+  if (p.dosage)            parts.push(`Dosage: ${p.dosage}`);
   if (p.company?.companyName) parts.push(`By: ${p.company.companyName}`);
   return parts.length > 0
     ? `${p.productName} — ${parts.join(". ")}.`
@@ -52,36 +74,40 @@ function buildDescription(p: {
 }
 
 function buildItemXml(p: any, currency: string): string {
-  const imageUrl = p.image?.url ? ensureHttps(p.image.url) : null;
-  if (!imageUrl) return "";
+  const rawImageUrl = p.image?.url ? ensureHttps(p.image.url) : null;
+  if (!rawImageUrl) return "";
+
+  // xmlEscape for URLs — no mojibake/control-char stripping needed for URLs,
+  // but we still need to escape & < > " ' for valid XML attribute content.
+  const imageUrl = xmlEscape(rawImageUrl);
 
   const availability = p.outofstock ? "out of stock" : "in stock";
-  const description = sanitizeForXml(buildDescription(p));
-  const brand = sanitizeForXml(
-    p.company?.companyName || p.partner?.partnerName || "Animal Wellness"
-  );
-  // Product type hierarchy — each segment sanitized individually, joined with
-  // the literal text " > " which sanitizeForXml would escape to " &gt; ".
-  // We build the escaped string manually so the separator is preserved.
+
+  // All DB-sourced text goes through sf() — sanitizeText + XML escape + debug log.
+  const description = sf(p.id, "description", buildDescription(p));
+  const brand       = sf(p.id, "brand", p.company?.companyName || p.partner?.partnerName || "Animal Wellness");
+
+  // Each taxonomy segment is sanitized individually; separator is the
+  // literal entity &gt; (already a valid XML text-node character sequence).
   const productType = [p.category, p.subCategory, p.subsubCategory]
     .filter(Boolean)
-    .map((s: string) => sanitizeForXml(s))
+    .map((s: string) => sf(p.id, "productType_segment", s))
     .join(" &gt; ");
+
+  // googleCategory comes from a hardcoded map — pre-escaped, safe to inline.
   const googleCategory =
     GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
     "Animals &amp; Pet Supplies &gt; Pet Supplies";
 
   const pricedVariants = p.variants.filter((v: any) => v.customerPrice != null);
-  const feedVariants =
-    pricedVariants.length > 0 ? pricedVariants : p.variants.slice(0, 1);
+  const feedVariants   = pricedVariants.length > 0 ? pricedVariants : p.variants.slice(0, 1);
   const hasMultipleVariants = feedVariants.length > 1;
 
   let xml = "";
   for (const v of feedVariants) {
-    const price =
-      v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
+    const price  = v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
     const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
-    const title = sanitizeForXml(`${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
+    const title  = sf(p.id, "title", `${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
 
     xml += `    <item>
       <g:id>${itemId}</g:id>
@@ -94,10 +120,10 @@ function buildItemXml(p: any, currency: string): string {
       <g:condition>new</g:condition>
       <g:brand>${brand}</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      ${p.genericName ? `<g:mpn>${sanitizeForXml(p.genericName)}</g:mpn>` : ""}
+      ${p.genericName ? `<g:mpn>${sf(p.id, "mpn", p.genericName)}</g:mpn>` : ""}
       ${productType ? `<g:product_type>${productType}</g:product_type>` : ""}
       <g:google_product_category>${googleCategory}</g:google_product_category>
-      ${v.packingVolume ? `<g:size>${sanitizeForXml(v.packingVolume)}</g:size>` : ""}
+      ${v.packingVolume ? `<g:size>${sf(p.id, "size", v.packingVolume)}</g:size>` : ""}
       ${hasMultipleVariants ? `<g:item_group_id>${p.id}</g:item_group_id>` : ""}
     </item>\n`;
   }
@@ -111,7 +137,6 @@ export async function GET(req: NextRequest) {
   const countryParam = (searchParams.get("country") ?? "PK").toUpperCase();
   const currency = countryParam === "AE" ? "AED" : "PKR";
 
-  // Fetch all products in one DB query (efficient with indexed columns).
   const products = await prisma.product.findMany({
     where: { isActive: true },
     select: {
@@ -135,19 +160,17 @@ export async function GET(req: NextRequest) {
     orderBy: { id: "asc" },
   });
 
-  // Stream the XML response so the first byte reaches Google immediately
-  // after the DB query completes — rather than assembling the full 100 MB+
-  // string in memory before sending anything.
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      const header = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>Animal Wellness Shop - Veterinary Products</title>
-    <link>${BASE_URL}</link>
-    <description>Quality veterinary products, pet care supplies and animal health solutions from Animal Wellness Shop.</description>\n`;
+      const header =
+        `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n` +
+        `  <channel>\n` +
+        `    <title>Animal Wellness Shop - Veterinary Products</title>\n` +
+        `    <link>${BASE_URL}</link>\n` +
+        `    <description>Quality veterinary products, pet care supplies and animal health solutions from Animal Wellness Shop.</description>\n`;
 
       controller.enqueue(encoder.encode(header));
 
@@ -166,10 +189,8 @@ export async function GET(req: NextRequest) {
   return new Response(stream, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      // Nginx will cache this at the proxy layer for 1 hour.
-      // Google re-fetches feeds every 24 h so 1-hour CDN TTL keeps data fresh.
+      // Nginx caches this for 1 hour; Google re-fetches every 24 h.
       "Cache-Control": "public, max-age=3600, s-maxage=3600",
-      // Transfer-Encoding: chunked is set automatically by the streaming response.
     },
   });
 }
