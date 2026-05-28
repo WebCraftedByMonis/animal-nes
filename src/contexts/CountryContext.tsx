@@ -10,6 +10,7 @@ interface CountryContextType {
   currency: string;
   currencySymbol: string;
   phonePrefix: string;
+  locationName: string;
 }
 
 const CountryContext = createContext<CountryContextType | undefined>(undefined);
@@ -19,22 +20,35 @@ const COUNTRY_CONFIG = {
     currency: 'PKR',
     currencySymbol: 'Rs.',
     phonePrefix: '+92',
+    locationName: 'Pakistan',
   },
   UAE: {
     currency: 'AED',
     currencySymbol: 'AED',
     phonePrefix: '+971',
+    locationName: 'Dubai',
   },
 };
 
 export function CountryProvider({ children }: { children: ReactNode }) {
   const [country, setCountryState] = useState<Country>('Pakistan');
 
-  // Load saved country from localStorage on mount
   useEffect(() => {
     const savedCountry = localStorage.getItem('selectedCountry') as Country;
-    if (savedCountry && (savedCountry === 'Pakistan' || savedCountry === 'UAE')) {
+    if (savedCountry === 'Pakistan' || savedCountry === 'UAE') {
       setCountryState(savedCountry);
+    } else {
+      // First visit — auto-detect from IP
+      fetch('https://ipapi.co/country/')
+        .then((res) => res.text())
+        .then((code) => {
+          const detected: Country = code.trim() === 'AE' ? 'UAE' : 'Pakistan';
+          setCountryState(detected);
+          localStorage.setItem('selectedCountry', detected);
+        })
+        .catch(() => {
+          // Keep default (Pakistan) on network error
+        });
     }
   }, []);
 
@@ -53,6 +67,7 @@ export function CountryProvider({ children }: { children: ReactNode }) {
         currency: config.currency,
         currencySymbol: config.currencySymbol,
         phonePrefix: config.phonePrefix,
+        locationName: config.locationName,
       }}
     >
       {children}

@@ -44,7 +44,9 @@
       "WebFetch(domain:alreemvet.net)",
       "WebFetch(domain:www.animalwellness.shop)",
       "Read(//etc/nginx/**)",
-      "PowerShell(try { $r = Invoke-WebRequest -Method Head -Uri \"https://animalwellness.shop/sitemap.xml\" -UseBasicParsing; Write-Output \"Status: $\\($r.StatusCode\\)\"; $r.Headers.GetEnumerator\\(\\) | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" } } catch [System.Net.WebException] { $resp = $_.Exception.Response; if \\($resp\\) { Write-Output \"Status: $\\([int]$resp.StatusCode\\) $\\($resp.StatusCode\\)\"; $resp.Headers.AllKeys | ForEach-Object { \"$_`: $\\($resp.Headers[$_]\\)\" } } else { Write-Output \"Error: $_\" } })"
+      "PowerShell(try { $r = Invoke-WebRequest -Method Head -Uri \"https://animalwellness.shop/sitemap.xml\" -UseBasicParsing; Write-Output \"Status: $\\($r.StatusCode\\)\"; $r.Headers.GetEnumerator\\(\\) | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" } } catch [System.Net.WebException] { $resp = $_.Exception.Response; if \\($resp\\) { Write-Output \"Status: $\\([int]$resp.StatusCode\\) $\\($resp.StatusCode\\)\"; $resp.Headers.AllKeys | ForEach-Object { \"$_`: $\\($resp.Headers[$_]\\)\" } } else { Write-Output \"Error: $_\" } })",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\as\\\\Downloads\\\\animal-nes-main\\\\animal-nes-main\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ],
     "deny": [],
     "ask": []
