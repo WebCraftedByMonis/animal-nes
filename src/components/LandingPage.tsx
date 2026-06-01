@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight } from "lucide-react"
+import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight, CheckCircle2, MessageCircle, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
@@ -62,11 +62,11 @@ const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isU
         <Quote className={cn("w-6 h-6 mb-3 opacity-30", isUAE ? "text-[#EF3340]" : "text-emerald-600")} />
         <div className="flex-1">
           <p className="text-sm sm:text-base italic text-gray-700 dark:text-gray-300">
-            "
+            &ldquo;
             {isExpanded || !shouldTruncate
               ? testimonial.content
               : `${testimonial.content.slice(0, maxLength)}...`}
-            "
+            &rdquo;
           </p>
           {shouldTruncate && (
             <button
@@ -100,6 +100,11 @@ const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isU
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-sm break-words">{testimonial.user.name || "Anonymous"}</p>
+            <div className="flex gap-0.5 mt-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>
@@ -107,13 +112,18 @@ const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isU
   )
 }
 
+const WhatsAppIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+)
+
 export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const { data: session } = useSession()
   const { openModal } = useLoginModal()
   const { country } = useCountry()
   const isUAE = country === 'UAE'
 
-  // UAE flag: red #EF3340, green #009A44, white, black
   const c = isUAE ? {
     heroOverlay:       'bg-gradient-to-r from-[#EF3340]/70 via-black/55 to-black/30',
     wellnessText:      'text-[#EF3340]',
@@ -131,6 +141,10 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     submitBtn:         'bg-[#EF3340] hover:bg-[#CC1A28]',
     loginLink:         'text-[#EF3340]',
     ctaSection:        'bg-gradient-to-br from-[#EF3340] via-[#CC1A28] to-[#8B0000]',
+    trustBadge:        'bg-[#EF3340]/20 border border-[#EF3340]/40 text-[#EF3340]',
+    whyBg:             'bg-gradient-to-br from-[#EF3340]/5 to-[#EF3340]/10',
+    whyCheck:          'text-[#EF3340]',
+    catCard:           'hover:border-[#EF3340]/50 hover:bg-[#EF3340]/5',
   } : {
     heroOverlay:       'bg-gradient-to-r from-black/80 via-black/60 to-black/40',
     wellnessText:      'text-emerald-400',
@@ -148,7 +162,12 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     submitBtn:         'bg-emerald-600 hover:bg-emerald-700',
     loginLink:         'text-emerald-600',
     ctaSection:        'bg-gradient-to-br from-emerald-600 to-emerald-800',
+    trustBadge:        'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300',
+    whyBg:             'bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/10',
+    whyCheck:          'text-emerald-500',
+    catCard:           'hover:border-emerald-400/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20',
   }
+
   const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials?.data || [])
   const [newTestimonial, setNewTestimonial] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -157,7 +176,6 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   const [page, setPage] = useState(initialTestimonials?.pagination.page || 1)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // Measure contact bar height so hero fills exactly the remaining viewport
   const contactBarRef = useRef<HTMLDivElement>(null)
   const [contactBarH, setContactBarH] = useState(44)
 
@@ -171,13 +189,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     return () => ro.disconnect()
   }, [])
 
-  useEffect(() => {
-    if (!initialTestimonials) {
-      fetchTestimonials()
-    }
-  }, [])
-
-  const fetchTestimonials = async (loadMore = false) => {
+  const fetchTestimonials = useCallback(async (loadMore = false) => {
     try {
       if (loadMore) {
         setIsLoadingMore(true)
@@ -204,7 +216,13 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       setIsLoadingTestimonials(false)
       setIsLoadingMore(false)
     }
-  }
+  }, [page])
+
+  useEffect(() => {
+    if (!initialTestimonials) {
+      fetchTestimonials()
+    }
+  }, [initialTestimonials, fetchTestimonials])
 
   const handleSubmitTestimonial = async () => {
     if (!session) {
@@ -228,11 +246,12 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       toast.success("Testimonial submitted! It will be visible after approval.")
       setNewTestimonial("")
       fetchTestimonials()
-    } catch (error: any) {
-      if (error.response?.status === 401) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
+      if (axiosError.response?.status === 401) {
         openModal('button')
-      } else if (error.response?.data?.error) {
-        toast.error(error.response.data.error)
+      } else if (axiosError.response?.data?.error) {
+        toast.error(axiosError.response.data.error)
       } else {
         toast.error("Failed to submit testimonial")
       }
@@ -241,6 +260,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
     }
   }
 
+  const waOrderLink = "https://wa.me/923354145431?text=I%20want%20to%20place%20an%20order"
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Contact Bar */}
@@ -248,7 +269,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <BannerContactBar />
       </div>
 
-      {/* Hero Section */}
+      {/* ─── HERO SECTION ─────────────────────────────────────────────────────── */}
       <section
         style={{ minHeight: `calc(100vh - var(--navbar-height) - ${contactBarH}px)` }}
         className="flex items-center relative overflow-hidden"
@@ -265,68 +286,154 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
             sizes="100vw"
             quality={60}
           />
-          <div className={`absolute inset-0 ${c.heroOverlay}`}></div>
+          <div className={`absolute inset-0 ${c.heroOverlay}`} />
         </div>
 
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="text-white space-y-6">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight">
-                  <span className="block">Animal</span>
-                  <span className={`block ${c.wellnessText}`}>Wellness</span>
-                </h1>
+              <div className="text-white space-y-5">
 
-                <p className="text-lg sm:text-xl md:text-2xl font-medium text-gray-200 max-w-xl">
-                  The all-in-one platform revolutionizing animal care, commerce, and veterinary careers
-                </p>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 ${c.heroDot} rounded-full`}></div>
-                    <p className="text-gray-300">Find trusted veterinarians near you</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 ${c.heroDot} rounded-full`}></div>
-                    <p className="text-gray-300">Shop premium veterinary products</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 ${c.heroDot} rounded-full`}></div>
-                    <p className="text-gray-300">Connect with animal care community</p>
-                  </div>
+                {/* Trust badge pills */}
+                <div className="flex flex-wrap gap-2">
+                  {["✔ COD Available", "✔ WhatsApp Order", "✔ Vet Verified Products"].map((badge) => (
+                    <span
+                      key={badge}
+                      className={`text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm ${c.trustBadge}`}
+                    >
+                      {badge}
+                    </span>
+                  ))}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                {/* Main headline — Urdu */}
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight" dir="rtl">
+                  پاکستان کا پہلا ڈیجیٹل ویٹرنری اسٹور
+                </h1>
+
+                {/* Sub-headline — Urdu */}
+                <p className="text-base sm:text-lg md:text-xl font-medium text-gray-200 max-w-xl leading-relaxed" dir="rtl">
+                  اصل ادویات، ویٹرنری ڈاکٹر کی رہنمائی کے ساتھ – گھر بیٹھے آرڈر کریں
+                </p>
+
+                {/* Trust checkmarks */}
+                <div className="space-y-2">
+                  {[
+                    "100% Original Medicines",
+                    "Cash on Delivery Available",
+                    "Free Vet Guidance",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-3">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <p className="text-gray-200 text-sm sm:text-base">{item}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <a
+                    href={waOrderLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold px-6 py-4 text-base rounded-xl transition-all duration-200 shadow-lg hover:shadow-[#25D366]/30 hover:scale-[1.02] w-full sm:w-auto"
+                  >
+                    <WhatsAppIcon className="w-5 h-5 fill-white" />
+                    Order on WhatsApp
+                  </a>
                   <Button
                     asChild
                     size="lg"
-                    className={`${c.btnPrimary} w-full sm:w-auto`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-4 text-base rounded-xl w-full sm:w-auto"
                   >
                     <Link href="/products">
-                      Get Started
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 font-medium px-8 py-6 text-lg w-full sm:w-auto"
-                  >
-                    <Link href="/about">
-                      Learn More About Us
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Shop Now
                     </Link>
                   </Button>
                 </div>
               </div>
 
-              <div className="hidden lg:block"></div>
+              <div className="hidden lg:block" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Slider */}
+      {/* ─── SPECIAL OFFER BANNER ─────────────────────────────────────────────── */}
+      <div className="bg-amber-400 text-amber-900 py-3 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8 text-center">
+          <span className="font-bold text-sm sm:text-base">
+            🔥 Free Delivery on Orders Above Rs. 3000
+          </span>
+          <span className="hidden sm:block text-amber-700">|</span>
+          <span className="font-bold text-sm sm:text-base">
+            🎁 Free Vet Consultation with Every Order
+          </span>
+        </div>
+      </div>
+
+      {/* ─── PROBLEM → SOLUTION SECTION ───────────────────────────────────────── */}
+      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-10" dir="rtl">
+            کیا آپ کو یہ مسائل درپیش ہیں؟
+          </h2>
+
+          {/* Problems */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {[
+              { emoji: "🐄", text: "جانور بار بار بیمار ہو رہا ہے؟", color: "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40" },
+              { emoji: "💊", text: "صحیح دوا کا انتخاب مشکل ہے؟", color: "border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800/40" },
+              { emoji: "⚠️", text: "نقلی ادویات کا خطرہ؟", color: "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40" },
+            ].map((p, i) => (
+              <div key={i} className={`rounded-xl border-2 p-5 text-center ${p.color}`}>
+                <div className="text-3xl mb-3">{p.emoji}</div>
+                <p className="font-semibold text-base text-gray-800 dark:text-gray-200" dir="rtl">{p.text}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Arrow divider */}
+          <div className="flex justify-center my-6">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-red-400 to-emerald-500" />
+              <div className="w-3 h-3 rotate-45 bg-emerald-500 translate-y-[-4px]" style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
+            </div>
+          </div>
+
+          {/* Solution */}
+          <div className="rounded-2xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 p-6 md:p-8 text-center max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl font-bold text-emerald-800 dark:text-emerald-200 mb-5" dir="rtl">
+              Animal Wellness Shop پر حاصل کریں:
+            </p>
+            <div className="space-y-3">
+              {[
+                { label: "مستند ادویات", sub: "100% Original, Vet Verified" },
+                { label: "ڈاکٹر کی رہنمائی", sub: "Free Vet Consultation" },
+                { label: "گھر تک ڈیلیوری", sub: "Cash on Delivery Available" },
+              ].map((s, i) => (
+                <div key={i} className="flex items-center gap-3 justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <span className="font-semibold text-base text-gray-800 dark:text-gray-200" dir="rtl">{s.label}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">— {s.sub}</span>
+                </div>
+              ))}
+            </div>
+            <a
+              href={waOrderLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-6 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold px-6 py-3 rounded-xl text-sm transition-all duration-200 hover:scale-[1.02]"
+            >
+              <WhatsAppIcon className="w-4 h-4 fill-white" />
+              ابھی آرڈر کریں
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FULL SCREEN SLIDER ───────────────────────────────────────────────── */}
       <section
         style={{ height: 'calc(100vh - var(--navbar-height))' }}
         className="relative overflow-hidden"
@@ -334,7 +441,37 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <FullScreenSlider />
       </section>
 
-      {/* Features Grid */}
+      {/* ─── FEATURED CATEGORIES ──────────────────────────────────────────────── */}
+      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
+              ہماری مصنوعات کی اقسام
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base">Browse by Animal Type or Product Category</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+            {categories.map((cat) => (
+              <Link
+                key={cat.label}
+                href={cat.href}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-transparent bg-background transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
+                  c.catCard
+                )}
+              >
+                <span className="text-3xl md:text-4xl">{cat.emoji}</span>
+                <span className="text-xs sm:text-sm font-semibold text-center text-gray-700 dark:text-gray-300" dir="rtl">
+                  {cat.label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FEATURES GRID ────────────────────────────────────────────────────── */}
       <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div
@@ -345,7 +482,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
               backgroundPosition: 'center',
             }}
           />
-          <div className="absolute inset-0 bg-black/50"></div>
+          <div className="absolute inset-0 bg-black/50" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto">
@@ -382,7 +519,53 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Detailed Sections */}
+      {/* ─── BEST SELLING PRODUCTS ────────────────────────────────────────────── */}
+      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
+              بیسٹ سیلنگ مصنوعات
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base">Our Most Popular Veterinary Products</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {bestSellers.map((product, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200"
+              >
+                {/* Product color block */}
+                <div className={`h-36 flex items-center justify-center text-5xl ${product.bgColor}`}>
+                  {product.emoji}
+                </div>
+                <div className="p-4 flex flex-col flex-1">
+                  <h3 className="font-bold text-sm md:text-base mb-1">{product.name}</h3>
+                  <div className="space-y-1 mb-3 flex-1">
+                    {product.benefits.map((b, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-xs text-muted-foreground">{b}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <a
+                    href={`https://wa.me/923354145431?text=I%20want%20to%20order%3A%20${encodeURIComponent(product.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold px-4 py-2.5 rounded-lg text-xs transition-all duration-200 hover:scale-[1.02] mt-auto"
+                  >
+                    <WhatsAppIcon className="w-3.5 h-3.5 fill-white" />
+                    Order on WhatsApp
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DETAILED SECTIONS ────────────────────────────────────────────────── */}
       {sections.map((section, index) => (
         <section
           key={index}
@@ -439,13 +622,44 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         </section>
       ))}
 
-      {/* Testimonials Section */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
+      {/* ─── WHY CHOOSE US ────────────────────────────────────────────────────── */}
+      <section className={`py-14 md:py-20 px-4 sm:px-6 lg:px-8 ${c.whyBg}`}>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
+              ہمیں کیوں منتخب کریں؟
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base">Why Choose Animal Wellness Shop?</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {whyChooseUs.map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 bg-background rounded-xl p-4 border border-border shadow-sm"
+              >
+                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl ${isUAE ? 'bg-[#EF3340]/10' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="font-semibold text-sm md:text-base" dir="rtl">{item.urdu}</p>
+                  <p className="text-xs text-muted-foreground">{item.en}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TESTIMONIALS SECTION ─────────────────────────────────────────────── */}
+      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">What Our Community Says</h2>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2" dir="rtl">
+              ہمارے صارفین کیا کہتے ہیں؟
+            </h2>
             <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-              Hear from pet owners, veterinarians, and farmers who use AnimalWellness daily
+              What Our Customers Say
             </p>
           </div>
 
@@ -541,11 +755,52 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* ─── BIG WHATSAPP CTA ─────────────────────────────────────────────────── */}
+      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#128C7E] via-[#25D366] to-[#075E54] text-white relative overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+        <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
+          <div className="inline-flex items-center gap-2 bg-white/15 px-4 py-1.5 rounded-full text-sm font-medium border border-white/20">
+            <MessageCircle className="w-4 h-4" />
+            Direct WhatsApp Support
+          </div>
+
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight" dir="rtl">
+            ابھی آرڈر کریں یا ڈاکٹر سے بات کریں
+          </h2>
+
+          <p className="text-lg md:text-xl text-white/90" dir="rtl">
+            ہم آپ کی رہنمائی کریں گے کہ کونسی دوا بہتر ہے
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+            <a
+              href={waOrderLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 bg-white text-[#075E54] hover:bg-gray-50 font-extrabold px-8 py-4 rounded-2xl text-base md:text-lg transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-[1.03] w-full sm:w-auto justify-center"
+            >
+              <WhatsAppIcon className="w-6 h-6 fill-[#25D366]" />
+              💬 Click to WhatsApp
+            </a>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-white/80">
+            <span className="text-2xl">📞</span>
+            <a href="tel:+923354145431" className="text-xl md:text-2xl font-bold tracking-wide hover:text-white transition-colors">
+              +92 335 4145431
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── MAIN CTA SECTION ─────────────────────────────────────────────────── */}
       <section className={`${c.ctaSection} text-white py-16 md:py-24 px-4 sm:px-6 lg:px-8`}>
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6">
-            Ready to Transform Animal Care?
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6" dir="rtl">
+            ابھی شامل ہوں – پاکستان کا پہلا ویٹرنری اسٹور
           </h2>
           <p className="text-lg md:text-xl mb-8 text-emerald-100 max-w-3xl mx-auto">
             Join thousands of animal lovers, professionals, and businesses in our growing community.
@@ -562,21 +817,66 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-6">
             <a href="https://chat.whatsapp.com/CqLyuyp92ex6cZ7EtpfwaU" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 px-5 py-3 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold rounded-xl text-sm transition-colors">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              <WhatsAppIcon className="w-4 h-4 fill-white flex-shrink-0" />
               Join WhatsApp Community
             </a>
             <a href="https://whatsapp.com/channel/0029VaeV6OQ9mrGjhvOQkW2t" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 px-5 py-3 bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold rounded-xl text-sm transition-colors">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              <WhatsAppIcon className="w-4 h-4 fill-white flex-shrink-0" />
               Follow WhatsApp Channel
             </a>
           </div>
         </div>
       </section>
-
     </div>
   )
 }
+
+// ─── Static Data ───────────────────────────────────────────────────────────────
+
+const categories = [
+  { emoji: "🐄", label: "ڈیری جانور",    href: "/products?category=Dairy+Animals" },
+  { emoji: "🐐", label: "بکری و بھیڑ",   href: "/products?category=Goats+%26+Sheep" },
+  { emoji: "🐓", label: "پولٹری",         href: "/products?category=Poultry" },
+  { emoji: "🐕", label: "پالتو جانور",   href: "/products?category=Pets" },
+  { emoji: "💊", label: "ادویات",         href: "/products?category=Veterinary" },
+  { emoji: "🧪", label: "سپلیمنٹس",      href: "/products?category=Supplements" },
+]
+
+const bestSellers = [
+  {
+    emoji: "🐄",
+    name: "Deworming Medicine for Cows",
+    benefits: ["Kills internal parasites", "Improves milk production"],
+    bgColor: "bg-amber-50 dark:bg-amber-900/20",
+  },
+  {
+    emoji: "🐓",
+    name: "Poultry Vitamins",
+    benefits: ["Boosts immunity", "Increases egg production"],
+    bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
+  },
+  {
+    emoji: "🐕",
+    name: "Tick & Flea Control",
+    benefits: ["Protects pets", "Fast-acting formula"],
+    bgColor: "bg-blue-50 dark:bg-blue-900/20",
+  },
+  {
+    emoji: "🦴",
+    name: "Calcium Supplement",
+    benefits: ["Strong bones", "Better milk yield"],
+    bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
+  },
+]
+
+const whyChooseUs = [
+  { icon: "🏥", urdu: "ویٹرنری ڈاکٹر سے تصدیق شدہ مصنوعات",    en: "Vet Verified Products" },
+  { icon: "🚚", urdu: "پاکستان بھر میں ڈیلیوری",                  en: "Nationwide Delivery" },
+  { icon: "💵", urdu: "Cash on Delivery دستیاب",                   en: "Pay on Delivery" },
+  { icon: "💬", urdu: "فوری واٹس ایپ سپورٹ",                      en: "Instant WhatsApp Support" },
+  { icon: "🤝", urdu: "کسانوں اور پالتو جانوروں کے مالکان کا اعتماد", en: "Trusted by Farmers & Pet Owners" },
+]
 
 const features = [
   {

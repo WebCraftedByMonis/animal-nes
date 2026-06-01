@@ -71,10 +71,10 @@ export default function AboutContent() {
           <div className="bg-white dark:bg-gray-800 rounded-md shadow p-4 mb-4">
             <ul className="list-disc pl-5 text-md font-semibold">
               <li>
-                Dr Hafiz Muhammad Haad - Veterinary Physician And Surgeon (DVM, RVMP - PVMC Islamabad, {locationName})
+                Dr Hafiz Muhammad Haad - Veterinary Physician And Surgeon (DVM, RVMP - PVMC Islamabad, Pakistan)
               </li>
               <li>
-                Dr Hafiz Muhammad Saad - Veterinary Physician And Surgeon (DVM, UVAS, RVMP - PVMC Islamabad, {locationName})
+                Dr Hafiz Muhammad Saad - Veterinary Physician And Surgeon (DVM, UVAS, RVMP - PVMC Islamabad, Pakistan)
               </li>
             </ul>
           </div>
