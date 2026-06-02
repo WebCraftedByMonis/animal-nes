@@ -261,6 +261,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
   }
 
   const waOrderLink = "https://wa.me/923354145431?text=I%20want%20to%20place%20an%20order"
+  const waUAELink = "https://wa.me/971547478202?text=I%20want%20to%20place%20an%20order"
+  const waLink = isUAE ? waUAELink : waOrderLink
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -306,14 +308,14 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                   ))}
                 </div>
 
-                {/* Main headline — Urdu */}
+                {/* Main headline */}
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight" dir="rtl">
-                  پاکستان کا پہلا ڈیجیٹل ویٹرنری اسٹور
+                  {isUAE ? "أول متجر بيطري رقمي في الإمارات العربية المتحدة" : "پاکستان کا پہلا ڈیجیٹل ویٹرنری اسٹور"}
                 </h1>
 
-                {/* Sub-headline — Urdu */}
+                {/* Sub-headline */}
                 <p className="text-base sm:text-lg md:text-xl font-medium text-gray-200 max-w-xl leading-relaxed" dir="rtl">
-                  اصل ادویات، ویٹرنری ڈاکٹر کی رہنمائی کے ساتھ – گھر بیٹھے آرڈر کریں
+                  {isUAE ? "أدوية أصلية مع إرشادات الطبيب البيطري – اطلبها وأنت في منزلك" : "اصل ادویات، ویٹرنری ڈاکٹر کی رہنمائی کے ساتھ – گھر بیٹھے آرڈر کریں"}
                 </p>
 
                 {/* Trust checkmarks */}
@@ -333,7 +335,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <a
-                    href={waOrderLink}
+                    href={waLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold px-6 py-4 text-base rounded-xl transition-all duration-200 shadow-lg hover:shadow-[#25D366]/30 hover:scale-[1.02] w-full sm:w-auto"
@@ -364,7 +366,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       <div className="bg-amber-400 text-amber-900 py-3 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8 text-center">
           <span className="font-bold text-sm sm:text-base">
-            🔥 Free Delivery on Orders Above Rs. 3000
+            {isUAE ? "🔥 Free Delivery on Orders Above AED 300" : "🔥 Free Delivery on Orders Above Rs. 3000"}
           </span>
           <span className="hidden sm:block text-amber-700">|</span>
           <span className="font-bold text-sm sm:text-base">
@@ -377,16 +379,20 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-10" dir="rtl">
-            کیا آپ کو یہ مسائل درپیش ہیں؟
+            {isUAE ? "هل تواجه هذه المشاكل؟" : "کیا آپ کو یہ مسائل درپیش ہیں؟"}
           </h2>
 
           {/* Problems */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {[
+            {(isUAE ? [
+              { emoji: "🐄", text: "الحيوان يمرض بشكل متكرر؟", color: "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40" },
+              { emoji: "💊", text: "هل يصعب عليك اختيار الدواء المناسب؟", color: "border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800/40" },
+              { emoji: "⚠️", text: "هل تخشى خطر الأدوية المقلدة؟", color: "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40" },
+            ] : [
               { emoji: "🐄", text: "جانور بار بار بیمار ہو رہا ہے؟", color: "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40" },
               { emoji: "💊", text: "صحیح دوا کا انتخاب مشکل ہے؟", color: "border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800/40" },
               { emoji: "⚠️", text: "نقلی ادویات کا خطرہ؟", color: "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40" },
-            ].map((p, i) => (
+            ]).map((p, i) => (
               <div key={i} className={`rounded-xl border-2 p-5 text-center ${p.color}`}>
                 <div className="text-3xl mb-3">{p.emoji}</div>
                 <p className="font-semibold text-base text-gray-800 dark:text-gray-200" dir="rtl">{p.text}</p>
@@ -403,31 +409,35 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           </div>
 
           {/* Solution */}
-          <div className="rounded-2xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 p-6 md:p-8 text-center max-w-2xl mx-auto">
-            <p className="text-lg md:text-xl font-bold text-emerald-800 dark:text-emerald-200 mb-5" dir="rtl">
-              Animal Wellness Shop پر حاصل کریں:
+          <div className={cn("rounded-2xl border-2 p-6 md:p-8 text-center max-w-2xl mx-auto", isUAE ? "border-[#EF3340]/40 bg-[#EF3340]/5 dark:bg-[#EF3340]/10" : "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20")}>
+            <p className={cn("text-lg md:text-xl font-bold mb-5", isUAE ? "text-[#CC1A28] dark:text-[#EF3340]" : "text-emerald-800 dark:text-emerald-200")} dir="rtl">
+              {isUAE ? "احصل عليه في Animal Wellness Shop:" : "Animal Wellness Shop پر حاصل کریں:"}
             </p>
             <div className="space-y-3">
-              {[
+              {(isUAE ? [
+                { label: "أدوية موثقة", sub: "100% Original, Vet Verified" },
+                { label: "إرشادات الطبيب", sub: "Free Vet Consultation" },
+                { label: "توصيل إلى المنزل", sub: "Cash on Delivery Available" },
+              ] : [
                 { label: "مستند ادویات", sub: "100% Original, Vet Verified" },
                 { label: "ڈاکٹر کی رہنمائی", sub: "Free Vet Consultation" },
                 { label: "گھر تک ڈیلیوری", sub: "Cash on Delivery Available" },
-              ].map((s, i) => (
+              ]).map((s, i) => (
                 <div key={i} className="flex items-center gap-3 justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle2 className={cn("w-5 h-5 flex-shrink-0", isUAE ? "text-[#EF3340]" : "text-emerald-600")} />
                   <span className="font-semibold text-base text-gray-800 dark:text-gray-200" dir="rtl">{s.label}</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">— {s.sub}</span>
                 </div>
               ))}
             </div>
             <a
-              href={waOrderLink}
+              href={waLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 mt-6 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold px-6 py-3 rounded-xl text-sm transition-all duration-200 hover:scale-[1.02]"
             >
               <WhatsAppIcon className="w-4 h-4 fill-white" />
-              ابھی آرڈر کریں
+              {isUAE ? "اطلب الآن" : "ابھی آرڈر کریں"}
             </a>
           </div>
         </div>
@@ -446,13 +456,13 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
-              ہماری مصنوعات کی اقسام
+              {isUAE ? "تصفح حسب نوع الحيوان أو فئة المنتج" : "ہماری مصنوعات کی اقسام"}
             </h2>
             <p className="text-muted-foreground text-sm md:text-base">Browse by Animal Type or Product Category</p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-            {categories.map((cat) => (
+            {(isUAE ? categoriesUAE : categories).map((cat) => (
               <Link
                 key={cat.label}
                 href={cat.href}
@@ -524,7 +534,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
-              بیسٹ سیلنگ مصنوعات
+              {isUAE ? "المنتجات الأكثر مبيعاً" : "بیسٹ سیلنگ مصنوعات"}
             </h2>
             <p className="text-muted-foreground text-sm md:text-base">Our Most Popular Veterinary Products</p>
           </div>
@@ -550,7 +560,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
                     ))}
                   </div>
                   <a
-                    href={`https://wa.me/923354145431?text=I%20want%20to%20order%3A%20${encodeURIComponent(product.name)}`}
+                    href={`https://wa.me/${isUAE ? '971547478202' : '923354145431'}?text=I%20want%20to%20order%3A%20${encodeURIComponent(product.name)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold px-4 py-2.5 rounded-lg text-xs transition-all duration-200 hover:scale-[1.02] mt-auto"
@@ -627,13 +637,13 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
-              ہمیں کیوں منتخب کریں؟
+              {isUAE ? "لماذا تختارنا؟" : "ہمیں کیوں منتخب کریں؟"}
             </h2>
             <p className="text-muted-foreground text-sm md:text-base">Why Choose Animal Wellness Shop?</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {whyChooseUs.map((item, i) => (
+            {(isUAE ? whyChooseUsUAE : whyChooseUs).map((item, i) => (
               <div
                 key={i}
                 className="flex items-center gap-4 bg-background rounded-xl p-4 border border-border shadow-sm"
@@ -656,7 +666,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2" dir="rtl">
-              ہمارے صارفین کیا کہتے ہیں؟
+              {isUAE ? "ماذا يقول عملاؤنا؟" : "ہمارے صارفین کیا کہتے ہیں؟"}
             </h2>
             <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
               What Our Customers Say
@@ -768,16 +778,16 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
           </div>
 
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight" dir="rtl">
-            ابھی آرڈر کریں یا ڈاکٹر سے بات کریں
+            {isUAE ? "اطلب الآن أو تحدث مع الطبيب" : "ابھی آرڈر کریں یا ڈاکٹر سے بات کریں"}
           </h2>
 
           <p className="text-lg md:text-xl text-white/90" dir="rtl">
-            ہم آپ کی رہنمائی کریں گے کہ کونسی دوا بہتر ہے
+            {isUAE ? "سنقوم بإرشادك إلى الدواء الأنسب" : "ہم آپ کی رہنمائی کریں گے کہ کونسی دوا بہتر ہے"}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <a
-              href={waOrderLink}
+              href={waLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 bg-white text-[#075E54] hover:bg-gray-50 font-extrabold px-8 py-4 rounded-2xl text-base md:text-lg transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-[1.03] w-full sm:w-auto justify-center"
@@ -789,8 +799,8 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
 
           <div className="flex items-center justify-center gap-2 text-white/80">
             <span className="text-2xl">📞</span>
-            <a href="tel:+923354145431" className="text-xl md:text-2xl font-bold tracking-wide hover:text-white transition-colors">
-              +92 335 4145431
+            <a href={isUAE ? "tel:+971547478202" : "tel:+923354145431"} className="text-xl md:text-2xl font-bold tracking-wide hover:text-white transition-colors">
+              {isUAE ? "+971 54 747 8202" : "+92 335 4145431"}
             </a>
           </div>
         </div>
@@ -800,7 +810,7 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
       <section className={`${c.ctaSection} text-white py-16 md:py-24 px-4 sm:px-6 lg:px-8`}>
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6" dir="rtl">
-            ابھی شامل ہوں – پاکستان کا پہلا ویٹرنری اسٹور
+            {isUAE ? "انضم الآن – أول متجر بيطري في الإمارات" : "ابھی شامل ہوں – پاکستان کا پہلا ویٹرنری اسٹور"}
           </h2>
           <p className="text-lg md:text-xl mb-8 text-emerald-100 max-w-3xl mx-auto">
             Join thousands of animal lovers, professionals, and businesses in our growing community.
@@ -843,6 +853,15 @@ const categories = [
   { emoji: "🧪", label: "سپلیمنٹس",      href: "/products?category=Supplements" },
 ]
 
+const categoriesUAE = [
+  { emoji: "🐄", label: "أبقار حلوب",     href: "/products?category=Dairy+Animals" },
+  { emoji: "🐐", label: "ماعز وأغنام",    href: "/products?category=Goats+%26+Sheep" },
+  { emoji: "🐓", label: "دواجن",           href: "/products?category=Poultry" },
+  { emoji: "🐕", label: "حيوانات أليفة",  href: "/products?category=Pets" },
+  { emoji: "💊", label: "أدوية",           href: "/products?category=Veterinary" },
+  { emoji: "🧪", label: "مكملات غذائية",  href: "/products?category=Supplements" },
+]
+
 const bestSellers = [
   {
     emoji: "🐄",
@@ -876,6 +895,15 @@ const whyChooseUs = [
   { icon: "💵", urdu: "Cash on Delivery دستیاب",                   en: "Pay on Delivery" },
   { icon: "💬", urdu: "فوری واٹس ایپ سپورٹ",                      en: "Instant WhatsApp Support" },
   { icon: "🤝", urdu: "کسانوں اور پالتو جانوروں کے مالکان کا اعتماد", en: "Trusted by Farmers & Pet Owners" },
+]
+
+const whyChooseUsUAE = [
+  { icon: "🏥", urdu: "منتجات معتمدة من طبيب بيطري",            en: "Vet Verified Products" },
+  { icon: "🚚", urdu: "توصيل في جميع أنحاء الإمارات",            en: "Nationwide Delivery" },
+  { icon: "💵", urdu: "الدفع عند الاستلام متوفر",                 en: "Pay on Delivery" },
+  { icon: "💬", urdu: "دعم فوري عبر واتساب",                      en: "Instant WhatsApp Support" },
+  { icon: "🐎🐪", urdu: "خيول السباق والإبل",                    en: "Racing Horses & Camels" },
+  { icon: "🤝", urdu: "ثقة المزارعين وأصحاب الحيوانات الأليفة", en: "Trusted by Farmers & Pet Owners" },
 ]
 
 const features = [
