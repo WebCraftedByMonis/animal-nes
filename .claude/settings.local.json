@@ -52,7 +52,8 @@
       "WebFetch(domain:www.facebook.com)",
       "WebFetch(domain:developers.facebook.com)",
       "WebFetch(domain:web.facebook.com)",
-      "WebFetch(domain:transparency.meta.com)"
+      "WebFetch(domain:transparency.meta.com)",
+      "WebFetch(domain:animalwellness.shop)"
     ],
     "deny": [],
     "ask": []

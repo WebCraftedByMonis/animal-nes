@@ -318,6 +318,9 @@ export async function GET(req: NextRequest) {
   const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
   const companyId = searchParams.get('companyId') ? parseInt(searchParams.get('companyId')!) : undefined
   const partnerId = searchParams.get('partnerId') ? parseInt(searchParams.get('partnerId')!) : undefined
+  const noPrice = searchParams.get('noPrice') === 'true'
+  const noImage = searchParams.get('noImage') === 'true'
+  const noDescription = searchParams.get('noDescription') === 'true'
 
   // Build where clause
   const where: any = {
@@ -372,6 +375,20 @@ export async function GET(req: NextRequest) {
         }
       }
     }
+  }
+
+  // Quality filters
+  if (noPrice) {
+    where.variants = { none: { customerPrice: { not: null } } }
+  }
+  if (noImage) {
+    where.image = { is: null }
+  }
+  if (noDescription) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      { OR: [{ description: null }, { description: '' }] },
+    ]
   }
 
   // Build orderBy

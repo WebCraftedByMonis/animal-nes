@@ -116,8 +116,9 @@ function buildGoogleItem(p: ProductRow, currency: string): string {
     GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
     "Animals &amp; Pet Supplies &gt; Pet Supplies";
 
-  const pricedVariants  = p.variants.filter((v) => v.customerPrice != null);
-  const feedVariants    = pricedVariants.length > 0 ? pricedVariants : p.variants.slice(0, 1);
+  const pricedVariants = p.variants.filter((v) => v.customerPrice != null);
+  if (pricedVariants.length === 0) return "";
+  const feedVariants = pricedVariants;
   const hasMultipleVariants = feedVariants.length > 1;
 
   let xml = "";

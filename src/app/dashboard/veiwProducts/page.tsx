@@ -120,7 +120,9 @@ export default function ViewProductsPage() {
 
   const [filterCompanyId, setFilterCompanyId] = useState('')
   const [filterPartnerId, setFilterPartnerId] = useState('')
+  const [qualityFilter, setQualityFilter] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [isBulkDeactivating, setIsBulkDeactivating] = useState(false)
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -129,6 +131,9 @@ export default function ViewProductsPage() {
       if (maxPrice) params.maxPrice = parseFloat(maxPrice)
       if (filterCompanyId) params.companyId = parseInt(filterCompanyId)
       if (filterPartnerId) params.partnerId = parseInt(filterPartnerId)
+      if (qualityFilter === 'noPrice') params.noPrice = true
+      if (qualityFilter === 'noImage') params.noImage = true
+      if (qualityFilter === 'noDescription') params.noDescription = true
 
       const { data } = await axios.get('/api/product', {
         params,
@@ -142,7 +147,7 @@ export default function ViewProductsPage() {
       console.log(error)
       toast.error('Failed to fetch products')
     }
-  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice, country, filterCompanyId, filterPartnerId])
+  }, [search, sortBy, sortOrder, page, limit, minPrice, maxPrice, country, filterCompanyId, filterPartnerId, qualityFilter])
 
   const fetchCompaniesAndPartners = useCallback(async () => {
     try {
@@ -258,6 +263,23 @@ export default function ViewProductsPage() {
       toast.error('Failed to delete selected products')
     } finally {
       setIsBulkDeleting(false)
+    }
+  }
+
+  const handleBulkDeactivate = async () => {
+    if (selectedIds.size === 0) return
+    if (!confirm(`Deactivate ${selectedIds.size} selected product(s)? They will be hidden from the site and GMC feed but can be reactivated later.`)) return
+
+    setIsBulkDeactivating(true)
+    try {
+      await axios.patch('/api/product/bulk', { ids: Array.from(selectedIds), isActive: false })
+      toast.success(`${selectedIds.size} products deactivated`)
+      setSelectedIds(new Set())
+      fetchProducts()
+    } catch {
+      toast.error('Failed to deactivate selected products')
+    } finally {
+      setIsBulkDeactivating(false)
     }
   }
 
@@ -398,6 +420,17 @@ export default function ViewProductsPage() {
         <SelectItem value="productName-desc">Name (Z-A)</SelectItem>
       </SelectContent>
     </Select>
+    <Select value={qualityFilter || 'all'} onValueChange={(v) => { setQualityFilter(v === 'all' ? '' : v); setPage(1) }}>
+      <SelectTrigger className="w-full sm:w-[200px]">
+        <SelectValue placeholder="Quality issues" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All products</SelectItem>
+        <SelectItem value="noPrice">⚠ Missing price</SelectItem>
+        <SelectItem value="noImage">⚠ Missing image</SelectItem>
+        <SelectItem value="noDescription">⚠ Missing description</SelectItem>
+      </SelectContent>
+    </Select>
     <div className="flex items-center gap-1">
       <span>Show</span>
       <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
@@ -413,20 +446,35 @@ export default function ViewProductsPage() {
       <span>entries</span>
     </div>
     {selectedIds.size > 0 && (
-      <Button
-        size="sm"
-        variant="destructive"
-        onClick={handleBulkDelete}
-        disabled={isBulkDeleting}
-        className="ml-auto"
-      >
-        {isBulkDeleting ? (
-          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-        ) : (
-          <Trash2 className="h-4 w-4 mr-1" />
-        )}
-        Delete selected ({selectedIds.size})
-      </Button>
+      <div className="ml-auto flex gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleBulkDeactivate}
+          disabled={isBulkDeactivating}
+          className="border-orange-400 text-orange-600 hover:bg-orange-50"
+        >
+          {isBulkDeactivating ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <CheckSquare className="h-4 w-4 mr-1" />
+          )}
+          Deactivate ({selectedIds.size})
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={handleBulkDelete}
+          disabled={isBulkDeleting}
+        >
+          {isBulkDeleting ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <Trash2 className="h-4 w-4 mr-1" />
+          )}
+          Delete ({selectedIds.size})
+        </Button>
+      </div>
     )}
   </div>
 </div>
