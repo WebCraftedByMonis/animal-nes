@@ -5,7 +5,7 @@ import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
 import BuyNowButton from '@/components/BuyNowButton';
 import WishlistButton from '@/components/WishlistButton';
-import { useCountry } from '@/contexts/CountryContext';
+import { useCountry, Country } from '@/contexts/CountryContext';
 
 interface Discount {
   id: number;
@@ -34,8 +34,8 @@ export interface ProductData {
   productLink: string | null;
   image: { url: string; alt: string } | null;
   pdf: { url: string } | null;
-  company: { companyName: string };
-  partner: { partnerName: string };
+  company: { companyName: string; country?: string | null };
+  partner: { partnerName: string; country?: string | null };
   variants: {
     id: number;
     packingVolume: string;
@@ -47,11 +47,67 @@ export interface ProductData {
   discounts?: Discount[];
 }
 
+function resolveProductCountry(
+  company?: { country?: string | null } | null,
+  partner?: { country?: string | null } | null,
+): Country | null {
+  const raw = (company?.country || partner?.country || '').trim().toLowerCase();
+  if (!raw) return null;
+  if (['uae', 'ae', 'dubai', 'united arab emirates'].includes(raw)) return 'UAE';
+  if (['pakistan', 'pk'].includes(raw)) return 'Pakistan';
+  return null;
+}
+
 export default function ProductClient({ product }: { product: ProductData }) {
   const [selectedVariantId, setSelectedVariantId] = useState<number>(
     product.variants[0]?.id || 0
   );
-  const { currencySymbol } = useCountry();
+  const { country, setCountry, currencySymbol } = useCountry();
+
+  const productCountry = resolveProductCountry(product.company, product.partner);
+
+  if (productCountry && productCountry !== country) {
+    return (
+      <div className="flex flex-col md:flex-row gap-8">
+        <div className="md:w-1/2">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md overflow-hidden relative">
+            {product.image ? (
+              <Image
+                src={product.image.url.replace(/^http:\/\//, 'https://')}
+                alt={product.image.alt || product.productName}
+                width={600}
+                height={600}
+                className="w-full h-auto object-contain opacity-40"
+                priority
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
+                <span className="text-gray-400 dark:text-gray-600">No Image Available</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="md:w-1/2 flex items-center justify-center">
+          <div className="text-center p-8 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-xl max-w-sm">
+            <div className="text-4xl mb-4">{productCountry === 'UAE' ? '🇦🇪' : '🇵🇰'}</div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Not available in {country}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+              This product is only available for {productCountry}. Switch your country to view pricing and place an order.
+            </p>
+            <button
+              onClick={() => setCountry(productCountry)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+            >
+              Switch to {productCountry}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const selectedVariant = product.variants.find((v) => v.id === selectedVariantId);
   const isOutOfStock = product.outofstock || !product.isActive;
