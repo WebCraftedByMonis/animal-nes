@@ -54,6 +54,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   let currentY = pageHeight - 70;
 
+  // Strip characters WinAnsi (Windows-1252) cannot encode — e.g. U+202A LRE control
+  // characters injected by WhatsApp/RTL editors that end up in database fields.
+  const sanitize = (text: string): string => text.replace(/[^\x00-\xFF]/g, '');
+
   // Helper function to add new page if needed
   const checkNewPage = (requiredSpace: number) => {
     if (currentY < margin + requiredSpace) {
@@ -170,7 +174,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   currentY -= 20;
 
   // Customer name and date
-  page.drawText(order.user?.name || 'N/A', {
+  page.drawText(sanitize(order.user?.name || 'N/A'), {
     x: leftColX,
     y: currentY,
     size: 11,
@@ -203,7 +207,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   currentY -= 18;
 
   // Email and payment
-  page.drawText(order.user?.email || '-', {
+  page.drawText(sanitize(order.user?.email || '-'), {
     x: leftColX,
     y: currentY,
     size: 10,
@@ -222,7 +226,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   currentY -= 18;
 
   // Payment method with support for up to 5 lines
-  let paymentMethod = order.paymentMethod;
+  let paymentMethod = sanitize(order.paymentMethod);
   const maxPaymentLength = 60;  // Increased to 60 characters per line
   let paymentLines = [];
   
@@ -294,7 +298,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   currentY -= 18;
 
   // Full address
-  page.drawText(order.address, {
+  page.drawText(sanitize(order.address), {
     x: leftColX,
     y: currentY,
     size: 10,
@@ -305,7 +309,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   currentY -= 18;
 
   // City, Province
-  page.drawText(`${order.city}, ${order.province}`, {
+  page.drawText(sanitize(`${order.city}, ${order.province}`), {
     x: leftColX,
     y: currentY,
     size: 10,
@@ -317,7 +321,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // Phone if available
   if (order.shippingAddress) {
-    page.drawText(`Phone: ${order.shippingAddress}`, {
+    page.drawText(sanitize(`Phone: ${order.shippingAddress}`), {
       x: leftColX,
       y: currentY,
       size: 10,
@@ -435,9 +439,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       });
     }
 
-    const itemName = item.animal
+    const itemName = sanitize(item.animal
       ? `${item.animal.specie}${item.animal.breed ? ` (${item.animal.breed})` : ''}`
-      : `${item.product?.productName || 'Product'}${item.variant?.packingVolume ? ` - ${item.variant.packingVolume}` : ''}`;
+      : `${item.product?.productName || 'Product'}${item.variant?.packingVolume ? ` - ${item.variant.packingVolume}` : ''}`);
 
     const itemPrice = item.price;
     const originalPrice = (item as any).originalPrice || item.price;
