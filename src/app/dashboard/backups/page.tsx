@@ -7,6 +7,12 @@ import * as XLSX from 'xlsx';
 
 type BackupType = 'products' | 'companies' | 'partners';
 
+interface QualityFilters {
+  noTaxonomy: boolean;
+  noPrice: boolean;
+  noImage: boolean;
+}
+
 interface UploadResult {
   imported: number;
   failed: number;
@@ -32,6 +38,14 @@ export default function BackupsPage() {
   // ── Download state ────────────────────────────────────────────
   const [downloading, setDownloading] = useState<BackupType | null>(null);
 
+  // ── Quality export state ──────────────────────────────────────
+  const [qualityFilters, setQualityFilters] = useState<QualityFilters>({
+    noTaxonomy: false,
+    noPrice: false,
+    noImage: false,
+  });
+  const [downloadingQuality, setDownloadingQuality] = useState(false);
+
   // ── Upload state ──────────────────────────────────────────────
   const [uploading, setUploading]       = useState<BackupType | null>(null);
   const [uploadResult, setUploadResult] = useState<Record<BackupType, UploadResult | null>>({
@@ -47,6 +61,18 @@ export default function BackupsPage() {
     products:  useRef<HTMLInputElement>(null),
     companies: useRef<HTMLInputElement>(null),
     partners:  useRef<HTMLInputElement>(null),
+  };
+
+  const handleQualityDownload = () => {
+    const { noTaxonomy, noPrice, noImage } = qualityFilters;
+    if (!noTaxonomy && !noPrice && !noImage) return;
+    setDownloadingQuality(true);
+    const params = new URLSearchParams();
+    if (noTaxonomy) params.set('noTaxonomy', 'true');
+    if (noPrice)    params.set('noPrice',    'true');
+    if (noImage)    params.set('noImage',    'true');
+    window.open(`/api/admin/backups/quality?${params.toString()}`, '_blank', 'noopener,noreferrer');
+    setTimeout(() => setDownloadingQuality(false), 800);
   };
 
   const handleDownload = (type: BackupType) => {
@@ -156,6 +182,68 @@ export default function BackupsPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* ── Data Quality Export ── */}
+        <div className="bg-white shadow-xl rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900">Data Quality Export</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Download products with missing data. Fix them in Excel, then re-upload using <strong>Products Restore</strong> below.
+            </p>
+          </div>
+
+          <div className="px-6 py-6 space-y-5">
+            <div className="space-y-3">
+              {([
+                {
+                  key: 'noTaxonomy' as const,
+                  label: 'Missing taxonomy',
+                  desc: 'Category is empty or "Uncategorized", or generic name / subcategory / sub-subcategory is missing',
+                },
+                {
+                  key: 'noPrice' as const,
+                  label: 'Missing price',
+                  desc: 'No customer price set on any variant',
+                },
+                {
+                  key: 'noImage' as const,
+                  label: 'Missing image',
+                  desc: 'Product has no image uploaded',
+                },
+              ] as const).map(({ key, label, desc }) => (
+                <label key={key} className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={qualityFilters[key]}
+                    onChange={(e) =>
+                      setQualityFilters((prev) => ({ ...prev, [key]: e.target.checked }))
+                    }
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{label}</div>
+                    <div className="text-xs text-gray-500">{desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <button
+              onClick={handleQualityDownload}
+              disabled={
+                (!qualityFilters.noTaxonomy && !qualityFilters.noPrice && !qualityFilters.noImage) ||
+                downloadingQuality
+              }
+              className="inline-flex items-center justify-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {downloadingQuality ? 'Preparing…' : '⬇ Download Quality Report'}
+            </button>
+
+            <p className="text-xs text-gray-500">
+              The downloaded file uses the same format as the Products backup — edit the cells you want to fix, then upload it via <strong>Products Restore</strong> below to apply changes.
+            </p>
           </div>
         </div>
 
