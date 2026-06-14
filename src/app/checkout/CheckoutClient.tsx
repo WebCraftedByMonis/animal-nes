@@ -85,6 +85,10 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     const [termsAccepted, setTermsAccepted] = useState(false)
     const [showFullTerms, setShowFullTerms] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [screenshotFile, setScreenshotFile] = useState<File | null>(null)
+    const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
+    const [screenshotPublicId, setScreenshotPublicId] = useState<string | null>(null)
+    const [uploadingScreenshot, setUploadingScreenshot] = useState(false)
 
     // Country and city state
     const [country, setCountry] = useState<CountryKey>('pakistan')
@@ -120,9 +124,35 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     // Calculate total with country-based shipping charge
     const total = subtotal + deliveryCharge
 
+    const isOnlinePayment = paymentMethod && !paymentMethod.startsWith('CASH ON DELIVERY')
+
+    const handleScreenshotChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setScreenshotFile(file)
+        setUploadingScreenshot(true)
+        try {
+            const fd = new FormData()
+            fd.append('screenshot', file)
+            const res = await fetch('/api/upload/payment-screenshot', { method: 'POST', body: fd })
+            if (!res.ok) throw new Error('Upload failed')
+            const data = await res.json()
+            setScreenshotUrl(data.url)
+            setScreenshotPublicId(data.publicId)
+        } catch {
+            alert('Screenshot upload failed. Please try again.')
+            setScreenshotFile(null)
+        } finally {
+            setUploadingScreenshot(false)
+        }
+    }
+
     const handleSubmit = async () => {
         if (!termsAccepted || !paymentMethod) {
             return alert('Please accept terms and select payment method.')
+        }
+        if (isOnlinePayment && !screenshotUrl) {
+            return alert('Please upload your payment screenshot before placing the order.')
         }
         if (!city.trim()) {
             return alert('Please enter your city.')
@@ -146,6 +176,8 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                 currency,
                 country,
                 total,
+                paymentScreenshotUrl: screenshotUrl ?? undefined,
+                paymentScreenshotPublicId: screenshotPublicId ?? undefined,
             }),
         })
 
@@ -322,7 +354,7 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                                 type="radio"
                                 name="payment"
                                 value="CASH ON DELIVERY(COD)"
-                                onChange={e => setPaymentMethod(e.target.value)}
+                                onChange={e => { setPaymentMethod(e.target.value); setScreenshotUrl(null); setScreenshotFile(null); setScreenshotPublicId(null) }}
                             />
                             CASH ON DELIVERY(COD)
                         </label>
@@ -337,6 +369,34 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
                         </label>
                     </div>
                 </div>
+
+                {isOnlinePayment && (
+                    <div className="mt-4 p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-950/20">
+                        <h3 className="font-semibold mb-1 text-green-700 dark:text-green-400">Upload Payment Screenshot <span className="text-red-500">*</span></h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            After transferring the amount, please upload a screenshot of your payment confirmation.
+                        </p>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleScreenshotChange}
+                            className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer"
+                        />
+                        {uploadingScreenshot && (
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Uploading...</p>
+                        )}
+                        {screenshotUrl && !uploadingScreenshot && (
+                            <div className="mt-3">
+                                <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Screenshot uploaded</p>
+                                <img
+                                    src={screenshotUrl}
+                                    alt="Payment screenshot"
+                                    className="max-h-48 rounded border border-green-200 dark:border-green-700 object-contain"
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <h1 className='text-3xl font-semibold text-green-500'>Privacy</h1>
 

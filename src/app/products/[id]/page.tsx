@@ -4,6 +4,7 @@ import ProductClient from './ProductClient'
 import ProductReviewSection from '@/components/ProductReviewSection'
 import { getApiUrl } from '@/lib/utils'
 import { prisma } from '@/lib/prisma'
+import { toSlug, BLOCKED_CATEGORIES } from '@/lib/category-utils'
 
 export const revalidate = 1800
 
@@ -287,13 +288,13 @@ export default async function ProductPage({
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: baseUrl },
       { '@type': 'ListItem', position: 2, name: 'Products', item: `${baseUrl}/products` },
-      ...(normalizedCategory !== 'Veterinary Products'
+      ...(normalizedCategory !== 'Veterinary Products' && data.category && !BLOCKED_CATEGORIES.has(data.category)
         ? [
             {
               '@type': 'ListItem',
               position: 3,
               name: normalizedCategory,
-              item: `${baseUrl}/products?category=${encodeURIComponent(data.category || '')}`,
+              item: `${baseUrl}/category/${toSlug(data.category)}`,
             },
           ]
         : []),
@@ -337,12 +338,16 @@ export default async function ProductPage({
               <>
                 <li aria-hidden="true">/</li>
                 <li>
-                  <Link
-                    href={`/products?category=${encodeURIComponent(data.category)}`}
-                    className="hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                  >
-                    {normalizedCategory}
-                  </Link>
+                  {BLOCKED_CATEGORIES.has(data.category) ? (
+                    <span className="text-gray-500 dark:text-gray-400">{normalizedCategory}</span>
+                  ) : (
+                    <Link
+                      href={`/category/${toSlug(data.category)}`}
+                      className="hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                    >
+                      {normalizedCategory}
+                    </Link>
+                  )}
                 </li>
               </>
             )}

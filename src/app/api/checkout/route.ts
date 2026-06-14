@@ -127,17 +127,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { 
-    city, 
-    province, 
-    address, 
-    shippingAddress, 
-    paymentMethod, 
-    cart, 
-    animalCart, 
+  const {
+    city,
+    province,
+    address,
+    shippingAddress,
+    paymentMethod,
+    cart,
+    animalCart,
     subtotal,
     shippingCharges,
-    total 
+    total,
+    paymentScreenshotUrl,
+    paymentScreenshotPublicId,
   } = body
 
   try {
@@ -197,6 +199,7 @@ export async function POST(req: NextRequest) {
         shipmentcharges: validatedShippingCharge.toString(),
         total: calculatedTotal,
         status: 'pending',
+        ...(paymentScreenshotUrl ? { paymentScreenshotUrl, paymentScreenshotPublicId: paymentScreenshotPublicId || null } : {}),
         items: {
           create: [
             ...cartItemsWithDiscounts.map((item: any) => {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { PARTNER_TYPE_GROUPS } from '@/lib/partner-constants';
 import { SellStatus } from '@prisma/client';
+import { getAllCategories } from '@/lib/category-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,17 @@ async function buildNonProductSitemap(): Promise<Entry[]> {
         select: { slug: true, updatedAt: true },
       }),
     ]);
+
+  const allCategories = await getAllCategories()
+  const categoryPages: Entry[] = [
+    { url: `${BASE_URL}/category`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    ...allCategories.map((c) => ({
+      url: `${BASE_URL}/category/${c.slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.85,
+    })),
+  ]
 
   const staticPages: Entry[] = [
     { url: BASE_URL, lastModified: now, changeFrequency: 'daily', priority: 1.0 },
@@ -160,6 +172,7 @@ async function buildNonProductSitemap(): Promise<Entry[]> {
 
   return [
     ...staticPages,
+    ...categoryPages,
     ...partnerPages,
     ...companyPages,
     ...newsPages,

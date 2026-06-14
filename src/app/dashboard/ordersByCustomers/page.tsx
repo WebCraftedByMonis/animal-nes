@@ -6,7 +6,7 @@ import { toast } from 'react-toastify'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Trash2, Download, Edit, Loader2, Search, Plus, X, ShoppingCart } from 'lucide-react'
+import { Trash2, Download, Edit, Loader2, Search, Plus, X, ShoppingCart, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip as UITooltip,
@@ -93,6 +93,7 @@ interface Order {
   total: number;
   status: string;
   createdAt: string;
+  paymentScreenshotUrl?: string | null;
   user: User;
   items: Item[];
 }
@@ -132,6 +133,7 @@ export default function AdminOrdersPage() {
   const [editedPaymentMethod, setEditedPaymentMethod] = useState('')
   const [editedItems, setEditedItems] = useState<EditedItem[]>([])
   const [updatingOrder, setUpdatingOrder] = useState(false)
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
 
   // ── Manual Order ──────────────────────────────────────────────
   const [manualOrderOpen, setManualOrderOpen] = useState(false)
@@ -659,7 +661,7 @@ export default function AdminOrdersPage() {
                                 className="relative"
                               >
                                 <Download className="w-5 h-5 text-green-600" />
-                                
+
                                 <span className="sr-only">Download Branded Invoice</span>
                               </Button>
                             </TooltipTrigger>
@@ -667,6 +669,24 @@ export default function AdminOrdersPage() {
                               <p>Download  Invoice (with company details)</p>
                             </TooltipContent>
                           </UITooltip>
+
+                          {/* Payment Screenshot Button */}
+                          {order.paymentScreenshotUrl && (
+                            <UITooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setScreenshotUrl(order.paymentScreenshotUrl!)}
+                                >
+                                  <ImageIcon className="w-5 h-5 text-purple-500" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View Payment Screenshot</p>
+                              </TooltipContent>
+                            </UITooltip>
+                          )}
                         </TooltipProvider>
                       </div>
                     </TableCell>
@@ -1135,6 +1155,46 @@ export default function AdminOrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Screenshot Modal */}
+      {screenshotUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setScreenshotUrl(null)}
+        >
+          <div
+            className="relative max-w-2xl w-full mx-4 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b dark:border-zinc-700">
+              <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Payment Screenshot</span>
+              <button
+                onClick={() => setScreenshotUrl(null)}
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex justify-center bg-gray-50 dark:bg-zinc-800">
+              <img
+                src={screenshotUrl}
+                alt="Payment screenshot"
+                className="max-h-[70vh] object-contain rounded"
+              />
+            </div>
+            <div className="px-4 py-3 border-t dark:border-zinc-700 flex justify-end">
+              <a
+                href={screenshotUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Open full size
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

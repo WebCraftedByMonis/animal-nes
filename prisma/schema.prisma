@@ -429,19 +429,21 @@ model VetReview {
 }
 
 model Checkout {
-  id               Int             @id @default(autoincrement())
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String
-  city             String
-  province         String
-  shipmentcharges  String?         @db.Text
-  address          String          @db.Text
-  shippingAddress  String          @db.Text
-  paymentMethod    String          @db.Text
-  total            Float
-  status           String
-  createdAt        DateTime        @default(now())
-  items            CheckoutItem[]  @relation("CheckoutToItems")
+  id                        Int             @id @default(autoincrement())
+  user                      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                    String
+  city                      String
+  province                  String
+  shipmentcharges           String?         @db.Text
+  address                   String          @db.Text
+  shippingAddress           String          @db.Text
+  paymentMethod             String          @db.Text
+  total                     Float
+  status                    String
+  paymentScreenshotUrl      String?         @db.Text
+  paymentScreenshotPublicId String?
+  createdAt                 DateTime        @default(now())
+  items                     CheckoutItem[]  @relation("CheckoutToItems")
 
   @@index([userId])
 }
