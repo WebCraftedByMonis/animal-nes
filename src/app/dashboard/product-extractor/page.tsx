@@ -20,6 +20,8 @@ import PetzoneExtractor from "@/app/components/PetzoneExtractor";
 import ThepetshopExtractor from "@/app/components/ThepetshopExtractor";
 import ThepetshopuaeExtractor from "@/app/components/ThepetshopuaeExtractor";
 import AlreemvetExtractor from "@/app/components/AlreemvetExtractor";
+import AnimalnexusExtractor from "@/app/components/AnimalnexusExtractor";
+import PetsoneExtractor from "@/app/components/PetsoneExtractor";
 
 const UAE_TABS = [
   { id: "smbros",          label: "SMBros B2B",      sub: "b2b.smbros.org" },
@@ -44,6 +46,8 @@ const PK_TABS = [
   { id: "onlinevetpharmacy",  label: "OnlineVetPharmacy", sub: "onlinevetpharmacy.com" },
   { id: "vetshop",            label: "VetShop",           sub: "vet-shop.net" },
   { id: "thepetshop",         label: "The Pet Shop",      sub: "thepetshop.pk" },
+  { id: "animalnexus",        label: "Animal Nexus",      sub: "animalnexus.com.pk" },
+  { id: "petsone",            label: "PetsOne",           sub: "petsone.pk" },
 ];
 
 export default function ProductExtractorPage() {
@@ -126,6 +130,8 @@ export default function ProductExtractorPage() {
       {active === "onlinevetpharmacy" && <OnlineVetPharmacyExtractor />}
       {active === "vetshop"           && <VetshopExtractor />}
       {active === "thepetshop"        && <ThepetshopExtractor />}
+      {active === "animalnexus"       && <AnimalnexusExtractor />}
+      {active === "petsone"           && <PetsoneExtractor />}
     </div>
   );
 }
