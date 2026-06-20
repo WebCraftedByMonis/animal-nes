@@ -222,10 +222,22 @@ export default function ProductClient({ product }: { product: ProductData }) {
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : selectedVariant.customerPrice != null && selectedVariant.customerPrice > 10 ? (
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {currencySymbol} {(selectedVariant.customerPrice ?? 0).toLocaleString()}
+                  {currencySymbol} {selectedVariant.customerPrice.toLocaleString()}
                 </p>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">Get Quote</span>
+                  <a
+                    href={`https://wa.me/923008424741?text=${encodeURIComponent(`Hi, I'd like to get a price quote for: ${product.productName}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    WhatsApp Us
+                  </a>
+                </div>
               )}
             </div>
           )}

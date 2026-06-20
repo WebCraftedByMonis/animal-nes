@@ -35,9 +35,13 @@ export default function RelatedProductsClient({ products }: { products: RelatedP
           <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
             {p.productName}
           </p>
-          {p.variants?.[0]?.customerPrice != null && (
+          {p.variants?.[0]?.customerPrice != null && p.variants[0].customerPrice > 10 ? (
             <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium">
               {currencySymbol} {p.variants[0].customerPrice.toLocaleString()}
+            </p>
+          ) : (
+            <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 mt-1">
+              Get Quote
             </p>
           )}
         </Link>

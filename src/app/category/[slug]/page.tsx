@@ -200,12 +200,14 @@ export default async function CategoryPage({
                     <h2 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                       {product.productName}
                     </h2>
-                    {price != null ? (
+                    {price != null && price > 10 ? (
                       <p className="text-sm font-bold text-green-600 dark:text-green-400">
                         Rs. {price.toLocaleString()}
                       </p>
                     ) : (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">Price on request</p>
+                      <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full">
+                        Get Quote
+                      </span>
                     )}
                   </div>
                 </Link>

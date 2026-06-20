@@ -68,9 +68,15 @@ export default function FeaturedProducts() {
             )}
 
             <div className="flex justify-end">
-              <Badge className="bg-green-500 hover:bg-green-600 text-white">
-                PKR {product.customerPrice.toFixed(2)}
-              </Badge>
+              {product.customerPrice > 10 ? (
+                <Badge className="bg-green-500 hover:bg-green-600 text-white">
+                  PKR {product.customerPrice.toFixed(2)}
+                </Badge>
+              ) : (
+                <Badge className="bg-orange-500 hover:bg-orange-600 text-white">
+                  Get Quote
+                </Badge>
+              )}
             </div>
           </div>
         ))}

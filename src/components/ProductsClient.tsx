@@ -773,7 +773,7 @@ export default function ProductsClient() {
                       )}
 
                       {/* Single variant (cheapest) with discount */}
-                      {v && v.customerPrice && (
+                      {v && v.customerPrice && v.customerPrice > 10 ? (
                         <div className="pt-1">
                           {discount ? (
                             <div className="flex flex-col gap-1">
@@ -794,6 +794,12 @@ export default function ProductsClient() {
                               {v.packingVolume || 'N/A'} – {currencySymbol} {v.customerPrice.toLocaleString()}
                             </Badge>
                           )}
+                        </div>
+                      ) : (
+                        <div className="pt-1">
+                          <Badge variant="outline" className="text-orange-600 border-orange-400/40 bg-orange-50/60 dark:bg-orange-900/20">
+                            Get Quote
+                          </Badge>
                         </div>
                       )}
 
