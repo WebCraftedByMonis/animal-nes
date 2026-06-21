@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { PARTNER_TYPE_GROUPS } from '@/lib/partner-constants';
 import { SellStatus } from '@prisma/client';
@@ -183,15 +184,31 @@ async function buildNonProductSitemap(): Promise<Entry[]> {
   ].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 }
 
-async function buildProductSitemap(id: number): Promise<Entry[]> {
-  const skip = (id - 1) * PRODUCTS_PER_SITEMAP;
+async function buildProductSitemap(pageNum: number): Promise<Entry[]> {
+  let minId: number | undefined;
+
+  if (pageNum > 1) {
+    // Only reads the (isActive, id) index — no full row scan
+    const cursor = await prisma.product.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+      skip: (pageNum - 1) * PRODUCTS_PER_SITEMAP - 1,
+    });
+    if (!cursor) return [];
+    minId = cursor.id;
+  }
+
   const products = await prisma.product.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(minId !== undefined ? { id: { gt: minId } } : {}),
+    },
     select: { id: true, updatedAt: true },
-    skip,
     take: PRODUCTS_PER_SITEMAP,
     orderBy: { id: 'asc' },
   });
+
   return products.map(p => ({
     url: `${BASE_URL}/products/${p.id}`,
     lastModified: p.updatedAt,
@@ -199,6 +216,18 @@ async function buildProductSitemap(id: number): Promise<Entry[]> {
     priority: 0.8,
   }));
 }
+
+const cachedNonProductSitemap = unstable_cache(
+  buildNonProductSitemap,
+  ['sitemap-non-products'],
+  { revalidate: 3600 }
+);
+
+const cachedProductSitemap = unstable_cache(
+  buildProductSitemap,
+  ['sitemap-products'],
+  { revalidate: 3600 }
+);
 
 export async function GET(
   _request: Request,
@@ -213,7 +242,7 @@ export async function GET(
   }
 
   const entries =
-    numId === 0 ? await buildNonProductSitemap() : await buildProductSitemap(numId);
+    numId === 0 ? await cachedNonProductSitemap() : await cachedProductSitemap(numId);
 
   return new NextResponse(toXml(entries), {
     status: 200,

@@ -61,6 +61,8 @@ model Product {
 
   @@index([companyId])
   @@index([partnerId])
+  @@index([isActive, id])
+  @@index([isActive, isFeatured, createdAt])
 }
 
 model ProductVariant {
@@ -79,6 +81,7 @@ model ProductVariant {
   partnerOrderItems  PartnerOrderItem[]
 
   @@index([productId])
+  @@index([productId, customerPrice])
 }
 
 model ProductPdf {
