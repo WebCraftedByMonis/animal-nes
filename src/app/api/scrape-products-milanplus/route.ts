@@ -48,9 +48,9 @@ async function fetchHtml(url: string): Promise<string | null> {
 async function collectProductUrls(startUrl: string): Promise<string[]> {
   const seen = new Set<string>();
   const urls: string[] = [];
-  // Product URL pattern: /shop/SLUG-[hex chars 10+]
-  const productRe = /href="(https?:\/\/milanplus\.ae\/shop\/[^"\/]+-[a-f0-9]{10,})"/g;
-  const origin = new URL(startUrl).origin;
+  // Match any /shop/SLUG link that is NOT a category link (/shop/category/...)
+  // Products may or may not have a hash suffix
+  const productRe = /href="(https?:\/\/milanplus\.ae\/shop\/(?!category\/)[^"\/]+)"/g;
 
   let pageNum = 1;
   while (true) {
