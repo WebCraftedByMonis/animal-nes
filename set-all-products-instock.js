@@ -1,5 +1,7 @@
 // Script to set all products in stock with inventory = 100
-// Run with: node scripts/set-all-products-instock.js
+// Run with: node set-all-products-instock.js
+// NOTE: this only updates stock status (outofstock) and inventory.
+// It does NOT touch isActive — manual deactivation decisions are preserved.
 
 const { PrismaClient } = require('@prisma/client');
 
@@ -13,11 +15,10 @@ async function main() {
     const productsUpdate = await prisma.product.updateMany({
       data: {
         outofstock: false,
-        isActive: true,
       },
     });
 
-    console.log(`Updated ${productsUpdate.count} products to be in stock and active.\n`);
+    console.log(`Updated ${productsUpdate.count} products to be in stock.\n`);
 
     // Update all product variants to have inventory = 100
     const variantsUpdate = await prisma.productVariant.updateMany({
@@ -28,7 +29,7 @@ async function main() {
 
     console.log(`Updated ${variantsUpdate.count} product variants with inventory = 100.\n`);
 
-    console.log('All products are now in stock with inventory = 100!');
+    console.log('All products are now in stock with inventory = 100! (isActive unchanged)');
   } catch (error) {
     console.error('Error updating products:', error);
     throw error;
