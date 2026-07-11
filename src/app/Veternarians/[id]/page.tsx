@@ -37,8 +37,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
+  const { id } = await params
   try {
-    const { id } = await params;
     const res = await fetch(`${getApiUrl()}/api/partner/${id}`, {
       next: { revalidate: 1800 },
     })
@@ -47,6 +47,7 @@ export async function generateMetadata({
       return {
         title: 'Veterinary Partner Not Found | Animal Wellness',
         description: 'The veterinary partner profile you are looking for may no longer be available.',
+        alternates: { canonical: `https://animalwellness.shop/Veternarians/${id}` },
       }
     }
 
@@ -108,6 +109,7 @@ export async function generateMetadata({
     return {
       title: 'Veterinary Partner | Animal Wellness',
       description: 'View our network of professional veterinary partners at Animal Wellness.',
+      alternates: { canonical: `https://animalwellness.shop/Veternarians/${id}` },
     }
   }
 }
