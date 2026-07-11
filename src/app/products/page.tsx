@@ -10,23 +10,38 @@ export const dynamic = "force-dynamic"
 
 const BASE_URL = 'https://animalwellness.shop'
 
-export const metadata: Metadata = {
-  title: 'Veterinary Products & Pet Care Supplies - Buy Online',
-  description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions. Quality products from trusted brands with fast delivery across the region.',
-  keywords: [
-    'veterinary products', 'pet care supplies', 'animal medicines', 'veterinary supplies',
-    'pet pharmacy', 'animal healthcare products', 'veterinary equipment', 'pet nutrition',
-    'animal supplements', 'veterinary medicine online', 'pet care products', 'animal health'
-  ],
-  openGraph: {
-    title: 'Veterinary Products & Pet Care Supplies - Animal Wellness',
-    description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions.',
-    type: 'website',
-    images: [{ url: `${BASE_URL}/logo.jpg`, width: 1200, height: 630, alt: 'Animal Wellness Products' }],
-  },
-  alternates: {
-    canonical: '/products',
-  },
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}): Promise<Metadata> {
+  const params = await searchParams
+  const hasFilters = Object.keys(params).length > 0
+
+  if (hasFilters) {
+    return {
+      robots: { index: false, follow: true },
+    }
+  }
+
+  return {
+    title: 'Veterinary Products & Pet Care Supplies - Buy Online',
+    description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions. Quality products from trusted brands with fast delivery across the region.',
+    keywords: [
+      'veterinary products', 'pet care supplies', 'animal medicines', 'veterinary supplies',
+      'pet pharmacy', 'animal healthcare products', 'veterinary equipment', 'pet nutrition',
+      'animal supplements', 'veterinary medicine online', 'pet care products', 'animal health'
+    ],
+    openGraph: {
+      title: 'Veterinary Products & Pet Care Supplies - Animal Wellness',
+      description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions.',
+      type: 'website',
+      images: [{ url: `${BASE_URL}/logo.jpg`, width: 1200, height: 630, alt: 'Animal Wellness Products' }],
+    },
+    alternates: {
+      canonical: '/products',
+    },
+  }
 }
 
 // Query the DB directly for the server-rendered product index.
