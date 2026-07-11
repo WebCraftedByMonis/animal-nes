@@ -15,6 +15,13 @@ function verifyToken(token: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  const host = request.headers.get('host') || ''
+  if (host.startsWith('www.')) {
+    const url = request.nextUrl.clone()
+    url.host = host.replace(/^www\./, '')
+    return NextResponse.redirect(url, { status: 301 })
+  }
+
   const { pathname } = request.nextUrl;
 
   // Check if the path starts with /dashboard
@@ -50,14 +57,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all dashboard routes including:
-     * - /dashboard
-     * - /dashboard/products
-     * - /dashboard/companies
-     * - /dashboard/addCompany
-     * - etc.
-     */
-    '/dashboard/:path*',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };

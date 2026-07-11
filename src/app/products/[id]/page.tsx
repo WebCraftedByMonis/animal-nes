@@ -183,15 +183,21 @@ export default async function ProductPage({
   if (isNaN(numId)) return notFound()
 
   // Parallel: product fetch + approved reviews
-  const [productRes, reviews] = await Promise.all([
-    fetch(`${getApiUrl()}/api/product/${id}`, { next: { revalidate: 1800 } }),
-    prisma.productReview.findMany({
-      where: { productId: numId, isApproved: true },
-      include: { user: { select: { name: true, image: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    }),
-  ])
+  let productRes: Response
+  let reviews: any[]
+  try {
+    ;[productRes, reviews] = await Promise.all([
+      fetch(`${getApiUrl()}/api/product/${id}`, { next: { revalidate: 1800 } }),
+      prisma.productReview.findMany({
+        where: { productId: numId, isApproved: true },
+        include: { user: { select: { name: true, image: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ])
+  } catch {
+    return notFound()
+  }
 
   if (!productRes.ok) return notFound()
   const { data } = await productRes.json()
