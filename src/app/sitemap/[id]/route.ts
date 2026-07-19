@@ -3,7 +3,6 @@ import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { PARTNER_TYPE_GROUPS } from '@/lib/partner-constants';
 import { SellStatus } from '@prisma/client';
-import { getAllCategories } from '@/lib/category-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,16 +67,7 @@ async function buildNonProductSitemap(): Promise<Entry[]> {
       }),
     ]);
 
-  const allCategories = await getAllCategories()
-  const categoryPages: Entry[] = [
-    { url: `${BASE_URL}/category`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    ...allCategories.map((c) => ({
-      url: `${BASE_URL}/category/${c.slug}`,
-      lastModified: now,
-      changeFrequency: 'daily' as const,
-      priority: 0.85,
-    })),
-  ]
+  const categoryPages: Entry[] = []
 
   const staticPages: Entry[] = [
     { url: BASE_URL, lastModified: now, changeFrequency: 'daily', priority: 1.0 },
