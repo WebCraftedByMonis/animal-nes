@@ -1,11 +1,45 @@
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 import Link from 'next/link'
 import ProductClient from './ProductClient'
 import ProductReviewSection from '@/components/ProductReviewSection'
 import RelatedProductsClient from './RelatedProductsClient'
-import { getApiUrl } from '@/lib/utils'
 import { prisma } from '@/lib/prisma'
 import { toSlug, BLOCKED_CATEGORIES } from '@/lib/category-utils'
+
+const getProduct = cache(async (numId: number) => {
+  const now = new Date()
+  const product = await prisma.product.findUnique({
+    where: { id: numId },
+    include: {
+      image: true,
+      pdf: true,
+      company: true,
+      partner: true,
+      variants: true,
+      discounts: {
+        where: {
+          isActive: true,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+      },
+    },
+  })
+  if (!product) return null
+  if (!product.companyId) return product
+  const companyDiscounts = await prisma.discount.findMany({
+    where: {
+      companyId: product.companyId,
+      productId: null,
+      variantId: null,
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+    },
+  })
+  return { ...product, discounts: [...product.discounts, ...companyDiscounts] }
+})
 
 export const revalidate = 1800
 
@@ -113,14 +147,15 @@ const SHIPPING_INFO = [
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const res = await fetch(`${getApiUrl()}/api/product/${id}`, { next: { revalidate: 1800 } })
-    if (!res.ok) {
+    const numId = parseInt(id, 10)
+    if (isNaN(numId)) return { title: 'Product Not Found | Animal Wellness', description: 'The requested product could not be found.' }
+    const data = await getProduct(numId)
+    if (!data) {
       return {
         title: 'Product Not Found | Animal Wellness',
         description: 'The requested product could not be found.',
       }
     }
-    const { data } = await res.json()
     const price = data.variants?.[0]?.customerPrice
     const normalizedCat = normalizeCategory(data.category)
     const rawDesc: string | null = data.description
@@ -183,11 +218,11 @@ export default async function ProductPage({
   if (isNaN(numId)) return notFound()
 
   // Parallel: product fetch + approved reviews
-  let productRes: Response
+  let data: Awaited<ReturnType<typeof getProduct>>
   let reviews: any[]
   try {
-    ;[productRes, reviews] = await Promise.all([
-      fetch(`${getApiUrl()}/api/product/${id}`, { next: { revalidate: 1800 } }),
+    ;[data, reviews] = await Promise.all([
+      getProduct(numId),
       prisma.productReview.findMany({
         where: { productId: numId, isApproved: true },
         include: { user: { select: { name: true, image: true } } },
@@ -199,8 +234,7 @@ export default async function ProductPage({
     return notFound()
   }
 
-  if (!productRes.ok) return notFound()
-  const { data } = await productRes.json()
+  if (!data) return notFound()
 
   // Related products (same category, excludes self) – runs after product resolves
   const relatedProducts =
