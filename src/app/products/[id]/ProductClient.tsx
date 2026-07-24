@@ -5,6 +5,7 @@ import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
 import BuyNowButton from '@/components/BuyNowButton';
 import WishlistButton from '@/components/WishlistButton';
+import ShareButton from '@/components/ShareButton';
 import { useCountry, Country } from '@/contexts/CountryContext';
 
 interface Discount {
@@ -165,6 +166,10 @@ export default function ProductClient({ product }: { product: ProductData }) {
                 referrerPolicy="no-referrer"
               />
               <WishlistButton productId={product.id} />
+              <ShareButton
+                title={product.productName}
+                text={product.genericName ? `${product.productName} - ${product.genericName}` : product.productName}
+              />
             </>
           ) : (
             <div className="bg-gray-100 dark:bg-zinc-800 aspect-square flex items-center justify-center">
