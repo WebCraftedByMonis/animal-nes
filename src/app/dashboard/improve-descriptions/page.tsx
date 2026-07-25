@@ -53,6 +53,9 @@ export default function ImproveDescriptionsPage() {
         setError(data.error)
       } else if (data.message) {
         setMessage(data.message)
+      } else if (data.error) {
+        setError(`Grok API error: ${data.error}`)
+        setResults(data.results ?? [])
       } else {
         setResults(data.results ?? [])
         await fetchStats()

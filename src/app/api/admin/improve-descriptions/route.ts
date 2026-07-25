@@ -32,7 +32,7 @@ async function generateDescription(product: {
   subCategory: string | null
   company: { companyName: string | null } | null
   description: string | null
-}): Promise<string | null> {
+}): Promise<{ text: string | null; error?: string }> {
   const currentInfo = product.description
     ? `Current brief info: ${product.description.slice(0, 200)}`
     : ''
@@ -68,12 +68,13 @@ Requirements:
   })
 
   if (!res.ok) {
-    const err = await res.text()
-    console.error('Grok API error:', res.status, err)
-    return null
+    const errText = await res.text()
+    console.error('Grok API error:', res.status, errText)
+    return { text: null, error: `HTTP ${res.status}: ${errText.slice(0, 120)}` }
   }
   const json = await res.json()
-  return json.choices?.[0]?.message?.content?.trim() ?? null
+  const text = json.choices?.[0]?.message?.content?.trim() ?? null
+  return { text }
 }
 
 type ProductRow = {
@@ -203,8 +204,9 @@ export async function POST() {
   const results: { id: number; name: string; status: 'improved' | 'failed'; reason?: string }[] =
     []
 
+  let lastError = ''
   for (const product of products) {
-    const newDesc = await generateDescription(product)
+    const { text: newDesc, error: apiError } = await generateDescription(product)
     if (newDesc && newDesc.length >= 100) {
       await prisma.product.update({
         where: { id: product.id },
@@ -214,14 +216,26 @@ export async function POST() {
       state.processedToday++
       state.totalImproved++
     } else {
+      if (apiError) lastError = apiError
       results.push({
         id: product.id,
         name: product.productName,
         status: 'failed',
-        reason: newDesc ? 'Response too short' : 'API error',
+        reason: apiError ?? (newDesc ? 'Response too short' : 'API error'),
       })
     }
     saveState(state)
+  }
+
+  // If every single product failed, surface the raw API error at the top level too
+  const allFailed = results.every(r => r.status === 'failed')
+  if (allFailed && lastError) {
+    return NextResponse.json(
+      { results, error: lastError, processedToday: state.processedToday,
+        totalImproved: state.totalImproved, dailyLimit: DAILY_LIMIT,
+        remainingToday: Math.max(0, DAILY_LIMIT - state.processedToday) },
+      { status: 502 }
+    )
   }
 
   return NextResponse.json({
