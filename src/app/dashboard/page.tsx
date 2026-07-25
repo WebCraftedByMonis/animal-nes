@@ -57,6 +57,14 @@ export default async function DashboardPage() {
               <h2 className="text-xl font-semibold text-purple-900">Admins</h2>
               <p className="text-purple-700 mt-2">Manage admin users</p>
             </Link>
+
+            <Link
+              href="/dashboard/improve-descriptions"
+              className="block p-6 bg-orange-50 rounded-lg hover:bg-orange-100 transition"
+            >
+              <h2 className="text-xl font-semibold text-orange-900">AI Descriptions</h2>
+              <p className="text-orange-700 mt-2">Improve thin product descriptions with Grok AI</p>
+            </Link>
           </div>
 
           <div className="mt-8 flex space-x-4">
