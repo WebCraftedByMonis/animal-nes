@@ -32,7 +32,7 @@ async function generateDescription(product: {
   subCategory: string | null
   company: { companyName: string | null } | null
   description: string | null
-}): Promise<{ text: string | null; error?: string }> {
+}): Promise<{ text: string | null; error?: string; fatal?: boolean }> {
   const currentInfo = product.description
     ? `Current brief info: ${product.description.slice(0, 200)}`
     : ''
@@ -53,24 +53,27 @@ Requirements:
 - Write in English only
 - Return ONLY the description text with no headings or labels`
 
-  const res = await fetch('https://api.x.ai/v1/chat/completions', {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.GROK_API_KEY}`,
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'grok-3-mini',
+      model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 400,
       temperature: 0.7,
     }),
+    signal: AbortSignal.timeout(25000),
   })
 
   if (!res.ok) {
     const errText = await res.text()
     console.error('Grok API error:', res.status, errText)
-    return { text: null, error: `HTTP ${res.status}: ${errText.slice(0, 120)}` }
+    // 400/401/403 are config errors that won't resolve by retrying
+    const fatal = res.status === 400 || res.status === 401 || res.status === 403
+    return { text: null, error: `HTTP ${res.status}: ${errText.slice(0, 120)}`, fatal }
   }
   const json = await res.json()
   const text = json.choices?.[0]?.message?.content?.trim() ?? null
@@ -204,9 +207,9 @@ export async function POST() {
   const results: { id: number; name: string; status: 'improved' | 'failed'; reason?: string }[] =
     []
 
-  let lastError = ''
+  let fatalError = ''
   for (const product of products) {
-    const { text: newDesc, error: apiError } = await generateDescription(product)
+    const { text: newDesc, error: apiError, fatal } = await generateDescription(product)
     if (newDesc && newDesc.length >= 100) {
       await prisma.product.update({
         where: { id: product.id },
@@ -216,22 +219,22 @@ export async function POST() {
       state.processedToday++
       state.totalImproved++
     } else {
-      if (apiError) lastError = apiError
+      if (apiError) fatalError = apiError
       results.push({
         id: product.id,
         name: product.productName,
         status: 'failed',
         reason: apiError ?? (newDesc ? 'Response too short' : 'API error'),
       })
+      // Auth/config errors won't fix themselves — stop immediately
+      if (fatal) break
     }
     saveState(state)
   }
 
-  // If every single product failed, surface the raw API error at the top level too
-  const allFailed = results.every(r => r.status === 'failed')
-  if (allFailed && lastError) {
+  if (fatalError) {
     return NextResponse.json(
-      { results, error: lastError, processedToday: state.processedToday,
+      { results, error: fatalError, processedToday: state.processedToday,
         totalImproved: state.totalImproved, dailyLimit: DAILY_LIMIT,
         remainingToday: Math.max(0, DAILY_LIMIT - state.processedToday) },
       { status: 502 }
