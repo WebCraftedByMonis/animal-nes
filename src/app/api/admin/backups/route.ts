@@ -15,7 +15,7 @@ async function requireAdmin() {
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-type BackupType = 'products' | 'companies' | 'partners';
+type BackupType = 'products' | 'companies' | 'partners' | 'thin-descriptions';
 
 function toIso(value: Date | null | undefined) {
   return value ? value.toISOString() : null;
@@ -40,6 +40,7 @@ function sanitizeRow(row: Record<string, unknown>): Record<string, unknown> {
 
 function fileNameForType(type: BackupType, country: string) {
   const stamp = new Date().toISOString().slice(0, 10);
+  if (type === 'thin-descriptions') return `thin-descriptions-${stamp}.xlsx`;
   return `${type}-backup-${country}-${stamp}.xlsx`;
 }
 
@@ -51,9 +52,9 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') as BackupType | null;
   const country = searchParams.get('country') || 'Pakistan';
 
-  if (!type || !['products', 'companies', 'partners'].includes(type)) {
+  if (!type || !['products', 'companies', 'partners', 'thin-descriptions'].includes(type)) {
     return NextResponse.json(
-      { error: 'Invalid backup type. Use products, companies, or partners.' },
+      { error: 'Invalid backup type. Use products, companies, partners, or thin-descriptions.' },
       { status: 400 }
     );
   }
@@ -174,6 +175,48 @@ export async function GET(request: NextRequest) {
     }));
 
     sheetName = 'Partners';
+  }
+
+  if (type === 'thin-descriptions') {
+    // Products where description is null, empty, or < 150 chars
+    const thinIds = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM Product
+      WHERE isActive = 1
+        AND (description IS NULL OR description = '' OR CHAR_LENGTH(description) < 150)
+      ORDER BY id ASC
+    `;
+
+    const ids = thinIds.map(r => r.id);
+    const products = await prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        productName: true,
+        genericName: true,
+        category: true,
+        subCategory: true,
+        subsubCategory: true,
+        productType: true,
+        description: true,
+        company: { select: { companyName: true } },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    rows = products.map(p => ({
+      ProductID:       p.id,
+      ProductName:     p.productName,
+      GenericName:     p.genericName,
+      Category:        p.category,
+      SubCategory:     p.subCategory,
+      SubSubCategory:  p.subsubCategory,
+      ProductType:     p.productType,
+      CompanyName:     p.company?.companyName ?? null,
+      Description:     p.description,   // current thin/empty value — keep for context
+      NewDescription:  '',              // fill this column with the new description
+    }));
+
+    sheetName = 'ThinDescriptions';
   }
 
   const workbook = XLSX.utils.book_new();
