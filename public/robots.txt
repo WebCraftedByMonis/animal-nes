@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /api/admin/media/serve/
 Disallow: /api/
 Disallow: /dashboard/
 Disallow: /_next/
@@ -27,6 +28,7 @@ Disallow: /Privacy/
 
 User-agent: Googlebot
 Allow: /
+Allow: /api/admin/media/serve/
 Disallow: /api/
 Disallow: /dashboard/
 Disallow: /_next/
@@ -51,5 +53,9 @@ Disallow: /addCompany/
 Disallow: /addPartner/
 Disallow: /sell/
 Crawl-delay: 1
+
+User-agent: Googlebot-Image
+Allow: /
+Allow: /api/admin/media/serve/
 
 Sitemap: https://animalwellness.shop/sitemap.xml
