@@ -234,7 +234,7 @@ export default async function ProductPage({
     return notFound()
   }
 
-  if (!data) return notFound()
+  if (!data || !data.isActive) return notFound()
 
   // Related products (same category, excludes self) – runs after product resolves
   const relatedProducts =
