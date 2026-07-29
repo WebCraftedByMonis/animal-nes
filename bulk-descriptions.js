@@ -105,10 +105,9 @@ Replace ID_1, ID_2 etc with the actual numeric IDs from the list above.`
 async function main() {
   console.log('Loading products with thin descriptions from database...')
 
-  // Get empty descriptions
+  // Get empty descriptions (all products, active or not)
   const emptyProducts = await prisma.product.findMany({
     where: {
-      isActive: true,
       OR: [{ description: null }, { description: '' }],
     },
     select: {
@@ -119,11 +118,10 @@ async function main() {
     orderBy: { id: 'asc' },
   })
 
-  // Get thin descriptions via raw SQL
+  // Get thin descriptions via raw SQL (all products, active or not)
   const thinRaw = await prisma.$queryRaw`
     SELECT id FROM Product
-    WHERE isActive = 1
-      AND description IS NOT NULL
+    WHERE description IS NOT NULL
       AND description != ''
       AND CHAR_LENGTH(description) < 150
     ORDER BY id ASC
