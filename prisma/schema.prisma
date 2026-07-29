@@ -32,10 +32,10 @@ model Product {
   id             Int             @id @default(autoincrement())
   productName    String          @db.Text
   genericName    String?         @db.Text
-  category       String?        @db.Text
-  subCategory    String?         @db.Text
-  subsubCategory String?       @db.Text
-  productType    String?       @db.Text
+  category       String?        @db.VarChar(200)
+  subCategory    String?         @db.VarChar(200)
+  subsubCategory String?       @db.VarChar(200)
+  productType    String?       @db.VarChar(200)
   company        Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId      Int
   partner        Partner?      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
@@ -63,6 +63,7 @@ model Product {
   @@index([partnerId])
   @@index([isActive, id])
   @@index([isActive, isFeatured, createdAt])
+  @@index([isActive, category])
 }
 
 model ProductVariant {
