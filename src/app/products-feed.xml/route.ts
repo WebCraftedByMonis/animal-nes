@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText, xmlEscape } from "@/lib/xml-sanitize";
+import RX_EXCLUDED_IDS from "@/lib/rx-excluded-ids.json";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -251,7 +252,7 @@ export async function GET(req: NextRequest) {
   const builder  = BUILDERS[platformParam] ?? BUILDERS.google;
 
   const products = await prisma.product.findMany({
-    where: { isActive: true },
+    where: { isActive: true, id: { notIn: RX_EXCLUDED_IDS } },
     select: {
       id: true,
       productName: true,
