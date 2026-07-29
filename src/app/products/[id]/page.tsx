@@ -156,19 +156,31 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         description: 'The requested product could not be found.',
       }
     }
-    const price = data.variants?.[0]?.customerPrice
+    const prices = data.variants
+      ?.map((v: { customerPrice: number | null }) => v.customerPrice)
+      .filter((p): p is number => p != null)
+      .sort((a, b) => a - b)
+    const price = prices?.[0] ?? null
+    const size = data.variants?.[0]?.packingVolume ?? null
     const normalizedCat = normalizeCategory(data.category)
     const rawDesc: string | null = data.description
 
+    const SKIP_GENERIC = new Set(['veterinary', 'null', '', 'n/a', 'general'])
+    const genericPart =
+      data.genericName && !SKIP_GENERIC.has(data.genericName.trim().toLowerCase())
+        ? ` (${data.genericName})`
+        : ''
+    const sizePart = size ? ` ${size}` : ''
+    const priceStr = price ? ` — PKR ${price.toLocaleString()}` : ''
+
     const metaDescription = rawDesc
-      ? rawDesc.replace(/\s+/g, ' ').trim().slice(0, 155) +
-        (rawDesc.length > 155 ? '…' : '')
-      : `Buy ${data.productName} — ${normalizedCat}${
-          price ? ` from PKR ${price.toLocaleString()}` : ''
-        }. Fast delivery across Pakistan.`
+      ? rawDesc.replace(/\s+/g, ' ').trim().slice(0, 130) +
+        (rawDesc.length > 130 ? '…' : '') +
+        priceStr
+      : `Buy ${data.productName}${genericPart}${sizePart} in Pakistan${priceStr}. ${normalizedCat}. Fast delivery across Pakistan.`
 
     return {
-      title: `${data.productName} | Buy Online - Animal Wellness`,
+      title: `${data.productName}${genericPart}${sizePart} — Price in Pakistan | Animal Wellness`,
       description: metaDescription,
       keywords: [
         data.productName,
@@ -418,6 +430,24 @@ export default async function ProductPage({
             </span>
           )}
         </div>
+
+        {/* ── Price in Pakistan — visible text for search indexing ─── */}
+        {(() => {
+          const prices = data.variants
+            ?.map((v: { customerPrice: number | null }) => v.customerPrice)
+            .filter((p): p is number => p != null)
+            .sort((a, b) => a - b)
+          if (!prices?.length) return null
+          const display = prices.length > 1
+            ? `from PKR ${prices[0].toLocaleString()}`
+            : `PKR ${prices[0].toLocaleString()}`
+          return (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              {data.productName} price in Pakistan:{' '}
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{display}</span>
+            </p>
+          )
+        })()}
 
         {/* ── Unique intro paragraph ────────────────────────────────── */}
         {sections.overview && (
