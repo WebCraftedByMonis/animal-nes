@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import ProductsClient from '@/components/ProductsClient'
 import { prisma } from '@/lib/prisma'
+import { toSlug, isValidCategory, isValidBrand } from '@/lib/slug-utils'
 
 // Never pre-render at build time — 60k product rows time out the 60s build
 // worker. Page is rendered on first request and cached by nginx/ISR.
@@ -44,23 +45,11 @@ export async function generateMetadata({
   }
 }
 
-// Query the DB directly for the server-rendered product index.
-// This list is used only for SEO link discovery (sr-only nav below) —
-// the interactive product browser is handled client-side by ProductsClient.
-// We select only the minimal fields needed and order by featured-first so the
-// most important products appear earliest in the HTML.
 async function getAllProducts() {
   try {
-    // 5 000 featured-first links is enough for Googlebot to discover products.
-    // Full discovery is handled by the sitemap index (/sitemap/1.xml … N.xml).
     return await prisma.product.findMany({
       where: { isActive: true },
-      select: {
-        id: true,
-        productName: true,
-        genericName: true,
-        category: true,
-      },
+      select: { id: true, productName: true, genericName: true, category: true },
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
       take: 5000,
     })
@@ -69,8 +58,31 @@ async function getAllProducts() {
   }
 }
 
+async function getNavData() {
+  try {
+    const [catRows, brandRows] = await Promise.all([
+      prisma.$queryRaw<{ category: string; count: bigint }[]>`
+        SELECT category, COUNT(*) as count FROM Product
+        WHERE isActive = 1 AND category IS NOT NULL AND category != ''
+        GROUP BY category HAVING count >= 5 ORDER BY count DESC
+      `,
+      prisma.$queryRaw<{ id: number; companyName: string; count: bigint }[]>`
+        SELECT c.id, c.companyName, COUNT(p.id) as count
+        FROM Product p JOIN Company c ON p.companyId = c.id
+        WHERE p.isActive = 1
+        GROUP BY c.id, c.companyName HAVING count >= 50 ORDER BY count DESC
+      `,
+    ])
+    const categories = catRows.filter(r => isValidCategory(r.category, Number(r.count)))
+    const brands = brandRows.filter(r => isValidBrand(r.companyName, Number(r.count)))
+    return { categories, brands }
+  } catch {
+    return { categories: [], brands: [] }
+  }
+}
+
 export default async function AllProductsPage() {
-  const products = await getAllProducts()
+  const [products, { categories, brands }] = await Promise.all([getAllProducts(), getNavData()])
 
   const itemListData = {
     '@context': 'https://schema.org',
@@ -100,22 +112,49 @@ export default async function AllProductsPage() {
       />
       <h1 className="text-2xl font-bold text-center text-green-500">All Products</h1>
 
-      {/* Server-rendered product index — crawlable by search engines */}
-      {products.length > 0 && (
-        <nav aria-label="Product index" className="sr-only">
-          <ul>
-            {products.map((p: any) => (
-              <li key={p.id}>
-                <Link href={`/products/${p.id}`}>
-                  {p.productName}
-                  {p.genericName ? ` (${p.genericName})` : ''}
-                  {p.category ? ` — ${p.category}` : ''}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      {/* Server-rendered index — crawlable by search engines, hidden from UI */}
+      <nav aria-label="Product index" className="sr-only">
+        {categories.length > 0 && (
+          <section>
+            <h2>Shop by Category</h2>
+            <ul>
+              {categories.map((c: any) => (
+                <li key={c.category}>
+                  <Link href={`/products/category/${toSlug(c.category)}`}>{c.category}</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {brands.length > 0 && (
+          <section>
+            <h2>Shop by Brand</h2>
+            <ul>
+              {brands.map((b: any) => (
+                <li key={b.id}>
+                  <Link href={`/brands/${toSlug(b.companyName)}`}>{b.companyName}</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {products.length > 0 && (
+          <section>
+            <h2>All Products</h2>
+            <ul>
+              {products.map((p: any) => (
+                <li key={p.id}>
+                  <Link href={`/products/${p.id}`}>
+                    {p.productName}
+                    {p.genericName ? ` (${p.genericName})` : ''}
+                    {p.category ? ` — ${p.category}` : ''}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </nav>
 
       <Suspense fallback={<div className="text-center py-12 text-muted-foreground">Loading products...</div>}>
         <ProductsClient />

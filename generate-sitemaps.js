@@ -15,6 +15,37 @@ const BASE_URL = 'https://animalwellness.shop'
 const PRODUCTS_PER_SITEMAP = 5000
 const OUTPUT_DIR = path.join(__dirname, 'public', 'sitemaps')
 
+// Mirrors slug-utils.ts logic
+function toSlug(text) {
+  return text
+    .toLowerCase()
+    .replace(/&amp;/g, 'and')
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+const EXCLUDED_CATEGORIES = new Set([
+  'veterinary supplies online', 'null', 'shop', 'food', 'care', 'supplements',
+])
+
+function isValidCategory(category, count) {
+  if (count < 5) return false
+  const lower = category.toLowerCase().trim()
+  if (EXCLUDED_CATEGORIES.has(lower)) return false
+  if (/\d+\s*(mg|gm|ml|iu|miu|kg|gm\/|ltr)/i.test(category)) return false
+  if (category.length > 80) return false
+  return true
+}
+
+const EXCLUDED_BRANDS = new Set(['monis raza3', 'smbgb2b'])
+
+function isValidBrand(name, count) {
+  if (count < 50) return false
+  if (EXCLUDED_BRANDS.has(name.toLowerCase())) return false
+  return true
+}
+
 // Mirrors PARTNER_TYPE_GROUPS from src/lib/partner-constants.ts
 const PARTNER_TYPE_GROUPS = {
   veterinarian: ['Veterinarian (Clinic, Hospital, Consultant)'],
@@ -152,8 +183,41 @@ async function buildNonProductEntries() {
     priority: 0.6,
   }))
 
+  // Category pages
+  const catRows = await prisma.$queryRaw`
+    SELECT category, COUNT(*) as count FROM Product
+    WHERE isActive = 1 AND category IS NOT NULL AND category != ''
+    GROUP BY category HAVING count >= 5 ORDER BY count DESC
+  `
+  const categoryPages = catRows
+    .filter(r => isValidCategory(r.category, Number(r.count)))
+    .map(r => ({
+      url: `${BASE_URL}/products/category/${toSlug(r.category)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }))
+
+  // Brand pages
+  const brandRows = await prisma.$queryRaw`
+    SELECT c.companyName, COUNT(p.id) as count
+    FROM Product p JOIN Company c ON p.companyId = c.id
+    WHERE p.isActive = 1
+    GROUP BY c.id, c.companyName HAVING count >= 50 ORDER BY count DESC
+  `
+  const brandPages = brandRows
+    .filter(r => isValidBrand(r.companyName, Number(r.count)))
+    .map(r => ({
+      url: `${BASE_URL}/brands/${toSlug(r.companyName)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }))
+
   return [
     ...staticPages,
+    ...categoryPages,
+    ...brandPages,
     ...partnerPages,
     ...companyPages,
     ...newsPages,
