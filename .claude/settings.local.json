@@ -53,7 +53,9 @@
       "WebFetch(domain:developers.facebook.com)",
       "WebFetch(domain:web.facebook.com)",
       "WebFetch(domain:transparency.meta.com)",
-      "WebFetch(domain:animalwellness.shop)"
+      "WebFetch(domain:animalwellness.shop)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(git *)"
     ],
     "deny": [],
     "ask": []
