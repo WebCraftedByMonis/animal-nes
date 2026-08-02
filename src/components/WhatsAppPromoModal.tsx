@@ -26,7 +26,9 @@ export default function WhatsAppPromoModal() {
   useEffect(() => {
     const already = localStorage.getItem(STORAGE_KEY);
     if (already) return;
-    const timer = setTimeout(() => setOpen(true), 4000);
+    // Skip for bots (Googlebot uses headless Chrome which sets navigator.webdriver)
+    if (navigator.webdriver) return;
+    const timer = setTimeout(() => setOpen(true), 8000);
     return () => clearTimeout(timer);
   }, []);
 
