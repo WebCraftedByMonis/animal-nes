@@ -1,5 +1,13 @@
 import { Country } from '@/contexts/CountryContext';
 
+// ~1 AED = 77 PKR; update when rate shifts more than 5%
+export const PKR_TO_AED = 0.013;
+
+export function convertPrice(pkrAmount: number, country: Country): number {
+  if (country === 'UAE') return Math.round(pkrAmount * PKR_TO_AED * 100) / 100;
+  return pkrAmount;
+}
+
 const CURRENCY_CONFIG = {
   Pakistan: {
     code: 'PKR',

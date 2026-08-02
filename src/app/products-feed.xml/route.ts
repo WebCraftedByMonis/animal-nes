@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://animalwellness.shop";
+const PKR_TO_AED = 0.013; // ~1 AED = 77 PKR; keep in sync with currency-utils.ts
 
 const GOOGLE_CATEGORY_MAP: Record<string, string> = {
   "Veterinary": "Animals &amp; Pet Supplies &gt; Pet Supplies",
@@ -124,7 +125,11 @@ function buildGoogleItem(p: ProductRow, currency: string): string {
 
   let xml = "";
   for (const v of feedVariants) {
-    const price  = v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
+    const rawPrice = v.customerPrice!;
+    const priceAmount = currency === "AED"
+      ? (Math.round(rawPrice * PKR_TO_AED * 100) / 100)
+      : rawPrice;
+    const price  = v.customerPrice != null ? `${priceAmount} ${currency}` : null;
     const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
     const title  = sf(p.id, "title", `${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
 
@@ -196,7 +201,11 @@ function buildMetaItem(p: ProductRow, currency: string): string {
   for (const v of feedVariants) {
     if (v.customerPrice == null) continue;
 
-    const price  = `${v.customerPrice} ${currency}`;
+    const rawPrice = v.customerPrice;
+    const priceAmount = currency === "AED"
+      ? (Math.round(rawPrice * PKR_TO_AED * 100) / 100)
+      : rawPrice;
+    const price  = `${priceAmount} ${currency}`;
     const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
     const title  = sf(p.id, "title", `${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
 
