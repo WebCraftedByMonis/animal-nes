@@ -7,7 +7,6 @@ import BuyNowButton from '@/components/BuyNowButton';
 import WishlistButton from '@/components/WishlistButton';
 import ShareButton from '@/components/ShareButton';
 import { useCountry, Country } from '@/contexts/CountryContext';
-import { convertPrice } from '@/lib/currency-utils';
 
 interface Discount {
   id: number;
@@ -142,7 +141,7 @@ export default function ProductClient({ product }: { product: ProductData }) {
   };
 
   const activeDiscount = selectedVariant ? getActiveDiscount(selectedVariant.id) : null;
-  const originalPrice = convertPrice(selectedVariant?.customerPrice || 0, country);
+  const originalPrice = selectedVariant?.customerPrice || 0;
   const discountedPrice = activeDiscount
     ? calcDiscounted(originalPrice, activeDiscount.percentage)
     : originalPrice;
@@ -230,7 +229,7 @@ export default function ProductClient({ product }: { product: ProductData }) {
                 </div>
               ) : selectedVariant.customerPrice != null && selectedVariant.customerPrice > 10 ? (
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {currencySymbol} {convertPrice(selectedVariant.customerPrice, country).toLocaleString()}
+                  {currencySymbol} {selectedVariant.customerPrice.toLocaleString()}
                 </p>
               ) : (
                 <div className="flex items-center gap-3">
