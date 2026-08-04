@@ -55,7 +55,7 @@ export async function createAdminSession(adminId: string, username: string) {
 }
 
 // Validate admin session
-export async function validateAdminSession(token: string) {
+export async function validateAdminSession(token: string | undefined) {
   if (!token) return null;
 
   try {

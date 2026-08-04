@@ -55,7 +55,9 @@
       "WebFetch(domain:transparency.meta.com)",
       "WebFetch(domain:animalwellness.shop)",
       "PowerShell(Remove-Item *)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "WebFetch(domain:www.csapakistan.com)",
+      "Bash(cd *)"
     ],
     "deny": [],
     "ask": []

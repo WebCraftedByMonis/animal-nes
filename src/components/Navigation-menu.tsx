@@ -62,40 +62,6 @@ export function NavigationMenuDemo() {
 
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="font-normal text-xs h-8 px-2 bg-transparent hover:bg-transparent data-[state=open]:bg-transparent"><span className="text-green-600 font-semibold">Join</span></NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-              <li className="row-span-3 hidden md:block">
-                <NavigationMenuLink
-                  asChild
-                  className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-                >
-                  <Link href="/">
-                    <div className="mb-2 mt-4 text-lg font-medium">
-                      Animal-wellness
-                    </div>
-                    <p className="text-sm leading-tight text-muted-foreground">
-                      Join Animal-wellness as a partner
-                    </p>
-                  </Link>
-                </NavigationMenuLink>
-              </li>
-              <ListItem href="/addCompany" title="Add  Company">
-                Register your company let's collab.
-              </ListItem>
-              <ListItem href="/addPartner" title="Become Partner">
-                Join us a vendour .
-              </ListItem>
-              <ListItem href="/addProduct" title="Add Product">
-                Lists your products with us.
-              </ListItem>
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-
-
-
-        <NavigationMenuItem>
           <NavigationMenuTrigger className="font-normal text-xs h-8 px-2 bg-transparent hover:bg-transparent data-[state=open]:bg-transparent"><span className="text-green-600 font-semibold">View</span></NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="flex flex-col gap-3 p-4 md:w-[300px] lg:w-[300px] lg:grid-cols-[.75fr_1fr]">

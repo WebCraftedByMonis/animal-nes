@@ -2,10 +2,12 @@
 
 import Link from "next/link"
 import { useCountry } from "@/contexts/CountryContext"
+import { toProductUrl } from "@/lib/slug-utils"
 
 interface RelatedProduct {
   id: number
   productName: string
+  category?: string | null
   image?: { url: string; alt?: string } | null
   variants?: { customerPrice: number }[]
 }
@@ -18,7 +20,7 @@ export default function RelatedProductsClient({ products }: { products: RelatedP
       {products.map((p) => (
         <Link
           key={p.id}
-          href={`/products/${p.id}`}
+          href={toProductUrl(p)}
           className="group bg-white dark:bg-zinc-900 rounded-lg shadow-sm p-3 hover:shadow-md transition-shadow"
         >
           {p.image?.url && (

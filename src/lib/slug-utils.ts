@@ -39,3 +39,29 @@ export function isValidBrand(name: string, count: number): boolean {
   if (EXCLUDED_BRANDS.has(name.toLowerCase())) return false
   return true
 }
+
+// ─── Product URL helpers ──────────────────────────────────────────────────────
+
+export function toCategorySlugForUrl(category: string | null | undefined): string {
+  if (!category || !category.trim()) return 'general'
+  return toSlug(category) || 'general'
+}
+
+export function toProductSlug(productName: string, id: number): string {
+  const base = toSlug(productName) || 'product'
+  return `${base}-${id}`
+}
+
+export function toProductUrl(product: {
+  id: number
+  productName: string
+  category?: string | null
+}): string {
+  return `/products/${toCategorySlugForUrl(product.category)}/${toProductSlug(product.productName, product.id)}`
+}
+
+// Extracts the numeric ID appended at the end of a product slug (e.g. "tylosin-500-12345" → 12345)
+export function extractIdFromProductSlug(slug: string): number | null {
+  const match = slug.match(/-(\d+)$/)
+  return match ? parseInt(match[1], 10) : null
+}

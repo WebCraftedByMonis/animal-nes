@@ -46,6 +46,14 @@ function isValidBrand(name, count) {
   return true
 }
 
+function toProductUrl(id, productName, category) {
+  const catSlug = category
+    ? category.toLowerCase().replace(/&amp;/g, 'and').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general'
+    : 'general'
+  const prodSlug = (productName.toLowerCase().replace(/&amp;/g, 'and').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product') + '-' + id
+  return `${BASE_URL}/products/${catSlug}/${prodSlug}`
+}
+
 // Mirrors PARTNER_TYPE_GROUPS from src/lib/partner-constants.ts
 const PARTNER_TYPE_GROUPS = {
   veterinarian: ['Veterinarian (Clinic, Hospital, Consultant)'],
@@ -252,14 +260,14 @@ async function main() {
         isActive: true,
         ...(lastId > 0 ? { id: { gt: lastId } } : {}),
       },
-      select: { id: true, updatedAt: true },
+      select: { id: true, productName: true, category: true, updatedAt: true },
       take: PRODUCTS_PER_SITEMAP,
       orderBy: { id: 'asc' },
     })
     if (products.length === 0) break
 
     const entries = products.map(p => ({
-      url: `${BASE_URL}/products/${p.id}`,
+      url: toProductUrl(p.id, p.productName, p.category),
       lastModified: p.updatedAt,
       changeFrequency: 'weekly',
       priority: 0.8,

@@ -6,6 +6,7 @@ import ProductReviewSection from '@/components/ProductReviewSection'
 import RelatedProductsClient from './RelatedProductsClient'
 import { prisma } from '@/lib/prisma'
 import { toSlug, BLOCKED_CATEGORIES } from '@/lib/category-utils'
+import { toProductUrl } from '@/lib/slug-utils'
 
 const getProduct = cache(async (numId: number) => {
   const now = new Date()
@@ -212,7 +213,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         type: 'website',
         siteName: 'Animal Wellness',
       },
-      alternates: { canonical: `/products/${id}` },
+      alternates: { canonical: `https://animalwellness.shop${toProductUrl(data)}` },
     }
   } catch {
     return { title: 'Product | Animal Wellness', description: 'Quality animal wellness products' }
@@ -256,6 +257,7 @@ export default async function ProductPage({
           select: {
             id: true,
             productName: true,
+            category: true,
             image: { select: { url: true, alt: true } },
             variants: { take: 1, select: { customerPrice: true } },
           },
@@ -355,7 +357,7 @@ export default async function ProductPage({
         '@type': 'ListItem',
         position: normalizedCategory !== 'Veterinary Products' ? 4 : 3,
         name: data.productName,
-        item: `${baseUrl}/products/${id}`,
+        item: `${baseUrl}${toProductUrl(data)}`,
       },
     ],
   }

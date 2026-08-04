@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary';
 import { PARTNER_TYPE_GROUPS, PartnerTypeGroup } from '@/lib/partner-constants';
 import { hashPassword } from '@/lib/auth/partner-auth';
+import { validateAdminSession } from '@/lib/auth/admin-auth';
 
 // Configure route to handle larger payloads for image uploads
 export const runtime = 'nodejs'
@@ -84,8 +85,14 @@ async function handleImageDelete(publicId: string) {
 
 async function POST(request: NextRequest) {
   console.log('🚀 POST /api/partner - Request started');
-  
+
   try {
+    const adminToken = request.cookies.get('admin-token')?.value;
+    const admin = await validateAdminSession(adminToken);
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.log('📥 Reading request body...');
     const body = await request.json();
     console.log('✅ Request body parsed successfully');

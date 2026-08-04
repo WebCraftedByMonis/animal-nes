@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { uploadImage, uploadPDF, deleteFromCloudinary } from '@/lib/cloudinary'
+import { validateAdminSession } from '@/lib/auth/admin-auth'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
@@ -33,6 +34,12 @@ async function handleFileUpload(file: File | null, type: 'image' | 'pdf') {
 export async function POST(req: NextRequest) {
   console.log('🚀 [SERVER] Starting animal news creation API call');
   try {
+    const adminToken = req.cookies.get('admin-token')?.value
+    const admin = await validateAdminSession(adminToken)
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     console.log('📋 [SERVER] Parsing form data...');
     const formData = await req.formData()
 

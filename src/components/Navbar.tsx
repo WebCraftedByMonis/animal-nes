@@ -137,11 +137,6 @@ export default function Navbar() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         <DropdownMenuItem asChild>
-                          <Link href="/addNews" className="w-full cursor-pointer">
-                            Add News
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
                           <Link href="/animal-news" className="w-full cursor-pointer">
                             Explore News
                           </Link>
@@ -322,14 +317,6 @@ export default function Navbar() {
                       {/* Wellness-News Dropdown (mobile) */}
                       <div className="pt-2">
                         <p className="px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Wellness-News</p>
-                        <DrawerClose asChild>
-                          <Link
-                            href="/addNews"
-                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
-                          >
-                            Add News
-                          </Link>
-                        </DrawerClose>
                         <DrawerClose asChild>
                           <Link
                             href="/animal-news"

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary'
 import { z } from 'zod'
 import { hashPassword } from '@/lib/auth/company-auth'
+import { validateAdminSession } from '@/lib/auth/admin-auth'
 
 // Configure route to handle larger payloads (up to 50MB)
 export const runtime = 'nodejs'
@@ -79,6 +80,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminToken = request.cookies.get('admin-token')?.value
+    const admin = await validateAdminSession(adminToken)
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const companyName = formData.get('companyName') as string
     const mobileNumber = formData.get('mobileNumber') as string | null

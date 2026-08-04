@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://animalwellness.shop";
 
+function productUrl(p: { id: number; productName: string; category?: string | null }): string {
+  const catSlug = p.category ? p.category.toLowerCase().replace(/&amp;/g, 'and').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general' : 'general'
+  const prodSlug = (p.productName.toLowerCase().replace(/&amp;/g, 'and').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product') + '-' + p.id
+  return `/products/${catSlug}/${prodSlug}`
+}
+
 const GOOGLE_CATEGORY_MAP: Record<string, string> = {
   "Veterinary": "Animals &amp; Pet Supplies &gt; Pet Supplies",
   "Poultry": "Animals &amp; Pet Supplies &gt; Pet Supplies",
@@ -71,6 +77,17 @@ function ensureHttps(url: string): string {
   return url.replace(/^http:\/\//, "https://");
 }
 
+// Convert ALL-CAPS titles to Title Case to avoid GMC excessive-capitalization flag
+function normalizeTitle(raw: string): string {
+  const alpha = raw.replace(/[^a-zA-Z]/g, "");
+  if (alpha.length === 0) return raw;
+  const upperCount = (raw.match(/[A-Z]/g) ?? []).length;
+  if (upperCount / alpha.length > 0.6) {
+    return raw.toLowerCase().replace(/\b([a-z])/g, (_, c: string) => c.toUpperCase());
+  }
+  return raw;
+}
+
 function buildDescription(p: {
   description?: string | null;
   genericName?: string | null;
@@ -117,25 +134,32 @@ function buildGoogleItem(p: ProductRow, currency: string): string {
     GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
     "Animals &amp; Pet Supplies &gt; Pet Supplies";
 
-  const pricedVariants = p.variants.filter((v) => v.customerPrice != null);
+  // Only variants with a real positive price — zero prices cause GMC "invalid price" rejection
+  const pricedVariants = p.variants.filter((v) => v.customerPrice != null && v.customerPrice > 0);
   if (pricedVariants.length === 0) return "";
-  const feedVariants = pricedVariants;
-  const hasMultipleVariants = feedVariants.length > 1;
+  // Submit only the cheapest variant: all variants share the same product URL, so Google
+  // crawls the page and sees the default (cheapest) price — submitting higher-priced variants
+  // causes "mismatched price" disapprovals.
+  const cheapest = pricedVariants.reduce((min, v) =>
+    v.customerPrice! < min.customerPrice! ? v : min
+  );
+  const feedVariants = [cheapest];
+  const hasMultipleVariants = false;
 
   let xml = "";
   for (const v of feedVariants) {
-    const price  = v.customerPrice != null ? `${v.customerPrice} ${currency}` : null;
-    const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
-    const title  = sf(p.id, "title", `${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
+    const price  = `${v.customerPrice} ${currency}`;
+    const itemId = String(p.id);
+    const title  = sf(p.id, "title", normalizeTitle(`${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`));
 
     xml += `    <item>
       <g:id>${itemId}</g:id>
       <g:title>${title}</g:title>
       <g:description>${description}</g:description>
-      <g:link>${BASE_URL}/products/${p.id}</g:link>
+      <g:link>${BASE_URL}${productUrl(p)}</g:link>
       <g:image_link>${imageUrl}</g:image_link>
       <g:availability>${availability}</g:availability>
-      ${price ? `<g:price>${price}</g:price>` : ""}
+      <g:price>${price}</g:price>
       <g:condition>new</g:condition>
       <g:brand>${brand}</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
@@ -185,26 +209,25 @@ function buildMetaItem(p: ProductRow, currency: string): string {
     GOOGLE_CATEGORY_MAP[p.category ?? ""] ??
     "Animals &amp; Pet Supplies &gt; Pet Supplies";
 
-  const pricedVariants  = p.variants.filter((v) => v.customerPrice != null);
-  const feedVariants    = pricedVariants.length > 0 ? pricedVariants : p.variants.slice(0, 1);
-  const hasMultipleVariants = feedVariants.length > 1;
-
-  // Skip products without price — Meta rejects unprice items at review time.
+  const pricedVariants = p.variants.filter((v) => v.customerPrice != null && v.customerPrice > 0);
   if (pricedVariants.length === 0) return "";
+  const cheapest = pricedVariants.reduce((min, v) =>
+    v.customerPrice! < min.customerPrice! ? v : min
+  );
+  const feedVariants = [cheapest];
+  const hasMultipleVariants = false;
 
   let xml = "";
   for (const v of feedVariants) {
-    if (v.customerPrice == null) continue;
-
     const price  = `${v.customerPrice} ${currency}`;
-    const itemId = v.id ? `${p.id}-${v.id}` : String(p.id);
-    const title  = sf(p.id, "title", `${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`);
+    const itemId = String(p.id);
+    const title  = sf(p.id, "title", normalizeTitle(`${p.productName}${v.packingVolume ? ` ${v.packingVolume}` : ""}`));
 
     xml += `    <item>
       <g:id>${itemId}</g:id>
       <g:title>${title}</g:title>
       <g:description>${description}</g:description>
-      <g:link>${BASE_URL}/products/${p.id}</g:link>
+      <g:link>${BASE_URL}${productUrl(p)}</g:link>
       <g:image_link>${imageUrl}</g:image_link>
       <g:availability>${availability}</g:availability>
       <g:price>${price}</g:price>

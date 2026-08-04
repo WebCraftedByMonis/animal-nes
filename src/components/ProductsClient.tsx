@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { toProductUrl } from '@/lib/slug-utils'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
@@ -342,7 +343,7 @@ export default function ProductsClient() {
   }
 
   const navigateToProduct = (p: Product) => {
-    router.push(`/products/${p.id}`)
+    router.push(toProductUrl(p))
   }
 
   const totalPages = Math.ceil(total / limit)

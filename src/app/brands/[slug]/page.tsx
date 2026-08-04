@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { toSlug, isValidBrand } from '@/lib/slug-utils'
+import { toSlug, isValidBrand, toProductUrl } from '@/lib/slug-utils'
 
 export const revalidate = 86400
 export const dynamicParams = true
@@ -126,7 +126,7 @@ export default async function BrandPage({
             return (
               <li key={p.id}>
                 <Link
-                  href={`/products/${p.id}`}
+                  href={toProductUrl(p)}
                   className="block rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-400 transition-colors p-3 h-full"
                 >
                   {p.image?.url && (

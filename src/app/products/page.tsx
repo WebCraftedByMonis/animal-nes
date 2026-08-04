@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import ProductsClient from '@/components/ProductsClient'
 import { prisma } from '@/lib/prisma'
-import { toSlug, isValidCategory, isValidBrand } from '@/lib/slug-utils'
+import { toSlug, isValidCategory, isValidBrand, toProductUrl } from '@/lib/slug-utils'
 
 // Never pre-render at build time — 60k product rows time out the 60s build
 // worker. Page is rendered on first request and cached by nginx/ISR.
@@ -96,9 +96,9 @@ export default async function AllProductsPage() {
       position: index + 1,
       item: {
         '@type': 'Product',
-        '@id': `${BASE_URL}/products/${p.id}`,
+        '@id': `${BASE_URL}${toProductUrl(p)}`,
         name: p.productName,
-        url: `${BASE_URL}/products/${p.id}`,
+        url: `${BASE_URL}${toProductUrl(p)}`,
         ...(p.category && { category: p.category }),
       },
     })),
@@ -144,7 +144,7 @@ export default async function AllProductsPage() {
             <ul>
               {products.map((p: any) => (
                 <li key={p.id}>
-                  <Link href={`/products/${p.id}`}>
+                  <Link href={toProductUrl(p)}>
                     {p.productName}
                     {p.genericName ? ` (${p.genericName})` : ''}
                     {p.category ? ` — ${p.category}` : ''}
