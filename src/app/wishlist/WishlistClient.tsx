@@ -10,6 +10,7 @@ import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toProductUrl } from "@/lib/slug-utils";
 
 export default function WishlistClient() {
   const { wishlist, wishlistProductIds, removeFromWishlist, isLoading } = useWishlist();
@@ -109,7 +110,7 @@ export default function WishlistClient() {
               className="bg-white dark:bg-zinc-900 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-800 transition-all hover:shadow-lg"
             >
               {/* Product Image */}
-              <div className="relative aspect-square w-full cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
+              <div className="relative aspect-square w-full cursor-pointer" onClick={() => router.push(toProductUrl(product))}>
                 {product.image ? (
                   <Image
                     src={product.image.url}
@@ -129,7 +130,7 @@ export default function WishlistClient() {
               <div className="p-4 space-y-3">
                 <h3
                   className="font-bold text-lg line-clamp-2 cursor-pointer hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                  onClick={() => router.push(`/products/${product.id}`)}
+                  onClick={() => router.push(toProductUrl(product))}
                 >
                   {product.productName}
                 </h3>
@@ -159,7 +160,7 @@ export default function WishlistClient() {
                     variant="outline"
                     size="sm"
                     className="flex-1 border-green-600/40 text-green-700 dark:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
-                    onClick={() => router.push(`/products/${product.id}`)}
+                    onClick={() => router.push(toProductUrl(product))}
                   >
                     <ShoppingCart className="h-4 w-4 mr-1" />
                     View

@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -13,6 +14,7 @@ import {
   GraduationCap, Stethoscope, Award, UserCheck
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { toProductUrl } from '@/lib/slug-utils'
 
 interface Product {
   id: number
@@ -111,7 +113,7 @@ export default function VeterinaryAssistantDetailClient({ initialData }: { initi
   }, [id, productPage])
 
   const navigateToProduct = (product: Product) => {
-    router.push(`/products/${product.id}`)
+    router.push(toProductUrl(product))
   }
 
   const getGenderBadgeColor = (gender?: string) => {

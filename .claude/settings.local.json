@@ -57,7 +57,14 @@
       "PowerShell(Remove-Item *)",
       "PowerShell(git *)",
       "WebFetch(domain:www.csapakistan.com)",
-      "Bash(cd *)"
+      "Bash(cd *)",
+      "Bash(git push *)",
+      "Bash(git stash *)",
+      "Bash(git reset *)",
+      "Bash(mkdir -p src/components/products)",
+      "Bash(git mv *)",
+      "Bash(git rm *)",
+      "Bash(rmdir \"src/app/products/[id]\")"
     ],
     "deny": [],
     "ask": []

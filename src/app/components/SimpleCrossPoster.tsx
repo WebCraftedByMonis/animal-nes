@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent, FormEvent, DragEvent } from "react";
 import { CheckCircle, XCircle, Upload, AlertTriangle, Image as ImageIcon, Video as VideoIcon, Info, Search, Package } from "lucide-react";
+import { toProductUrl } from "@/lib/slug-utils";
 
 interface Platform {
   id: string;
@@ -110,9 +111,9 @@ export default function SimpleCrossPoster() {
     return lines.join("\n");
   };
 
-  const buildProductPageUrl = (id: number) => {
+  const buildProductPageUrl = (product: ProductPreview) => {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://animalwellness.shop";
-    return `${baseUrl}/products/${id}`;
+    return `${baseUrl}${toProductUrl(product)}`;
   };
 
   const handlePostProduct = async (platform: "facebook" | "instagram" | "linkedin") => {
@@ -122,7 +123,7 @@ export default function SimpleCrossPoster() {
 
     try {
       const formData = new FormData();
-      const productPageUrl = buildProductPageUrl(productPreview.id);
+      const productPageUrl = buildProductPageUrl(productPreview);
 
       if (platform === "facebook") {
         formData.append("content", buildProductPostText(productPreview));
@@ -662,7 +663,7 @@ export default function SimpleCrossPoster() {
 
                 {/* Link info */}
                 {(() => {
-                  const productPageUrl = buildProductPageUrl(productPreview.id);
+                  const productPageUrl = buildProductPageUrl(productPreview);
                   return (
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />

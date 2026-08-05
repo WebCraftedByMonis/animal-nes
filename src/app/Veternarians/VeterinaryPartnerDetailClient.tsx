@@ -19,6 +19,7 @@ import { useSession } from 'next-auth/react'
 import { toast } from 'react-hot-toast'
 import { useLoginModal } from '@/contexts/LoginModalContext'
 import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
+import { toProductUrl } from '@/lib/slug-utils'
 
 interface Product {
   id: number
@@ -185,7 +186,7 @@ export default function VeterinaryPartnerDetailClient({ initialData }: { initial
   }
 
   const navigateToProduct = (product: Product) => {
-    router.push(`/products/${product.id}`)
+    router.push(toProductUrl(product))
   }
 
   const getGenderBadgeColor = (gender?: string) => {

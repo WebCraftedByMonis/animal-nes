@@ -14,6 +14,7 @@ import {
   GraduationCap, Stethoscope, Award, UserCheck
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { toProductUrl } from '@/lib/slug-utils'
 
 interface Product {
   id: number
@@ -109,7 +110,7 @@ export default function SalesPartnerDetailClient({ initialData }: { initialData?
   }, [id, productPage])
 
   const navigateToProduct = (product: Product) => {
-    router.push(`/products/${product.id}`)
+    router.push(toProductUrl(product))
   }
 
   const getGenderBadgeColor = (gender?: string) => {

@@ -13,6 +13,7 @@ import {
   Award, Tractor
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { toProductUrl } from '@/lib/slug-utils'
 
 interface Product {
   id: number
@@ -76,7 +77,7 @@ export default function FarmerDetailClient({ partner }: FarmerDetailClientProps)
   const PRODUCTS_PER_PAGE = 6
 
   const navigateToProduct = (product: Product) => {
-    router.push(`/products/${product.id}`)
+    router.push(toProductUrl(product))
   }
 
   const getGenderBadgeColor = (gender?: string) => {

@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Building2, Mail, Phone, MapPin, Package, Calendar, ExternalLink } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
+import { toProductUrl } from '@/lib/slug-utils'
 
 interface Product {
   id: number
@@ -89,8 +90,7 @@ export default function CompanyDetailClient({ initialData }: { initialData?: Com
   }, [id, productPage])
 
   const navigateToProduct = (product: Product) => {
-    const path = product.slug ? `/products/${product.slug}` : `/products/${product.id}`
-    router.push(path)
+    router.push(toProductUrl(product))
   }
 
   if (loading) {

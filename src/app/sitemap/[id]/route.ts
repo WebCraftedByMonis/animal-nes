@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { PARTNER_TYPE_GROUPS } from '@/lib/partner-constants';
 import { SellStatus } from '@prisma/client';
+import { toProductUrl } from '@/lib/slug-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -194,13 +195,13 @@ async function buildProductSitemap(pageNum: number): Promise<Entry[]> {
       isActive: true,
       ...(minId !== undefined ? { id: { gt: minId } } : {}),
     },
-    select: { id: true, updatedAt: true },
+    select: { id: true, productName: true, category: true, updatedAt: true },
     take: PRODUCTS_PER_SITEMAP,
     orderBy: { id: 'asc' },
   });
 
   return products.map(p => ({
-    url: `${BASE_URL}/products/${p.id}`,
+    url: `${BASE_URL}${toProductUrl(p)}`,
     lastModified: p.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.8,
