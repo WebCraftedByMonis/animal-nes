@@ -56,7 +56,7 @@ export default function ProductReviewForm({ productId, onReviewSubmitted }: Prod
       const data = await response.json()
 
       if (response.ok) {
-        toast.success('Review submitted successfully!')
+        toast.success('Review submitted! It will appear after admin approval.')
         setRating(0)
         setComment('')
         if (onReviewSubmitted) {

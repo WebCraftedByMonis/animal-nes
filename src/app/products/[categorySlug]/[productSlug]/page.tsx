@@ -325,6 +325,18 @@ export default async function ProductPage({
           )}
         </div>
 
+        {/* Category badge */}
+        {data.category && normalizedCategory !== 'Veterinary Products' && (
+          <div className="mb-3">
+            <Link
+              href={`/products/category/${correctCatSlug}`}
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+            >
+              {normalizedCategory}
+            </Link>
+          </div>
+        )}
+
         {(() => {
           const prices = data.variants?.map((v: { customerPrice: number | null }) => v.customerPrice).filter((p): p is number => p != null).sort((a, b) => a - b)
           if (!prices?.length) return null

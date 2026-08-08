@@ -110,6 +110,7 @@ export default function Navbar() {
                 <NavigationMenuList className="gap-0.5">
                   {[
                     ["Products", "/products"],
+                    ["Shop by Animal", "/animals"],
                     ["Master Trainings", "/forms"],
                     ["Find Doctor", "/findDoctor"],
                   ].map(([label, href]) => (
@@ -301,6 +302,7 @@ export default function Navbar() {
                     <div className="space-y-1 border-t pt-3">
                       {[
                         ["Products", "/products"],
+                        ["Shop by Animal", "/animals"],
                         ["Master Trainings", "/forms"],
                         ["Find Doctor", "/findDoctor"],
                       ].map(([label, href]) => (

@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
 
     // Handle file uploads
     const imageUrlField = (formData.get('imageUrl') as string | null)?.trim() || null
+    const imageAltField = (formData.get('imageAlt') as string | null)?.trim() || null
     const [imageResult, pdfResult] = await Promise.all([
       handleFileUpload(formData.get('image') as File | null, 'image'),
       handleFileUpload(formData.get('pdf') as File | null, 'pdf')
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
         await tx.productImage.create({
           data: {
             url: imageResult.secure_url,
-            alt: validation.data.productName,
+            alt: imageAltField || validation.data.productName,
             publicId: imageResult.public_id,
             productId: product.id
           }
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
         await tx.productImage.create({
           data: {
             url: imageUrlField,
-            alt: validation.data.productName,
+            alt: imageAltField || validation.data.productName,
             publicId: null,
             productId: product.id
           }

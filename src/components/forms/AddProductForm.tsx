@@ -49,6 +49,7 @@ const formSchema = z.object({
   isActive: z.boolean().default(true),
   outofstock: z.boolean().default(true),
   imageUrl: z.string().optional(),
+  imageAlt: z.string().optional(),
   image: z.any().optional(),
 
   pdf: z
@@ -589,6 +590,22 @@ export default function AddProductForm() {
                   )}
                 />
               </div>
+
+              {/* Image ALT Text */}
+              <FormField
+                control={form.control}
+                name="imageAlt"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Image Alt Text <span className="text-gray-400 font-normal">(for SEO & accessibility)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. Tylosin 100g powder for poultry — Animal Wellness" />
+                    </FormControl>
+                    <p className="text-xs text-gray-500 mt-1">Describe the image clearly. Used by Google Images and screen readers. Leave blank to use product name.</p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* PDF Upload */}
               <div className="md:col-span-2">

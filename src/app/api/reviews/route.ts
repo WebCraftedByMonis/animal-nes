@@ -144,13 +144,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Create the review
+    // Create the review — always starts unapproved, admin approves from dashboard
     const review = await prisma.productReview.create({
       data: {
         userId: user.id,
         productId: parseInt(productId),
         rating: parseInt(rating),
         comment,
+        isApproved: false,
       },
     })
 
