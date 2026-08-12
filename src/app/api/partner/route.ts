@@ -62,6 +62,8 @@ const updatePartnerSchema = createPartnerSchema
     password: z.string().min(6).optional(),
     image: z.string().optional(),
     numberOfAnimals: z.number().int().positive().nullable().optional(),
+    approvalStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+    rejectionReason: z.string().optional(),
   })
   .partial();
 
@@ -307,10 +309,20 @@ async function GET(request: NextRequest) {
     // Partner type filtering
     const partnerTypeGroup = searchParams.get('partnerTypeGroup') as PartnerTypeGroup | null;
     const specificPartnerType = searchParams.get('partnerType');
-    
+
+    // Approval status filtering. Public directory pages don't pass this param,
+    // so they only ever see approved partners. The admin dashboard passes
+    // approvalStatus=all (or a specific status) to review pending signups.
+    const approvalStatusParam = searchParams.get('approvalStatus');
+
     // Build where clause
     const whereClause: any = {
       ...(search && { partnerName: { contains: search, } }),
+      ...(approvalStatusParam && approvalStatusParam !== 'all'
+        ? { approvalStatus: approvalStatusParam }
+        : !approvalStatusParam
+        ? { approvalStatus: 'APPROVED' }
+        : {}),
     };
     
     // Apply partner type filtering

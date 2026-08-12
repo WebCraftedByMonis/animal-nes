@@ -67,7 +67,11 @@ interface CompanyOrder {
   purchasedPrice: number | null;
   status: string;
   paymentMethod: string;
+  vendorOrderId: number | null;
+  vendorOrderStatus: string;
 }
+
+const VENDOR_ORDER_STATUSES = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'] as const;
 
 export default function CompanyDashboard() {
   const router = useRouter();
@@ -94,6 +98,10 @@ export default function CompanyDashboard() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedPurchasedPrice, setEditedPurchasedPrice] = useState<number>(0);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
+  const [updatingVendorOrderId, setUpdatingVendorOrderId] = useState<number | null>(null);
+
+  // Payout balance state
+  const [payoutBalance, setPayoutBalance] = useState<number | null>(null);
 
   // Product variant editing state
   const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
@@ -178,9 +186,22 @@ export default function CompanyDashboard() {
     }
   }, [ordersPage, ordersLimit]);
 
+  const fetchPayoutBalance = useCallback(async () => {
+    try {
+      const response = await fetch('/api/company/vendor-balance');
+      const data = await response.json();
+      if (response.ok) {
+        setPayoutBalance(data.balance);
+      }
+    } catch (error) {
+      console.error('Error fetching payout balance:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'orders') {
       fetchOrders('', 1, ordersLimit);
+      fetchPayoutBalance();
     }
   }, [activeTab, ordersLimit]);
 
@@ -236,6 +257,31 @@ export default function CompanyDashboard() {
       toast.error('Failed to update purchased price');
     } finally {
       setUpdatingItemId(null);
+    }
+  };
+
+  const handleVendorOrderStatusChange = async (vendorOrderId: number, status: string) => {
+    setUpdatingVendorOrderId(vendorOrderId);
+    try {
+      const response = await fetch(`/api/company/vendor-orders/${vendorOrderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        setOrders(prev => prev.map(order =>
+          order.vendorOrderId === vendorOrderId ? { ...order, vendorOrderStatus: status } : order
+        ));
+        toast.success('Fulfillment status updated');
+      } else {
+        toast.error('Failed to update fulfillment status');
+      }
+    } catch (error) {
+      console.error('Error updating vendor order status:', error);
+      toast.error('Failed to update fulfillment status');
+    } finally {
+      setUpdatingVendorOrderId(null);
     }
   };
 
@@ -685,6 +731,17 @@ export default function CompanyDashboard() {
               </select>
             </div>
 
+            {/* Payout Balance */}
+            {payoutBalance !== null && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-800 font-medium">Payout Balance</p>
+                  <p className="text-xs text-green-700/80">What Animal Wellness currently owes you for items sold</p>
+                </div>
+                <p className="text-2xl font-bold text-green-700">PKR {payoutBalance.toFixed(2)}</p>
+              </div>
+            )}
+
             {/* Orders Table */}
             <div className="bg-white rounded-lg shadow overflow-x-auto">
               {ordersLoading && (
@@ -713,7 +770,7 @@ export default function CompanyDashboard() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Selling Price</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchased Price</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fulfillment</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                   </thead>
@@ -749,15 +806,30 @@ export default function CompanyDashboard() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            order.status === 'delivered'
-                              ? 'bg-green-100 text-green-700'
-                              : order.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {order.status}
-                          </span>
+                          {order.vendorOrderId ? (
+                            <select
+                              value={order.vendorOrderStatus}
+                              onChange={(e) => handleVendorOrderStatusChange(order.vendorOrderId!, e.target.value)}
+                              disabled={updatingVendorOrderId === order.vendorOrderId}
+                              className={`px-2 py-1 rounded text-xs border-0 font-medium ${
+                                order.vendorOrderStatus === 'DELIVERED'
+                                  ? 'bg-green-100 text-green-700'
+                                  : order.vendorOrderStatus === 'CANCELLED' || order.vendorOrderStatus === 'REFUNDED'
+                                  ? 'bg-red-100 text-red-700'
+                                  : order.vendorOrderStatus === 'SHIPPED'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                              }`}
+                            >
+                              {VENDOR_ORDER_STATUSES.map((s) => (
+                                <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-500">
+                              {order.status}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex items-center gap-1">

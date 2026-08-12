@@ -169,7 +169,10 @@ useEffect(() => {
 
     try {
       const { data } = await axios.get('/api/partner', {
-        params: { search, sortBy, order: sortOrder, page, limit, country }
+        // approvalStatus=all keeps this list showing every partner regardless
+        // of pending/approved/rejected status, same as before that concept existed.
+        // Pending sign-ups are reviewed on the dedicated Partner Approvals page.
+        params: { search, sortBy, order: sortOrder, page, limit, country, approvalStatus: 'all' }
       })
       console.log('API Response:', data);
 

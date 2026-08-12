@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { updateTransactionProfit } from '@/lib/autoTransaction';
+import { getOrCreateVendorOrder, upsertVendorSaleEntry } from '@/lib/vendorLedger';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   // Await the params object first
@@ -13,13 +14,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     // First, update all items and their profit in transactions
     for (const item of items) {
-      await prisma.checkoutItem.update({
+      const updated = await prisma.checkoutItem.update({
         where: { id: item.id },
         data: {
           quantity: item.quantity,
           price: item.price,
           purchasedPrice: item.purchasedPrice !== undefined ? item.purchasedPrice : undefined,
         },
+        include: { product: { select: { companyId: true } } },
       });
 
       // Update profit in finance transactions
@@ -29,6 +31,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         : null;
 
       await updateTransactionProfit(item.id, totalPrice, totalCost);
+
+      // Keep the vendor payout ledger in sync with the corrected cost
+      const companyId = updated.product?.companyId;
+      if (companyId) {
+        const vendorOrder = await getOrCreateVendorOrder(updated.checkoutId, companyId);
+        if (!updated.vendorOrderId) {
+          await prisma.checkoutItem.update({
+            where: { id: updated.id },
+            data: { vendorOrderId: vendorOrder.id },
+          });
+        }
+        await upsertVendorSaleEntry({
+          companyId,
+          checkoutItemId: updated.id,
+          vendorOrderId: vendorOrder.id,
+          purchasedPrice: updated.purchasedPrice,
+          quantity: updated.quantity,
+        });
+      }
     }
 
     // Calculate the new total including shipment charges

@@ -59,9 +59,18 @@ export async function GET(req: Request) {
           items: {
             ...(Object.keys(itemFilter).length > 0 ? { where: itemFilter } : {}),
             include: {
-              product: true,
+              product: {
+                include: {
+                  company: {
+                    select: { id: true, companyName: true },
+                  },
+                },
+              },
               variant: true,
               animal: true,
+              vendorOrder: {
+                select: { status: true },
+              },
             }
           },
         },

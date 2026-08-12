@@ -125,6 +125,8 @@ model Company {
   discounts       Discount[]
   partnerOrders   PartnerOrder[]
   paymentSettings CompanyPaymentSettings?
+  vendorOrders    VendorOrder[]
+  ledgerEntries   VendorLedgerEntry[]
   createdAt       DateTime?        @default(now())
   updatedAt       DateTime?        @updatedAt
 }
@@ -229,6 +231,8 @@ model Partner {
   referredById        Int?
   referredBy          Partner?              @relation("PartnerReferrals", fields: [referredById], references: [id])
   referrals           Partner[]             @relation("PartnerReferrals")
+  approvalStatus      PartnerApprovalStatus @default(APPROVED)
+  rejectionReason     String?               @db.Text
   assignedAppointments  AppointmentRequest[]
   products            Product[]
   sessions            PartnerSession[]
@@ -241,6 +245,13 @@ model Partner {
   updatedAt           DateTime?              @updatedAt
 
   @@index([referredById])
+  @@index([approvalStatus])
+}
+
+enum PartnerApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model PartnerSession {
@@ -448,6 +459,7 @@ model Checkout {
   paymentScreenshotPublicId String?
   createdAt                 DateTime        @default(now())
   items                     CheckoutItem[]  @relation("CheckoutToItems")
+  vendorOrders              VendorOrder[]
 
   @@index([userId])
 }
@@ -467,13 +479,85 @@ model CheckoutItem {
   originalPrice      Float?          // Original price before discount
   discountPercentage Float?          // Discount percentage applied (e.g., 10 for 10%)
   purchasedPrice     Float?          // Price purchased from vendor/partner (editable)
+  // Which per-vendor sub-order this line item belongs to (set when the
+  // owning product has a company). Animal items have no vendor sub-order.
+  vendorOrderId      Int?
+  vendorOrder        VendorOrder?    @relation(fields: [vendorOrderId], references: [id], onDelete: SetNull)
+  ledgerEntry        VendorLedgerEntry?
 
   @@index([checkoutId])
   @@index([productId])
   @@index([variantId])
   @@index([animalId])
+  @@index([vendorOrderId])
 }
 
+// ============================================
+// MULTI-VENDOR ORDER SPLITTING + VENDOR PAYOUT LEDGER
+// ============================================
+// One customer checkout can contain products from several companies. A
+// VendorOrder groups that checkout's items by company so each vendor can
+// track and update fulfillment for just their own slice of the order,
+// independently of the others and of the overall Checkout.status.
+
+enum VendorOrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model VendorOrder {
+  id              Int               @id @default(autoincrement())
+  checkout        Checkout          @relation(fields: [checkoutId], references: [id], onDelete: Cascade)
+  checkoutId      Int
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       Int
+  status          VendorOrderStatus @default(PENDING)
+  trackingNumber  String?
+  shippingCarrier String?
+  refundReason    String?           @db.Text
+  items           CheckoutItem[]
+  ledgerEntries   VendorLedgerEntry[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // One sub-order per company per checkout — items from the same company in
+  // the same order share a single VendorOrder.
+  @@unique([checkoutId, companyId])
+  @@index([checkoutId])
+  @@index([companyId])
+  @@index([status])
+}
+
+// Append-style ledger of what the platform owes each vendor (company).
+// A company's payout balance is always DERIVED by summing these rows —
+// never stored as a single mutable number — so it can be reconciled.
+enum VendorLedgerType {
+  SALE       // vendor earns purchasedPrice x quantity when an order item is priced
+  PAYOUT     // admin pays the vendor out (negative amount, reduces balance)
+  ADJUSTMENT // manual correction (positive or negative)
+}
+
+model VendorLedgerEntry {
+  id             Int              @id @default(autoincrement())
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      Int
+  type           VendorLedgerType
+  amount         Float            // SALE/ADJUSTMENT: signed amount owed; PAYOUT: negative
+  checkoutItem   CheckoutItem?    @relation(fields: [checkoutItemId], references: [id], onDelete: SetNull)
+  checkoutItemId Int?             @unique
+  vendorOrder    VendorOrder?     @relation(fields: [vendorOrderId], references: [id], onDelete: SetNull)
+  vendorOrderId  Int?
+  notes          String?          @db.Text
+  createdAt      DateTime         @default(now())
+
+  @@index([companyId])
+  @@index([vendorOrderId])
+  @@index([type])
+}
 
 model AnimalNews {
   id          Int        @id @default(autoincrement())

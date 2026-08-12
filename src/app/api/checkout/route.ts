@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { createProductSaleTransaction, createAnimalSaleTransaction } from '@/lib/autoTransaction'
 import { getActiveDiscountForItem, calculateDiscountedPrice } from '@/lib/discount-utils'
+import { getOrCreateVendorOrder, upsertVendorSaleEntry } from '@/lib/vendorLedger'
 import nodemailer from 'nodemailer'
 
 async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, total: number, paymentMethod: string, items: any[]) {
@@ -262,6 +263,24 @@ export async function POST(req: NextRequest) {
               paymentMethod,
               'PENDING'
             )
+
+            // Split this item into its vendor's (company's) sub-order and
+            // record what the platform now owes that vendor
+            const companyId = item.product.companyId
+            if (companyId) {
+              const vendorOrder = await getOrCreateVendorOrder(order.id, companyId)
+              await prisma.checkoutItem.update({
+                where: { id: createdItem.id },
+                data: { vendorOrderId: vendorOrder.id },
+              })
+              await upsertVendorSaleEntry({
+                companyId,
+                checkoutItemId: createdItem.id,
+                vendorOrderId: vendorOrder.id,
+                purchasedPrice,
+                quantity: item.quantity,
+              })
+            }
           }
         }
       }

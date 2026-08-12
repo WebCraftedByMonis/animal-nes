@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getOrCreateVendorOrder, upsertVendorSaleEntry } from '@/lib/vendorLedger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +61,31 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // Split product items into their vendor's (company's) sub-order and
+    // record what's owed to that vendor, same as the customer checkout flow
+    const createdItems = await prisma.checkoutItem.findMany({
+      where: { checkoutId: order.id, productId: { not: null } },
+      include: { product: { select: { companyId: true } } },
+    })
+
+    for (const item of createdItems) {
+      const companyId = item.product?.companyId
+      if (!companyId) continue
+
+      const vendorOrder = await getOrCreateVendorOrder(order.id, companyId)
+      await prisma.checkoutItem.update({
+        where: { id: item.id },
+        data: { vendorOrderId: vendorOrder.id },
+      })
+      await upsertVendorSaleEntry({
+        companyId,
+        checkoutItemId: item.id,
+        vendorOrderId: vendorOrder.id,
+        purchasedPrice: item.purchasedPrice,
+        quantity: item.quantity,
+      })
+    }
 
     return NextResponse.json({ success: true, orderId: order.id })
   } catch (error) {

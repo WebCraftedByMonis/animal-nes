@@ -166,6 +166,11 @@ export default function Navbar() {
                             Company Dashboard
                           </Link>
                         </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/partner/register" className="w-full cursor-pointer text-green-600 font-medium">
+                            Join as Vendor
+                          </Link>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </NavigationMenuItem>
@@ -346,6 +351,14 @@ export default function Navbar() {
                             className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
                           >
                             Company Dashboard
+                          </Link>
+                        </DrawerClose>
+                        <DrawerClose asChild>
+                          <Link
+                            href="/partner/register"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-green-600 hover:bg-green-500/10 transition-colors"
+                          >
+                            Join as Vendor
                           </Link>
                         </DrawerClose>
                       </div>

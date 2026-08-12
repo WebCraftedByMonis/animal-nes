@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { validateCompanySession } from '@/lib/auth/company-auth';
 import { updateTransactionProfit } from '@/lib/autoTransaction';
+import { getOrCreateVendorOrder, upsertVendorSaleEntry } from '@/lib/vendorLedger';
 
 // Helper to get company from session
 async function getCompanyFromSession() {
@@ -95,6 +96,14 @@ export async function GET(request: NextRequest) {
             packingVolume: true,
             customerPrice: true
           }
+        },
+        vendorOrder: {
+          select: {
+            id: true,
+            status: true,
+            trackingNumber: true,
+            shippingCarrier: true,
+          }
         }
       },
       skip,
@@ -129,7 +138,11 @@ export async function GET(request: NextRequest) {
       sellingPrice: item.price,
       purchasedPrice: item.purchasedPrice,
       status: item.checkout.status,
-      paymentMethod: item.checkout.paymentMethod
+      paymentMethod: item.checkout.paymentMethod,
+      vendorOrderId: item.vendorOrder?.id ?? null,
+      vendorOrderStatus: item.vendorOrder?.status ?? 'PENDING',
+      trackingNumber: item.vendorOrder?.trackingNumber ?? null,
+      shippingCarrier: item.vendorOrder?.shippingCarrier ?? null,
     }));
 
     return NextResponse.json({
@@ -208,6 +221,20 @@ export async function PATCH(request: NextRequest) {
     const totalPurchasedPrice = parseFloat(purchasedPrice) * currentItem.quantity;
 
     await updateTransactionProfit(itemId, totalSellingPrice, totalPurchasedPrice);
+
+    // Keep the vendor payout ledger in sync with this company's own price edit
+    const vendorOrder = await getOrCreateVendorOrder(currentItem.checkoutId, companyId);
+    await prisma.checkoutItem.update({
+      where: { id: itemId },
+      data: { vendorOrderId: vendorOrder.id },
+    });
+    await upsertVendorSaleEntry({
+      companyId,
+      checkoutItemId: itemId,
+      vendorOrderId: vendorOrder.id,
+      purchasedPrice: parseFloat(purchasedPrice),
+      quantity: currentItem.quantity,
+    });
 
     console.log(`[Company Order] Updated item #${itemId}: Selling: ${totalSellingPrice}, Cost: ${totalPurchasedPrice}, Profit: ${totalSellingPrice - totalPurchasedPrice}`);
 

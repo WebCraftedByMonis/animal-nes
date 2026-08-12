@@ -1,0 +1,252 @@
+====================================================================
+WHAT THE DEVELOPER GUIDE ASKED FOR, VS. WHAT'S ACTUALLY ON YOUR SITE
+Codebase Audit - animalwellness.shop - 12 Aug 2026
+====================================================================
+
+You sent over the "Animal Marketplace - Professional Developer Guide"
+PDF. I read it, then went through your real Next.js + Prisma codebase
+file by file (database models, API routes, pages, middleware) to
+check what's genuinely built, what's built but in a different (still
+working) way, and what was never started. Every line below is backed
+by something found in the actual code - no guessing.
+
+Source checked: prisma/schema.prisma, src/app, src/app/api,
+middleware.ts, next.config.ts
+
+SUMMARY
+-------
+  Built and match the guide's intent .......................... 6
+  Built, but a different (real) approach than the guide ....... 7
+  Not built - no trace in the code ............................ 7
+
+
+====================================================================
+1. WHAT KIND OF MARKETPLACE THIS ACTUALLY IS
+   (The guide assumes a vendor+affiliate model. Yours isn't that.)
+====================================================================
+
+[DIFFERENT] Business model
+  The guide's whole structure rests on one idea: every product is
+  either sold by a platform vendor OR is an affiliate link to
+  someone else's site. Your site is neither - it's a three-party
+  model: Company (a manufacturer/supplier who owns the product and
+  stock), Partner (a vet or reseller who can buy at partner pricing
+  and refers customers via a personal code), and the end Customer.
+  Every product is tied to both a Company and a Partner. This is a
+  real, working design - just a different shape than the guide
+  assumes, so its "affiliate" chapters don't map onto your business
+  at all.
+  Evidence: prisma Product.companyId / Product.partnerId,
+            Partner.referralCode / referredById
+
+[DIFFERENT] Product catalog
+  The guide wants normalized category_id/brand_id lookup tables.
+  Yours stores category, sub-category and sub-sub-category as free
+  text on the product itself, and instead of one price it has a
+  3-tier price system per pack size (company price / dealer price /
+  customer price) via ProductVariant - genuinely more useful for a
+  B2B+B2C site than the guide's single-price model, just structured
+  differently.
+  Evidence: Product.category/subCategory/subsubCategory (text),
+            ProductVariant.companyPrice/dealerPrice/customerPrice
+
+[DIFFERENT] Animal listings
+  The guide treats an "animal" as extra attributes hanging off a
+  product row. Your site instead runs it as its own flow: a
+  customer submits a SellAnimal listing (specie, breed, age, weight,
+  gender, health certificate, price) with its own images/videos, it
+  goes into a Pending -> Accepted/Rejected queue for admin review,
+  and only then can it be added to a cart and checked out. It's not
+  the guide's data shape, but it covers the same ground - structured
+  animal data, media, and a workflow - through a dedicated "sell
+  your animal" pipeline rather than a product attribute set.
+  Evidence: SellAnimal (status: PENDING/ACCEPTED/REJECTED),
+            SellAnimalImage, SellAnimalVideo, AnimalCart
+
+
+====================================================================
+2. ONBOARDING, ORDERS & MONEY
+   (The parts the guide is strictest about)
+====================================================================
+
+[BUILT] Public, customer & admin pages
+  Almost every page the guide lists exists in some form: home,
+  animal category pages, product listing/detail pages, category
+  pages, brand pages, cart, checkout, wishlist, orders, profile, and
+  separate login/dashboards for Company and Partner. The admin
+  backend actually goes well past what the guide asks for - you
+  also have finance reporting, a dynamic form builder, media
+  library, social auto-posting, sticky logo config, and email
+  delivery logs, none of which the guide even mentions.
+  Evidence: 60+ routes under src/app/dashboard,
+            company/dashboard, partner/dashboard
+
+[MISSING] Vendor / partner onboarding
+  The guide wants self-service signup -> document upload -> admin
+  review -> approved/rejected/suspended, plus a six-state product
+  lifecycle (draft/pending/approved/rejected/suspended/archived).
+  On your site, Companies and Partners are created directly by the
+  admin (/dashboard/addCompany, /dashboard/addPartner) - there's no
+  public signup form, no document upload step, and no
+  approval-status field on either model at all. Products only have
+  a plain on/off isActive flag and an isFeatured flag, not a
+  lifecycle. This is a real, simpler trade-off: tighter control, no
+  self-serve growth channel.
+  Evidence: no status field on Company or Partner in schema,
+            Product.isActive (bool), isFeatured (bool)
+
+[MISSING] Multi-vendor checkout
+  One cart can contain products from several different Companies -
+  that part works. But the guide's "one master order that splits
+  into a sub-order per vendor" (so each vendor only sees and
+  fulfills their own slice, with its own shipping/commission/
+  refund) doesn't exist. Every order is one flat Checkout with line
+  items; there's no per-company grouping, so fulfillment across
+  vendors has to be sorted out manually by an admin rather than
+  routed automatically.
+  Evidence: Checkout -> CheckoutItem (no vendor_order split)
+
+[MISSING] Partner wallet & withdrawals
+  The guide is explicit: never let a wallet be a single number you
+  edit directly - keep a ledger, so every rupee/dirham has a paper
+  trail. Right now Partner.walletBalance is exactly that single
+  mutable number: it gets incremented on referral/premium events
+  and decremented straight away when a withdrawal is approved, with
+  no ledger of individual transactions behind it. If a balance ever
+  looked wrong, there'd be nothing to reconcile against. The good
+  news: you already have the pattern built correctly elsewhere - the
+  Finance module (Transaction, Expense, PartnerDistribution) is a
+  proper append-only ledger for company revenue and business-
+  partner profit-shares. It just isn't the system feeding the
+  partner wallet.
+  Evidence: Partner.walletBalance direct increment/decrement in
+            /api/admin/withdrawal-requests/route.ts;
+            Finance ledger exists separately: Transaction, Expense,
+            PartnerDistribution
+
+[MISSING] Affiliate system
+  Zero trace of it - no affiliate partners, links, clicks,
+  conversions, commissions, or payouts anywhere in the schema or
+  code. The only thing that resembles "affiliate" is the Partner
+  referral code, which is a who-referred-whom credit for your own
+  wallet system, not the guide's outbound-click-to-external-seller
+  tracking. Since your business model isn't affiliate-based to
+  begin with (see above), this may simply not apply to you - but
+  it's worth confirming that's a deliberate choice, not an
+  oversight.
+  Evidence: 0 matches for "affiliate" across prisma + src
+
+
+====================================================================
+3. THE "INTELLIGENCE" LAYER
+   (Tracking, ranking, recommendations, search, analytics)
+====================================================================
+
+[MISSING] Event tracking & visitor interest
+  No product-impression, product-view, click, cart-add, or purchase
+  event log exists anywhere. Nothing records what a visitor looked
+  at or clicked, so there's no data to build interest profiles or
+  personalization from later, even if you wanted to.
+
+[MISSING] Ranking & recommendation engine
+  Product order on the shop page is a fixed sort: featured items
+  first, then newest first - that's it. There's no weighted
+  scoring, no admin screen to tune it, and no "Because You Viewed,"
+  "Trending," or "Similar Products" logic anywhere. This isn't
+  wrong for a site your size, but it means every listing shows the
+  same order to every visitor.
+  Evidence: orderBy: [isFeatured desc, createdAt desc]
+
+[DIFFERENT] Search
+  There's no dedicated site search page or search engine (no
+  Elasticsearch/OpenSearch), but the products page does have a
+  genuinely solid filter bar - keyword, category, sub-category,
+  company, price range, and sort - that's a real, working
+  implementation of "search," just simpler and database-query-based
+  rather than a relevance-ranked engine with behavioral signals.
+  Evidence: ProductsClient.tsx: search, category, price, sort
+            params
+
+[MISSING] Analytics & funnel reporting
+  No visitor/session/conversion-funnel dashboard exists. What you
+  do have is a genuinely useful Finance dashboard (revenue,
+  transactions, profit, expenses) - but that's money reporting, not
+  the behavioral analytics (impressions -> views -> clicks ->
+  purchases) the guide means.
+
+
+====================================================================
+4. SEO, PERFORMANCE & SECURITY
+   (Where the site is strongest)
+====================================================================
+
+[BUILT] SEO foundations
+  This is the best-matched part of the whole guide. Clean slug URLs
+  (/products/cattle-feed/premium-dairy-feed, not ?id=1837), JSON-LD
+  structured data on 20+ page types, a real robots.txt with per-bot
+  rules, and a sitemap system that pre-generates static XML nightly
+  so nginx serves it without hitting your database on every crawl -
+  that last part is more sophisticated than what the guide even
+  asks for. You're also redirecting www -> non-www correctly. The
+  one gap: no admin screen to edit meta titles/descriptions or
+  manage redirects without a code change.
+  Evidence: generate-sitemaps.js (nightly cron), JSON-LD on
+            product/animal/brand/vet pages, robots.txt per-bot
+            rules
+
+[DIFFERENT] Performance
+  Images run through Cloudinary and next/image with WebP, and the
+  homepage uses ISR (regenerates every 30 minutes instead of on
+  every request) - both real wins. But Redis is installed and
+  configured in package.json, and never actually imported or used
+  anywhere in the code - it's a dead dependency, not a caching
+  layer. There's also no background job queue; heavy work like AI
+  description generation or product scraping runs as a direct
+  long-running request rather than a queued job.
+  Evidence: redis in package.json, 0 imports in src/;
+            next.config.ts images.formats webp, minimumCacheTTL
+
+[DIFFERENT] Security
+  Passwords are hashed with bcrypt across every login type, and
+  Admin, Company, Partner and Customer each get their own session
+  table - a real, correct separation of roles. What's missing
+  versus the guide: no rate limiting, no explicit CSRF tokens, no
+  admin 2FA. Payments aren't verified by a webhook because there
+  isn't a payment gateway to webhook - customers upload a screenshot
+  and an admin approves it by eye. That's a legitimate, common
+  approach for COD-heavy markets, but it does mean a faked
+  screenshot is a real (if manual) risk worth knowing about, not a
+  coding bug to fix.
+  Evidence: bcrypt used in auth/register, admin-auth, company-auth,
+            partner-auth; AdminSession, CompanySession,
+            PartnerSession, Session (separate tables)
+
+
+====================================================================
+BOTTOM LINE
+====================================================================
+
+Your site is not an unfinished version of the PDF's marketplace - it
+is a different, working business (a company -> partner -> customer
+veterinary/livestock marketplace) that happens to share a few
+chapters with the guide's affiliate/vendor blueprint. Where the
+guide's basics apply - clean URLs, structured data, role-based
+logins, hashed passwords - you're solidly there, and your SEO
+plumbing and admin backend both go further than the guide asks for.
+
+The genuinely open gap is the whole "intelligence" layer the guide
+spends a third of its pages on: no event tracking, no ranking
+weights, no recommendations, no behavioral analytics. None of that
+breaks anything today, but it's also the part with no shortcut - it
+has to be built from a blank page whenever you're ready for it.
+
+The other real fix worth prioritizing sooner is turning the partner
+wallet from a raw editable number into a ledger, since you already
+have the right pattern built (the Finance module) - it just isn't
+connected to the wallet yet.
+
+--------------------------------------------------------------------
+Findings drawn directly from prisma/schema.prisma, src/app,
+src/app/api, middleware.ts and next.config.ts on the main branch.
+Anything not shown here (e.g. exact query performance under load)
+was not verified and is not claimed.

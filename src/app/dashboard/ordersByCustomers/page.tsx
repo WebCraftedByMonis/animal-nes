@@ -39,6 +39,7 @@ interface Product {
   productName: string;
   genericName: string;
   quantity: number;
+  company?: { id: number; companyName: string | null } | null;
 }
 
 interface ProductVariant {
@@ -71,6 +72,7 @@ interface Item {
   product: Product | null;
   variant: ProductVariant | null;
   animal: Animal | null;
+  vendorOrder?: { status: string } | null;
 }
 
 interface User {
@@ -534,6 +536,8 @@ export default function AdminOrdersPage() {
               <TableHead>Specie</TableHead>
               <TableHead>Breed</TableHead>
               <TableHead>Product Name</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Vendor Status</TableHead>
               <TableHead>Variant</TableHead>
               <TableHead>Animal Qty</TableHead>
               <TableHead>Product Qty</TableHead>
@@ -578,6 +582,22 @@ export default function AdminOrdersPage() {
                   <TableCell>{item.animal?.specie ?? '-'}</TableCell>
                   <TableCell>{item.animal?.breed ?? '-'}</TableCell>
                   <TableCell>{item.product?.productName ?? '-'}</TableCell>
+                  <TableCell>{item.product?.company?.companyName ?? '-'}</TableCell>
+                  <TableCell>
+                    {item.vendorOrder?.status ? (
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        item.vendorOrder.status === 'DELIVERED'
+                          ? 'bg-green-100 text-green-700'
+                          : item.vendorOrder.status === 'CANCELLED' || item.vendorOrder.status === 'REFUNDED'
+                          ? 'bg-red-100 text-red-700'
+                          : item.vendorOrder.status === 'SHIPPED'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {item.vendorOrder.status.charAt(0) + item.vendorOrder.status.slice(1).toLowerCase()}
+                      </span>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>{item.variant?.packingVolume ?? '-'}</TableCell>
                   <TableCell>{item.animal ? item.quantity : '-'}</TableCell>
                   <TableCell>{item.product ? item.quantity : '-'}</TableCell>

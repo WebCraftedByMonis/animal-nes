@@ -87,6 +87,10 @@ interface PartnerFormProps {
   initialData?: Partial<FormData>;
   title?: string;
   submitButtonText?: string;
+  /** When set, the Partner Type field is pre-filled with this value and locked
+   *  (used by the public vendor sign-up form, which only creates dealers/
+   *  distributors/sales people — not vets, farmers, students, etc.) */
+  lockedPartnerType?: string;
 }
 
 export default function PartnerForm({
@@ -94,7 +98,8 @@ export default function PartnerForm({
   isSubmitting,
   initialData,
   title = "Add Partner",
-  submitButtonText = "Submit"
+  submitButtonText = "Submit",
+  lockedPartnerType,
 }: PartnerFormProps) {
   const { country: selectedCountry, currencySymbol } = useCountry();
   const premiumPrice = selectedCountry === 'UAE' ? '500 AED' : '5,000 Rs.';
@@ -137,7 +142,7 @@ export default function PartnerForm({
       startTimeIds: initialData?.startTimeIds || [],
       specialization: initialData?.specialization || '',
       species: initialData?.species || '',
-      partnerType: initialData?.partnerType || undefined,
+      partnerType: initialData?.partnerType || lockedPartnerType || undefined,
       numberOfAnimals: initialData?.numberOfAnimals || undefined,
       animalEntries: initialData?.animalEntries || [],
       productIds: initialData?.productIds || [],
@@ -225,7 +230,7 @@ export default function PartnerForm({
       startTimeIds: [],
       specialization: '',
       species: '',
-      partnerType: undefined,
+      partnerType: lockedPartnerType || undefined,
       numberOfAnimals: undefined,
       animalEntries: [],
       productIds: [],
@@ -257,7 +262,7 @@ export default function PartnerForm({
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 text-green-500">{title}</h1>
+      {title && <h1 className="text-2xl font-bold mb-6 text-green-500">{title}</h1>}
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -305,7 +310,7 @@ export default function PartnerForm({
               control={control}
               name="partnerType"
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!!lockedPartnerType}>
                   <SelectTrigger className="focus:border-green-500 focus:ring-green-500">
                     <SelectValue placeholder="Select partner type" />
                   </SelectTrigger>
@@ -317,6 +322,9 @@ export default function PartnerForm({
                 </Select>
               )}
             />
+            {lockedPartnerType && (
+              <p className="text-xs text-gray-500 mt-1">Vendor sign-up is for this partner type. Other partner types (vets, farmers, students, etc.) still go through the admin.</p>
+            )}
             {errors.partnerType && <p className="text-red-500 text-sm">{errors.partnerType.message}</p>}
           </div>
 

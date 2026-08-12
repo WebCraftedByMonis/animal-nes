@@ -111,6 +111,7 @@ export function AppSidebar() {
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addCompany" className="block text-sm text-muted-foreground hover:underline">Add Company</Link>
                     <Link href="/dashboard/viewCompanies" className="block text-sm text-muted-foreground hover:underline">View Companies</Link>
+                    <Link href="/dashboard/vendor-payouts" className="block text-sm text-muted-foreground hover:underline">Vendor Payouts</Link>
                   </div>
                 )}
               </SidebarMenuItem>
@@ -148,6 +149,7 @@ export function AppSidebar() {
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addPartner" className="block text-sm text-muted-foreground hover:underline">Add Partner</Link>
                     <Link href="/dashboard/viewPartner" className="block text-sm text-muted-foreground hover:underline">View Partner</Link>
+                    <Link href="/dashboard/partner-approvals" className="block text-sm text-muted-foreground hover:underline">Partner Approvals</Link>
                     <Link href="/dashboard/premium-requests" className="block text-sm text-muted-foreground hover:underline">Premium Requests</Link>
                     <Link href="/dashboard/withdrawal-requests" className="block text-sm text-muted-foreground hover:underline">Withdrawal Requests</Link>
                   </div>

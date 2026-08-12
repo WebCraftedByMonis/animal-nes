@@ -42,6 +42,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Vendor accounts created through the public registration form need
+    // admin approval before they can sign in
+    if (partner.approvalStatus === 'PENDING') {
+      return NextResponse.json(
+        { error: 'Your vendor account is still under review. We’ll email you as soon as it’s approved.' },
+        { status: 403 }
+      );
+    }
+    if (partner.approvalStatus === 'REJECTED') {
+      return NextResponse.json(
+        { error: partner.rejectionReason || 'Your vendor application was not approved. Please contact support.' },
+        { status: 403 }
+      );
+    }
+
     // Create session
     const token = await createPartnerSession(partner.id);
 

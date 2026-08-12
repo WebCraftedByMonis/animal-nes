@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function PartnerLoginPage() {
   const router = useRouter();
@@ -171,6 +172,15 @@ export default function PartnerLoginPage() {
               >
                 Forgot Password?
               </button>
+            </div>
+
+            <div className="text-center pt-4 border-t border-gray-200 dark:border-zinc-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                New here?{' '}
+                <Link href="/partner/register" className="text-green-600 hover:text-green-700 font-semibold">
+                  Create a vendor account
+                </Link>
+              </p>
             </div>
           </form>
         ) : (
