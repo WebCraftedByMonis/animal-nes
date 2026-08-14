@@ -4,12 +4,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
-import { Eye, Crown, X, Pencil, Trash2, MessageSquare } from 'lucide-react';
+import { Eye, Crown, X, Pencil, Trash2, MessageSquare, Plus } from 'lucide-react';
 import WhatsAppLink from '@/components/WhatsAppLink';
 import PartnerShop from '@/components/partner/PartnerShop';
 import PartnerCart from '@/components/partner/PartnerCart';
 import PartnerCheckout from '@/components/partner/PartnerCheckout';
 import PartnerOrders from '@/components/partner/PartnerOrders';
+import AddProductForm from '@/components/forms/AddProductForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ProductVariant {
   id: number;
@@ -62,6 +64,7 @@ interface Partner {
 export default function PartnerDashboard() {
   const router = useRouter();
   const [partner, setPartner] = useState<Partner | null>(null);
+  const [showSubmitProduct, setShowSubmitProduct] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'products' | 'shop' | 'cart' | 'checkout' | 'shop-orders' | 'profile' | 'password' | 'wallet'>('products');
   const [cartCount, setCartCount] = useState(0);
@@ -860,7 +863,15 @@ export default function PartnerDashboard() {
             {/* Products Tab */}
             {activeTab === 'products' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-green-600">My Products</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-green-600">My Products</h2>
+                  <button
+                    onClick={() => setShowSubmitProduct(true)}
+                    className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Submit New Product
+                  </button>
+                </div>
 
                 {productsLoading ? (
                   <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -987,7 +998,7 @@ export default function PartnerDashboard() {
                 ) : (
                   <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                     <p className="text-gray-500 text-lg">No products assigned yet</p>
-                    <p className="text-gray-400 text-sm mt-2">Contact admin to add products to your account</p>
+                    <p className="text-gray-400 text-sm mt-2">Submit a product above, or ask admin to assign one to your account</p>
                   </div>
                 )}
 
@@ -2018,6 +2029,27 @@ export default function PartnerDashboard() {
           </div>
         </div>
       )}
+
+      {/* Submit New Product Modal */}
+      <Dialog open={showSubmitProduct} onOpenChange={setShowSubmitProduct}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Submit New Product</DialogTitle>
+          </DialogHeader>
+          {partner && (
+            <AddProductForm
+              mode="partner"
+              lockedPartnerId={partner.id}
+              lockedPartnerName={partner.partnerName || undefined}
+              submitEndpoint="/api/partner/products/submit"
+              onSuccess={() => {
+                setShowSubmitProduct(false);
+                toast.success('Submitted! An admin will review it before it goes live.');
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

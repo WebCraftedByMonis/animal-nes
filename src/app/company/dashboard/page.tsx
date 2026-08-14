@@ -4,10 +4,12 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast, Toaster } from 'react-hot-toast';
-import { Download, Edit, Loader2, Save, Search, X, FileText } from 'lucide-react';
+import { Download, Edit, Loader2, Save, Search, X, FileText, Plus } from 'lucide-react';
 import CompanyPaymentSettings from '@/components/company/CompanyPaymentSettings';
 import CompanyDiscounts from '@/components/company/CompanyDiscounts';
 import CompanyPartnerOrders from '@/components/company/CompanyPartnerOrders';
+import AddProductForm from '@/components/forms/AddProductForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ProductVariant {
   id: number;
@@ -102,6 +104,17 @@ export default function CompanyDashboard() {
 
   // Payout balance state
   const [payoutBalance, setPayoutBalance] = useState<number | null>(null);
+  const [payoutEntries, setPayoutEntries] = useState<Array<{
+    id: number;
+    type: string;
+    amount: number;
+    notes: string | null;
+    createdAt: string;
+  }>>([]);
+  const [showLedger, setShowLedger] = useState(false);
+
+  // Submit new product modal
+  const [showSubmitProduct, setShowSubmitProduct] = useState(false);
 
   // Product variant editing state
   const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
@@ -192,6 +205,7 @@ export default function CompanyDashboard() {
       const data = await response.json();
       if (response.ok) {
         setPayoutBalance(data.balance);
+        setPayoutEntries(data.recentEntries || []);
       }
     } catch (error) {
       console.error('Error fetching payout balance:', error);
@@ -509,8 +523,16 @@ export default function CompanyDashboard() {
         {activeTab === 'products' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Your Products</h2>
-              <p className="text-sm text-gray-500">Edit company price (purchased price) for each variant</p>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Your Products</h2>
+                <p className="text-sm text-gray-500">Edit company price (purchased price) for each variant</p>
+              </div>
+              <button
+                onClick={() => setShowSubmitProduct(true)}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Submit New Product
+              </button>
             </div>
 
             {productsLoading ? (
@@ -733,12 +755,57 @@ export default function CompanyDashboard() {
 
             {/* Payout Balance */}
             {payoutBalance !== null && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-800 font-medium">Payout Balance</p>
-                  <p className="text-xs text-green-700/80">What Animal Wellness currently owes you for items sold</p>
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-800 font-medium">Payout Balance</p>
+                    <p className="text-xs text-green-700/80">What Animal Wellness currently owes you for items sold</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <p className="text-2xl font-bold text-green-700">PKR {payoutBalance.toFixed(2)}</p>
+                    <button
+                      onClick={() => setShowLedger(!showLedger)}
+                      className="text-xs font-medium text-green-700 hover:text-green-900 underline"
+                    >
+                      {showLedger ? 'Hide ledger' : 'View ledger'}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-2xl font-bold text-green-700">PKR {payoutBalance.toFixed(2)}</p>
+
+                {showLedger && (
+                  <div className="mt-4 pt-4 border-t border-green-200">
+                    {payoutEntries.length === 0 ? (
+                      <p className="text-sm text-green-800/70">No ledger entries yet.</p>
+                    ) : (
+                      <div className="space-y-1 max-h-64 overflow-y-auto">
+                        {payoutEntries.map((entry) => (
+                          <div key={entry.id} className="flex items-center justify-between text-sm py-1">
+                            <div>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold mr-2 ${
+                                entry.type === 'SALE'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : entry.type === 'PAYOUT'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {entry.type}
+                              </span>
+                              <span className="text-gray-600">
+                                {entry.notes || (entry.type === 'SALE' ? 'Item sold' : entry.type)}
+                              </span>
+                              <span className="text-xs text-gray-400 ml-2">
+                                {new Date(entry.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <span className={`font-semibold ${entry.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                              {entry.amount < 0 ? '-' : '+'}PKR {Math.abs(entry.amount).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1012,6 +1079,27 @@ export default function CompanyDashboard() {
           </div>
         )}
       </div>
+
+      {/* Submit New Product Modal */}
+      <Dialog open={showSubmitProduct} onOpenChange={setShowSubmitProduct}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Submit New Product</DialogTitle>
+          </DialogHeader>
+          {company && (
+            <AddProductForm
+              mode="company"
+              lockedCompanyId={company.id}
+              lockedCompanyName={company.companyName || undefined}
+              submitEndpoint="/api/company/products/submit"
+              onSuccess={() => {
+                setShowSubmitProduct(false);
+                toast.success('Submitted! An admin will review it before it goes live.');
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -48,6 +48,12 @@ model Product {
   outofstock     Boolean         @default(false)
   isFeatured     Boolean         @default(false)
   isActive       Boolean         @default(false)
+  // Vendor (company/partner) self-submitted products start PENDING and stay
+  // inactive until an admin approves them. Admin-added products default to
+  // APPROVED so nothing existing is affected.
+  approvalStatus   ProductApprovalStatus @default(APPROVED)
+  rejectionReason  String?               @db.Text
+  submittedByRole  String?               @default("ADMIN") // ADMIN | COMPANY | PARTNER
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   variants       ProductVariant[]
@@ -64,6 +70,13 @@ model Product {
   @@index([isActive, id])
   @@index([isActive, isFeatured, createdAt])
   @@index([isActive, category])
+  @@index([approvalStatus])
+}
+
+enum ProductApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model ProductVariant {

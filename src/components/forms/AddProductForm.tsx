@@ -66,39 +66,63 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function AddProductForm() {
+interface AddProductFormProps {
+  /** 'admin' (default): unrestricted, posts to /api/product, goes live immediately.
+   *  'company' / 'partner': the vendor's own side is locked to their session,
+   *  the product is submitted for admin approval instead of going live. */
+  mode?: "admin" | "company" | "partner";
+  lockedCompanyId?: number;
+  lockedCompanyName?: string;
+  lockedPartnerId?: number;
+  lockedPartnerName?: string;
+  submitEndpoint?: string;
+  onSuccess?: () => void;
+}
+
+export default function AddProductForm({
+  mode = "admin",
+  lockedCompanyId,
+  lockedCompanyName,
+  lockedPartnerId,
+  lockedPartnerName,
+  submitEndpoint = "/api/product",
+  onSuccess,
+}: AddProductFormProps = {}) {
   const { country } = useCountry();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [pdfPreview, setPdfPreview] = useState<string | null>(null);
+  const isVendorMode = mode !== "admin";
+
+  const defaultFormValues: FormValues = {
+    isFeatured: false,
+    isActive: !isVendorMode,
+    outofstock: false,
+    productName: "",
+    genericName: "",
+    category: "",
+    subCategory: "",
+    subsubCategory: "",
+    productType: "",
+    companyId: lockedCompanyId ? String(lockedCompanyId) : "",
+    variants: [
+      {
+        packingVolume: "",
+        companyPrice: "",
+        dealerPrice: "",
+        customerPrice: "",
+      },
+    ],
+    partnerId: lockedPartnerId ? String(lockedPartnerId) : "",
+    description: "",
+    dosage: "",
+    productLink: "",
+    imageUrl: "",
+  };
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as any, 
-    defaultValues: {
-      isFeatured: false,
-      isActive: true,
-      outofstock: false,
-      productName: "",
-      genericName: "",
-      category: "",
-      subCategory: "",
-      subsubCategory: "",
-      productType: "",
-      companyId: "",
-      variants: [
-        {
-          packingVolume: "",
-          companyPrice: "",
-          dealerPrice: "",
-          customerPrice: "",
-        },
-      ],
-      partnerId: "",
-      description: "",
-      dosage: "",
-      productLink: "",
-      imageUrl: "",
-    },
+    resolver: zodResolver(formSchema) as any,
+    defaultValues: defaultFormValues,
   });
 
 
@@ -159,21 +183,25 @@ export default function AddProductForm() {
         if (value instanceof File) {
           formData.append(key, value);
         } else if (typeof value === "boolean") {
-          formData.append(key, value ? "true" : "false");
+          // Vendor submissions never set their own live/featured status —
+          // that's decided when admin approves the product.
+          const boolValue = isVendorMode && (key === "isActive" || key === "isFeatured") ? false : value;
+          formData.append(key, boolValue ? "true" : "false");
         } else if (value !== undefined && value !== null) {
           formData.append(key, String(value));
         }
       });
 
-      const response = await axios.post("/api/product", formData, {
+      const response = await axios.post(submitEndpoint, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
       if (response.status === 201) {
-        toast.success("Product created successfully");
+        toast.success(isVendorMode ? "Product submitted for admin approval" : "Product created successfully");
         success = true;
+        onSuccess?.();
       }
 
     } catch (error: unknown) {
@@ -188,31 +216,7 @@ export default function AddProductForm() {
 
       if (success) {
         // Reset the form only on success
-        form.reset({
-          isFeatured: false,
-          isActive: true,
-          outofstock: false,
-          productName: "",
-          genericName: "",
-          category: "",
-          subCategory: "",
-          subsubCategory: "",
-          productType: "",
-          companyId: "",
-          variants: [
-            {
-              packingVolume: "",
-              companyPrice: "",
-              dealerPrice: "",
-              customerPrice: "",
-            },
-          ],
-          partnerId: "",
-          description: "",
-          dosage: "",
-          productLink: "",
-          imageUrl: "",
-        });
+        form.reset(defaultFormValues);
 
         // Clear image and PDF previews
         setImagePreview(null);
@@ -225,7 +229,14 @@ export default function AddProductForm() {
   return (
     <div className="  min-h-screen">
       <div className="mx-auto max-w-4xl px-4 py-8 ">
-        <h1 className="text-3xl font-bold text-green-500 mb-8">Add New Product</h1>
+        <h1 className="text-3xl font-bold text-green-500 mb-2">
+          {isVendorMode ? "Submit a Product" : "Add New Product"}
+        </h1>
+        {isVendorMode && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            An admin reviews every submission before it goes live on the site.
+          </p>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 ">
@@ -405,49 +416,72 @@ export default function AddProductForm() {
               />
 
               {/* Company Select */}
-              <FormField
-                control={form.control}
-                name="companyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company *</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        apiEndpoint="/api/company"
-                        searchKey="companyName"
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select company"
-                        extraParams={{ country }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {mode === "company" ? (
+                <FormItem>
+                  <FormLabel>Company</FormLabel>
+                  <div className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground">
+                    {lockedCompanyName || "Your company"}
+                  </div>
+                </FormItem>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="companyId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company *</FormLabel>
+                      <FormControl>
+                        <SearchableCombobox
+                          apiEndpoint="/api/company"
+                          searchKey="companyName"
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select company"
+                          extraParams={{ country }}
+                        />
+                      </FormControl>
+                      {mode === "partner" && (
+                        <p className="text-xs text-gray-500">Which company manufactures this product?</p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Partner Select */}
-              <FormField
-                control={form.control}
-                name="partnerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Partner *</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        apiEndpoint="/api/partner"
-                        searchKey="partnerName"
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select partner"
-                        extraParams={{ country }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {mode === "partner" ? (
+                <FormItem>
+                  <FormLabel>Partner</FormLabel>
+                  <div className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground">
+                    {lockedPartnerName || "Your account"}
+                  </div>
+                </FormItem>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="partnerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Partner *</FormLabel>
+                      <FormControl>
+                        <SearchableCombobox
+                          apiEndpoint="/api/partner"
+                          searchKey="partnerName"
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select partner"
+                          extraParams={{ country }}
+                        />
+                      </FormControl>
+                      {mode === "company" && (
+                        <p className="text-xs text-gray-500">Which dealer/rep sells this product?</p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
 
 
@@ -484,38 +518,41 @@ export default function AddProductForm() {
 
               {/* Status Switches */}
               <div className="md:col-span-2 flex gap-8">
-                <FormField
-                  control={form.control}
-                  name="isFeatured"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center gap-2">
-                      <FormLabel>Featured Product</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                {!isVendorMode && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="isFeatured"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center gap-2">
+                          <FormLabel>Featured Product</FormLabel>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center gap-2">
-                      <FormLabel>Active Product</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
+                    <FormField
+                      control={form.control}
+                      name="isActive"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center gap-2">
+                          <FormLabel>Active Product</FormLabel>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 <FormField
                   control={form.control}

@@ -127,6 +127,7 @@ export function AppSidebar() {
                   <div className="ml-6 mt-2 space-y-1">
                     <Link href="/dashboard/addProduct" className="block text-sm text-muted-foreground hover:underline">Add Product</Link>
                     <Link href="/dashboard/veiwProducts" className="block text-sm text-muted-foreground hover:underline">View Products</Link>
+                    <Link href="/dashboard/product-approvals" className="block text-sm text-muted-foreground hover:underline">Product Approvals</Link>
                     <Link href="/dashboard/viewProductReviews" className="block text-sm text-muted-foreground hover:underline">Product Reviews</Link>
                     <Link href="/dashboard/priceManagement" className="block text-sm text-muted-foreground hover:underline">Price Management</Link>
                     <Link href="/dashboard/addUnits" className="block text-sm text-muted-foreground hover:underline">Add Units</Link>
