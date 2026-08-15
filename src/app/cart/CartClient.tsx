@@ -87,13 +87,22 @@ function calculateDiscountedPrice(price: number, percentage: number): number {
   return Math.round((price - (price * percentage / 100)) * 100) / 100
 }
 
+// customerPrice is nullable in the DB (a variant an admin hasn't priced yet)
+// even though it's typed as required `number` here — always read it through
+// this helper instead of the field directly, or a single unpriced item
+// crashes the whole cart page (see [cart-debug] logging above).
+function getBasePrice(item: CartItem): number {
+  return item.variant.customerPrice ?? 0
+}
+
 // Get final price for cart item
 function getFinalPrice(item: CartItem): number {
   const discount = getActiveDiscount(item)
+  const basePrice = getBasePrice(item)
   if (discount) {
-    return calculateDiscountedPrice(item.variant.customerPrice, discount.percentage)
+    return calculateDiscountedPrice(basePrice, discount.percentage)
   }
-  return item.variant.customerPrice
+  return basePrice
 }
 
 export default function CartClient({ cartItems }: CartClientProps) {
@@ -211,8 +220,9 @@ export default function CartClient({ cartItems }: CartClientProps) {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + item.quantity * getFinalPrice(item), 0)
-  const originalSubtotal = cart.reduce((sum, item) => sum + item.quantity * item.variant.customerPrice, 0)
+  const originalSubtotal = cart.reduce((sum, item) => sum + item.quantity * getBasePrice(item), 0)
   const totalSavings = originalSubtotal - subtotal
+  const hasUnpricedItem = cart.some(item => item.variant.customerPrice == null)
 
   if (!cart.length) {
     return (
@@ -277,23 +287,27 @@ export default function CartClient({ cartItems }: CartClientProps) {
                         </span>
                       )}
                     </div>
-                    {getActiveDiscount(item) ? (
+                    {item.variant.customerPrice == null ? (
+                      <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                        Price unavailable for this item — please remove it or contact support before checking out.
+                      </p>
+                    ) : getActiveDiscount(item) ? (
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="text-xl font-bold text-green-600 dark:text-green-400">
                             {currency} {getFinalPrice(item).toLocaleString()}
                           </p>
                           <p className="text-sm text-gray-500 line-through">
-                            {currency} {item.variant.customerPrice.toLocaleString()}
+                            {currency} {getBasePrice(item).toLocaleString()}
                           </p>
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400">
-                          You save {currency} {(item.variant.customerPrice - getFinalPrice(item)).toLocaleString()} per item
+                          You save {currency} {(getBasePrice(item) - getFinalPrice(item)).toLocaleString()} per item
                         </p>
                       </div>
                     ) : (
                       <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                        {currency} {item.variant.customerPrice.toLocaleString()}
+                        {currency} {getBasePrice(item).toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -388,11 +402,22 @@ export default function CartClient({ cartItems }: CartClientProps) {
             </div>
 
             <div className="space-y-3">
-              <Link href="/checkout" className="block">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold">
-                  Proceed to Checkout
-                </Button>
-              </Link>
+              {hasUnpricedItem ? (
+                <>
+                  <Button disabled className="w-full py-6 text-lg font-semibold cursor-not-allowed">
+                    Proceed to Checkout
+                  </Button>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                    Remove the item with an unavailable price to continue.
+                  </p>
+                </>
+              ) : (
+                <Link href="/checkout" className="block">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold">
+                    Proceed to Checkout
+                  </Button>
+                </Link>
+              )}
               <Link href="/products" className="block">
                 <Button variant="outline" className="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 py-6 text-lg font-semibold">
                   Continue Shopping

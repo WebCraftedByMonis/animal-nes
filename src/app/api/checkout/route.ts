@@ -163,6 +163,21 @@ export async function POST(req: NextRequest) {
   ))
   console.error('[checkout-debug] incoming animalCart count:', (animalCart || []).length)
 
+  // An unpriced variant (customerPrice null) coerces to 0 in the arithmetic
+  // below rather than throwing — so without this check the order would
+  // silently go through with that item charged at 0 instead of failing loudly.
+  const unpricedItem = (cart || []).find((item: any) => item?.variant?.customerPrice == null)
+  if (unpricedItem) {
+    console.error('[checkout-debug] rejecting checkout — unpriced item:', JSON.stringify({
+      productId: unpricedItem?.product?.id,
+      productName: unpricedItem?.product?.productName,
+      variantId: unpricedItem?.variant?.id,
+    }))
+    return NextResponse.json({
+      error: `"${unpricedItem?.product?.productName || 'An item'}" in your cart doesn't have a price set. Please remove it and try again.`
+    }, { status: 400 })
+  }
+
   try {
     // ✅ Always use the fixed shipping charge from frontend (e.g., 350)
     const validatedShippingCharge = shippingCharges
