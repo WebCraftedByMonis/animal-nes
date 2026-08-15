@@ -33,7 +33,9 @@ import {
   Pin,
   Mail,
   Star,
-  ScanSearch
+  ScanSearch,
+  Link2,
+  BarChart3
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -58,6 +60,7 @@ export function AppSidebar() {
   const [openTraditionaljob, setOpenTraditionaljob] = useState(false)
   const [openAdditionalFees, setOpenAdditionalFees] = useState(false)
   const [openFinance, setOpenFinance] = useState(false)
+  const [openAffiliate, setOpenAffiliate] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -393,6 +396,35 @@ export function AppSidebar() {
                     <Link href="/dashboard/finance/distributions" className="block text-sm text-muted-foreground hover:underline">Partner Distributions</Link>
                   </div>
                 )}
+              </SidebarMenuItem>
+
+              {/* Affiliate Marketing */}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpenAffiliate(!openAffiliate)}>
+                  <Link2 className="w-4 h-4" />
+                  <span className="hover:text-green-500">Affiliate Marketing</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${openAffiliate ? "rotate-180" : "rotate-0"}`} />
+                </SidebarMenuButton>
+                {openAffiliate && (
+                  <div className="ml-6 mt-2 space-y-1">
+                    <Link href="/dashboard/affiliate/settings" className="block text-sm text-muted-foreground hover:underline">Settings</Link>
+                    <Link href="/dashboard/affiliate/partners" className="block text-sm text-muted-foreground hover:underline">Affiliate Partners</Link>
+                    <Link href="/dashboard/affiliate/products" className="block text-sm text-muted-foreground hover:underline">Products</Link>
+                    <Link href="/dashboard/affiliate/links" className="block text-sm text-muted-foreground hover:underline">Links</Link>
+                    <Link href="/dashboard/affiliate/conversions" className="block text-sm text-muted-foreground hover:underline">Conversions</Link>
+                    <Link href="/dashboard/affiliate/payouts" className="block text-sm text-muted-foreground hover:underline">Payouts</Link>
+                  </div>
+                )}
+              </SidebarMenuItem>
+
+              {/* Analytics */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/analytics">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hover:text-green-500">Analytics</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Media Upload */}

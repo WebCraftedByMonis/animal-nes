@@ -167,8 +167,19 @@ export default function Navbar() {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
+                          <Link href="/affiliate/dashboard" className="w-full cursor-pointer">
+                            Affiliate Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
                           <Link href="/partner/register" className="w-full cursor-pointer text-green-600 font-medium">
                             Join as Vendor
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/affiliate/register" className="w-full cursor-pointer text-green-600 font-medium">
+                            Become an Affiliate
                           </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -355,10 +366,26 @@ export default function Navbar() {
                         </DrawerClose>
                         <DrawerClose asChild>
                           <Link
+                            href="/affiliate/dashboard"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md hover:bg-green-500/10 hover:text-green-600 transition-colors"
+                          >
+                            Affiliate Dashboard
+                          </Link>
+                        </DrawerClose>
+                        <DrawerClose asChild>
+                          <Link
                             href="/partner/register"
                             className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-green-600 hover:bg-green-500/10 transition-colors"
                           >
                             Join as Vendor
+                          </Link>
+                        </DrawerClose>
+                        <DrawerClose asChild>
+                          <Link
+                            href="/affiliate/register"
+                            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-green-600 hover:bg-green-500/10 transition-colors"
+                          >
+                            Become an Affiliate
                           </Link>
                         </DrawerClose>
                       </div>

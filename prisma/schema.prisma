@@ -64,6 +64,8 @@ model Product {
   discounts          Discount[]
   partnerCartItems   PartnerCartItem[]
   partnerOrderItems  PartnerOrderItem[]
+  affiliateProduct   AffiliateProduct?
+  affiliateLinks     AffiliateLink[]
 
   @@index([companyId])
   @@index([partnerId])
@@ -1509,4 +1511,236 @@ model SocialAutoPostLog {
   @@unique([contentType, contentId, platform])
   @@index([platform, status])
   @@index([contentType, contentId])
+}
+
+// ============================================
+// AFFILIATE MARKETING SYSTEM
+// ============================================
+// A separate role from `Partner` (vets/vendors). Anyone can self-register
+// as an affiliate, gets approved by an admin, generates trackable links for
+// products, and earns a commission (rate configured in the dashboard, never
+// hardcoded) on purchases attributed to their link via a cookie set on click.
+
+enum AffiliateApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum AffiliateCommissionType {
+  PERCENTAGE
+  FIXED
+}
+
+enum AffiliateLedgerType {
+  EARNED     // affiliate earns amount x quantity when a conversion is recorded
+  PAYOUT     // admin pays the affiliate out (negative amount, reduces balance)
+  ADJUSTMENT // manual correction (positive or negative) e.g. reversing a refunded order
+}
+
+enum AffiliateConversionStatus {
+  APPROVED
+  REVERSED
+}
+
+model AffiliatePartner {
+  id               Int                       @id @default(autoincrement())
+  name             String
+  email            String                    @unique
+  phone            String?
+  password         String
+  referralCode     String                    @unique
+  status           AffiliateApprovalStatus   @default(PENDING)
+  rejectionReason  String?                   @db.Text
+  // Per-affiliate override of the global AffiliateSettings default. Null = inherit.
+  commissionType   AffiliateCommissionType?
+  commissionValue  Float?
+  bankName         String?
+  accountTitle     String?
+  accountNumber    String?
+  paymentMethod    String?                   // jazzcash | easypaisa | bank_transfer
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  sessions         AffiliatePartnerSession[]
+  links            AffiliateLink[]
+  clicks           AffiliateClick[]
+  conversions      AffiliateConversion[]
+  commissions      AffiliateCommission[]
+  payouts          AffiliatePayout[]
+
+  @@index([status])
+}
+
+model AffiliatePartnerSession {
+  id                 String           @id @default(cuid())
+  token              String           @unique
+  affiliatePartner   AffiliatePartner @relation(fields: [affiliatePartnerId], references: [id], onDelete: Cascade)
+  affiliatePartnerId Int
+  expiresAt          DateTime
+  createdAt          DateTime         @default(now())
+
+  @@index([affiliatePartnerId])
+}
+
+// Singleton (id is always 1) — the dashboard-editable defaults. This is the
+// only place commission rates are decided; nothing is hardcoded in source.
+model AffiliateSettings {
+  id                     Int                     @id @default(1)
+  defaultCommissionType  AffiliateCommissionType @default(PERCENTAGE)
+  defaultCommissionValue Float                   @default(5)
+  cookieWindowDays       Int                     @default(30)
+  minPayoutAmount        Float                   @default(0)
+  updatedAt              DateTime                @updatedAt
+}
+
+// Per-product affiliate enrollment / commission override. No row for a
+// product means it is eligible at the global default rate.
+model AffiliateProduct {
+  id              Int                      @id @default(autoincrement())
+  product         Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId       Int                      @unique
+  enabled         Boolean                  @default(true)
+  commissionType  AffiliateCommissionType?
+  commissionValue Float?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+}
+
+model AffiliateLink {
+  id                 Int                    @id @default(autoincrement())
+  code               String                 @unique
+  affiliatePartner   AffiliatePartner       @relation(fields: [affiliatePartnerId], references: [id], onDelete: Cascade)
+  affiliatePartnerId Int
+  product            Product?               @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId          Int?
+  targetPath         String                 @db.Text // resolved path at creation time (product page, or '/')
+  label              String?
+  isActive           Boolean                @default(true)
+  createdAt          DateTime               @default(now())
+
+  clicks             AffiliateClick[]
+  conversions        AffiliateConversion[]
+
+  @@index([affiliatePartnerId])
+  @@index([productId])
+}
+
+model AffiliateClick {
+  id                 Int               @id @default(autoincrement())
+  link               AffiliateLink     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  linkId             Int
+  affiliatePartner   AffiliatePartner  @relation(fields: [affiliatePartnerId], references: [id], onDelete: Cascade)
+  affiliatePartnerId Int
+  productId          Int?
+  clickToken         String            @unique // stored in the visitor's attribution cookie
+  ipHash             String?
+  userAgent          String?           @db.Text
+  referrer           String?           @db.Text
+  landingPath        String?           @db.Text
+  createdAt          DateTime          @default(now())
+
+  conversion         AffiliateConversion?
+
+  @@index([linkId])
+  @@index([affiliatePartnerId])
+  @@index([createdAt])
+}
+
+model AffiliateConversion {
+  id                 Int                        @id @default(autoincrement())
+  click              AffiliateClick?            @relation(fields: [clickId], references: [id], onDelete: SetNull)
+  clickId            Int?                       @unique
+  link               AffiliateLink?             @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  linkId             Int?
+  affiliatePartner   AffiliatePartner           @relation(fields: [affiliatePartnerId], references: [id], onDelete: Cascade)
+  affiliatePartnerId Int
+  checkoutId         Int                        @unique
+  orderTotal         Float
+  status             AffiliateConversionStatus  @default(APPROVED)
+  reversalReason     String?                    @db.Text
+  createdAt          DateTime                   @default(now())
+
+  commission         AffiliateCommission?
+
+  @@index([affiliatePartnerId])
+}
+
+// Append-only ledger — an affiliate's payable balance is always the SUM of
+// these rows, never a mutable stored number (mirrors VendorLedgerEntry).
+model AffiliateCommission {
+  id                 Int                  @id @default(autoincrement())
+  affiliatePartner   AffiliatePartner     @relation(fields: [affiliatePartnerId], references: [id], onDelete: Cascade)
+  affiliatePartnerId Int
+  type               AffiliateLedgerType
+  amount             Float                // EARNED positive, PAYOUT negative, ADJUSTMENT signed
+  conversion         AffiliateConversion? @relation(fields: [conversionId], references: [id], onDelete: SetNull)
+  conversionId       Int?                 @unique
+  notes              String?              @db.Text
+  createdAt          DateTime             @default(now())
+
+  @@index([affiliatePartnerId])
+  @@index([type])
+}
+
+model AffiliatePayout {
+  id                 Int              @id @default(autoincrement())
+  affiliatePartner   AffiliatePartner @relation(fields: [affiliatePartnerId], references: [id], onDelete: Cascade)
+  affiliatePartnerId Int
+  amount             Float
+  accountTitle       String
+  accountNumber      String
+  bankName           String
+  paymentMethod      String
+  status             String           @default("pending") // pending | approved | rejected
+  notes              String?          @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([affiliatePartnerId])
+  @@index([status])
+}
+
+// ============================================
+// CENTRAL EVENT TRACKING
+// ============================================
+// One shared service (src/lib/tracking.ts) writes here — controllers should
+// never keep their own ad hoc counters. Backs the dashboard analytics view.
+
+enum TrackingEventType {
+  PRODUCT_IMPRESSION
+  PRODUCT_VIEW
+  SEARCH
+  CATEGORY_VIEW
+  PRODUCT_CLICK
+  WISHLIST_ADD
+  CART_ADD
+  CHECKOUT_START
+  PURCHASE
+  AFFILIATE_CLICK
+  SHARE
+  REVIEW
+  TIME_ON_PRODUCT
+}
+
+model TrackingEvent {
+  id               Int               @id @default(autoincrement())
+  type             TrackingEventType
+  sessionId        String?           // anonymous visitor id (cookie), ties one visit together
+  userId           String?
+  productId        Int?
+  affiliateLinkId  Int?
+  affiliateClickId Int?
+  checkoutId       Int?
+  searchQuery      String?           @db.Text
+  path             String?           @db.Text
+  referrer         String?           @db.Text
+  metadata         Json?             // e.g. { durationMs } for TIME_ON_PRODUCT, { channel } for SHARE
+  createdAt        DateTime          @default(now())
+
+  @@index([type, createdAt])
+  @@index([productId])
+  @@index([sessionId])
+  @@index([affiliateLinkId])
 }

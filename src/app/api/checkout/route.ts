@@ -4,7 +4,11 @@ import { auth } from '@/lib/auth'
 import { createProductSaleTransaction, createAnimalSaleTransaction } from '@/lib/autoTransaction'
 import { getActiveDiscountForItem, calculateDiscountedPrice } from '@/lib/discount-utils'
 import { getOrCreateVendorOrder, upsertVendorSaleEntry } from '@/lib/vendorLedger'
+import { calculateOrderCommission } from '@/lib/affiliateLedger'
+import { trackEvent, getSessionIdFromRequest } from '@/lib/tracking'
 import nodemailer from 'nodemailer'
+
+const AFFILIATE_ATTRIBUTION_COOKIE = 'aw_aff'
 
 async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, total: number, paymentMethod: string, items: any[]) {
   try {
@@ -305,8 +309,66 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email! }, select: { id: true, name: true, email: true } })
+
+    // ✅ Central event tracking: every completed purchase is logged
+    // regardless of affiliate attribution.
+    await trackEvent({
+      type: 'PURCHASE',
+      sessionId: getSessionIdFromRequest(req),
+      userId: user?.id,
+      checkoutId: order.id,
+      metadata: { total: calculatedTotal },
+    })
+
+    // ✅ Affiliate attribution — the outbound click already set an aw_aff
+    // cookie (see src/app/go/[code]/route.ts). If it's present and still
+    // valid, credit the order to that affiliate and record their commission.
+    const attributionToken = req.cookies.get(AFFILIATE_ATTRIBUTION_COOKIE)?.value
+    if (attributionToken) {
+      try {
+        const click = await prisma.affiliateClick.findUnique({
+          where: { clickToken: attributionToken },
+          include: { affiliatePartner: { select: { id: true, status: true } } },
+        })
+        if (click && click.affiliatePartner.status === 'APPROVED') {
+          const commissionAmount = await calculateOrderCommission(
+            cartItemsWithDiscounts.map((item: any) => ({
+              product: item.product ? { id: item.product.id } : null,
+              quantity: item.quantity,
+              finalPrice: item.finalPrice,
+            })),
+            click.affiliatePartnerId
+          )
+
+          const conversion = await prisma.affiliateConversion.create({
+            data: {
+              clickId: click.id,
+              linkId: click.linkId,
+              affiliatePartnerId: click.affiliatePartnerId,
+              checkoutId: order.id,
+              orderTotal: calculatedTotal,
+            },
+          })
+
+          if (commissionAmount > 0) {
+            await prisma.affiliateCommission.create({
+              data: {
+                affiliatePartnerId: click.affiliatePartnerId,
+                type: 'EARNED',
+                amount: commissionAmount,
+                conversionId: conversion.id,
+              },
+            })
+          }
+        }
+      } catch (affiliateError) {
+        // Attribution must never block the order from completing.
+        console.error('Affiliate attribution error:', affiliateError)
+      }
+    }
+
     // Send order confirmation email (non-blocking)
-    const user = await prisma.user.findUnique({ where: { email: session.user.email! }, select: { name: true, email: true } })
     if (user?.email) {
       const emailItems = [
         ...cartItemsWithDiscounts.map((item: any) => ({

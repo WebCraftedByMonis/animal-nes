@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { trackEvent, getSessionIdFromRequest } from '@/lib/tracking'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -48,6 +49,13 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         productId,
       },
+    })
+
+    await trackEvent({
+      type: 'WISHLIST_ADD',
+      sessionId: getSessionIdFromRequest(req),
+      userId: user.id,
+      productId,
     })
 
     return NextResponse.json({ message: 'Added to wishlist' }, { status: 200 })

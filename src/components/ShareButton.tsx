@@ -2,18 +2,22 @@
 
 import { useState } from "react";
 import { Share2, Check } from "lucide-react";
+import { track } from "@/lib/trackingClient";
 
 interface ShareButtonProps {
   title: string;
   text?: string;
   url?: string;
+  productId?: number;
 }
 
-export default function ShareButton({ title, text, url }: ShareButtonProps) {
+export default function ShareButton({ title, text, url, productId }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    track('SHARE', { productId, metadata: { channel: typeof navigator !== 'undefined' && navigator.share ? 'native' : 'clipboard' } });
 
     const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
 

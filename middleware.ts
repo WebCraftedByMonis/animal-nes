@@ -14,6 +14,12 @@ function verifyToken(token: string): boolean {
   }
 }
 
+// Anonymous visitor id for the central event-tracking service
+// (src/lib/tracking.ts). Set once here so every request — server components
+// included, which can't set cookies themselves during render — has one to
+// read.
+const VISITOR_COOKIE = 'aw_sid';
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || ''
   if (host.startsWith('www.')) {
@@ -23,6 +29,18 @@ export function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  let response: NextResponse | null = null;
+  let visitorId = request.cookies.get(VISITOR_COOKIE)?.value;
+  if (!visitorId) {
+    visitorId = crypto.randomUUID();
+    response = NextResponse.next();
+    response.cookies.set(VISITOR_COOKIE, visitorId, {
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: '/',
+      sameSite: 'lax',
+    });
+  }
 
   // Check if the path starts with /dashboard
   if (pathname.startsWith('/dashboard')) {
@@ -34,7 +52,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
       // Otherwise, allow access to login page
-      return NextResponse.next();
+      return response ?? NextResponse.next();
     }
 
     // For all other dashboard routes, check authentication
@@ -49,10 +67,10 @@ export function middleware(request: NextRequest) {
     }
 
     // Token exists and has valid format, allow access
-    return NextResponse.next();
+    return response ?? NextResponse.next();
   }
 
-  return NextResponse.next();
+  return response ?? NextResponse.next();
 }
 
 export const config = {

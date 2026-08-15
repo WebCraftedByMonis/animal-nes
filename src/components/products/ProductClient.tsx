@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
 import BuyNowButton from '@/components/BuyNowButton';
 import WishlistButton from '@/components/WishlistButton';
 import ShareButton from '@/components/ShareButton';
 import { useCountry, Country } from '@/contexts/CountryContext';
+import { track } from '@/lib/trackingClient';
 
 interface Discount {
   id: number;
@@ -64,6 +65,13 @@ export default function ProductClient({ product }: { product: ProductData }) {
     product.variants[0]?.id || 0
   );
   const { country, setCountry, currencySymbol } = useCountry();
+
+  // Fires per real browser visit — this page is ISR-cached, so tracking
+  // can't happen server-side during render without undercounting views.
+  useEffect(() => {
+    track('PRODUCT_VIEW', { productId: product.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   const productCountry = resolveProductCountry(product.company, product.partner);
 
@@ -169,6 +177,7 @@ export default function ProductClient({ product }: { product: ProductData }) {
               <ShareButton
                 title={product.productName}
                 text={product.genericName ? `${product.productName} - ${product.genericName}` : product.productName}
+                productId={product.id}
               />
             </>
           ) : (

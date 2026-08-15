@@ -8,6 +8,7 @@ import { CartItem, Discount } from '../../../types/cart'
 import { AnimalCartItem } from '../../../types/animal'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
 import { getWhatsAppUrl } from '@/lib/whatsapp-utils'
+import { track } from '@/lib/trackingClient'
 
 interface CheckoutProps {
     cartItems: CartItem[]
@@ -98,6 +99,12 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
     useEffect(() => {
         const saved = localStorage.getItem('selectedCountry') as CountryKey | null
         if (saved && saved in COUNTRY_CONFIG) setCountry(saved)
+    }, [])
+
+    // Central event tracking — fires once when the checkout page is reached.
+    useEffect(() => {
+        track('CHECKOUT_START', { metadata: { itemCount: cartItems.length + animalCartItems.length } })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleCountryChange = (value: CountryKey) => {
