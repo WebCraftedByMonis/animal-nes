@@ -60,6 +60,15 @@ export default function AffiliateDashboardPage() {
   const [payoutAmount, setPayoutAmount] = useState('');
   const [payoutMsg, setPayoutMsg] = useState('');
 
+  const [payoutDetails, setPayoutDetails] = useState({
+    paymentMethod: '',
+    bankName: '',
+    accountTitle: '',
+    accountNumber: '',
+  });
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [searching, setSearching] = useState(false);
+
   const loadAll = useCallback(async () => {
     const authRes = await fetch('/api/affiliate/check-auth', { credentials: 'include' });
     if (!authRes.ok) {
@@ -69,6 +78,12 @@ export default function AffiliateDashboardPage() {
     const authData = await authRes.json();
     setAffiliate(authData.affiliate);
     setStats(authData.stats);
+    setPayoutDetails({
+      paymentMethod: authData.affiliate.paymentMethod || '',
+      bankName: authData.affiliate.bankName || '',
+      accountTitle: authData.affiliate.accountTitle || '',
+      accountNumber: authData.affiliate.accountNumber || '',
+    });
 
     const linksRes = await fetch('/api/affiliate/links', { credentials: 'include' });
     if (linksRes.ok) {
@@ -82,20 +97,22 @@ export default function AffiliateDashboardPage() {
     loadAll();
   }, [loadAll]);
 
-  useEffect(() => {
+  const runSearch = async () => {
     if (query.trim().length < 2) {
       setResults([]);
       return;
     }
-    const t = setTimeout(async () => {
+    setSearching(true);
+    try {
       const res = await fetch(`/api/affiliate/product-search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         const data = await res.json();
         setResults(data.products);
       }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [query]);
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const handleCreateLink = async () => {
     setCreating(true);
@@ -126,6 +143,27 @@ export default function AffiliateDashboardPage() {
     });
   };
 
+  const savePayoutDetails = async () => {
+    setSavingDetails(true);
+    try {
+      const res = await fetch('/api/affiliate/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payoutDetails),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAffiliate((prev) => (prev ? { ...prev, ...data.affiliate } : prev));
+        setPayoutMsg('Payout details saved.');
+      } else {
+        setPayoutMsg('Failed to save payout details');
+      }
+    } finally {
+      setSavingDetails(false);
+    }
+  };
+
   const handleRequestPayout = async () => {
     setPayoutMsg('');
     const amount = Number(payoutAmount);
@@ -133,11 +171,15 @@ export default function AffiliateDashboardPage() {
       setPayoutMsg('Enter a valid amount');
       return;
     }
+    if (!payoutDetails.accountTitle || !payoutDetails.accountNumber || !payoutDetails.bankName || !payoutDetails.paymentMethod) {
+      setPayoutMsg('Fill in your payout account details first');
+      return;
+    }
     const res = await fetch('/api/affiliate/payouts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ amount, ...payoutDetails }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -212,15 +254,27 @@ export default function AffiliateDashboardPage() {
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 relative">
               <Label htmlFor="productQuery">Product (leave blank for a general homepage link)</Label>
-              <Input
-                id="productQuery"
-                placeholder="Search a product…"
-                value={selectedProduct ? selectedProduct.productName : query}
-                onChange={(e) => {
-                  setSelectedProduct(null);
-                  setQuery(e.target.value);
-                }}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="productQuery"
+                  placeholder="Search a product…"
+                  value={selectedProduct ? selectedProduct.productName : query}
+                  onChange={(e) => {
+                    setSelectedProduct(null);
+                    setResults([]);
+                    setQuery(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      runSearch();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={runSearch} disabled={searching}>
+                  {searching ? 'Searching…' : 'Search'}
+                </Button>
+              </div>
               {results.length > 0 && !selectedProduct && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-800 border rounded-lg shadow-lg max-h-56 overflow-auto">
                   {results.map((p) => (
@@ -285,30 +339,67 @@ export default function AffiliateDashboardPage() {
           )}
         </div>
 
-        {/* Payout request */}
+        {/* Payout details + request */}
         <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Request a payout</h2>
-          {(!affiliate.accountTitle || !affiliate.accountNumber || !affiliate.bankName || !affiliate.paymentMethod) && (
-            <p className="text-sm text-amber-600 mb-3">
-              Add your payout details from your profile before requesting a payout.
-            </p>
-          )}
-          <div className="flex gap-3 items-end">
+          <h2 className="font-semibold mb-3">Payout details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             <div>
-              <Label htmlFor="payoutAmount">Amount</Label>
+              <Label htmlFor="paymentMethod">Payment method</Label>
               <Input
-                id="payoutAmount"
-                type="number"
-                min={0}
-                value={payoutAmount}
-                onChange={(e) => setPayoutAmount(e.target.value)}
+                id="paymentMethod"
+                placeholder="bank_transfer / jazzcash / easypaisa"
+                value={payoutDetails.paymentMethod}
+                onChange={(e) => setPayoutDetails((p) => ({ ...p, paymentMethod: e.target.value }))}
               />
             </div>
-            <Button onClick={handleRequestPayout} className="bg-green-600 hover:bg-green-700">
-              Request payout
-            </Button>
+            <div>
+              <Label htmlFor="bankName">Bank / provider</Label>
+              <Input
+                id="bankName"
+                value={payoutDetails.bankName}
+                onChange={(e) => setPayoutDetails((p) => ({ ...p, bankName: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="accountTitle">Account title</Label>
+              <Input
+                id="accountTitle"
+                value={payoutDetails.accountTitle}
+                onChange={(e) => setPayoutDetails((p) => ({ ...p, accountTitle: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="accountNumber">Account number</Label>
+              <Input
+                id="accountNumber"
+                value={payoutDetails.accountNumber}
+                onChange={(e) => setPayoutDetails((p) => ({ ...p, accountNumber: e.target.value }))}
+              />
+            </div>
           </div>
-          {payoutMsg && <p className="text-sm mt-2 text-muted-foreground">{payoutMsg}</p>}
+          <Button variant="outline" onClick={savePayoutDetails} disabled={savingDetails}>
+            {savingDetails ? 'Saving…' : 'Save payout details'}
+          </Button>
+
+          <div className="border-t mt-6 pt-5">
+            <h3 className="font-semibold mb-3">Request a payout</h3>
+            <div className="flex gap-3 items-end">
+              <div>
+                <Label htmlFor="payoutAmount">Amount</Label>
+                <Input
+                  id="payoutAmount"
+                  type="number"
+                  min={0}
+                  value={payoutAmount}
+                  onChange={(e) => setPayoutAmount(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleRequestPayout} className="bg-green-600 hover:bg-green-700">
+                Request payout
+              </Button>
+            </div>
+            {payoutMsg && <p className="text-sm mt-2 text-muted-foreground">{payoutMsg}</p>}
+          </div>
         </div>
       </div>
     </div>

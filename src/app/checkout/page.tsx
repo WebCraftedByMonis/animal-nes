@@ -62,6 +62,16 @@ export default async function CheckoutPage() {
     }
   }) : []
 
+  // [checkout-debug] Flag anything that would blow up the checkout API
+  // before it even gets there — e.g. a variant with no customerPrice.
+  for (const item of cartItems) {
+    if (!item.product || !item.variant) {
+      console.error('[checkout-debug] cart item missing product/variant relation:', item.id)
+    } else if (item.variant.customerPrice == null) {
+      console.error(`[checkout-debug] product ${item.product.id} (${item.product.productName}) variant ${item.variant.id} (${item.variant.packingVolume}) has no customerPrice`)
+    }
+  }
+
   // Merge company-level discounts into cart items
   const cartItemsWithDiscounts = cartItems.map(item => {
     if (item.product) {

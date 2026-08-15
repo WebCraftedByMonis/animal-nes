@@ -109,6 +109,20 @@ export default function CartClient({ cartItems }: CartClientProps) {
     }
   }, [])
 
+  // [cart-debug] If a specific product isn't rendering, this flags exactly
+  // which cart item is missing data that the render below assumes exists
+  // (item.variant.customerPrice is a required `number` in this file's types,
+  // but it's nullable in the DB — a null here will throw on .toLocaleString()).
+  useEffect(() => {
+    for (const item of cartItems) {
+      if (!item.product || !item.variant) {
+        console.error('[cart-debug] cart item missing product/variant:', item.id)
+      } else if (item.variant.customerPrice == null) {
+        console.error(`[cart-debug] product "${item.product.productName}" (id ${item.product.id}) variant ${item.variant.id} has no customerPrice — this will crash the price render`)
+      }
+    }
+  }, [cartItems])
+
   const updateQuantity = async (id: number, newQuantity: string) => {
     // Parse the quantity and validate
     const quantity = parseInt(newQuantity)

@@ -25,6 +25,15 @@ export default function CartPage() {
       fetch('/api/cart')
         .then(res => res.json())
         .then(data => {
+          // [cart-debug] console.log is stripped from production builds
+          // (see next.config.ts) — use console.error so this survives.
+          console.error('[cart-debug] fetched cart:', (data.cart || []).map((item: any) => ({
+            id: item.id,
+            productId: item?.product?.id,
+            productName: item?.product?.productName,
+            variantId: item?.variant?.id,
+            customerPrice: item?.variant?.customerPrice,
+          })))
           setCartItems(data.cart || [])
           setLoading(false)
         })

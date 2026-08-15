@@ -147,6 +147,22 @@ export async function POST(req: NextRequest) {
     paymentScreenshotPublicId,
   } = body
 
+  // [checkout-debug] Dump what actually arrived before touching it — this is
+  // the fastest way to spot a malformed item (missing product/variant,
+  // null customerPrice, etc.) that would otherwise blow up the loop below
+  // with a generic 500 and no indication of which product caused it.
+  console.error('[checkout-debug] incoming cart:', JSON.stringify(
+    (cart || []).map((item: any) => ({
+      productId: item?.product?.id ?? 'MISSING_PRODUCT',
+      productName: item?.product?.productName,
+      variantId: item?.variant?.id ?? 'MISSING_VARIANT',
+      customerPrice: item?.variant?.customerPrice,
+      companyId: item?.product?.companyId,
+      quantity: item?.quantity,
+    }))
+  ))
+  console.error('[checkout-debug] incoming animalCart count:', (animalCart || []).length)
+
   try {
     // ✅ Always use the fixed shipping charge from frontend (e.g., 350)
     const validatedShippingCharge = shippingCharges
@@ -156,7 +172,13 @@ export async function POST(req: NextRequest) {
 
     // Calculate product subtotal with discounts
     for (const item of cart) {
+      if (!item?.product || !item?.variant) {
+        console.error('[checkout-debug] cart item missing product/variant — this is the item that will crash checkout:', JSON.stringify(item))
+      }
       const originalPrice = item.variant.customerPrice
+      if (originalPrice == null) {
+        console.error(`[checkout-debug] product ${item?.product?.id} (${item?.product?.productName}) variant ${item?.variant?.id} has no customerPrice`)
+      }
       const companyId = item.product.companyId
       const discount = await getActiveDiscountForItem(item.product.id, item.variant.id, companyId)
       const finalPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
@@ -392,7 +414,10 @@ export async function POST(req: NextRequest) {
       shippingCharges: validatedShippingCharge
     })
   } catch (error) {
-    console.error('Checkout error:', error)
+    console.error('[checkout-debug] Checkout error:', error instanceof Error ? error.stack : error)
+    console.error('[checkout-debug] Checkout error occurred for cart:', JSON.stringify(
+      (cart || []).map((item: any) => ({ productId: item?.product?.id, variantId: item?.variant?.id }))
+    ))
     return NextResponse.json({ error: 'Failed to process order' }, { status: 500 })
   }
 }

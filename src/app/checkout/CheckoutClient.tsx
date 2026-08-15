@@ -167,6 +167,22 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
 
         setLoading(true)
 
+        // [checkout-debug] Log exactly what's being submitted — if a
+        // particular product is failing, this shows whether the bad data is
+        // already here on the client (missing product/variant/price) before
+        // it even reaches the server.
+        // Using console.error (not .log) here on purpose — next.config.ts
+        // strips console.log from production builds, but keeps .error/.warn,
+        // so this is the only way these show up once you rebuild+deploy.
+        console.error('[checkout-debug] submitting cart:', cartItems.map((item: any) => ({
+            productId: item?.product?.id,
+            productName: item?.product?.productName,
+            variantId: item?.variant?.id,
+            customerPrice: item?.variant?.customerPrice,
+            quantity: item?.quantity,
+        })))
+        console.error('[checkout-debug] submitting animalCart count:', animalCartItems.length, 'total:', total)
+
         const res = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -190,8 +206,13 @@ export default function CheckoutClient({ cartItems, animalCartItems }: CheckoutP
 
         setLoading(false)
 
-        if (res.ok) router.push('/thankyou')
-        else alert('Checkout failed. Please try again.')
+        if (res.ok) {
+            router.push('/thankyou')
+        } else {
+            const errorBody = await res.json().catch(() => null)
+            console.error('[checkout-debug] checkout request failed:', res.status, errorBody)
+            alert(errorBody?.error || 'Checkout failed. Please try again.')
+        }
     }
 
     return (

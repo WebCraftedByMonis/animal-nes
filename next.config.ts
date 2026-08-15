@@ -31,8 +31,10 @@ eslint: {
 
   // Target modern browsers to reduce polyfills
   compiler: {
-    // Remove console.log in production
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Strip console.log/info/debug in production, but keep console.error and
+    // console.warn — otherwise diagnostic logging (and every existing
+    // console.error in API routes) is silently dropped from prod builds too.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
   // Optimize for modern browsers

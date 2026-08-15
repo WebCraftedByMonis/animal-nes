@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { productId, variantId } = await req.json()
+  console.error('[cart-debug] add-to-cart request:', { productId, variantId, user: session.user.email })
 
   try {
     const user = await prisma.user.findUnique({
@@ -28,11 +29,13 @@ export async function POST(req: NextRequest) {
     })
 
     if (!variant) {
+      console.error(`[cart-debug] add-to-cart failed: variant ${variantId} not found`)
       return NextResponse.json({ message: 'Product variant not found' }, { status: 404 })
     }
 
     // Verify the variant belongs to the specified product
     if (variant.productId !== productId) {
+      console.error(`[cart-debug] add-to-cart failed: variant ${variantId} belongs to product ${variant.productId}, not requested product ${productId}`)
       return NextResponse.json({ message: 'Invalid product-variant combination' }, { status: 400 })
     }
 
@@ -64,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'Added to cart' }, { status: 200 })
   } catch (error) {
-    console.error(error)
+    console.error('[cart-debug] add-to-cart error for', { productId, variantId }, ':', error instanceof Error ? error.stack : error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }
