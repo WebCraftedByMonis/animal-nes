@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { toProductUrl } from '@/lib/slug-utils';
 import { trackEvent, getSessionIdFromRequest } from '@/lib/tracking';
 import { getAffiliateSettings } from '@/lib/affiliateLedger';
+import { getSiteUrl } from '@/lib/site-url';
 
 const ATTRIBUTION_COOKIE = 'aw_aff';
 
@@ -27,7 +28,7 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params;
-  const baseUrl = req.nextUrl.origin;
+  const baseUrl = getSiteUrl();
 
   const link = await prisma.affiliateLink.findUnique({
     where: { code },

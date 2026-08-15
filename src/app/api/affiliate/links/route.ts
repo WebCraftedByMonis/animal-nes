@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { validateAffiliateSession } from '@/lib/auth/affiliate-auth';
 import { toProductUrl } from '@/lib/slug-utils';
+import { getSiteUrl } from '@/lib/site-url';
 
 async function requireAffiliate(request: NextRequest) {
   const token = request.cookies.get('affiliate-token')?.value;
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     link: {
       id: link.id,
       code: link.code,
-      url: `${request.nextUrl.origin}/go/${link.code}`,
+      url: `${getSiteUrl()}/go/${link.code}`,
       targetPath: link.targetPath,
       productId: link.productId,
       label: link.label,
