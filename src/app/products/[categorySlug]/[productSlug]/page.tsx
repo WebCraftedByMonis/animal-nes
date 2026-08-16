@@ -166,7 +166,10 @@ export default async function ProductPage({
 }) {
   const { categorySlug, productSlug } = await params
   const numId = extractIdFromProductSlug(productSlug)
-  if (!numId) return notFound()
+  if (!numId) {
+    console.error(`[product-page-debug] could not extract an id from slug "${productSlug}"`)
+    return notFound()
+  }
 
   let data: Awaited<ReturnType<typeof getProduct>>
   let reviews: any[]
@@ -180,11 +183,15 @@ export default async function ProductPage({
         take: 10,
       }),
     ])
-  } catch {
+  } catch (error) {
+    console.error(`[product-page-debug] query threw for product id ${numId} (slug "${productSlug}"):`, error instanceof Error ? error.stack : error)
     return notFound()
   }
 
-  if (!data || !data.isActive) return notFound()
+  if (!data || !data.isActive) {
+    console.error(`[product-page-debug] 404 for product id ${numId} (slug "${productSlug}"): ${!data ? 'no such product' : `isActive=${data.isActive}, approvalStatus=${data.approvalStatus}, category="${data.category}"`}`)
+    return notFound()
+  }
 
   // Canonical enforcement: if category slug in URL doesn't match product's category,
   // the page still renders (no redirect) but the canonical tag points to the correct URL.
