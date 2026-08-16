@@ -330,10 +330,16 @@ export async function GET(req: NextRequest) {
   const noImage = searchParams.get('noImage') === 'true'
   const noDescription = searchParams.get('noDescription') === 'true'
 
+  // This same endpoint is also used by admin/internal tooling (product
+  // management, order lookups, discount setup, extractors) that need to see
+  // inactive/pending products, so it can't filter by default. Only the
+  // public storefront listing passes publicOnly=true.
+  const publicOnly = searchParams.get('publicOnly') === 'true'
+
   // Build where clause
-  const where: any = {
-     // Always filter for active products
-  }
+  const where: any = publicOnly
+    ? { isActive: true, approvalStatus: 'APPROVED' }
+    : {}
 
   // Country filter - filter by company's country
   if (country && country !== 'all') {

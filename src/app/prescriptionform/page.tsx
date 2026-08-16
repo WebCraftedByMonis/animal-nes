@@ -99,7 +99,7 @@ function MedicineNameInput({
     }
     setLoadingSuggestions(true)
     try {
-      const params = new URLSearchParams({ search: query, page: '1', limit: '6' })
+      const params = new URLSearchParams({ search: query, page: '1', limit: '6', publicOnly: 'true' })
       const res = await fetch(`/api/product?${params}`)
       const data = await res.json()
       if (res.ok && data.data) {

@@ -203,6 +203,7 @@ export default function ProductsClient() {
     try {
       const { data } = await axios.get('/api/product', {
         params: {
+          publicOnly: true,
           search: search || undefined,
           sortBy,
           sortOrder,

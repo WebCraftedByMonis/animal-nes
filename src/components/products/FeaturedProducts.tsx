@@ -26,7 +26,7 @@ export default function FeaturedProducts() {
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const { data } = await axios.get('/api/product')
+        const { data } = await axios.get('/api/product', { params: { publicOnly: true } })
         console.log(data)
         const featuredProducts = data.data.filter((product: Product) => 
           product.isFeatured && product.isActive
