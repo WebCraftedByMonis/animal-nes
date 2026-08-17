@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { toProductUrl } from '@/lib/slug-utils'
+import { track } from '@/lib/trackingClient'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
@@ -118,7 +119,7 @@ export default function ProductsClient() {
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '')
   const [search, setSearch] = useState(searchParams.get('search') || '')
 
-  const [sortBy, setSortBy] = useState<'createdAt' | 'productName'>((searchParams.get('sortBy') as 'createdAt' | 'productName') || 'createdAt')
+  const [sortBy, setSortBy] = useState<'relevance' | 'createdAt' | 'productName'>((searchParams.get('sortBy') as 'relevance' | 'createdAt' | 'productName') || 'relevance')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc')
   const [limit, setLimit] = useState(Number(searchParams.get('limit')) || 16)
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
@@ -180,7 +181,7 @@ export default function ProductsClient() {
 
     if (p > 1) urlParams.set('page', String(p))
     if (s) urlParams.set('search', s)
-    if (sb !== 'createdAt') urlParams.set('sortBy', sb)
+    if (sb !== 'relevance') urlParams.set('sortBy', sb)
     if (so !== 'desc') urlParams.set('sortOrder', so)
     if (l !== 16) urlParams.set('limit', String(l))
     if (cat !== 'all') urlParams.set('category', cat)
@@ -250,10 +251,17 @@ export default function ProductsClient() {
     fetchProducts()
   }, [fetchProducts])
 
+  // One impression per product shown on this page of results — feeds the
+  // ranking engine's CTR/relevance signals (see src/lib/ranking.ts).
+  useEffect(() => {
+    products.forEach((product) => track('PRODUCT_IMPRESSION', { productId: product.id }))
+  }, [products])
+
   const handleSearch = () => {
     setSearch(searchInput)
     setPage(1)
     updateURL({ page: 1, search: searchInput })
+    if (searchInput.trim()) track('SEARCH', { searchQuery: searchInput.trim() })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -271,7 +279,7 @@ export default function ProductsClient() {
 
   const handleSortChange = (value: string) => {
     const [field, order] = value.split('-')
-    setSortBy(field as 'createdAt' | 'productName')
+    setSortBy(field as 'relevance' | 'createdAt' | 'productName')
     setSortOrder(order as 'asc' | 'desc')
     setPage(1)
     updateURL({ page: 1, sortBy: field, sortOrder: order })
@@ -344,6 +352,7 @@ export default function ProductsClient() {
   }
 
   const navigateToProduct = (p: Product) => {
+    track('PRODUCT_CLICK', { productId: p.id })
     router.push(toProductUrl(p))
   }
 
@@ -522,6 +531,7 @@ export default function ProductsClient() {
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="relevance-desc">Recommended</SelectItem>
             <SelectItem value="createdAt-desc">Latest</SelectItem>
             <SelectItem value="createdAt-asc">Oldest</SelectItem>
             <SelectItem value="productName-asc">A - Z</SelectItem>
@@ -652,6 +662,7 @@ export default function ProductsClient() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="relevance-desc">Recommended</SelectItem>
               <SelectItem value="createdAt-desc">Latest</SelectItem>
               <SelectItem value="createdAt-asc">Oldest</SelectItem>
               <SelectItem value="productName-asc">A - Z</SelectItem>

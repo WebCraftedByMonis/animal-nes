@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validateCompanySession } from '@/lib/auth/company-auth';
 import { createPendingProductSubmission } from '@/lib/productSubmission';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest) {
     const companyId = await getCompanyFromSession();
     if (!companyId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { allowed } = await checkRateLimit(`product-submit:company:${companyId}`, 20, 60 * 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many submissions this hour. Please try again later.' },
+        { status: 429 }
+      );
     }
 
     const formData = await request.formData();

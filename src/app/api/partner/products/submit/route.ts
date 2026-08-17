@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validatePartnerSession } from '@/lib/auth/partner-auth';
 import { createPendingProductSubmission } from '@/lib/productSubmission';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest) {
     const partnerId = await getPartnerFromSession();
     if (!partnerId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { allowed } = await checkRateLimit(`product-submit:partner:${partnerId}`, 20, 60 * 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many submissions this hour. Please try again later.' },
+        { status: 429 }
+      );
     }
 
     const formData = await request.formData();

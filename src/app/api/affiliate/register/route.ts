@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, generateReferralCode } from '@/lib/auth/affiliate-auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 const registerSchema = z.object({
   name: z.string().min(1),
@@ -20,6 +21,15 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed } = await checkRateLimit(`affiliate-register:${ip}`, 5, 60 * 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many sign-up attempts from this device. Please try again in an hour.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const validation = registerSchema.safeParse(body);
 

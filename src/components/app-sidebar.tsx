@@ -35,7 +35,8 @@ import {
   Star,
   ScanSearch,
   Link2,
-  BarChart3
+  BarChart3,
+  TrendingUp
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -423,6 +424,16 @@ export function AppSidebar() {
                   <Link href="/dashboard/analytics">
                     <BarChart3 className="w-4 h-4" />
                     <span className="hover:text-green-500">Analytics</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Ranking Settings */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/ranking-settings">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="hover:text-green-500">Ranking Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

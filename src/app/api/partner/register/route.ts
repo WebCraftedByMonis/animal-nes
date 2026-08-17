@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { uploadImage } from '@/lib/cloudinary';
 import { hashPassword } from '@/lib/auth/partner-auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -56,6 +57,15 @@ async function handleImageUpload(image: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed } = await checkRateLimit(`vendor-register:${ip}`, 5, 60 * 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many sign-up attempts from this device. Please try again in an hour.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const validation = registerVendorSchema.safeParse(body);
 

@@ -405,9 +405,14 @@ export async function GET(req: NextRequest) {
     ]
   }
 
-  // Build orderBy
+  // Build orderBy. 'relevance' (the storefront's default sort — see
+  // ProductsClient.tsx) uses the ranking engine's score (src/lib/ranking.ts)
+  // instead of plain recency. isFeatured always wins first so admin can
+  // still manually pin a product to the top regardless of its score.
   let orderBy: any = {}
-  if (sortBy === 'createdAt') {
+  if (sortBy === 'relevance') {
+    orderBy = [{ isFeatured: 'desc' }, { rankingScore: 'desc' }, { createdAt: 'desc' }]
+  } else if (sortBy === 'createdAt') {
     orderBy = { createdAt: sortOrder }
   } else if (sortBy === 'productName') {
     orderBy = { productName: sortOrder }

@@ -54,6 +54,11 @@ model Product {
   approvalStatus   ProductApprovalStatus @default(APPROVED)
   rejectionReason  String?               @db.Text
   submittedByRole  String?               @default("ADMIN") // ADMIN | COMPANY | PARTNER
+  // Precomputed by compute-rankings.js (nightly cron, mirrors generate-
+  // sitemaps.js) from TrackingEvent + order + review signals, weighted by
+  // RankingSettings. Never written by request-time code — see src/lib/ranking.ts.
+  rankingScore          Float     @default(0)
+  rankingScoreUpdatedAt DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   variants       ProductVariant[]
@@ -73,6 +78,7 @@ model Product {
   @@index([isActive, isFeatured, createdAt])
   @@index([isActive, category])
   @@index([approvalStatus])
+  @@index([isActive, rankingScore])
 }
 
 enum ProductApprovalStatus {
@@ -1743,4 +1749,27 @@ model TrackingEvent {
   @@index([productId])
   @@index([sessionId])
   @@index([affiliateLinkId])
+}
+
+// ============================================
+// RANKING ENGINE
+// ============================================
+// Single-row config (always id=1) editable from /dashboard/ranking-settings.
+// Weights don't have to sum to 100 — compute-rankings.js normalizes them —
+// but the admin UI nudges toward that so the percentages stay meaningful.
+model RankingSettings {
+  id                     Int      @id @default(1)
+  relevanceWeight        Float    @default(30) // recent impressions/views — how much visitors engage with it
+  conversionWeight       Float    @default(20) // purchases per view
+  ctrWeight              Float    @default(15) // clicks per impression on listing pages
+  salesVelocityWeight    Float    @default(10) // units sold, last 30 days
+  freshnessWeight        Float    @default(10) // newer products score higher
+  sellerQualityWeight    Float    @default(5)  // premium partner standing
+  reviewsWeight          Float    @default(5)  // average approved rating
+  explorationWeight      Float    @default(5)  // small random boost so low-data products still surface
+  newProductBoostEnabled Boolean  @default(true)
+  newVendorBoostEnabled  Boolean  @default(true)
+  boostDurationDays      Int      @default(14)
+  boostMultiplier        Float    @default(1.5)
+  updatedAt              DateTime @updatedAt
 }
