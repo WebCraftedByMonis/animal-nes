@@ -303,6 +303,52 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+// Weighted, multi-field relevance score for one candidate against a search
+// query — exact/prefix/whole-word matches on the product name count for far
+// more than an incidental substring hit buried in a description. Ties are
+// broken by the ranking engine's score (src/lib/ranking.ts) at the call
+// site, so among equally relevant matches the more popular one wins — the
+// same "text relevance + behavioral signals" combination the guide's
+// Search Engine section describes.
+function scoreSearchMatch(
+  product: {
+    productName: string
+    genericName: string | null
+    category?: string | null
+    subCategory?: string | null
+    subsubCategory?: string | null
+    productType?: string | null
+  },
+  query: string
+): number {
+  const name = product.productName.toLowerCase()
+  const generic = (product.genericName || '').toLowerCase()
+  const categoryFields = [product.category, product.subCategory, product.subsubCategory, product.productType]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+  const q = query.toLowerCase().trim()
+  if (!q) return 0
+
+  if (name === q) return 100
+  if (name.startsWith(q)) return 60
+  if (name.includes(q)) return 40
+
+  const tokens = q.split(/\s+/).filter(Boolean)
+  let score = 0
+  for (const token of tokens) {
+    if (name.includes(token)) score += 20
+    if (generic.includes(token)) score += 10
+    // A category match ("vaccine" → category "Vaccines & Immunologicals")
+    // is a strong topical signal even when the product's own name doesn't
+    // mention the word at all.
+    if (categoryFields.includes(token)) score += 15
+  }
+  // Matched the DB-level filter (e.g. via description/dosage) but none of
+  // the above — still a real match, just the lowest tier.
+  return score > 0 ? score : 5
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   
@@ -348,7 +394,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Search filter - searches across multiple fields
+  // Search filter - searches across multiple fields, including category
+  // fields so e.g. searching "vaccine" also surfaces products filed under
+  // a "Vaccines & Immunologicals" category even if the product's own name
+  // doesn't contain the word (see scoreSearchMatch for how these rank).
   // In MySQL, contains is case-insensitive by default
   if (search) {
     where.OR = [
@@ -356,6 +405,10 @@ export async function GET(req: NextRequest) {
       { genericName: { contains: search } },
       { description: { contains: search } },
       { dosage: { contains: search } },
+      { category: { contains: search } },
+      { subCategory: { contains: search } },
+      { subsubCategory: { contains: search } },
+      { productType: { contains: search } },
     ]
   }
 
@@ -421,29 +474,78 @@ export async function GET(req: NextRequest) {
   try {
     // Execute queries
     const now = new Date()
-    const [items, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-        include: {
-          company: true,
-          partner: true,
-          image: true,
-          pdf: true,
-          variants: true,
-          discounts: {
-            where: {
-              isActive: true,
-              startDate: { lte: now },
-              endDate: { gte: now }
-            }
-          }
-        }
-      }),
-      prisma.product.count({ where })
-    ])
+
+    // Relevance-ranked search: a plain ORDER BY can't express "the best
+    // text match comes first," so when a search term is active we rank the
+    // DB-level matches ourselves (see scoreSearchMatch above) and paginate
+    // the ranked list, instead of pagination + sort happening in one SQL
+    // query. Skipped for the rare admin-only quality-filter combo (data
+    // cleanup tooling, never used alongside a real customer search), and
+    // skipped if the caller explicitly asked for a different sort (e.g. a
+    // visitor searches, then deliberately picks "Latest" — that choice
+    // should win over relevance, not get silently overridden).
+    const requestedSortBy = searchParams.get('sortBy')
+    const useRelevanceRanking =
+      !!search && !noPrice && !noImage && !noDescription && (!requestedSortBy || requestedSortBy === 'relevance')
+
+    const discountInclude = {
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+    }
+    const fullInclude = {
+      company: true,
+      partner: true,
+      image: true,
+      pdf: true,
+      variants: true,
+      discounts: { where: discountInclude },
+    }
+
+    let items: any[]
+    let total: number
+
+    if (useRelevanceRanking) {
+      const [candidates, candidateTotal] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          select: {
+            id: true,
+            productName: true,
+            genericName: true,
+            category: true,
+            subCategory: true,
+            subsubCategory: true,
+            productType: true,
+            rankingScore: true,
+          },
+          orderBy: { rankingScore: 'desc' }, // keeps the most-popular subset if we hit the cap below
+          take: 1000, // safety cap against a pathologically broad search term
+        }),
+        prisma.product.count({ where }),
+      ])
+
+      const ranked = candidates
+        .map((c) => ({ id: c.id, score: scoreSearchMatch(c, search), rankingScore: c.rankingScore }))
+        .sort((a, b) => b.score - a.score || b.rankingScore - a.rankingScore)
+
+      const pageIds = ranked.slice(skip, skip + limit).map((r) => r.id)
+      const orderIndex = new Map(pageIds.map((id, i) => [id, i]))
+
+      const pageItems = pageIds.length
+        ? await prisma.product.findMany({ where: { id: { in: pageIds } }, include: fullInclude })
+        : []
+
+      // findMany with `id: { in }` doesn't preserve input order — restore
+      // the relevance ranking we just computed.
+      items = pageItems.sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0))
+      total = candidateTotal
+    } else {
+      ;[items, total] = await Promise.all([
+        prisma.product.findMany({ where, orderBy, skip, take: limit, include: fullInclude }),
+        prisma.product.count({ where }),
+      ])
+    }
 
     // Fetch company-level discounts for all companies in the results
     const companyIds = [...new Set(items.map(p => p.companyId).filter(Boolean))]
