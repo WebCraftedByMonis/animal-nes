@@ -1,4 +1,4 @@
-import { createClient, type RedisClientType } from 'redis'
+import { getConnectedRedisClient } from './redisClient'
 
 // Rate limiting for public, unauthenticated-or-lightly-authenticated forms
 // (vendor sign-up, product submissions, affiliate sign-up). Uses the Redis
@@ -8,46 +8,6 @@ import { createClient, type RedisClientType } from 'redis'
 // Fails OPEN: if Redis is unreachable, requests are allowed through. A rate
 // limiter being temporarily down should never stop a real person from
 // signing up — it only exists to slow down floods, not to gate the feature.
-
-let client: RedisClientType | null = null
-let connectPromise: Promise<void> | null = null
-
-function getClient(): RedisClientType | null {
-  const redisUrl = process.env.REDIS_URL
-  if (!redisUrl) return null
-
-  if (!client) {
-    // .env stores REDIS_URL as "host:port" (no redis:// prefix) with the
-    // password in a separate REDIS_TOKEN var, Redis Cloud style.
-    const [host, portStr] = redisUrl.split(':')
-    client = createClient({
-      socket: { host, port: Number(portStr) },
-      password: process.env.REDIS_TOKEN,
-    })
-    client.on('error', (err) => console.error('[RateLimit] Redis client error:', err.message))
-  }
-  return client
-}
-
-async function ensureConnected(): Promise<RedisClientType | null> {
-  const c = getClient()
-  if (!c) return null
-
-  if (!c.isOpen) {
-    if (!connectPromise) {
-      connectPromise = c.connect().then(
-        () => undefined,
-        (err) => {
-          console.error('[RateLimit] Redis connect failed:', err.message)
-          connectPromise = null
-        }
-      )
-    }
-    await connectPromise
-  }
-
-  return c.isOpen ? c : null
-}
 
 /**
  * Fixed-window rate limit. `key` should already be unique to the action +
@@ -59,7 +19,7 @@ export async function checkRateLimit(
   windowSeconds: number
 ): Promise<{ allowed: boolean; remaining: number }> {
   try {
-    const c = await ensureConnected()
+    const c = await getConnectedRedisClient()
     if (!c) return { allowed: true, remaining: limit }
 
     const redisKey = `ratelimit:${key}`

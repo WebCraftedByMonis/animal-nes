@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import ProductsClient from '@/components/ProductsClient'
 import { prisma } from '@/lib/prisma'
 import { toSlug, isValidCategory, isValidBrand, toProductUrl } from '@/lib/slug-utils'
+import { cached } from '@/lib/cache'
 
 // Never pre-render at build time — 60k product rows time out the 60s build
 // worker. Page is rendered on first request and cached by nginx/ISR.
@@ -45,40 +46,55 @@ export async function generateMetadata({
   }
 }
 
+// This page is force-dynamic (see below) — no ISR — so without caching,
+// every single visit re-ran this 5,000-row query. It only feeds an SEO nav
+// block and barely changes minute to minute, so a 30-minute Redis cache
+// (same window the homepage's ISR already uses) turns "every request hits
+// the DB" into "one request every 30 minutes does."
 async function getAllProducts() {
-  try {
-    return await prisma.product.findMany({
-      where: { isActive: true },
-      select: { id: true, productName: true, genericName: true, category: true },
-      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
-      take: 5000,
-    })
-  } catch {
-    return []
-  }
+  return cached('products:seo-index', 1800, async () => {
+    try {
+      return await prisma.product.findMany({
+        where: { isActive: true },
+        select: { id: true, productName: true, genericName: true, category: true },
+        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+        take: 5000,
+      })
+    } catch {
+      return []
+    }
+  })
 }
 
 async function getNavData() {
-  try {
-    const [catRows, brandRows] = await Promise.all([
-      prisma.$queryRaw<{ category: string; count: bigint }[]>`
-        SELECT category, COUNT(*) as count FROM Product
-        WHERE isActive = 1 AND category IS NOT NULL AND category != ''
-        GROUP BY category HAVING count >= 5 ORDER BY count DESC
-      `,
-      prisma.$queryRaw<{ id: number; companyName: string; count: bigint }[]>`
-        SELECT c.id, c.companyName, COUNT(p.id) as count
-        FROM Product p JOIN Company c ON p.companyId = c.id
-        WHERE p.isActive = 1
-        GROUP BY c.id, c.companyName HAVING count >= 50 ORDER BY count DESC
-      `,
-    ])
-    const categories = catRows.filter(r => isValidCategory(r.category, Number(r.count)))
-    const brands = brandRows.filter(r => isValidBrand(r.companyName, Number(r.count)))
-    return { categories, brands }
-  } catch {
-    return { categories: [], brands: [] }
-  }
+  return cached('products:nav-data', 1800, async () => {
+    try {
+      const [catRows, brandRows] = await Promise.all([
+        prisma.$queryRaw<{ category: string; count: bigint }[]>`
+          SELECT category, COUNT(*) as count FROM Product
+          WHERE isActive = 1 AND category IS NOT NULL AND category != ''
+          GROUP BY category HAVING count >= 5 ORDER BY count DESC
+        `,
+        prisma.$queryRaw<{ id: number; companyName: string; count: bigint }[]>`
+          SELECT c.id, c.companyName, COUNT(p.id) as count
+          FROM Product p JOIN Company c ON p.companyId = c.id
+          WHERE p.isActive = 1
+          GROUP BY c.id, c.companyName HAVING count >= 50 ORDER BY count DESC
+        `,
+      ])
+      // Convert BigInt -> number before this ever reaches JSON.stringify
+      // (the cache, and the eventual response) — BigInt isn't serializable.
+      const categories = catRows
+        .filter(r => isValidCategory(r.category, Number(r.count)))
+        .map(r => ({ category: r.category, count: Number(r.count) }))
+      const brands = brandRows
+        .filter(r => isValidBrand(r.companyName, Number(r.count)))
+        .map(r => ({ id: r.id, companyName: r.companyName, count: Number(r.count) }))
+      return { categories, brands }
+    } catch {
+      return { categories: [], brands: [] }
+    }
+  })
 }
 
 export default async function AllProductsPage() {

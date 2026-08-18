@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { uploadImage, uploadPDF, deleteFromCloudinary } from '@/lib/cloudinary'
 import { validateAdminSession } from '@/lib/auth/admin-auth'
+import { cached } from '@/lib/cache'
 import { z } from 'zod'
 
 // Configure route to handle larger payloads (up to 50MB)
@@ -569,16 +570,21 @@ export async function GET(req: NextRequest) {
       ]
     }))
 
-    // Get min and max prices for the price range slider
-    const priceStats = await prisma.productVariant.aggregate({
-      _min: { customerPrice: true },
-      _max: { customerPrice: true },
-      where: {
-        product: {
-          isActive: true
+    // Get min and max prices for the price range slider. This is the same
+    // catalog-wide query regardless of the current filters, so it was
+    // running on every single request — cache it instead of hitting the DB
+    // every time for a number that barely moves minute to minute.
+    const priceStats = await cached('product:price-stats', 600, () =>
+      prisma.productVariant.aggregate({
+        _min: { customerPrice: true },
+        _max: { customerPrice: true },
+        where: {
+          product: {
+            isActive: true
+          }
         }
-      }
-    })
+      })
+    )
 
     return NextResponse.json({
       data: itemsWithCompanyDiscounts,
