@@ -71,9 +71,104 @@ async function getInitialTestimonials() {
   }
 }
 
+// Real "Trending Now" — ordered by the ranking engine's score (see
+// src/lib/ranking.ts / compute-rankings.js). Replaces the old hardcoded
+// bestSellers array that never reflected the actual catalog.
+async function getTrendingProducts() {
+  try {
+    const products = await prisma.product.findMany({
+      where: { isActive: true, approvalStatus: 'APPROVED' },
+      orderBy: [{ isFeatured: 'desc' }, { rankingScore: 'desc' }, { createdAt: 'desc' }],
+      take: 8,
+      include: {
+        image: true,
+        company: { select: { companyName: true } },
+        variants: { select: { customerPrice: true }, take: 1 },
+      },
+    })
+    return products.map((p) => ({
+      id: p.id,
+      productName: p.productName,
+      category: p.category,
+      image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
+      price: p.variants[0]?.customerPrice ?? null,
+      companyName: p.company?.companyName ?? null,
+    }))
+  } catch (error) {
+    console.error('Error fetching trending products:', error)
+    return []
+  }
+}
+
+async function getNewArrivals() {
+  try {
+    const products = await prisma.product.findMany({
+      where: { isActive: true, approvalStatus: 'APPROVED' },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+      include: {
+        image: true,
+        company: { select: { companyName: true } },
+        variants: { select: { customerPrice: true }, take: 1 },
+      },
+    })
+    return products.map((p) => ({
+      id: p.id,
+      productName: p.productName,
+      category: p.category,
+      image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
+      price: p.variants[0]?.customerPrice ?? null,
+      companyName: p.company?.companyName ?? null,
+    }))
+  } catch (error) {
+    console.error('Error fetching new arrivals:', error)
+    return []
+  }
+}
+
+// Companies approved/added in the last 30 days with at least one live
+// product — gives new vendors real homepage exposure instead of only a
+// score boost nobody sees (same fairness idea as the ranking engine's
+// new-vendor boost).
+async function getNewVendors() {
+  try {
+    const since = new Date()
+    since.setDate(since.getDate() - 30)
+
+    const companies = await prisma.company.findMany({
+      where: {
+        createdAt: { gte: since },
+        products: { some: { isActive: true, approvalStatus: 'APPROVED' } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      include: {
+        image: true,
+        _count: { select: { products: { where: { isActive: true, approvalStatus: 'APPROVED' } } } },
+      },
+    })
+
+    return companies.map((c) => ({
+      id: c.id,
+      companyName: c.companyName,
+      image: c.image ? { url: c.image.url } : null,
+      country: c.country,
+      productCount: c._count.products,
+    }))
+  } catch (error) {
+    console.error('Error fetching new vendors:', error)
+    return []
+  }
+}
+
 export default async function Home() {
-  // Fetch initial testimonials on the server for ISR
-  const initialTestimonials = await getInitialTestimonials()
+  // Fetch initial testimonials and homepage product sections on the server for ISR
+  const [initialTestimonials, trendingProducts, newArrivals, newVendors] = await Promise.all([
+    getInitialTestimonials(),
+    getTrendingProducts(),
+    getNewArrivals(),
+    getNewVendors(),
+  ])
 
   // Organization structured data
   const organizationData = {
@@ -121,7 +216,12 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteData) }}
       />
-      <LandingPage initialTestimonials={initialTestimonials} />
+      <LandingPage
+        initialTestimonials={initialTestimonials}
+        trendingProducts={trendingProducts}
+        newArrivals={newArrivals}
+        newVendors={newVendors}
+      />
     </div>
   );
 }

@@ -11,6 +11,14 @@ const MIME_TYPES: Record<string, string> = {
   png: 'image/png',
   webp: 'image/webp',
   gif: 'image/gif',
+  svg: 'image/svg+xml',
+  // Now also serving uploads that used to go to Cloudinary — product PDFs,
+  // sell-animal videos, payment screenshots, etc. (see src/lib/localStorage.ts)
+  pdf: 'application/pdf',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  avi: 'video/x-msvideo',
 }
 
 export async function GET(

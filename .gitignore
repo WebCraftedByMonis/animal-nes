@@ -64,3 +64,8 @@ backup.sh
 # Ignore feeds folder
 /feeds/
 nul
+
+# User-uploaded files now live on the VPS's own disk instead of Cloudinary
+# (see src/lib/localStorage.ts) — never commit them to git
+/uploads/media/*
+!/uploads/media/.gitkeep

@@ -15,6 +15,8 @@ import FullScreenSlider from "./FullScreenSlider"
 import BannerContactBar from "./BannerContactBar"
 import { useLoginModal } from "@/contexts/LoginModalContext"
 import { useCountry } from "@/contexts/CountryContext"
+import { toProductUrl } from "@/lib/slug-utils"
+import { track } from "@/lib/trackingClient"
 
 interface Testimonial {
   id: number
@@ -37,8 +39,28 @@ interface InitialTestimonialsData {
   }
 }
 
+interface ShowcaseProduct {
+  id: number
+  productName: string
+  category: string | null
+  image: { url: string; alt: string } | null
+  price: number | null
+  companyName: string | null
+}
+
+interface ShowcaseVendor {
+  id: number
+  companyName: string | null
+  image: { url: string } | null
+  country: string | null
+  productCount: number
+}
+
 interface LandingPageProps {
   initialTestimonials?: InitialTestimonialsData
+  trendingProducts?: ShowcaseProduct[]
+  newArrivals?: ShowcaseProduct[]
+  newVendors?: ShowcaseVendor[]
 }
 
 const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isUAE?: boolean }) => {
@@ -118,11 +140,71 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-export default function LandingPage({ initialTestimonials }: LandingPageProps) {
+// Shared card for any real-product homepage rail (Trending, New Arrivals,
+// Because You Viewed) — image + name + price, links to the real product
+// page, WhatsApp quick-order kept alongside since that's how most orders
+// on this site actually start.
+const ProductShowcaseCard = ({ product, isUAE }: { product: ShowcaseProduct; isUAE: boolean }) => (
+  <Link
+    href={toProductUrl(product)}
+    onClick={() => track('PRODUCT_CLICK', { productId: product.id, metadata: { source: 'homepage' } })}
+    className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200"
+  >
+    <div className="relative h-36 bg-muted flex items-center justify-center overflow-hidden">
+      {product.image ? (
+        <Image
+          src={product.image.url.replace(/^http:\/\//, 'https://')}
+          alt={product.image.alt || product.productName}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 25vw, 20vw"
+        />
+      ) : (
+        <PawPrint className="w-10 h-10 text-muted-foreground/40" />
+      )}
+    </div>
+    <div className="p-4 flex flex-col flex-1">
+      <h3 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{product.productName}</h3>
+      {product.companyName && (
+        <p className="text-xs text-muted-foreground mb-2">{product.companyName}</p>
+      )}
+      <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+        {product.price !== null ? (
+          <span className="font-bold text-sm">
+            {isUAE ? 'AED' : 'Rs.'} {product.price.toLocaleString()}
+          </span>
+        ) : <span />}
+        <a
+          href={`https://wa.me/${isUAE ? '971547478202' : '923354145431'}?text=I%20want%20to%20order%3A%20${encodeURIComponent(product.productName)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold px-3 py-2 rounded-lg text-xs transition-all duration-200 hover:scale-[1.02]"
+        >
+          <WhatsAppIcon className="w-3.5 h-3.5 fill-white" />
+          Order
+        </a>
+      </div>
+    </div>
+  </Link>
+)
+
+export default function LandingPage({ initialTestimonials, trendingProducts = [], newArrivals = [], newVendors = [] }: LandingPageProps) {
   const { data: session } = useSession()
   const { openModal } = useLoginModal()
   const { country } = useCountry()
   const isUAE = country === 'UAE'
+
+  // "Because You Viewed" — personalized, so it can't live in the ISR-cached
+  // server render like the sections above. Fetched client-side from the
+  // visitor's own anonymous session (aw_sid cookie); stays hidden entirely
+  // if they have no view history yet.
+  const [becauseYouViewed, setBecauseYouViewed] = useState<ShowcaseProduct[]>([])
+  useEffect(() => {
+    axios.get('/api/recommendations/because-you-viewed')
+      .then(({ data }) => setBecauseYouViewed(data.products || []))
+      .catch(() => {})
+  }, [])
 
   const c = isUAE ? {
     heroOverlay:       'bg-gradient-to-r from-[#EF3340]/70 via-black/55 to-black/30',
@@ -529,51 +611,92 @@ export default function LandingPage({ initialTestimonials }: LandingPageProps) {
         </div>
       </section>
 
-      {/* ─── BEST SELLING PRODUCTS ────────────────────────────────────────────── */}
-      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
-              {isUAE ? "المنتجات الأكثر مبيعاً" : "بیسٹ سیلنگ مصنوعات"}
-            </h2>
-            <p className="text-muted-foreground text-sm md:text-base">Our Most Popular Veterinary Products</p>
+      {/* ─── TRENDING NOW ─────────────────────────────────────────────────────── */}
+      {trendingProducts.length > 0 && (
+        <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2" dir="rtl">
+                {isUAE ? "المنتجات الرائجة" : "ٹرینڈنگ مصنوعات"}
+              </h2>
+              <p className="text-muted-foreground text-sm md:text-base">Trending Now — What Other Customers Are Buying</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {trendingProducts.map((product) => (
+                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} />
+              ))}
+            </div>
           </div>
+        </section>
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {bestSellers.map((product, i) => (
-              <div
-                key={i}
-                className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200"
-              >
-                {/* Product color block */}
-                <div className={`h-36 flex items-center justify-center text-5xl ${product.bgColor}`}>
-                  {product.emoji}
-                </div>
-                <div className="p-4 flex flex-col flex-1">
-                  <h3 className="font-bold text-sm md:text-base mb-1">{product.name}</h3>
-                  <div className="space-y-1 mb-3 flex-1">
-                    {product.benefits.map((b, j) => (
-                      <div key={j} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                        <span className="text-xs text-muted-foreground">{b}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <a
-                    href={`https://wa.me/${isUAE ? '971547478202' : '923354145431'}?text=I%20want%20to%20order%3A%20${encodeURIComponent(product.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold px-4 py-2.5 rounded-lg text-xs transition-all duration-200 hover:scale-[1.02] mt-auto"
-                  >
-                    <WhatsAppIcon className="w-3.5 h-3.5 fill-white" />
-                    Order on WhatsApp
-                  </a>
-                </div>
-              </div>
-            ))}
+      {/* ─── BECAUSE YOU VIEWED (personalized, client-fetched) ───────────────── */}
+      {becauseYouViewed.length > 0 && (
+        <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">Because You Viewed</h2>
+              <p className="text-muted-foreground text-sm md:text-base">Picked up from products you recently looked at</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {becauseYouViewed.map((product) => (
+                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ─── NEW ARRIVALS ─────────────────────────────────────────────────────── */}
+      {newArrivals.length > 0 && (
+        <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">New Arrivals</h2>
+              <p className="text-muted-foreground text-sm md:text-base">Freshly added to the catalog</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {newArrivals.map((product) => (
+                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── NEW VENDORS ──────────────────────────────────────────────────────── */}
+      {newVendors.length > 0 && (
+        <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">New on Animal Wellness</h2>
+              <p className="text-muted-foreground text-sm md:text-base">Recently joined vendors worth checking out</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+              {newVendors.map((vendor) => (
+                <Link
+                  key={vendor.id}
+                  href={`/Companies/${vendor.id}`}
+                  className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col items-center text-center p-4 hover:shadow-lg transition-shadow duration-200"
+                >
+                  <div className="relative w-16 h-16 rounded-full bg-muted overflow-hidden mb-3 flex items-center justify-center">
+                    {vendor.image ? (
+                      <Image src={vendor.image.url.replace(/^http:\/\//, 'https://')} alt={vendor.companyName || 'Vendor'} fill className="object-cover" />
+                    ) : (
+                      <ShoppingCart className="w-6 h-6 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <p className="font-semibold text-sm line-clamp-1">{vendor.companyName || 'Vendor'}</p>
+                  <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    New
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">{vendor.productCount} products</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── DETAILED SECTIONS ────────────────────────────────────────────────── */}
       {sections.map((section, index) => (
@@ -860,33 +983,6 @@ const categoriesUAE = [
   { emoji: "🐕", label: "حيوانات أليفة",  href: "/products?category=Pets" },
   { emoji: "💊", label: "أدوية",           href: "/products?category=Veterinary" },
   { emoji: "🧪", label: "مكملات غذائية",  href: "/products?category=Supplements" },
-]
-
-const bestSellers = [
-  {
-    emoji: "🐄",
-    name: "Deworming Medicine for Cows",
-    benefits: ["Kills internal parasites", "Improves milk production"],
-    bgColor: "bg-amber-50 dark:bg-amber-900/20",
-  },
-  {
-    emoji: "🐓",
-    name: "Poultry Vitamins",
-    benefits: ["Boosts immunity", "Increases egg production"],
-    bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
-  },
-  {
-    emoji: "🐕",
-    name: "Tick & Flea Control",
-    benefits: ["Protects pets", "Fast-acting formula"],
-    bgColor: "bg-blue-50 dark:bg-blue-900/20",
-  },
-  {
-    emoji: "🦴",
-    name: "Calcium Supplement",
-    benefits: ["Strong bones", "Better milk yield"],
-    bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
-  },
 ]
 
 const whyChooseUs = [
