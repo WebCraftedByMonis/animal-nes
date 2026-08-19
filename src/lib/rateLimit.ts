@@ -1,4 +1,4 @@
-import { getConnectedRedisClient } from './redisClient'
+import { getConnectedRedisClient, withTimeout } from './redisClient'
 
 // Rate limiting for public, unauthenticated-or-lightly-authenticated forms
 // (vendor sign-up, product submissions, affiliate sign-up). Uses the Redis
@@ -23,9 +23,9 @@ export async function checkRateLimit(
     if (!c) return { allowed: true, remaining: limit }
 
     const redisKey = `ratelimit:${key}`
-    const count = await c.incr(redisKey)
+    const count = await withTimeout(c.incr(redisKey))
     if (count === 1) {
-      await c.expire(redisKey, windowSeconds)
+      await withTimeout(c.expire(redisKey, windowSeconds))
     }
 
     return { allowed: count <= limit, remaining: Math.max(0, limit - count) }

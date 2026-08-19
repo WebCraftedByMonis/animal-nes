@@ -1,4 +1,4 @@
-import { getConnectedRedisClient } from './redisClient'
+import { getConnectedRedisClient, withTimeout } from './redisClient'
 
 // Read-through cache built on the same Redis instance the rate limiter
 // uses. Fails OPEN like the rate limiter does — if Redis is unreachable,
@@ -17,7 +17,7 @@ export async function cached<T>(key: string, ttlSeconds: number, compute: () => 
 
   if (client) {
     try {
-      const hit = await client.get(redisKey)
+      const hit = await withTimeout(client.get(redisKey))
       if (hit !== null) return JSON.parse(hit) as T
     } catch (error) {
       console.error('[cache] read failed, falling back to source:', key, error)
@@ -28,7 +28,7 @@ export async function cached<T>(key: string, ttlSeconds: number, compute: () => 
 
   if (client) {
     try {
-      await client.set(redisKey, JSON.stringify(value), { EX: ttlSeconds })
+      await withTimeout(client.set(redisKey, JSON.stringify(value), { EX: ttlSeconds }))
     } catch (error) {
       console.error('[cache] write failed:', key, error)
     }
@@ -41,7 +41,7 @@ export async function invalidateCache(key: string) {
   const client = await getConnectedRedisClient()
   if (!client) return
   try {
-    await client.del(`cache:${key}`)
+    await withTimeout(client.del(`cache:${key}`))
   } catch (error) {
     console.error('[cache] invalidate failed:', key, error)
   }
