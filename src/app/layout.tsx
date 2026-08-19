@@ -13,6 +13,7 @@ import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import { CountryProvider } from "@/contexts/CountryContext";
 import LoginModal from "@/components/LoginModal";
 import StickyLogo from "@/components/StickyLogo";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -131,6 +132,7 @@ export default function RootLayout({
 
                       <Footer />
                     </div>
+                    <CookieConsentBanner />
                   </LoginModalProvider>
                 </WishlistProvider>
               </CartProvider>

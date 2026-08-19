@@ -27,6 +27,7 @@ import QuickBuyNowButton from './QuickBuyNowButton'
 import { useCountry } from '@/contexts/CountryContext'
 import { formatPrice } from '@/lib/currency-utils'
 import { SearchableCombobox } from '@/components/shared/SearchableCombobox'
+import ProductPortions from './products/ProductPortions'
 
 interface Discount {
   id: number
@@ -199,7 +200,25 @@ export default function ProductsClient() {
     router.push(queryString ? `/products?${queryString}` : '/products', { scroll: false })
   }, [router, page, search, sortBy, sortOrder, limit, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, companyFilter, partnerFilter])
 
+  // No search/filter active: the page shows the portioned, category-by-
+  // category view (ProductPortions) instead of fetching + rendering the
+  // flat all-products grid below. Any search or filter switches back to
+  // the classic flat grid.
+  const isPortionedView =
+    !search &&
+    categoryFilter === 'all' &&
+    subCategoryFilter === 'all' &&
+    subSubCategoryFilter === 'all' &&
+    productTypeFilter === 'all' &&
+    !companyFilter &&
+    !partnerFilter &&
+    !priceFilterApplied
+
   const fetchProducts = useCallback(async () => {
+    if (isPortionedView) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const { data } = await axios.get('/api/product', {
@@ -244,7 +263,7 @@ export default function ProductsClient() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, companyFilter, partnerFilter, appliedPriceRange, priceFilterApplied, country])
+  }, [isPortionedView, page, limit, search, sortBy, sortOrder, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, companyFilter, partnerFilter, appliedPriceRange, priceFilterApplied, country])
 
   // Fetch data when dependencies change
   useEffect(() => {
@@ -705,8 +724,12 @@ export default function ProductsClient() {
         </div>
       </div>
 
-      {/* Product Grid with motion + neumorphism cards */}
-      {loading ? (
+      {/* Default view: catalog split into category portions instead of one
+          flat list of everything. Any search/filter switches to the classic
+          grid below. */}
+      {isPortionedView ? (
+        <ProductPortions />
+      ) : loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: limit }).map((_, i) => (<ProductCardSkeleton key={i} />))}
         </div>

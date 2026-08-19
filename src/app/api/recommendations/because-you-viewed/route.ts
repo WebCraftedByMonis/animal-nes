@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionIdFromRequest } from '@/lib/tracking';
+import { CONSENT_COOKIE } from '@/lib/consent';
 
 // GET - a lightweight, category-based "Because You Viewed" rail for the
 // homepage. Personalized per anonymous visitor (aw_sid cookie), so it's
 // fetched client-side rather than baked into the ISR-cached page — see
 // LandingPage.tsx. Not the full Recommendation Engine (similar-products,
 // collaborative filtering, etc.) — just a first, contained slice of it.
+//
+// Gated on the cookie-consent banner (see consent.ts / CookieConsentBanner):
+// a visitor who declined personalization gets an empty rail here, same as
+// one with no browsing history yet.
 export async function GET(request: NextRequest) {
   try {
+    if (request.cookies.get(CONSENT_COOKIE)?.value !== 'accepted') {
+      return NextResponse.json({ products: [] });
+    }
+
     const sessionId = getSessionIdFromRequest(request);
     if (!sessionId) {
       return NextResponse.json({ products: [] });
