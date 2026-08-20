@@ -161,13 +161,51 @@ async function getNewVendors() {
   }
 }
 
+// Products with an ACTIVE, currently-running paid sponsorship (see
+// prisma schema's ProductSponsorship / /dashboard/sponsorships). Kept as
+// its own clearly-labeled rail rather than blended into "Trending" —
+// paid placement should never look like an organic result.
+async function getSponsoredProducts() {
+  try {
+    const now = new Date()
+    const sponsorships = await prisma.productSponsorship.findMany({
+      where: { status: 'ACTIVE', startDate: { lte: now }, endDate: { gte: now } },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+      include: {
+        product: {
+          include: {
+            image: true,
+            company: { select: { companyName: true } },
+            variants: { select: { customerPrice: true }, take: 1 },
+          },
+        },
+      },
+    })
+    return sponsorships
+      .filter((s) => s.product.isActive && s.product.approvalStatus === 'APPROVED')
+      .map((s) => ({
+        id: s.product.id,
+        productName: s.product.productName,
+        category: s.product.category,
+        image: s.product.image ? { url: s.product.image.url, alt: s.product.image.alt } : null,
+        price: s.product.variants[0]?.customerPrice ?? null,
+        companyName: s.product.company?.companyName ?? null,
+      }))
+  } catch (error) {
+    console.error('Error fetching sponsored products:', error)
+    return []
+  }
+}
+
 export default async function Home() {
   // Fetch initial testimonials and homepage product sections on the server for ISR
-  const [initialTestimonials, trendingProducts, newArrivals, newVendors] = await Promise.all([
+  const [initialTestimonials, trendingProducts, newArrivals, newVendors, sponsoredProducts] = await Promise.all([
     getInitialTestimonials(),
     getTrendingProducts(),
     getNewArrivals(),
     getNewVendors(),
+    getSponsoredProducts(),
   ])
 
   // Organization structured data
@@ -221,6 +259,7 @@ export default async function Home() {
         trendingProducts={trendingProducts}
         newArrivals={newArrivals}
         newVendors={newVendors}
+        sponsoredProducts={sponsoredProducts}
       />
     </div>
   );

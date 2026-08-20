@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast, Toaster } from 'react-hot-toast';
-import { Download, Edit, Loader2, Save, Search, X, FileText, Plus } from 'lucide-react';
+import { Download, Edit, Loader2, Save, Search, X, FileText, Plus, Megaphone } from 'lucide-react';
 import CompanyPaymentSettings from '@/components/company/CompanyPaymentSettings';
 import CompanyDiscounts from '@/components/company/CompanyDiscounts';
 import CompanyPartnerOrders from '@/components/company/CompanyPartnerOrders';
 import AddProductForm from '@/components/forms/AddProductForm';
+import SponsorProductForm from '@/components/forms/SponsorProductForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ProductVariant {
@@ -44,6 +45,7 @@ interface Company {
   email: string | null;
   mobileNumber: string | null;
   address: string | null;
+  country?: string | null;
   image?: {
     url: string;
     alt: string;
@@ -115,6 +117,7 @@ export default function CompanyDashboard() {
 
   // Submit new product modal
   const [showSubmitProduct, setShowSubmitProduct] = useState(false);
+  const [showSponsorProduct, setShowSponsorProduct] = useState(false);
 
   // Product variant editing state
   const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
@@ -527,12 +530,20 @@ export default function CompanyDashboard() {
                 <h2 className="text-xl font-semibold text-gray-900">Your Products</h2>
                 <p className="text-sm text-gray-500">Edit company price (purchased price) for each variant</p>
               </div>
-              <button
-                onClick={() => setShowSubmitProduct(true)}
-                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-1" /> Submit New Product
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowSponsorProduct(true)}
+                  className="flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+                >
+                  <Megaphone className="w-4 h-4 mr-1" /> Boost a Product
+                </button>
+                <button
+                  onClick={() => setShowSubmitProduct(true)}
+                  className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Submit New Product
+                </button>
+              </div>
             </div>
 
             {productsLoading ? (
@@ -1098,6 +1109,21 @@ export default function CompanyDashboard() {
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Boost a Product (Sponsorship) Modal */}
+      <Dialog open={showSponsorProduct} onOpenChange={setShowSponsorProduct}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Boost a Product</DialogTitle>
+          </DialogHeader>
+          <SponsorProductForm
+            products={products.map((p) => ({ id: p.id, productName: p.productName }))}
+            submitEndpoint="/api/company/sponsorships/submit"
+            isUAE={company?.country === 'UAE'}
+            onSuccess={() => setShowSponsorProduct(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

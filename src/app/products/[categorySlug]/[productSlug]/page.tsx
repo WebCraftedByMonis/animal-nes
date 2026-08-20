@@ -295,8 +295,6 @@ export default async function ProductPage({
       <article className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <nav aria-label="Breadcrumb" className="mb-6">
           <ol className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-            <li><Link href="/" className="hover:text-green-600 dark:hover:text-green-400 transition-colors">Home</Link></li>
-            <li aria-hidden="true">/</li>
             <li><Link href="/products" className="hover:text-green-600 dark:hover:text-green-400 transition-colors">Products</Link></li>
             {normalizedCategory !== 'Veterinary Products' && data.category && (
               <>
@@ -332,39 +330,19 @@ export default async function ProductPage({
           )}
         </div>
 
-        {/* Category badge */}
-        {data.category && normalizedCategory !== 'Veterinary Products' && (
-          <div className="mb-3">
-            <Link
-              href={`/products/category/${correctCatSlug}`}
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-            >
-              {normalizedCategory}
-            </Link>
-          </div>
-        )}
-
-        {(() => {
-          const prices = data.variants?.map((v: { customerPrice: number | null }) => v.customerPrice).filter((p): p is number => p != null).sort((a, b) => a - b)
-          if (!prices?.length) return null
-          const display = prices.length > 1 ? `from PKR ${prices[0].toLocaleString()}` : `PKR ${prices[0].toLocaleString()}`
-          return (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              {data.productName} price in Pakistan:{' '}
-              <span className="font-semibold text-gray-700 dark:text-gray-300">{display}</span>
-            </p>
-          )
-        })()}
-
-        {sections.overview && (
-          <p className="text-gray-600 dark:text-gray-400 mb-8 text-base leading-relaxed max-w-3xl">
-            {sections.overview.length > 320 ? sections.overview.slice(0, 320) + '…' : sections.overview}
-          </p>
-        )}
-
-        <ProductClient product={data} />
+        <ProductClient
+          product={data}
+          overview={sections.overview ? (sections.overview.length > 320 ? sections.overview.slice(0, 320) + '…' : sections.overview) : null}
+        />
 
         <div className="mt-12 space-y-10">
+          {(data.dosage || sections.usage) && (
+            <section aria-labelledby="usage-heading">
+              <h2 id="usage-heading" className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Feeding &amp; Usage Instructions</h2>
+              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{data.dosage || sections.usage}</div>
+            </section>
+          )}
+
           {data.description && (
             <section aria-labelledby="overview-heading">
               <h2 id="overview-heading" className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Product Overview</h2>
@@ -376,13 +354,6 @@ export default async function ProductPage({
             <section aria-labelledby="benefits-heading" className="bg-green-50 dark:bg-green-900/10 rounded-xl p-6">
               <h2 id="benefits-heading" className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Key Benefits</h2>
               <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{sections.benefits}</div>
-            </section>
-          )}
-
-          {(data.dosage || sections.usage) && (
-            <section aria-labelledby="usage-heading">
-              <h2 id="usage-heading" className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Feeding &amp; Usage Instructions</h2>
-              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{data.dosage || sections.usage}</div>
             </section>
           )}
 

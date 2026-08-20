@@ -61,6 +61,7 @@ interface LandingPageProps {
   trendingProducts?: ShowcaseProduct[]
   newArrivals?: ShowcaseProduct[]
   newVendors?: ShowcaseVendor[]
+  sponsoredProducts?: ShowcaseProduct[]
 }
 
 const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isUAE?: boolean }) => {
@@ -189,7 +190,7 @@ const ProductShowcaseCard = ({ product, isUAE }: { product: ShowcaseProduct; isU
   </Link>
 )
 
-export default function LandingPage({ initialTestimonials, trendingProducts = [], newArrivals = [], newVendors = [] }: LandingPageProps) {
+export default function LandingPage({ initialTestimonials, trendingProducts = [], newArrivals = [], newVendors = [], sponsoredProducts = [] }: LandingPageProps) {
   const { data: session } = useSession()
   const { openModal } = useLoginModal()
   const { country } = useCountry()
@@ -611,6 +612,31 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
         </div>
       </section>
 
+      {/* ─── SPONSORED (paid placement — always clearly labeled) ─────────────── */}
+      {sponsoredProducts.length > 0 && (
+        <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-amber-50/60 dark:bg-amber-950/10 border-y border-amber-200/50 dark:border-amber-900/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide uppercase text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full mb-3">
+                Sponsored
+              </span>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">Featured by Our Vendors</h2>
+              <p className="text-muted-foreground text-sm md:text-base">Paid placements from vendors on Animal Wellness</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {sponsoredProducts.map((product) => (
+                <div key={product.id} className="relative">
+                  <span className="absolute top-3 left-3 z-10 text-[10px] font-bold uppercase tracking-wide bg-amber-500 text-white px-2 py-1 rounded-full shadow">
+                    Sponsored
+                  </span>
+                  <ProductShowcaseCard product={product} isUAE={isUAE} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ─── TRENDING NOW ─────────────────────────────────────────────────────── */}
       {trendingProducts.length > 0 && (
         <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-background">
@@ -665,38 +691,9 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
       )}
 
       {/* ─── NEW VENDORS ──────────────────────────────────────────────────────── */}
-      {newVendors.length > 0 && (
-        <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">New on Animal Wellness</h2>
-              <p className="text-muted-foreground text-sm md:text-base">Recently joined vendors worth checking out</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-              {newVendors.map((vendor) => (
-                <Link
-                  key={vendor.id}
-                  href={`/Companies/${vendor.id}`}
-                  className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col items-center text-center p-4 hover:shadow-lg transition-shadow duration-200"
-                >
-                  <div className="relative w-16 h-16 rounded-full bg-muted overflow-hidden mb-3 flex items-center justify-center">
-                    {vendor.image ? (
-                      <Image src={vendor.image.url.replace(/^http:\/\//, 'https://')} alt={vendor.companyName || 'Vendor'} fill className="object-cover" />
-                    ) : (
-                      <ShoppingCart className="w-6 h-6 text-muted-foreground/40" />
-                    )}
-                  </div>
-                  <p className="font-semibold text-sm line-clamp-1">{vendor.companyName || 'Vendor'}</p>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                    New
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">{vendor.productCount} products</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Temporarily removed per request (2026-08-20) — "New on Animal Wellness /
+          Recently joined vendors worth checking out". Data fetch (newVendors)
+          is left in place so this can be restored easily later. */}
 
       {/* ─── DETAILED SECTIONS ────────────────────────────────────────────────── */}
       {sections.map((section, index) => (

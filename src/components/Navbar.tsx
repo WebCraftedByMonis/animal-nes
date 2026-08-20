@@ -109,7 +109,7 @@ export default function Navbar() {
               <NavigationMenu>
                 <NavigationMenuList className="gap-0.5">
                   {[
-                    ["Products", "/products"],
+                    ["Shop", "/products"],
                     ["Shop by Animal", "/animals"],
                     ["Master Trainings", "/forms"],
                     ["Find Doctor", "/findDoctor"],
@@ -317,7 +317,7 @@ export default function Navbar() {
                     {/* Mobile Navigation Links */}
                     <div className="space-y-1 border-t pt-3">
                       {[
-                        ["Products", "/products"],
+                        ["Shop", "/products"],
                         ["Shop by Animal", "/animals"],
                         ["Master Trainings", "/forms"],
                         ["Find Doctor", "/findDoctor"],

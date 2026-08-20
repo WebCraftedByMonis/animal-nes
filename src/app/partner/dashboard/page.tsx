@@ -4,13 +4,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
-import { Eye, Crown, X, Pencil, Trash2, MessageSquare, Plus } from 'lucide-react';
+import { Eye, Crown, X, Pencil, Trash2, MessageSquare, Plus, Megaphone } from 'lucide-react';
 import WhatsAppLink from '@/components/WhatsAppLink';
 import PartnerShop from '@/components/partner/PartnerShop';
 import PartnerCart from '@/components/partner/PartnerCart';
 import PartnerCheckout from '@/components/partner/PartnerCheckout';
 import PartnerOrders from '@/components/partner/PartnerOrders';
 import AddProductForm from '@/components/forms/AddProductForm';
+import SponsorProductForm from '@/components/forms/SponsorProductForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ProductVariant {
@@ -58,6 +59,7 @@ interface Partner {
   isPremium: boolean;
   referralCode?: string | null;
   walletBalance: number;
+  country?: string | null;
   products?: Product[];
 }
 
@@ -65,6 +67,7 @@ export default function PartnerDashboard() {
   const router = useRouter();
   const [partner, setPartner] = useState<Partner | null>(null);
   const [showSubmitProduct, setShowSubmitProduct] = useState(false);
+  const [showSponsorProduct, setShowSponsorProduct] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'products' | 'shop' | 'cart' | 'checkout' | 'shop-orders' | 'profile' | 'password' | 'wallet'>('products');
   const [cartCount, setCartCount] = useState(0);
@@ -865,12 +868,20 @@ export default function PartnerDashboard() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-green-600">My Products</h2>
-                  <button
-                    onClick={() => setShowSubmitProduct(true)}
-                    className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Submit New Product
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowSponsorProduct(true)}
+                      className="flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+                    >
+                      <Megaphone className="w-4 h-4 mr-1" /> Boost a Product
+                    </button>
+                    <button
+                      onClick={() => setShowSubmitProduct(true)}
+                      className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Submit New Product
+                    </button>
+                  </div>
                 </div>
 
                 {productsLoading ? (
@@ -2048,6 +2059,21 @@ export default function PartnerDashboard() {
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Boost a Product (Sponsorship) Modal */}
+      <Dialog open={showSponsorProduct} onOpenChange={setShowSponsorProduct}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Boost a Product</DialogTitle>
+          </DialogHeader>
+          <SponsorProductForm
+            products={products.map((p) => ({ id: p.id, productName: p.productName }))}
+            submitEndpoint="/api/partner/sponsorships/submit"
+            isUAE={partner?.country === 'UAE'}
+            onSuccess={() => setShowSponsorProduct(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

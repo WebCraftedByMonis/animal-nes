@@ -100,10 +100,25 @@ export default function ProductPortions() {
       {rows.map((row) => (
         <section key={row.title}>
           <div className="flex items-end justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{row.title}</h2>
-              {row.subtitle && <p className="text-sm text-muted-foreground">{row.subtitle}</p>}
-            </div>
+            {row.slug ? (
+              <Link
+                href={`/products/category/${row.slug}`}
+                className="group flex items-center gap-1.5 rounded-lg -ml-1 px-1 py-0.5 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+              >
+                <div>
+                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                    {row.title}
+                  </h2>
+                  {row.subtitle && <p className="text-sm text-muted-foreground">{row.subtitle}</p>}
+                </div>
+                <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-green-600 dark:group-hover:text-green-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+              </Link>
+            ) : (
+              <div>
+                <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{row.title}</h2>
+                {row.subtitle && <p className="text-sm text-muted-foreground">{row.subtitle}</p>}
+              </div>
+            )}
             {row.slug && (
               <Link
                 href={`/products/category/${row.slug}`}
@@ -114,85 +129,120 @@ export default function ProductPortions() {
             )}
           </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin">
-            {row.products.map((product) => {
-              const v = pickCheapestVariant(product.variants)
-              const discount = getActiveDiscount(product.discounts, v?.id)
-              const originalPrice = v?.customerPrice || 0
-              const discountedPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
+          {/* Mobile: vertical 2-column grid capped at 4 products (no horizontal
+              scrolling on small screens). Desktop/tablet keep the horizontal
+              snap-scroll slider with the full row. */}
+          <div className="grid grid-cols-2 gap-3 sm:hidden">
+            {row.products.slice(0, 4).map((product) => (
+              <PortionProductCard
+                key={product.id}
+                product={product}
+                currencySymbol={currencySymbol}
+                onClick={() => navigateToProduct(product)}
+                className="w-full"
+              />
+            ))}
+          </div>
 
-              return (
-                <div
-                  key={product.id}
-                  onClick={() => navigateToProduct(product)}
-                  className={[
-                    'snap-start flex-shrink-0 w-[180px] sm:w-[220px] cursor-pointer rounded-2xl overflow-hidden',
-                    'bg-[#f0f0f3] dark:bg-zinc-900',
-                    'shadow-[8px_8px_16px_#d1d9e6,_-8px_-8px_16px_#ffffff]',
-                    'dark:shadow-[8px_8px_16px_rgba(0,0,0,0.6),_-8px_-8px_16px_rgba(255,255,255,0.05)]',
-                    'border border-zinc-100/40 dark:border-zinc-800/60',
-                    'transition-transform hover:scale-[1.02]',
-                  ].join(' ')}
-                >
-                  {product.image && (
-                    <div className="relative aspect-square w-full">
-                      <Image
-                        src={product.image.url.replace(/^http:\/\//, 'https://')}
-                        alt={product.image.alt || product.productName}
-                        fill
-                        className="object-cover"
-                        sizes="220px"
-                        referrerPolicy="no-referrer"
-                      />
-                      {discount && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
-                            {discount.percentage}% OFF
-                          </span>
-                        </div>
-                      )}
-                      <WishlistButton productId={product.id} />
-                      <div className="absolute bottom-2 right-2 z-10 flex gap-1.5">
-                        <QuickAddToCartButton productId={product.id} variantId={v?.id} />
-                        <QuickBuyNowButton productId={product.id} variantId={v?.id} />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-3 space-y-1.5">
-                    <h3 className="font-semibold text-sm line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</h3>
-
-                    {v && v.customerPrice && v.customerPrice > 10 ? (
-                      discount ? (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                            {currencySymbol} {discountedPrice.toLocaleString()}
-                          </span>
-                          <span className="text-xs text-zinc-500 line-through">
-                            {currencySymbol} {originalPrice.toLocaleString()}
-                          </span>
-                        </div>
-                      ) : (
-                        <Badge variant="outline" className="text-green-700 border-green-600/40 bg-white/60 dark:bg-zinc-900/60 text-xs">
-                          {currencySymbol} {v.customerPrice.toLocaleString()}
-                        </Badge>
-                      )
-                    ) : (
-                      <Badge variant="outline" className="text-orange-600 border-orange-400/40 bg-orange-50/60 dark:bg-orange-900/20 text-xs">
-                        Get Quote
-                      </Badge>
-                    )}
-
-                    {product.company?.companyName && (
-                      <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">By: {product.company.companyName}</p>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+          <div className="hidden sm:flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin">
+            {row.products.map((product) => (
+              <PortionProductCard
+                key={product.id}
+                product={product}
+                currencySymbol={currencySymbol}
+                onClick={() => navigateToProduct(product)}
+                className="snap-start flex-shrink-0 w-[220px]"
+              />
+            ))}
           </div>
         </section>
       ))}
+    </div>
+  )
+}
+
+function PortionProductCard({
+  product,
+  currencySymbol,
+  onClick,
+  className,
+}: {
+  product: PortionProduct
+  currencySymbol: string
+  onClick: () => void
+  className: string
+}) {
+  const v = pickCheapestVariant(product.variants)
+  const discount = getActiveDiscount(product.discounts, v?.id)
+  const originalPrice = v?.customerPrice || 0
+  const discountedPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
+
+  return (
+    <div
+      onClick={onClick}
+      className={[
+        className,
+        'cursor-pointer rounded-2xl overflow-hidden',
+        'bg-[#f0f0f3] dark:bg-zinc-900',
+        'shadow-[8px_8px_16px_#d1d9e6,_-8px_-8px_16px_#ffffff]',
+        'dark:shadow-[8px_8px_16px_rgba(0,0,0,0.6),_-8px_-8px_16px_rgba(255,255,255,0.05)]',
+        'border border-zinc-100/40 dark:border-zinc-800/60',
+        'transition-transform hover:scale-[1.02]',
+      ].join(' ')}
+    >
+      {product.image && (
+        <div className="relative aspect-square w-full">
+          <Image
+            src={product.image.url.replace(/^http:\/\//, 'https://')}
+            alt={product.image.alt || product.productName}
+            fill
+            className="object-cover"
+            sizes="220px"
+            referrerPolicy="no-referrer"
+          />
+          {discount && (
+            <div className="absolute top-2 left-2 z-10">
+              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
+                {discount.percentage}% OFF
+              </span>
+            </div>
+          )}
+          <WishlistButton productId={product.id} />
+          <div className="absolute bottom-2 right-2 z-10 flex gap-1.5">
+            <QuickAddToCartButton productId={product.id} variantId={v?.id} />
+            <QuickBuyNowButton productId={product.id} variantId={v?.id} />
+          </div>
+        </div>
+      )}
+
+      <div className="p-3 space-y-1.5">
+        <h3 className="font-semibold text-sm line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</h3>
+
+        {v && v.customerPrice && v.customerPrice > 10 ? (
+          discount ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                {currencySymbol} {discountedPrice.toLocaleString()}
+              </span>
+              <span className="text-xs text-zinc-500 line-through">
+                {currencySymbol} {originalPrice.toLocaleString()}
+              </span>
+            </div>
+          ) : (
+            <Badge variant="outline" className="text-green-700 border-green-600/40 bg-white/60 dark:bg-zinc-900/60 text-xs">
+              {currencySymbol} {v.customerPrice.toLocaleString()}
+            </Badge>
+          )
+        ) : (
+          <Badge variant="outline" className="text-orange-600 border-orange-400/40 bg-orange-50/60 dark:bg-orange-900/20 text-xs">
+            Get Quote
+          </Badge>
+        )}
+
+        {product.company?.companyName && (
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">By: {product.company.companyName}</p>
+        )}
+      </div>
     </div>
   )
 }

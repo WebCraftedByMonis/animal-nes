@@ -36,7 +36,8 @@ import {
   ScanSearch,
   Link2,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Megaphone
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -434,6 +435,24 @@ export function AppSidebar() {
                   <Link href="/dashboard/ranking-settings">
                     <TrendingUp className="w-4 h-4" />
                     <span className="hover:text-green-500">Ranking Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Sponsored Products */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/sponsorships">
+                    <Megaphone className="w-4 h-4" />
+                    <span className="hover:text-green-500">Sponsored Products</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/sponsorship-settings">
+                    <Megaphone className="w-4 h-4" />
+                    <span className="hover:text-green-500">Sponsorship Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

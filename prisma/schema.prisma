@@ -71,6 +71,7 @@ model Product {
   partnerOrderItems  PartnerOrderItem[]
   affiliateProduct   AffiliateProduct?
   affiliateLinks     AffiliateLink[]
+  sponsorships       ProductSponsorship[]
 
   @@index([companyId])
   @@index([partnerId])
@@ -148,6 +149,7 @@ model Company {
   paymentSettings CompanyPaymentSettings?
   vendorOrders    VendorOrder[]
   ledgerEntries   VendorLedgerEntry[]
+  sponsorships    ProductSponsorship[]
   createdAt       DateTime?        @default(now())
   updatedAt       DateTime?        @updatedAt
 }
@@ -262,6 +264,7 @@ model Partner {
   premiumRequests     PremiumPartnershipRequest[]
   withdrawalRequests  WithdrawalRequest[]
   reviews             VetReview[]
+  sponsorships        ProductSponsorship[]
   createdAt           DateTime?              @default(now())
   updatedAt           DateTime?              @updatedAt
 
@@ -1772,4 +1775,69 @@ model RankingSettings {
   boostDurationDays      Int      @default(14)
   boostMultiplier        Float    @default(1.5)
   updatedAt              DateTime @updatedAt
+}
+
+// ============================================
+// SPONSORED PRODUCTS
+// ============================================
+// A vendor (company or partner) pays to boost one of their own products for
+// a set number of days. Same payment pattern as Premium Partnership — manual
+// bank/JazzCash/Easypaisa transfer + screenshot, admin verifies and approves
+// — rather than a payment gateway. Once ACTIVE, the product gets a real
+// ranking-score boost (see src/lib/ranking.ts) and appears in the homepage's
+// clearly-labeled "Sponsored" rail — never mixed into organic results
+// without disclosure, per the guide's "paid, clearly labeled" rule.
+
+enum SponsorshipStatus {
+  PENDING_PAYMENT // vendor submitted, admin hasn't verified payment yet
+  ACTIVE
+  EXPIRED
+  REJECTED
+  CANCELLED
+}
+
+model ProductSponsorship {
+  id                        Int               @id @default(autoincrement())
+  product                   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId                 Int
+  company                   Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId                 Int?
+  partner                   Partner?          @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId                 Int?
+  requestedByRole           String            // COMPANY | PARTNER
+  status                    SponsorshipStatus @default(PENDING_PAYMENT)
+  durationDays              Int
+  amount                    Float
+  // Set when admin approves — startDate = approval time, endDate = start + durationDays
+  startDate                 DateTime?
+  endDate                   DateTime?
+  paymentMethod             String?
+  paymentScreenshotUrl      String?           @db.Text
+  paymentScreenshotPublicId String?
+  rejectionReason           String?           @db.Text
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+
+  @@index([productId])
+  @@index([companyId])
+  @@index([partnerId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+// Single-row config (always id=1) editable from /dashboard/sponsorship-settings.
+model SponsorshipSettings {
+  id                 Int      @id @default(1)
+  pricePerDay        Float    @default(200) // PKR — vendor dashboards show this per selected country's currency
+  pricePerDayAED     Float    @default(10)
+  minDays            Int      @default(3)
+  maxDays            Int      @default(30)
+  rankingBoostMultiplier Float @default(2.0) // stacks with (doesn't replace) new-product/new-vendor boosts
+  paymentInstructions String? @db.Text // shown to vendors submitting a request
+  jazzcashNumber     String?
+  easypaisaNumber    String?
+  bankName           String?
+  accountTitle       String?
+  accountNumber      String?
+  updatedAt          DateTime @updatedAt
 }

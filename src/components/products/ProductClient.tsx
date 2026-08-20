@@ -60,7 +60,7 @@ function resolveProductCountry(
   return null;
 }
 
-export default function ProductClient({ product }: { product: ProductData }) {
+export default function ProductClient({ product, overview }: { product: ProductData; overview?: string | null }) {
   const [selectedVariantId, setSelectedVariantId] = useState<number>(
     product.variants[0]?.id || 0
   );
@@ -205,6 +205,12 @@ export default function ProductClient({ product }: { product: ProductData }) {
             )}
           </div>
 
+          {overview && (
+            <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
+              {overview}
+            </p>
+          )}
+
           {product.genericName && (
             <p className="text-gray-600 dark:text-gray-400">
               Generic: {product.genericName}
@@ -303,20 +309,12 @@ export default function ProductClient({ product }: { product: ProductData }) {
             )}
           </div>
 
-          {/* Manufacturer & Supplier */}
-          <div className="pt-4 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="font-medium text-gray-500 dark:text-gray-400">Manufacturer</p>
-              <p className="text-gray-900 dark:text-gray-100">
-                {product.company.companyName}
-              </p>
-            </div>
-            <div>
-              <p className="font-medium text-gray-500 dark:text-gray-400">Supplier</p>
-              <p className="text-gray-900 dark:text-gray-100">
-                {product.partner.partnerName}
-              </p>
-            </div>
+          {/* Manufacturer */}
+          <div className="pt-4 text-sm">
+            <p className="font-medium text-gray-500 dark:text-gray-400">Manufacturer</p>
+            <p className="text-gray-900 dark:text-gray-100">
+              {product.company.companyName}
+            </p>
           </div>
 
           {/* External Product Link */}

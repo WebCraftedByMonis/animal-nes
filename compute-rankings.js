@@ -33,6 +33,27 @@ async function main() {
     create: { id: 1 },
   })
 
+  const now0 = new Date()
+
+  // Housekeeping: sponsorships that have run their course stop counting as
+  // ACTIVE — cheap to do here since this already runs nightly and touches
+  // Product/ranking data anyway.
+  await prisma.productSponsorship.updateMany({
+    where: { status: 'ACTIVE', endDate: { lt: now0 } },
+    data: { status: 'EXPIRED' },
+  })
+
+  const sponsorshipSettings = await prisma.sponsorshipSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  })
+  const activeSponsorships = await prisma.productSponsorship.findMany({
+    where: { status: 'ACTIVE', startDate: { lte: now0 }, endDate: { gte: now0 } },
+    select: { productId: true },
+  })
+  const sponsoredProductIds = new Set(activeSponsorships.map((s) => s.productId))
+
   const since = new Date()
   since.setDate(since.getDate() - WINDOW_DAYS)
 
@@ -115,6 +136,7 @@ async function main() {
       reviews: avgRating > 0 ? avgRating / 5 : 0.5,
       isNew: ageDays <= settings.boostDurationDays,
       isNewVendor: vendorAgeDays <= settings.boostDurationDays,
+      isSponsored: sponsoredProductIds.has(p.id),
     }
   })
 
@@ -150,6 +172,12 @@ async function main() {
       (settings.newProductBoostEnabled && r.isNew) || (settings.newVendorBoostEnabled && r.isNewVendor)
     if (eligibleForBoost) {
       score *= settings.boostMultiplier
+    }
+
+    // Paid sponsorship boost stacks on top — a vendor paying to promote a
+    // brand-new listing should get both, not one or the other.
+    if (r.isSponsored) {
+      score *= sponsorshipSettings.rankingBoostMultiplier
     }
 
     return { id: r.id, score: Math.round(score * 100) / 100 }
