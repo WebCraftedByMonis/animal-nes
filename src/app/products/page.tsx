@@ -38,7 +38,7 @@ export async function generateMetadata({
       title: 'Veterinary Products & Pet Care Supplies - Animal Wellness',
       description: 'Browse our extensive collection of veterinary products, medicines, pet care supplies, and animal wellness solutions.',
       type: 'website',
-      images: [{ url: `${BASE_URL}/logo.jpg`, width: 1200, height: 630, alt: 'Animal Wellness Products' }],
+      images: [{ url: `${BASE_URL}/logo.png`, width: 1200, height: 630, alt: 'Animal Wellness Products' }],
     },
     alternates: {
       canonical: '/products',

@@ -183,7 +183,7 @@ function LoginModalContent({ isOpen, onClose, trigger = 'button' }: Required<Log
           <div className="flex justify-center">
             <div className="relative h-16 w-auto">
               <Image
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="Animal Wellness Logo"
                 width={120}
                 height={60}

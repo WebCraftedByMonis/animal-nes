@@ -92,7 +92,7 @@ export default function PartnerLoginPage() {
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <Image
-              src="/logo.jpg"
+              src="/logo.png"
               alt="Animal Wellness Logo"
               width={120}
               height={40}

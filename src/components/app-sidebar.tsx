@@ -82,7 +82,7 @@ export function AppSidebar() {
     <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="h-screen border-r dark:bg-zinc-900">
       <SidebarContent>
         <div className="flex items-center gap-3 p-4">
-          <Image src="/logo.jpg" alt="Logo" width={40} height={40} />
+          <Image src="/logo.png" alt="Logo" width={40} height={40} />
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-green-500">Admin</h1>
           </div>

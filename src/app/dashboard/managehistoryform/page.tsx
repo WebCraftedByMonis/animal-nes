@@ -209,7 +209,7 @@ export default function ViewHistoryFormsPage() {
       </head>
       <body>
         <div class="header">
-          <img src="${window.location.origin}/logo.jpg" class="logo" /><br/>
+          <img src="${window.location.origin}/logo.png" class="logo" /><br/>
           <strong>Animal Wellness Shop</strong><br/>
           67-K Block, Commercial Market, DHA Phase-1, Lahore<br/>
           Phone: 03334145431; Email: animalwellnessshop@gmail.com

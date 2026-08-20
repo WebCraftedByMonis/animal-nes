@@ -108,8 +108,6 @@ export default async function CategoryPage({
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <nav className="text-sm text-gray-500 mb-4">
-          <Link href="/" className="hover:underline">Home</Link>
-          {' › '}
           <Link href="/products" className="hover:underline">Products</Link>
           {' › '}
           <span>{categoryName}</span>

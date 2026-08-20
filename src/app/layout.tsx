@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
     images: [
       {
-        url: "/logo.jpg",
+        url: "/logo.png",
         width: 1200,
         height: 630,
         alt: "Animal Wellness - Complete Veterinary Solutions",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Animal Wellness - Complete Veterinary Solutions",
     description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
-    images: ["/logo.jpg"],
+    images: ["/logo.png"],
   },
   alternates: {
     canonical: "/",

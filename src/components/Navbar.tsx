@@ -92,7 +92,7 @@ export default function Navbar() {
             <Link href="/" className="shrink-0">
               <div className="relative h-12 w-auto sm:h-14 md:h-16">
                 <Image
-                  src="/logo.jpg"
+                  src="/logo.png"
                   alt="Animal Wellness Shop Logo"
                   width={200}  // Adjust based on your logo's actual dimensions
                   height={60}   // Adjust based on your logo's actual dimensions

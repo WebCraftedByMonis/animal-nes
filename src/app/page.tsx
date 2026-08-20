@@ -215,7 +215,7 @@ export default async function Home() {
     name: "Animal Wellness",
     description: "Complete veterinary solutions and pet care products marketplace",
     url: "https://animalwellness.shop",
-    logo: "https://animalwellness.shop/logo.jpg",
+    logo: "https://animalwellness.shop/logo.png",
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer service",

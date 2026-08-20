@@ -18,7 +18,7 @@ export default function AboutContent() {
       <div className="max-w-7xl mt-7 mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-8 px-4">
         <section className="w-full lg:w-1/3 flex justify-center">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="logo"
             width={400}
             height={400}

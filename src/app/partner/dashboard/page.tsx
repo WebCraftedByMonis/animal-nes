@@ -611,7 +611,7 @@ export default function PartnerDashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <Image
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="Animal Wellness Logo"
                 width={120}
                 height={40}

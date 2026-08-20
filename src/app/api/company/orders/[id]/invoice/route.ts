@@ -105,9 +105,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (branded) {
     // Try to load and draw logo
     try {
-      const logoPath = path.join(process.cwd(), 'public', 'logo.jpg');
+      const logoPath = path.join(process.cwd(), 'public', 'logo.png');
       const logoBytes = await fs.readFile(logoPath);
-      const logoImage = await pdfDoc.embedJpg(logoBytes);
+      const logoImage = await pdfDoc.embedPng(logoBytes);
 
       const logoSize = 50;
       const logoX = (pageWidth - logoSize) / 2;
