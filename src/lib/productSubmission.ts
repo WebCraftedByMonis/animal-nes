@@ -96,6 +96,15 @@ export async function createPendingProductSubmission(
     })
   }
 
+  // Additional categories the product also shows up under, on top of the
+  // required primary `category` above — same mechanism as the admin form
+  // (see ProductCategory in the schema).
+  const additionalCategories = [...new Set(
+    formData.getAll('additionalCategories')
+      .map((v) => v.toString().trim())
+      .filter((v) => v && v !== validation.data.category)
+  )]
+
   return prisma.$transaction(async (tx) => {
     const product = await tx.product.create({
       data: {
@@ -109,6 +118,12 @@ export async function createPendingProductSubmission(
 
     for (const variant of variants) {
       await tx.productVariant.create({ data: { ...variant, productId: product.id } })
+    }
+
+    if (additionalCategories.length > 0) {
+      await tx.productCategory.createMany({
+        data: additionalCategories.map((category) => ({ productId: product.id, category })),
+      })
     }
 
     if (imageResult) {
@@ -139,7 +154,7 @@ export async function createPendingProductSubmission(
 
     return tx.product.findUnique({
       where: { id: product.id },
-      include: { image: true, pdf: true, variants: true },
+      include: { image: true, pdf: true, variants: true, categories: true },
     })
   })
 }

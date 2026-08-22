@@ -29,6 +29,7 @@ export async function GET(
         company: true,
         partner: true,
         variants: true,
+        categories: true,
         discounts: {
           where: {
             isActive: true,

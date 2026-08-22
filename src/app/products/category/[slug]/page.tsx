@@ -12,11 +12,21 @@ const PER_PAGE = 60
 
 type CategoryRow = { category: string; count: bigint }
 
+// Counts a category by DISTINCT product, whether it's the product's primary
+// `category` or one of its additional ProductCategory assignments — a
+// product tagged both ways for the same category only counts once.
 async function getAllValidCategories(): Promise<CategoryRow[]> {
   const rows = await prisma.$queryRaw<CategoryRow[]>`
-    SELECT category, COUNT(*) as count
-    FROM Product
-    WHERE isActive = 1 AND category IS NOT NULL AND category != ''
+    SELECT category, COUNT(*) as count FROM (
+      SELECT DISTINCT p.category AS category, p.id AS productId
+      FROM Product p
+      WHERE p.isActive = 1 AND p.category IS NOT NULL AND p.category != ''
+      UNION
+      SELECT DISTINCT pc.category AS category, pc.productId AS productId
+      FROM ProductCategory pc
+      INNER JOIN Product p ON p.id = pc.productId
+      WHERE p.isActive = 1
+    ) combined
     GROUP BY category
     HAVING count >= 5
     ORDER BY count DESC
@@ -71,7 +81,13 @@ export default async function CategoryPage({
   const totalPages = Math.ceil(totalCount / PER_PAGE)
 
   const products = await prisma.product.findMany({
-    where: { isActive: true, category: categoryName },
+    where: {
+      isActive: true,
+      OR: [
+        { category: categoryName },
+        { categories: { some: { category: categoryName } } },
+      ],
+    },
     select: {
       id: true,
       productName: true,

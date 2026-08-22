@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
       partner: { select: { id: true, partnerName: true } },
       variants: { orderBy: { id: 'asc' } },
       image: true,
+      categories: true,
     },
     orderBy: { id: 'asc' },
   })
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
       ProductName:    p.productName,
       GenericName:    p.genericName,
       Category:       p.category,
+      AdditionalCategories: p.categories.map((c) => c.category).join(', '),
       SubCategory:    p.subCategory,
       SubSubCategory: p.subsubCategory,
       ProductType:    p.productType,

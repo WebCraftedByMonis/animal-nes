@@ -5,7 +5,7 @@ import ProductClient from '@/components/products/ProductClient'
 import ProductReviewSection from '@/components/ProductReviewSection'
 import RelatedProductsClient from '@/components/products/RelatedProductsClient'
 import { prisma } from '@/lib/prisma'
-import { BLOCKED_CATEGORIES } from '@/lib/category-utils'
+import { BLOCKED_CATEGORIES, toSlug as toCategorySlug, getDisplayLabel } from '@/lib/category-utils'
 import { extractIdFromProductSlug, toCategorySlugForUrl, toProductUrl } from '@/lib/slug-utils'
 
 export const revalidate = 1800
@@ -23,6 +23,7 @@ const getProduct = cache(async (numId: number) => {
       company: true,
       partner: true,
       variants: true,
+      categories: true,
       discounts: {
         where: { isActive: true, startDate: { lte: now }, endDate: { gte: now } },
       },
@@ -392,6 +393,17 @@ export default async function ProductPage({
                   {normalizedCategory}
                 </Link>
               )}
+              {data.categories
+                .filter((c: { category: string }) => c.category !== data.category && !BLOCKED_CATEGORIES.has(c.category))
+                .map((c: { category: string }) => (
+                  <Link
+                    key={c.category}
+                    href={`/products/category/${toCategorySlug(c.category)}`}
+                    className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 transition-colors text-sm"
+                  >
+                    {getDisplayLabel(c.category)}
+                  </Link>
+                ))}
               {data.company?.companyName && (
                 <Link href={`/brands/${correctCatSlug}`} className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 transition-colors text-sm">
                   {data.company.companyName}

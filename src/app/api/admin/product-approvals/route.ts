@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
         genericName: true,
         category: true,
         subCategory: true,
+        categories: { select: { category: true } },
         description: true,
         approvalStatus: true,
         rejectionReason: true,

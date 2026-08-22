@@ -20,12 +20,14 @@ import axios, { AxiosError } from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import { SearchableCombobox } from "@/components/shared/SearchableCombobox";
 import { SuggestiveInput } from "@/components/shared/SuggestiveInput";
+import { TagsInput } from "@/components/shared/TagsInput";
 import { useCountry } from "@/contexts/CountryContext";
 
 const formSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
   genericName: z.string().optional(),
   category: z.string().min(1, "Category is required"),
+  additionalCategories: z.array(z.string()).optional().default([]),
   subCategory: z.string().min(1, "Sub-category is required"),
   subsubCategory: z.string().min(1, "Sub-sub-category is required"),
   productType: z.string().min(1, "Product type is required"),
@@ -101,6 +103,7 @@ export default function AddProductForm({
     productName: "",
     genericName: "",
     category: "",
+    additionalCategories: [],
     subCategory: "",
     subsubCategory: "",
     productType: "",
@@ -169,7 +172,7 @@ export default function AddProductForm({
       const formData = new FormData();
 
       // Append all form data
-      const { variants, ...otherFields } = data;
+      const { variants, additionalCategories, ...otherFields } = data;
 
       variants.forEach((variant, i) => {
         formData.append(`variants[${i}][packingVolume]`, variant.packingVolume);
@@ -177,6 +180,10 @@ export default function AddProductForm({
         formData.append(`variants[${i}][dealerPrice]`, variant.dealerPrice ?? "");
         formData.append(`variants[${i}][customerPrice]`, variant.customerPrice);
         formData.append(`variants[${i}][inventory]`, "100"); // Default inventory value
+      });
+
+      (additionalCategories ?? []).forEach((cat) => {
+        formData.append("additionalCategories", cat);
       });
 
       Object.entries(otherFields).forEach(([key, value]) => {
@@ -298,6 +305,39 @@ export default function AddProductForm({
           placeholder="Enter category"
         />
       </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
+              {/* Additional Categories — product also shows up under these,
+                  on top of the required Category above */}
+              <FormField
+  control={form.control}
+  name="additionalCategories"
+  render={({ field }) => (
+    <FormItem className="md:col-span-2">
+      <FormLabel>Additional Categories <span className="text-gray-400 font-normal">(optional)</span></FormLabel>
+      <FormControl>
+        <TagsInput
+          suggestions={[
+            "Veterinary",
+            "Poultry",
+            "Pets",
+            "Equine",
+            "Livestock Feed",
+            "Poultry Feed",
+            "Instruments & Equipment",
+            "Fisheries & Aquaculture",
+            "Vaccination Services / Kits",
+            "Herbal / Organic Products",
+          ]}
+          value={field.value ?? []}
+          onChange={field.onChange}
+          placeholder="Type a category and press Enter"
+        />
+      </FormControl>
+      <p className="text-xs text-gray-500">The product will also appear on these category pages, in addition to the main category above.</p>
       <FormMessage />
     </FormItem>
   )}

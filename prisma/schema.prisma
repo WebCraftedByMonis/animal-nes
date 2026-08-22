@@ -72,6 +72,11 @@ model Product {
   affiliateProduct   AffiliateProduct?
   affiliateLinks     AffiliateLink[]
   sponsorships       ProductSponsorship[]
+  // Additional categories this product also shows up under, on top of the
+  // primary `category` field above. The primary field keeps deciding the
+  // product's URL/canonical (no SEO churn) — these are purely extra browse
+  // listings. See ProductCategory below.
+  categories         ProductCategory[]
 
   @@index([companyId])
   @@index([partnerId])
@@ -80,6 +85,22 @@ model Product {
   @@index([isActive, category])
   @@index([approvalStatus])
   @@index([isActive, rankingScore])
+}
+
+// Many-to-many "also appears under" categories for a product, additive to
+// Product.category (the primary category, which alone still drives the
+// product's URL/canonical). A product can have any number of these; category
+// browse pages union primary + these when listing/counting products.
+model ProductCategory {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  category  String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@unique([productId, category])
+  @@index([productId])
+  @@index([category])
 }
 
 enum ProductApprovalStatus {

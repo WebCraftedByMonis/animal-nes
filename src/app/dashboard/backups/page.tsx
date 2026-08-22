@@ -27,7 +27,7 @@ interface UploadProgress {
 const BATCH_SIZE = 50;
 
 const backupItems: { type: BackupType; label: string; description: string }[] = [
-  { type: 'products',  label: 'Products',  description: 'All products with company and partner references.' },
+  { type: 'products',  label: 'Products',  description: 'All products with company, partner references, and additional categories.' },
   { type: 'companies', label: 'Companies', description: 'All companies and contact details.' },
   { type: 'partners',  label: 'Partners',  description: 'All partners and profile details.' },
 ];

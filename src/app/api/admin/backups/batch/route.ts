@@ -208,10 +208,27 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
+        // AdditionalCategories column is a comma-separated list, mirroring
+        // how it's written out on export. Only touched when the column is
+        // actually present in the row — an older backup file without it
+        // leaves the product's existing extra categories untouched instead
+        // of silently wiping them.
+        const additionalCategoriesRaw = row.additionalCategories ?? row.AdditionalCategories;
+        const hasAdditionalCategoriesCol = additionalCategoriesRaw !== undefined;
+        const resolvedCategory = s(row.category ?? row.Category);
+        const additionalCategories = hasAdditionalCategoriesCol
+          ? [...new Set(
+              String(additionalCategoriesRaw ?? '')
+                .split(',')
+                .map((c) => c.trim())
+                .filter((c) => c && c !== resolvedCategory)
+            )]
+          : null;
+
         const productData = {
           productName,
           genericName:    s(row.genericName    ?? row.GenericName),
-          category:       s(row.category       ?? row.Category),
+          category:       resolvedCategory,
           subCategory:    s(row.subCategory    ?? row.SubCategory),
           subsubCategory: s(row.subsubCategory ?? row.SubSubCategory),
           productType:    s(row.productType    ?? row.ProductType),
@@ -282,6 +299,15 @@ export async function POST(request: NextRequest) {
               create: { url: imageUrl, alt: imageAlt, publicId: imagePublicId, productId: existing.id },
             });
           }
+          if (additionalCategories !== null) {
+            const existingId = existing.id;
+            await prisma.productCategory.deleteMany({ where: { productId: existingId } });
+            if (additionalCategories.length > 0) {
+              await prisma.productCategory.createMany({
+                data: additionalCategories.map((category) => ({ productId: existingId, category })),
+              });
+            }
+          }
         } else {
           const newProduct = await prisma.product.create({
             data: {
@@ -302,6 +328,11 @@ export async function POST(request: NextRequest) {
           if (imageUrl) {
             await prisma.productImage.create({
               data: { url: imageUrl, alt: imageAlt, publicId: imagePublicId, productId: newProduct.id },
+            });
+          }
+          if (additionalCategories && additionalCategories.length > 0) {
+            await prisma.productCategory.createMany({
+              data: additionalCategories.map((category) => ({ productId: newProduct.id, category })),
             });
           }
         }

@@ -150,6 +150,15 @@ export async function POST(request: NextRequest) {
 
     console.log('--- Parsed Variants ---', variants)
 
+    // Additional categories the product also shows up under, on top of the
+    // required primary `category` above (see ProductCategory in the
+    // schema). Sent as repeated `additionalCategories` form fields.
+    const additionalCategories = [...new Set(
+      formData.getAll('additionalCategories')
+        .map((v) => v.toString().trim())
+        .filter((v) => v && v !== validation.data.category)
+    )]
+
     // Create product with relations
     const product = await prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
@@ -162,6 +171,12 @@ export async function POST(request: NextRequest) {
             ...variant,
             productId: product.id,
           },
+        })
+      }
+
+      if (additionalCategories.length > 0) {
+        await tx.productCategory.createMany({
+          data: additionalCategories.map((category) => ({ productId: product.id, category })),
         })
       }
 
@@ -197,10 +212,11 @@ export async function POST(request: NextRequest) {
 
       return tx.product.findUnique({
         where: { id: product.id },
-        include: { 
-          image: true, 
+        include: {
+          image: true,
           pdf: true,
-          variants: true
+          variants: true,
+          categories: true
         }
       })
     })
@@ -401,21 +417,34 @@ export async function GET(req: NextRequest) {
   // doesn't contain the word (see scoreSearchMatch for how these rank).
   // In MySQL, contains is case-insensitive by default
   if (search) {
-    where.OR = [
-      { productName: { contains: search } },
-      { genericName: { contains: search } },
-      { description: { contains: search } },
-      { dosage: { contains: search } },
-      { category: { contains: search } },
-      { subCategory: { contains: search } },
-      { subsubCategory: { contains: search } },
-      { productType: { contains: search } },
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      {
+        OR: [
+          { productName: { contains: search } },
+          { genericName: { contains: search } },
+          { description: { contains: search } },
+          { dosage: { contains: search } },
+          { category: { contains: search } },
+          { subCategory: { contains: search } },
+          { subsubCategory: { contains: search } },
+          { productType: { contains: search } },
+          { categories: { some: { category: { contains: search } } } },
+        ],
+      },
     ]
   }
 
-  // Category filters
+  // Category filters — matches either the primary category or one of the
+  // product's additional categories (see ProductCategory in the schema).
+  // Kept as its own AND-ed OR clause so it composes correctly alongside the
+  // search filter above instead of being merged into the same OR (which
+  // would turn "search AND category" into "search OR category").
   if (category && category !== 'all') {
-    where.category = category
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      { OR: [{ category }, { categories: { some: { category } } }] },
+    ]
   }
   if (subCategory && subCategory !== 'all') {
     where.subCategory = subCategory
@@ -501,6 +530,7 @@ export async function GET(req: NextRequest) {
       pdf: true,
       variants: true,
       discounts: { where: discountInclude },
+      categories: true,
     }
 
     let items: any[]
@@ -722,6 +752,21 @@ export async function PUT(request: NextRequest) {
 
     
 
+    // Additional categories — only touched when the caller explicitly marks
+    // the field as provided (via `additionalCategoriesProvided`). This lets
+    // a full edit form send an empty list to clear all extra categories,
+    // while older/partial callers that omit the marker leave the product's
+    // existing extra categories untouched instead of silently wiping them.
+    const hasAdditionalCategories = formData.get('additionalCategoriesProvided') === 'true'
+    const effectiveCategory = validation.data.category ?? existingProduct.category
+    const additionalCategories = hasAdditionalCategories
+      ? [...new Set(
+          formData.getAll('additionalCategories')
+            .map((v) => v.toString().trim())
+            .filter((v) => v && v !== effectiveCategory)
+        )]
+      : null
+
     // Update product with transactions
     const updatedProduct = await prisma.$transaction(async (tx) => {
       // Update product data
@@ -730,7 +775,16 @@ export async function PUT(request: NextRequest) {
         data: validation.data,
       })
 
-      
+      if (additionalCategories !== null) {
+        await tx.productCategory.deleteMany({ where: { productId } })
+        if (additionalCategories.length > 0) {
+          await tx.productCategory.createMany({
+            data: additionalCategories.map((category) => ({ productId, category })),
+          })
+        }
+      }
+
+
 
       // Delete existing variants and create new ones
       if (variants.length > 0) {
@@ -835,12 +889,13 @@ export async function PUT(request: NextRequest) {
       // Return the updated product with all relations
       return tx.product.findUnique({
         where: { id: productId },
-        include: { 
-          image: true, 
+        include: {
+          image: true,
           pdf: true,
           variants: true,
           company: true,
-          partner: true
+          partner: true,
+          categories: true
         }
       })
     })

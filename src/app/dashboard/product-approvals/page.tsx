@@ -10,6 +10,7 @@ interface PendingProduct {
   genericName: string | null;
   category: string | null;
   subCategory: string | null;
+  categories: { category: string }[];
   description: string | null;
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   rejectionReason: string | null;
@@ -223,6 +224,12 @@ export default function ProductApprovalsPage() {
                     <p className="text-gray-600 dark:text-gray-400">Category</p>
                     <p className="font-medium dark:text-gray-100">{[selected.category, selected.subCategory].filter(Boolean).join(' / ') || '-'}</p>
                   </div>
+                  {selected.categories.length > 0 && (
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">Also Listed Under</p>
+                      <p className="font-medium dark:text-gray-100">{selected.categories.map(c => c.category).join(', ')}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Generic Name</p>
                     <p className="font-medium dark:text-gray-100">{selected.genericName || '-'}</p>

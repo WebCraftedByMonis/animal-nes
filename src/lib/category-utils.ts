@@ -60,21 +60,40 @@ export interface CategoryEntry {
   count: number
 }
 
+// Counts a category by DISTINCT product, whether the product carries it as
+// its primary `category` or as one of its additional ProductCategory rows —
+// a product tagged both ways for the same category only counts once. Plain
+// SQL because Prisma's groupBy can't express a UNION across the two sources.
+type CategoryCountRow = { category: string; count: bigint }
+
+async function getCombinedCategoryCounts(): Promise<CategoryCountRow[]> {
+  return prisma.$queryRaw<CategoryCountRow[]>`
+    SELECT category, COUNT(*) as count FROM (
+      SELECT DISTINCT p.category AS category, p.id AS productId
+      FROM Product p
+      WHERE p.isActive = 1 AND p.category IS NOT NULL AND p.category != ''
+      UNION
+      SELECT DISTINCT pc.category AS category, pc.productId AS productId
+      FROM ProductCategory pc
+      INNER JOIN Product p ON p.id = pc.productId
+      WHERE p.isActive = 1
+    ) combined
+    GROUP BY category
+    ORDER BY count DESC
+  `
+}
+
 export const getAllCategories = unstable_cache(
   async (): Promise<CategoryEntry[]> => {
-    const groups = await prisma.product.groupBy({
-      by: ['category'],
-      where: { isActive: true, category: { not: null } },
-      _count: { id: true },
-      orderBy: { _count: { id: 'desc' } },
-    })
+    const groups = await getCombinedCategoryCounts()
 
     const seen = new Set<string>()
     const result: CategoryEntry[] = []
 
     for (const g of groups) {
       const cat = g.category
-      if (!cat || BLOCKED_CATEGORIES.has(cat) || g._count.id < 10) continue
+      const count = Number(g.count)
+      if (!cat || BLOCKED_CATEGORIES.has(cat) || count < 10) continue
       const slug = toSlug(cat)
       if (seen.has(slug)) continue  // skip slug collisions (keep highest count)
       seen.add(slug)
@@ -82,7 +101,7 @@ export const getAllCategories = unstable_cache(
         category:     cat,
         slug,
         displayLabel: getDisplayLabel(cat),
-        count:        g._count.id,
+        count,
       })
     }
 

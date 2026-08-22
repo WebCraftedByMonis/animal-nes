@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SuggestiveInput } from '@/components/shared/SuggestiveInput'
+import { TagsInput } from '@/components/shared/TagsInput'
 import { ComboboxSelect } from '@/components/shared/ComboboxSelect'
 import { useCountry } from '@/contexts/CountryContext'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -47,6 +48,7 @@ interface Product {
   genericName: string | null
   productLink: string | null
   category: string
+  categories: { category: string }[]
   subCategory: string
   subsubCategory: string
   productType: string
@@ -95,6 +97,7 @@ export default function ViewProductsPage() {
   const [editGenericName, setEditGenericName] = useState('')
   const [editProductLink, setEditProductLink] = useState('')
   const [editCategory, setEditCategory] = useState('')
+  const [editAdditionalCategories, setEditAdditionalCategories] = useState<string[]>([])
   const [editSubCategory, setEditSubCategory] = useState('')
   const [editSubsubCategory, setEditSubsubCategory] = useState('')
   const [editProductType, setEditProductType] = useState('')
@@ -179,6 +182,8 @@ export default function ViewProductsPage() {
       if (editGenericName) formData.append('genericName', editGenericName)
       if (editProductLink) formData.append('productLink', editProductLink)
       formData.append('category', editCategory)
+      formData.append('additionalCategoriesProvided', 'true')
+      editAdditionalCategories.forEach((cat) => formData.append('additionalCategories', cat))
       formData.append('subCategory', editSubCategory)
       formData.append('subsubCategory', editSubsubCategory)
       formData.append('productType', editProductType)
@@ -601,6 +606,7 @@ export default function ViewProductsPage() {
                         setEditGenericName(product.genericName || '')
                         setEditProductLink(product.productLink || '')
                         setEditCategory(product.category)
+                        setEditAdditionalCategories(product.categories.map(c => c.category))
                         setEditSubCategory(product.subCategory)
                         setEditSubsubCategory(product.subsubCategory)
                         setEditProductType(product.productType)
@@ -685,6 +691,7 @@ export default function ViewProductsPage() {
     setEditProductPdf(null)
     setEditProductImagePreview(null)
     setEditImageUrl('')
+    setEditAdditionalCategories([])
   }
 }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -736,6 +743,28 @@ export default function ViewProductsPage() {
                   onChange={(v) => setEditCategory(v)}
                   placeholder="Enter category"
                 />
+              </div>
+
+              <div>
+                <Label>Additional Categories <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <TagsInput
+                  suggestions={[
+                    "Veterinary",
+                    "Poultry",
+                    "Pets",
+                    "Equine",
+                    "Livestock Feed",
+                    "Poultry Feed",
+                    "Instruments & Equipment",
+                    "Fisheries & Aquaculture",
+                    "Vaccination Services / Kits",
+                    "Herbal / Organic Products",
+                  ]}
+                  value={editAdditionalCategories}
+                  onChange={setEditAdditionalCategories}
+                  placeholder="Type a category and press Enter"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Also shows this product on these category pages.</p>
               </div>
 
               <div>
