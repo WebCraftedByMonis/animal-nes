@@ -30,8 +30,8 @@ const fs = require('fs')
 
 const prisma = new PrismaClient()
 const PROGRESS_FILE = 'bulk-rewrite-progress.json'
-const BATCH_SIZE = 15
-const DELAY_MS = 3000        // 3 seconds between calls → well under 30 RPM limit
+const BATCH_SIZE = 8         // gpt-oss-20b TPM cap is 8000 — 15 was ~9500-10600 tokens/request
+const DELAY_MS = 50000       // gpt-oss-20b TPM cap (8000) only allows ~1 request/minute
 const RETRY_DELAY_MS = 30000 // 30 seconds on rate-limit error
 
 // ─── canonical category taxonomy ───────────────────────────────────────────────
@@ -160,7 +160,7 @@ Replace ID_1, ID_2 etc with the actual numeric IDs from the list above.`
       model: 'openai/gpt-oss-20b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.5,
-      max_tokens: 7000,
+      max_tokens: 4000,
     }),
     signal: AbortSignal.timeout(60000),
   })
