@@ -157,7 +157,7 @@ Replace ID_1, ID_2 etc with the actual numeric IDs from the list above.`
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'openai/gpt-oss-20b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.5,
       max_tokens: 7000,
