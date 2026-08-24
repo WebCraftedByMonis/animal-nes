@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { Loader2, Megaphone } from 'lucide-react';
+import { Loader2, Megaphone, Check, ChevronDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Button } from '@/components/ui/button';
 
 interface SponsorshipSettings {
   pricePerDay: number;
@@ -17,17 +20,33 @@ interface SponsorshipSettings {
   accountNumber: string | null;
 }
 
+interface ProductOption {
+  id: number;
+  productName: string;
+}
+
 interface SponsorProductFormProps {
-  products: { id: number; productName: string }[];
+  /** e.g. '/api/partner/products' or '/api/company/products' — the vendor's
+   *  own paginated+searchable product listing endpoint. Queried live here
+   *  instead of taking a static list, since a vendor's full product list can
+   *  span many pages and a plain <select> (or a list capped to whatever page
+   *  happens to be loaded elsewhere on the page) can't surface all of it. */
+  productsEndpoint: string;
   submitEndpoint: string;
   isUAE?: boolean;
   onSuccess: () => void;
 }
 
-export default function SponsorProductForm({ products, submitEndpoint, isUAE, onSuccess }: SponsorProductFormProps) {
+export default function SponsorProductForm({ productsEndpoint, submitEndpoint, isUAE, onSuccess }: SponsorProductFormProps) {
   const [settings, setSettings] = useState<SponsorshipSettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [productId, setProductId] = useState<string>('');
+  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(null);
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
+  const [productSearchLoading, setProductSearchLoading] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [durationDays, setDurationDays] = useState<number>(7);
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -44,6 +63,37 @@ export default function SponsorProductForm({ products, submitEndpoint, isUAE, on
       .catch(() => toast.error('Failed to load sponsorship pricing'))
       .finally(() => setLoadingSettings(false));
   }, []);
+
+  const fetchProductOptions = useCallback(async (search: string) => {
+    setProductSearchLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: '20' });
+      if (search.trim()) params.set('search', search.trim());
+      const res = await fetch(`${productsEndpoint}?${params.toString()}`);
+      const data = await res.json();
+      if (res.ok) {
+        setProductOptions((data.products || []).map((p: ProductOption) => ({ id: p.id, productName: p.productName })));
+      }
+    } catch {
+      setProductOptions([]);
+    } finally {
+      setProductSearchLoading(false);
+    }
+  }, [productsEndpoint]);
+
+  // Load an initial batch of products as soon as the picker opens for the
+  // first time, so there's something to see before the vendor types.
+  useEffect(() => {
+    if (productSearchOpen && productOptions.length === 0 && !productSearchLoading) {
+      fetchProductOptions('');
+    }
+  }, [productSearchOpen, productOptions.length, productSearchLoading, fetchProductOptions]);
+
+  const handleProductSearchChange = (value: string) => {
+    setProductSearchTerm(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => fetchProductOptions(value), 300);
+  };
 
   const rate = settings ? (isUAE ? settings.pricePerDayAED : settings.pricePerDay) : 0;
   const amount = rate * durationDays;
@@ -106,17 +156,57 @@ export default function SponsorProductForm({ products, submitEndpoint, isUAE, on
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
-        <select
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-          required
-        >
-          <option value="">Select a product</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>{p.productName}</option>
-          ))}
-        </select>
+        <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={productSearchOpen}
+              className="w-full justify-between font-normal"
+            >
+              <span className={selectedProduct ? '' : 'text-muted-foreground'}>
+                {selectedProduct ? selectedProduct.productName : 'Search your products…'}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Type a product name…"
+                value={productSearchTerm}
+                onValueChange={handleProductSearchChange}
+              />
+              {productSearchLoading && (
+                <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…
+                </div>
+              )}
+              {!productSearchLoading && productOptions.length === 0 && (
+                <CommandEmpty>No products found.</CommandEmpty>
+              )}
+              {!productSearchLoading && productOptions.length > 0 && (
+                <CommandGroup className="max-h-60 overflow-y-auto">
+                  {productOptions.map((p) => (
+                    <CommandItem
+                      key={p.id}
+                      value={String(p.id)}
+                      onSelect={() => {
+                        setProductId(String(p.id));
+                        setSelectedProduct(p);
+                        setProductSearchOpen(false);
+                      }}
+                    >
+                      {p.productName}
+                      {String(p.id) === productId && <Check className="ml-auto h-4 w-4" />}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div>

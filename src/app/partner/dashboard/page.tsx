@@ -2069,7 +2069,7 @@ export default function PartnerDashboard() {
             <DialogTitle className="sr-only">Boost a Product</DialogTitle>
           </DialogHeader>
           <SponsorProductForm
-            products={products.map((p) => ({ id: p.id, productName: p.productName }))}
+            productsEndpoint="/api/partner/products"
             submitEndpoint="/api/partner/sponsorships/submit"
             isUAE={partner?.country === 'UAE'}
             onSuccess={() => setShowSponsorProduct(false)}

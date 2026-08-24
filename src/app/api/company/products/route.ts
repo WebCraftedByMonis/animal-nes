@@ -31,16 +31,22 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
+    const search = url.searchParams.get('search')?.trim();
+
+    const where = {
+      companyId,
+      ...(search ? { productName: { contains: search } } : {}),
+    };
 
     const [products, totalProducts] = await Promise.all([
       prisma.product.findMany({
-        where: { companyId },
+        where,
         include: { image: true, variants: true },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { productName: 'asc' },
       }),
-      prisma.product.count({ where: { companyId } }),
+      prisma.product.count({ where }),
     ]);
 
     return NextResponse.json({
