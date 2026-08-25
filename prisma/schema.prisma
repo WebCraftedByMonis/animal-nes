@@ -1874,13 +1874,13 @@ model SponsorshipSettings {
 // Single-row config (always id=1), same singleton pattern as
 // RankingSettings/SponsorshipSettings — editable from
 // /dashboard/featured-company. Only one company can be featured at a time.
+// No separate banner upload — the banner image is always the selected
+// company's own CompanyImage, read live at render time.
 model FeaturedCompany {
   id                     Int      @id @default(1)
   company                Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   companyId              Int?
   isActive               Boolean  @default(false)
-  bannerImageUrl         String?  @db.Text
-  bannerImagePublicId    String?
   tagline                String?  @db.Text
   ctaText                String?  @default("Shop Now")
   rankingBoostMultiplier Float    @default(3.0) // stacks with sponsorship/new-vendor/new-product boosts

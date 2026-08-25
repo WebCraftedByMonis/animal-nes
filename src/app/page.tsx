@@ -209,7 +209,7 @@ async function getFeaturedCompany() {
   try {
     const featured = await prisma.featuredCompany.findUnique({
       where: { id: 1 },
-      include: { company: { select: { id: true, companyName: true } } },
+      include: { company: { select: { id: true, companyName: true, image: { select: { url: true } } } } },
     })
     if (!featured || !featured.isActive || !featured.company) return null
 
@@ -228,7 +228,8 @@ async function getFeaturedCompany() {
       companyName: featured.company.companyName,
       tagline: featured.tagline,
       ctaText: featured.ctaText || 'Shop Now',
-      bannerImageUrl: featured.bannerImageUrl,
+      // No dedicated banner upload — always the company's own logo/image.
+      bannerImageUrl: featured.company.image?.url ?? null,
       products: products.map((p) => ({
         id: p.id,
         productName: p.productName,

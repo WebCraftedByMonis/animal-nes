@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         companyName: true,
+        image: { select: { url: true } },
       },
       orderBy: {
         companyName: 'asc',

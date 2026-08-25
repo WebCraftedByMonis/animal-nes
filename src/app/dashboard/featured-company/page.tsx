@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { Loader2, Sparkles, ChevronDown, Check, X, Upload } from 'lucide-react';
+import { Loader2, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,17 @@ import { Switch } from '@/components/ui/switch';
 interface CompanyOption {
   id: number;
   companyName: string | null;
+  image?: { url: string } | null;
 }
 
 interface FeaturedCompanyData {
   id: number;
   companyId: number | null;
   isActive: boolean;
-  bannerImageUrl: string | null;
   tagline: string | null;
   ctaText: string | null;
   rankingBoostMultiplier: number;
-  company: { id: number; companyName: string | null; country: string | null } | null;
+  company: { id: number; companyName: string | null; country: string | null; image?: { url: string } | null } | null;
 }
 
 export default function FeaturedCompanyPage() {
@@ -35,9 +35,6 @@ export default function FeaturedCompanyPage() {
   const [tagline, setTagline] = useState('');
   const [ctaText, setCtaText] = useState('Shop Now');
   const [boostMultiplier, setBoostMultiplier] = useState(3);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [removeBanner, setRemoveBanner] = useState(false);
 
   // Company search combobox
   const [companySearchOpen, setCompanySearchOpen] = useState(false);
@@ -48,19 +45,23 @@ export default function FeaturedCompanyPage() {
 
   const loadFeatured = useCallback(() => {
     setLoading(true);
+    console.log('[featured-company] loading current settings…');
     fetch('/api/admin/featured-company')
       .then((res) => res.json())
       .then((data) => {
+        console.log('[featured-company] loaded:', data);
         const f: FeaturedCompanyData = data.featured;
         setFeatured(f);
-        setSelectedCompany(f.company ? { id: f.company.id, companyName: f.company.companyName } : null);
+        setSelectedCompany(f.company ? { id: f.company.id, companyName: f.company.companyName, image: f.company.image } : null);
         setIsActive(f.isActive);
         setTagline(f.tagline || '');
         setCtaText(f.ctaText || 'Shop Now');
         setBoostMultiplier(f.rankingBoostMultiplier || 3);
-        setBannerPreview(f.bannerImageUrl || null);
       })
-      .catch(() => toast.error('Failed to load featured company settings'))
+      .catch((err) => {
+        console.error('[featured-company] failed to load:', err);
+        toast.error('Failed to load featured company settings');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -76,9 +77,10 @@ export default function FeaturedCompanyPage() {
       const res = await fetch(`/api/company/search?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
-        setCompanyOptions((data.data || []).map((c: CompanyOption) => ({ id: c.id, companyName: c.companyName })));
+        setCompanyOptions((data.data || []).map((c: CompanyOption) => ({ id: c.id, companyName: c.companyName, image: c.image })));
       }
-    } catch {
+    } catch (err) {
+      console.error('[featured-company] company search failed:', err);
       setCompanyOptions([]);
     } finally {
       setCompanySearchLoading(false);
@@ -97,54 +99,37 @@ export default function FeaturedCompanyPage() {
     searchDebounceRef.current = setTimeout(() => fetchCompanyOptions(value), 300);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Banner image must be under 10MB');
-      return;
-    }
-    setBannerFile(file);
-    setRemoveBanner(false);
-    const reader = new FileReader();
-    reader.onload = () => setBannerPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveBanner = () => {
-    setBannerFile(null);
-    setBannerPreview(null);
-    setRemoveBanner(true);
-  };
-
   const handleSave = async () => {
     setSaving(true);
+    const payload = {
+      companyId: selectedCompany ? selectedCompany.id : null,
+      isActive,
+      tagline,
+      ctaText,
+      rankingBoostMultiplier: boostMultiplier,
+    };
+    console.log('[featured-company] saving:', payload);
     try {
-      const formData = new FormData();
-      formData.append('companyId', selectedCompany ? String(selectedCompany.id) : '');
-      formData.append('isActive', String(isActive));
-      formData.append('tagline', tagline);
-      formData.append('ctaText', ctaText);
-      formData.append('rankingBoostMultiplier', String(boostMultiplier));
-      formData.append('removeBanner', String(removeBanner));
-      if (bannerFile) formData.append('bannerImage', bannerFile);
-
-      const response = await fetch('/api/admin/featured-company', { method: 'PUT', body: formData });
+      const response = await fetch('/api/admin/featured-company', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       const data = await response.json();
+      console.log('[featured-company] save response:', response.status, data);
 
       if (response.ok) {
         toast.success(
           isActive && selectedCompany
-            ? `${selectedCompany.companyName} is now boosted — ${data.rankingUpdated} products' rankings recalculated`
+            ? `${selectedCompany.companyName} is now boosted — rankings are recalculating in the background`
             : 'Featured company settings saved'
         );
-        setBannerFile(null);
-        setRemoveBanner(false);
         loadFeatured();
       } else {
         toast.error(data.error || 'Failed to save');
       }
-    } catch {
+    } catch (err) {
+      console.error('[featured-company] save failed:', err);
       toast.error('An error occurred while saving');
     } finally {
       setSaving(false);
@@ -163,7 +148,8 @@ export default function FeaturedCompanyPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Featured Company</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm">
             Spotlight one company sitewide — a homepage banner + highlighted rail, and a real ranking boost for
-            their products on the shop page. Free, admin-set — not the vendor-paid boost/sponsor form.
+            their products on the shop page. Free, admin-set — not the vendor-paid boost/sponsor form. The banner
+            uses that company&apos;s own logo, so there&apos;s nothing to upload here.
           </p>
         </div>
       </div>
@@ -231,27 +217,23 @@ export default function FeaturedCompanyPage() {
           </Popover>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Banner image</label>
-          {bannerPreview ? (
-            <div className="relative rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
-              <img src={bannerPreview} alt="Banner preview" className="w-full h-40 object-cover" />
-              <button
-                type="button"
-                onClick={handleRemoveBanner}
-                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <label className="flex flex-col items-center justify-center gap-2 h-40 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-md cursor-pointer hover:border-green-400 text-gray-500">
-              <Upload className="w-6 h-6" />
-              <span className="text-sm">Click to upload a banner (recommended 1600×500)</span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        {selectedCompany && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Banner preview (their logo)
             </label>
-          )}
-        </div>
+            {selectedCompany.image?.url ? (
+              <div className="rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-muted">
+                <img src={selectedCompany.image.url} alt={selectedCompany.companyName || ''} className="w-full h-40 object-contain" />
+              </div>
+            ) : (
+              <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-md p-3">
+                This company has no logo uploaded yet (see {selectedCompany.companyName ? `${selectedCompany.companyName}'s` : 'their'} record
+                under Companies). The homepage banner will show a plain placeholder until one is added.
+              </p>
+            )}
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tagline</label>
@@ -293,7 +275,7 @@ export default function FeaturedCompanyPage() {
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-          {saving ? 'Saving & recalculating rankings…' : 'Save & Apply'}
+          {saving ? 'Saving…' : 'Save & Apply'}
         </Button>
       </div>
     </div>

@@ -11,7 +11,7 @@ export async function GET() {
     const featured = await cached('featured-company:public', 300, async () => {
       const row = await prisma.featuredCompany.findUnique({
         where: { id: 1 },
-        include: { company: { select: { id: true, companyName: true } } },
+        include: { company: { select: { id: true, companyName: true, image: { select: { url: true } } } } },
       })
       if (!row || !row.isActive || !row.company) return null
       return {
@@ -19,7 +19,8 @@ export async function GET() {
         companyName: row.company.companyName,
         tagline: row.tagline,
         ctaText: row.ctaText,
-        bannerImageUrl: row.bannerImageUrl,
+        // No dedicated banner upload — always the company's own logo/image.
+        bannerImageUrl: row.company.image?.url ?? null,
       }
     })
     return NextResponse.json({ featured })
