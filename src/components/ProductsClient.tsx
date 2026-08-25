@@ -7,6 +7,7 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,7 +17,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
-import { Filter, X, Search, Sparkles } from 'lucide-react'
+import { Filter, X, Search, Sparkles, ArrowRight } from 'lucide-react'
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet"
@@ -64,6 +66,27 @@ interface Product {
   image: { url: string; alt: string; publicId: string | null } | null
   variants: { id?: number; packingVolume: string | null; customerPrice: number | null; companyPrice?: number | null; dealerPrice?: number | null; inventory: number | null }[]
   discounts?: Discount[]
+}
+
+// Admin-picked homepage/shop-wide spotlight — see /api/featured-company and
+// /dashboard/featured-company. `products` here is a lightweight subset
+// (just enough for the carousel/card), distinct from the full `Product`
+// shape the rest of this page fetches from /api/product.
+interface FeaturedCompanyProduct {
+  id: number
+  productName: string
+  category: string | null
+  image: { url: string; alt: string } | null
+  price: number | null
+}
+
+interface FeaturedCompany {
+  companyId: number
+  companyName: string | null
+  tagline: string | null
+  ctaText: string | null
+  bannerImageUrl: string | null
+  products: FeaturedCompanyProduct[]
 }
 
 const categories = [
@@ -135,14 +158,33 @@ export default function ProductsClient() {
   const [partnerFilter, setPartnerFilter] = useState<string>(searchParams.get('partnerId') || '')
 
   // Admin-picked homepage/shop-wide spotlight (see /dashboard/featured-company).
-  // Just the id, so matching product cards can carry a "Featured Brand" badge.
-  const [featuredCompanyId, setFeaturedCompanyId] = useState<number | null>(null)
+  // Drives both the "Featured Brand" badge on matching product cards and the
+  // product carousel at the top of the page.
+  const [featuredCompany, setFeaturedCompany] = useState<FeaturedCompany | null>(null)
   useEffect(() => {
     fetch('/api/featured-company')
       .then((res) => res.json())
-      .then((data) => setFeaturedCompanyId(data.featured?.companyId ?? null))
+      .then((data) => setFeaturedCompany(data.featured ?? null))
       .catch(() => {})
   }, [])
+  const featuredCompanyId = featuredCompany?.companyId ?? null
+
+  // Dismissible, keyed to companyId — dismissing one company's rail doesn't
+  // hide a *different* company's rail if the admin changes the spotlight.
+  const [dismissedFeaturedId, setDismissedFeaturedId] = useState<number | null>(null)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('dismissedFeaturedCompanyId')
+      if (stored) setDismissedFeaturedId(Number(stored))
+    } catch {}
+  }, [])
+  const dismissFeaturedRail = (companyId: number) => {
+    setDismissedFeaturedId(companyId)
+    try {
+      localStorage.setItem('dismissedFeaturedCompanyId', String(companyId))
+    } catch {}
+  }
+
   // Track if price filter was explicitly applied by user (via URL params or button click)
   const hasPriceFilterFromUrl = searchParams.get('minPrice') !== null || searchParams.get('maxPrice') !== null
   const [priceFilterApplied, setPriceFilterApplied] = useState(hasPriceFilterFromUrl)
@@ -223,6 +265,91 @@ export default function ProductsClient() {
     !companyFilter &&
     !partnerFilter &&
     !priceFilterApplied
+
+  // Featured Company rail: render behaviour is a function of page state, not
+  // just page identity — a carousel above search results does real damage
+  // to someone hunting a specific brand-name product, so it only ever shows
+  // on the truly unfiltered/unsearched view or a filtered view where it can
+  // narrow (not distract). Never past page 1 — pagination is precisely when
+  // someone has committed to a specific slice of results.
+  // - 'full': no search, no filters (isPortionedView) — the company's
+  //   generic top products (static, from /api/featured-company).
+  // - 'scoped': filters active but no search text — that company's
+  //   products *within the current filters* (live query below), so the
+  //   rail narrows instead of advertises.
+  // - 'hidden': a search term is present, page > 1, or the grid is already
+  //   filtered down to just this company (the rail would be redundant).
+  const featuredRailMode: 'full' | 'scoped' | 'hidden' = (() => {
+    if (!featuredCompany || featuredCompany.companyId === dismissedFeaturedId) return 'hidden'
+    if (search) return 'hidden'
+    if (page !== 1) return 'hidden'
+    if (companyFilter === String(featuredCompany.companyId)) return 'hidden'
+    return isPortionedView ? 'full' : 'scoped'
+  })()
+
+  // Live-scoped rail data for 'scoped' mode — a separate, small query
+  // (reuses /api/product, same indexes and caching as the main grid, no new
+  // caching surface to maintain) rather than joined into the main filtered
+  // query, so it can never slow down the grid's own fetch.
+  const [scopedFeaturedProducts, setScopedFeaturedProducts] = useState<FeaturedCompanyProduct[] | null>(null)
+  const [scopedFeaturedTotal, setScopedFeaturedTotal] = useState(0)
+  useEffect(() => {
+    if (featuredRailMode !== 'scoped' || !featuredCompany) {
+      setScopedFeaturedProducts(null)
+      return
+    }
+    let cancelled = false
+    axios
+      .get('/api/product', {
+        params: {
+          publicOnly: true,
+          companyId: featuredCompany.companyId,
+          category: categoryFilter === 'all' ? undefined : categoryFilter,
+          subCategory: subCategoryFilter === 'all' ? undefined : subCategoryFilter,
+          subsubCategory: subSubCategoryFilter === 'all' ? undefined : subSubCategoryFilter,
+          productType: productTypeFilter === 'all' ? undefined : productTypeFilter,
+          minPrice: priceFilterApplied ? appliedPriceRange[0] : undefined,
+          maxPrice: priceFilterApplied ? appliedPriceRange[1] : undefined,
+          sortBy: 'relevance',
+          limit: 12,
+        },
+      })
+      .then(({ data }) => {
+        if (cancelled) return
+        setScopedFeaturedProducts(
+          (data.data || []).map((p: Product) => ({
+            id: p.id,
+            productName: p.productName,
+            category: p.category,
+            image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
+            price: p.variants?.[0]?.customerPrice ?? null,
+          }))
+        )
+        setScopedFeaturedTotal(data.total || 0)
+      })
+      .catch(() => {
+        if (!cancelled) setScopedFeaturedProducts([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [featuredRailMode, featuredCompany, categoryFilter, subCategoryFilter, subSubCategoryFilter, productTypeFilter, priceFilterApplied, appliedPriceRange])
+
+  // De-dupe: never show a product in the rail that's already sitting in the
+  // grid's first row, or the same company occupies the whole top of the
+  // page twice. Only matters in 'scoped' mode — 'full' mode shows the
+  // portioned view instead of this page's `products` grid state.
+  const featuredRailProductsRaw =
+    featuredRailMode === 'full' ? featuredCompany?.products ?? [] : featuredRailMode === 'scoped' ? scopedFeaturedProducts ?? [] : []
+  const gridIdsAboveFold = new Set(featuredRailMode === 'scoped' ? products.slice(0, 8).map((p) => p.id) : [])
+  const featuredRailProducts = featuredRailProductsRaw.filter((p) => !gridIdsAboveFold.has(p.id))
+
+  const activeFilterLabel =
+    subSubCategoryFilter !== 'all' ? subSubCategoryFilter :
+    subCategoryFilter !== 'all' ? subCategoryFilter :
+    categoryFilter !== 'all' ? categoryFilter :
+    productTypeFilter !== 'all' ? productTypeFilter :
+    'your filters'
 
   const fetchProducts = useCallback(async () => {
     if (isPortionedView) {
@@ -536,6 +663,94 @@ export default function ProductsClient() {
 
   return (
     <div className="space-y-6">
+      {/* Featured Company rail — see /dashboard/featured-company.
+          Visibility is a function of page state (see featuredRailMode
+          above), not just page identity: hidden during an explicit search
+          or past page 1, "full" (generic top products) on the plain
+          unfiltered view, "scoped" (that company's products *within* the
+          current filters, with a real count) once filters are active — so
+          it narrows instead of just advertising. Never both this container
+          AND the per-card "Featured Brand" badge in the same viewport. */}
+      {featuredRailMode !== 'hidden' && featuredCompany && featuredRailProducts.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border-l-4 border-amber-400 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 sm:p-4 [overscroll-behavior-x:contain]">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-1">
+                <Sparkles className="w-3 h-3" /> Brand in focus
+              </span>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                  {featuredCompany.companyName}
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {featuredRailMode === 'scoped'
+                    ? `${scopedFeaturedTotal} product${scopedFeaturedTotal === 1 ? '' : 's'} in ${activeFilterLabel}`
+                    : featuredCompany.tagline || 'Spotlighted this week'}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 border-amber-400 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                onClick={() => handleCompanyChange(String(featuredCompany.companyId))}
+              >
+                {featuredRailMode === 'scoped' ? `Show all ${scopedFeaturedTotal}` : `Shop all`}
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+              <button
+                type="button"
+                aria-label="Dismiss featured brand"
+                onClick={() => dismissFeaturedRail(featuredCompany.companyId)}
+                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <Carousel opts={{ loop: false, align: 'start' }} className="w-full">
+            <CarouselContent>
+              {featuredRailProducts.map((product, i) => (
+                <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/4 md:basis-[15%] lg:basis-[12%]">
+                  <Link
+                    href={toProductUrl(product)}
+                    onClick={() => track('PRODUCT_CLICK', { productId: product.id, metadata: { source: 'products-page-featured-carousel' } })}
+                    className="block rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:shadow-md hover:border-amber-400 transition-all"
+                  >
+                    <div className="relative aspect-square w-full bg-muted">
+                      {product.image ? (
+                        <Image
+                          src={product.image.url.replace(/^http:\/\//, 'https://')}
+                          alt={product.image.alt || product.productName}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 40vw, 12vw"
+                          priority={i < 3}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs font-medium line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</p>
+                      {product.price !== null && (
+                        <p className="text-xs font-bold text-green-600 mt-0.5">
+                          {currencySymbol} {product.price.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex -left-3 h-7 w-7" />
+            <CarouselNext className="hidden sm:flex -right-3 h-7 w-7" />
+          </Carousel>
+        </div>
+      )}
+
       {/* Desktop Controls */}
       <div className="hidden lg:flex flex-wrap items-center gap-4">
         <div className="flex gap-1">
@@ -789,15 +1004,20 @@ export default function ProductsClient() {
                           priority={false}
                           referrerPolicy="no-referrer"
                         />
-                        {/* Discount + Featured Brand badges (stacked, never overlapping) */}
-                        {(discount || (featuredCompanyId !== null && product.companyId === featuredCompanyId)) && (
+                        {/* Discount + Featured Brand badges (stacked, never overlapping).
+                            Card badge is suppressed while the Featured rail is visible above
+                            (featuredRailMode === 'scoped') — one badge system per viewport;
+                            the container above already carries that identity. Still shows in
+                            'hidden' mode (search/page>1/already-filtered-to-them) since then
+                            it's the only signal left. */}
+                        {(discount || (featuredRailMode !== 'scoped' && featuredCompanyId !== null && product.companyId === featuredCompanyId)) && (
                           <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
                             {discount && (
                               <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
                                 {discount.percentage}% OFF
                               </span>
                             )}
-                            {featuredCompanyId !== null && product.companyId === featuredCompanyId && (
+                            {featuredRailMode !== 'scoped' && featuredCompanyId !== null && product.companyId === featuredCompanyId && (
                               <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shadow-lg">
                                 <Sparkles className="w-2.5 h-2.5" /> Featured Brand
                               </span>
