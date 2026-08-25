@@ -12,7 +12,7 @@
 //   30 2 * * * cd /var/www/animalwellness/animal-nes && node compute-rankings.js >> /var/log/ranking-compute.log 2>&1
 
 require('dotenv').config()
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient, Prisma } = require('@prisma/client')
 
 const prisma = new PrismaClient()
 const WINDOW_DAYS = 30
@@ -54,6 +54,15 @@ async function main() {
   })
   const sponsoredProductIds = new Set(activeSponsorships.map((s) => s.productId))
 
+  // Admin-picked homepage/shop-wide brand spotlight (see /dashboard/featured-
+  // company and src/lib/ranking.ts, which this file mirrors).
+  const featuredCompany = await prisma.featuredCompany.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  })
+  const featuredCompanyId = featuredCompany.isActive ? featuredCompany.companyId : null
+
   const since = new Date()
   since.setDate(since.getDate() - WINDOW_DAYS)
 
@@ -62,6 +71,7 @@ async function main() {
     select: {
       id: true,
       createdAt: true,
+      companyId: true,
       partner: { select: { isPremium: true, createdAt: true } },
       company: { select: { createdAt: true } },
     },
@@ -137,6 +147,7 @@ async function main() {
       isNew: ageDays <= settings.boostDurationDays,
       isNewVendor: vendorAgeDays <= settings.boostDurationDays,
       isSponsored: sponsoredProductIds.has(p.id),
+      isFeaturedCompany: featuredCompanyId !== null && p.companyId === featuredCompanyId,
     }
   })
 
@@ -180,17 +191,32 @@ async function main() {
       score *= sponsorshipSettings.rankingBoostMultiplier
     }
 
+    if (r.isFeaturedCompany) {
+      score *= featuredCompany.rankingBoostMultiplier
+    }
+
     return { id: r.id, score: Math.round(score * 100) / 100 }
   })
 
-  await prisma.$transaction(
-    updates.map((u) =>
-      prisma.product.update({
-        where: { id: u.id },
-        data: { rankingScore: u.score, rankingScoreUpdatedAt: new Date() },
-      })
+  // Batched bulk-UPDATEs, not one prisma.$transaction of thousands of
+  // individual product.update() calls — see src/lib/ranking.ts (which this
+  // mirrors) for why: that pattern held a DB connection open for a very
+  // long time on the full catalog and took the whole VPS down once already.
+  const BATCH_SIZE = 1000
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const batch = updates.slice(i, i + BATCH_SIZE)
+    const whenClauses = Prisma.join(
+      batch.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.score}`),
+      ' '
     )
-  )
+    const ids = Prisma.join(batch.map((u) => u.id))
+    await prisma.$executeRaw`
+      UPDATE Product
+      SET rankingScore = CASE id ${whenClauses} END,
+          rankingScoreUpdatedAt = NOW(3)
+      WHERE id IN (${ids})
+    `
+  }
 
   console.log(`[${new Date().toISOString()}] Scored ${updates.length} products.`)
 }

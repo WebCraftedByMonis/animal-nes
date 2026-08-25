@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 // Computes Product.rankingScore for every active, approved product from the
@@ -21,7 +22,29 @@ function minMaxNormalize(values: number[]): (v: number) => number {
   return (v: number) => (v - min) / (max - min)
 }
 
+// Guards against two recomputes running at once (e.g. an admin double-
+// clicking "Recalculate Now"/"Save & Apply", or a save landing right next
+// to the nightly cron). This runs as a single pm2 instance (see
+// ecosystem.config.js), so a plain in-process flag is enough — no Redis/DB
+// lock needed. A stacked-up second run doesn't corrupt anything, it just
+// doubles the DB load for no reason, which is exactly the kind of load this
+// function needs to stay careful about (see the batching note below).
+let recomputeInFlight = false
+
 export async function computeRankingScores(): Promise<{ updated: number }> {
+  if (recomputeInFlight) {
+    console.warn('[ranking] computeRankingScores() already running — skipping this call')
+    return { updated: 0 }
+  }
+  recomputeInFlight = true
+  try {
+    return await runComputeRankingScores()
+  } finally {
+    recomputeInFlight = false
+  }
+}
+
+async function runComputeRankingScores(): Promise<{ updated: number }> {
   const settings = await prisma.rankingSettings.upsert({
     where: { id: 1 },
     update: {},
@@ -195,14 +218,31 @@ export async function computeRankingScores(): Promise<{ updated: number }> {
     return { id: r.id, score: Math.round(score * 100) / 100 }
   })
 
-  await prisma.$transaction(
-    updates.map((u) =>
-      prisma.product.update({
-        where: { id: u.id },
-        data: { rankingScore: u.score, rankingScoreUpdatedAt: new Date() },
-      })
+  // Write in small batched bulk-UPDATEs, NOT one prisma.$transaction of
+  // thousands of individual product.update() calls. On the full catalog
+  // (tens of thousands of products) that single giant transaction held one
+  // of the DB pool's few connections open for a very long time and starved
+  // every other page on the site — this is what took the whole VPS down on
+  // 2026-08-25 when a save on /dashboard/featured-company triggered a
+  // recompute during real traffic. Each batch below is its own short-lived
+  // statement (CASE-based bulk UPDATE, one query per BATCH_SIZE rows) that
+  // commits and releases immediately, run sequentially so this never holds
+  // more than one connection at a time.
+  const BATCH_SIZE = 1000
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const batch = updates.slice(i, i + BATCH_SIZE)
+    const whenClauses = Prisma.join(
+      batch.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.score}`),
+      ' '
     )
-  )
+    const ids = Prisma.join(batch.map((u) => u.id))
+    await prisma.$executeRaw`
+      UPDATE Product
+      SET rankingScore = CASE id ${whenClauses} END,
+          rankingScoreUpdatedAt = NOW(3)
+      WHERE id IN (${ids})
+    `
+  }
 
   return { updated: updates.length }
 }
