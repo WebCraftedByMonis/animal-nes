@@ -93,6 +93,7 @@ async function getTrendingProducts() {
       image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
       price: p.variants[0]?.customerPrice ?? null,
       companyName: p.company?.companyName ?? null,
+      companyId: p.companyId ?? null,
     }))
   } catch (error) {
     console.error('Error fetching trending products:', error)
@@ -119,6 +120,7 @@ async function getNewArrivals() {
       image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
       price: p.variants[0]?.customerPrice ?? null,
       companyName: p.company?.companyName ?? null,
+      companyId: p.companyId ?? null,
     }))
   } catch (error) {
     console.error('Error fetching new arrivals:', error)
@@ -191,6 +193,7 @@ async function getSponsoredProducts() {
         image: s.product.image ? { url: s.product.image.url, alt: s.product.image.alt } : null,
         price: s.product.variants[0]?.customerPrice ?? null,
         companyName: s.product.company?.companyName ?? null,
+        companyId: s.product.companyId ?? null,
       }))
   } catch (error) {
     console.error('Error fetching sponsored products:', error)
@@ -198,14 +201,59 @@ async function getSponsoredProducts() {
   }
 }
 
+// The admin-picked homepage/shop-wide spotlight (see /dashboard/featured-
+// company and prisma's FeaturedCompany model). Free, curated by us — unlike
+// the vendor-paid getSponsoredProducts() above. Returns null when nothing
+// is active so the banner section just doesn't render.
+async function getFeaturedCompany() {
+  try {
+    const featured = await prisma.featuredCompany.findUnique({
+      where: { id: 1 },
+      include: { company: { select: { id: true, companyName: true } } },
+    })
+    if (!featured || !featured.isActive || !featured.company) return null
+
+    const products = await prisma.product.findMany({
+      where: { isActive: true, approvalStatus: 'APPROVED', companyId: featured.company.id },
+      orderBy: [{ isFeatured: 'desc' }, { rankingScore: 'desc' }, { createdAt: 'desc' }],
+      take: 8,
+      include: {
+        image: true,
+        variants: { select: { customerPrice: true }, take: 1 },
+      },
+    })
+
+    return {
+      companyId: featured.company.id,
+      companyName: featured.company.companyName,
+      tagline: featured.tagline,
+      ctaText: featured.ctaText || 'Shop Now',
+      bannerImageUrl: featured.bannerImageUrl,
+      products: products.map((p) => ({
+        id: p.id,
+        productName: p.productName,
+        category: p.category,
+        image: p.image ? { url: p.image.url, alt: p.image.alt } : null,
+        price: p.variants[0]?.customerPrice ?? null,
+        companyName: featured.company!.companyName,
+        companyId: featured.company!.id,
+      })),
+    }
+  } catch (error) {
+    console.error('Error fetching featured company:', error)
+    return null
+  }
+}
+
 export default async function Home() {
   // Fetch initial testimonials and homepage product sections on the server for ISR
-  const [initialTestimonials, trendingProducts, newArrivals, newVendors, sponsoredProducts] = await Promise.all([
+  const [initialTestimonials, trendingProducts, newArrivals, newVendors, sponsoredProducts, featuredCompany] = await Promise.all([
     getInitialTestimonials(),
     getTrendingProducts(),
     getNewArrivals(),
     getNewVendors(),
     getSponsoredProducts(),
+    getFeaturedCompany(),
   ])
 
   // Organization structured data
@@ -260,6 +308,7 @@ export default async function Home() {
         newArrivals={newArrivals}
         newVendors={newVendors}
         sponsoredProducts={sponsoredProducts}
+        featuredCompany={featuredCompany}
       />
     </div>
   );

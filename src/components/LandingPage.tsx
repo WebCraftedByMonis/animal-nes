@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight, CheckCircle2, MessageCircle, Star } from "lucide-react"
+import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight, CheckCircle2, MessageCircle, Star, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
@@ -46,6 +46,7 @@ interface ShowcaseProduct {
   image: { url: string; alt: string } | null
   price: number | null
   companyName: string | null
+  companyId?: number | null
 }
 
 interface ShowcaseVendor {
@@ -56,12 +57,25 @@ interface ShowcaseVendor {
   productCount: number
 }
 
+// Admin-picked homepage/shop-wide spotlight — see /dashboard/featured-company
+// and getFeaturedCompany() in src/app/page.tsx. Free, curated by us, distinct
+// from the vendor-paid "Sponsored" rail above.
+interface FeaturedCompanyData {
+  companyId: number
+  companyName: string | null
+  tagline: string | null
+  ctaText: string
+  bannerImageUrl: string | null
+  products: ShowcaseProduct[]
+}
+
 interface LandingPageProps {
   initialTestimonials?: InitialTestimonialsData
   trendingProducts?: ShowcaseProduct[]
   newArrivals?: ShowcaseProduct[]
   newVendors?: ShowcaseVendor[]
   sponsoredProducts?: ShowcaseProduct[]
+  featuredCompany?: FeaturedCompanyData | null
 }
 
 const TestimonialCard = ({ testimonial, isUAE }: { testimonial: Testimonial; isUAE?: boolean }) => {
@@ -144,13 +158,24 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 // Shared card for any real-product homepage rail (Trending, New Arrivals,
 // Because You Viewed) — image + name + price, links to the real product
 // page, WhatsApp quick-order kept alongside since that's how most orders
-// on this site actually start.
-const ProductShowcaseCard = ({ product, isUAE }: { product: ShowcaseProduct; isUAE: boolean }) => (
+// on this site actually start. `highlighted` marks a product that belongs
+// to the current /dashboard/featured-company spotlight — a thin amber ring
+// + corner tag, same accent language as the banner above, so the boost is
+// felt even in rails that aren't dedicated to that company.
+const ProductShowcaseCard = ({ product, isUAE, highlighted }: { product: ShowcaseProduct; isUAE: boolean; highlighted?: boolean }) => (
   <Link
     href={toProductUrl(product)}
     onClick={() => track('PRODUCT_CLICK', { productId: product.id, metadata: { source: 'homepage' } })}
-    className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200"
+    className={cn(
+      "relative rounded-2xl border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200",
+      highlighted ? "border-amber-400 ring-2 ring-amber-400/40" : "border-border"
+    )}
   >
+    {highlighted && (
+      <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-amber-500 text-white px-2 py-1 rounded-full shadow">
+        <Sparkles className="w-2.5 h-2.5" /> Featured
+      </span>
+    )}
     <div className="relative h-36 bg-muted flex items-center justify-center overflow-hidden">
       {product.image ? (
         <Image
@@ -190,7 +215,7 @@ const ProductShowcaseCard = ({ product, isUAE }: { product: ShowcaseProduct; isU
   </Link>
 )
 
-export default function LandingPage({ initialTestimonials, trendingProducts = [], newArrivals = [], newVendors = [], sponsoredProducts = [] }: LandingPageProps) {
+export default function LandingPage({ initialTestimonials, trendingProducts = [], newArrivals = [], newVendors = [], sponsoredProducts = [], featuredCompany = null }: LandingPageProps) {
   const { data: session } = useSession()
   const { openModal } = useLoginModal()
   const { country } = useCountry()
@@ -342,6 +367,9 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
       setIsSubmitting(false)
     }
   }
+
+  const isFromFeaturedCompany = (product: ShowcaseProduct) =>
+    !!featuredCompany && product.companyId === featuredCompany.companyId
 
   const waOrderLink = "https://wa.me/923354145431?text=I%20want%20to%20place%20an%20order"
   const waUAELink = "https://wa.me/971547478202?text=I%20want%20to%20place%20an%20order"
@@ -534,6 +562,80 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
         <FullScreenSlider />
       </section>
 
+      {/* ─── FEATURED COMPANY SPOTLIGHT (admin-curated, see /dashboard/featured-company) ──────── */}
+      {featuredCompany && (
+        <section className="py-10 md:py-14 px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="max-w-7xl mx-auto">
+            <div
+              className={cn(
+                "relative overflow-hidden rounded-3xl shadow-xl",
+                isUAE
+                  ? "bg-gradient-to-br from-[#7a0f1a] via-[#a3121f] to-[#EF3340]"
+                  : "bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-600"
+              )}
+            >
+              {/* Ambient watermark — ties back to the brand mark used across the page,
+                  kept faint so it reads as texture rather than a competing icon. */}
+              <PawPrint className="absolute -right-10 -bottom-10 w-64 h-64 text-white/5 rotate-12 pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_55%)] pointer-events-none" />
+
+              <div className="relative grid md:grid-cols-5 items-stretch">
+                <div className="md:col-span-3 p-8 md:p-12 flex flex-col justify-center">
+                  <span className="inline-flex items-center gap-1.5 w-fit text-[11px] font-bold uppercase tracking-widest text-amber-300 bg-white/10 backdrop-blur-sm border border-amber-300/30 px-3 py-1.5 rounded-full mb-5">
+                    <Sparkles className="w-3.5 h-3.5" /> Featured Partner
+                  </span>
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                    {featuredCompany.companyName}
+                  </h2>
+                  {featuredCompany.tagline && (
+                    <p className="text-white/80 text-base md:text-lg max-w-xl mb-7">{featuredCompany.tagline}</p>
+                  )}
+                  <Link
+                    href={`/products?companyId=${featuredCompany.companyId}`}
+                    onClick={() => track('PRODUCT_CLICK', { metadata: { source: 'homepage-featured-company-banner', companyId: featuredCompany.companyId } })}
+                  >
+                    <Button className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold px-7 py-6 text-base w-fit">
+                      {featuredCompany.ctaText}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="md:col-span-2 relative h-56 md:h-auto">
+                  {featuredCompany.bannerImageUrl ? (
+                    <Image
+                      src={featuredCompany.bannerImageUrl.replace(/^http:\/\//, 'https://')}
+                      alt={featuredCompany.companyName || 'Featured company'}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 40vw"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <PawPrint className="w-24 h-24 text-white/20" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/40 md:from-emerald-900/70 md:via-emerald-900/10 to-transparent md:bg-gradient-to-r" />
+                </div>
+              </div>
+            </div>
+
+            {featuredCompany.products.length > 0 && (
+              <div className="mt-8">
+                <p className="text-sm font-semibold text-muted-foreground mb-4">
+                  From {featuredCompany.companyName}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {featuredCompany.products.slice(0, 4).map((product) => (
+                    <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} highlighted />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ─── FEATURED CATEGORIES ──────────────────────────────────────────────── */}
       <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
@@ -649,7 +751,7 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {trendingProducts.map((product) => (
-                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} />
+                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} highlighted={isFromFeaturedCompany(product)} />
               ))}
             </div>
           </div>
@@ -666,7 +768,7 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {becauseYouViewed.map((product) => (
-                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} />
+                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} highlighted={isFromFeaturedCompany(product)} />
               ))}
             </div>
           </div>
@@ -683,7 +785,7 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {newArrivals.map((product) => (
-                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} />
+                <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} highlighted={isFromFeaturedCompany(product)} />
               ))}
             </div>
           </div>

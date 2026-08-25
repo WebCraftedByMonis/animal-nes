@@ -37,7 +37,8 @@ import {
   Link2,
   BarChart3,
   TrendingUp,
-  Megaphone
+  Megaphone,
+  Sparkles
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -453,6 +454,16 @@ export function AppSidebar() {
                   <Link href="/dashboard/sponsorship-settings">
                     <Megaphone className="w-4 h-4" />
                     <span className="hover:text-green-500">Sponsorship Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Featured Company */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/featured-company">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hover:text-green-500">Featured Company</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

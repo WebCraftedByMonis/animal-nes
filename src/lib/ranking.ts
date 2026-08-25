@@ -49,6 +49,17 @@ export async function computeRankingScores(): Promise<{ updated: number }> {
   })
   const sponsoredProductIds = new Set(activeSponsorships.map((s) => s.productId))
 
+  // Admin-picked homepage/shop-wide brand spotlight (see /dashboard/featured-
+  // company). Free, admin-controlled — separate from the vendor-paid
+  // ProductSponsorship above — but stacks the same way: a ranking-score
+  // multiplier on top of everything else.
+  const featuredCompany = await prisma.featuredCompany.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  })
+  const featuredCompanyId = featuredCompany.isActive ? featuredCompany.companyId : null
+
   const since = new Date()
   since.setDate(since.getDate() - WINDOW_DAYS)
 
@@ -57,6 +68,7 @@ export async function computeRankingScores(): Promise<{ updated: number }> {
     select: {
       id: true,
       createdAt: true,
+      companyId: true,
       partner: { select: { isPremium: true, createdAt: true } },
       company: { select: { createdAt: true } },
     },
@@ -129,6 +141,7 @@ export async function computeRankingScores(): Promise<{ updated: number }> {
       isNew: ageDays <= settings.boostDurationDays,
       isNewVendor: vendorAgeDays <= settings.boostDurationDays,
       isSponsored: sponsoredProductIds.has(p.id),
+      isFeaturedCompany: featuredCompanyId !== null && p.companyId === featuredCompanyId,
     }
   })
 
@@ -170,6 +183,13 @@ export async function computeRankingScores(): Promise<{ updated: number }> {
     // brand-new listing should get both, not one or the other.
     if (r.isSponsored) {
       score *= sponsorshipSettings.rankingBoostMultiplier
+    }
+
+    // Admin's homepage/shop-wide brand spotlight also stacks on top —
+    // every live product from that company floats toward the top of the
+    // default "relevance" sort, not just the ones on the homepage rail.
+    if (r.isFeaturedCompany) {
+      score *= featuredCompany.rankingBoostMultiplier
     }
 
     return { id: r.id, score: Math.round(score * 100) / 100 }

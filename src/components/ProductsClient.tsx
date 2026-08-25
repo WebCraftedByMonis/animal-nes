@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
-import { Filter, X, Search } from 'lucide-react'
+import { Filter, X, Search, Sparkles } from 'lucide-react'
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet"
@@ -133,6 +133,16 @@ export default function ProductsClient() {
   const [productTypeFilter, setProductTypeFilter] = useState<string>(searchParams.get('productType') || 'all')
   const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get('companyId') || '')
   const [partnerFilter, setPartnerFilter] = useState<string>(searchParams.get('partnerId') || '')
+
+  // Admin-picked homepage/shop-wide spotlight (see /dashboard/featured-company).
+  // Just the id, so matching product cards can carry a "Featured Brand" badge.
+  const [featuredCompanyId, setFeaturedCompanyId] = useState<number | null>(null)
+  useEffect(() => {
+    fetch('/api/featured-company')
+      .then((res) => res.json())
+      .then((data) => setFeaturedCompanyId(data.featured?.companyId ?? null))
+      .catch(() => {})
+  }, [])
   // Track if price filter was explicitly applied by user (via URL params or button click)
   const hasPriceFilterFromUrl = searchParams.get('minPrice') !== null || searchParams.get('maxPrice') !== null
   const [priceFilterApplied, setPriceFilterApplied] = useState(hasPriceFilterFromUrl)
@@ -779,12 +789,19 @@ export default function ProductsClient() {
                           priority={false}
                           referrerPolicy="no-referrer"
                         />
-                        {/* Discount Badge */}
-                        {discount && (
-                          <div className="absolute top-3 left-3 z-10">
-                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                              {discount.percentage}% OFF
-                            </span>
+                        {/* Discount + Featured Brand badges (stacked, never overlapping) */}
+                        {(discount || (featuredCompanyId !== null && product.companyId === featuredCompanyId)) && (
+                          <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+                            {discount && (
+                              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                                {discount.percentage}% OFF
+                              </span>
+                            )}
+                            {featuredCompanyId !== null && product.companyId === featuredCompanyId && (
+                              <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shadow-lg">
+                                <Sparkles className="w-2.5 h-2.5" /> Featured Brand
+                              </span>
+                            )}
                           </div>
                         )}
                         <WishlistButton productId={product.id} />

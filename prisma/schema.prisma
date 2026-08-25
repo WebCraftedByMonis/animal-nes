@@ -171,6 +171,7 @@ model Company {
   vendorOrders    VendorOrder[]
   ledgerEntries   VendorLedgerEntry[]
   sponsorships    ProductSponsorship[]
+  featuredSlots   FeaturedCompany[]
   createdAt       DateTime?        @default(now())
   updatedAt       DateTime?        @updatedAt
 }
@@ -1861,4 +1862,29 @@ model SponsorshipSettings {
   accountTitle       String?
   accountNumber      String?
   updatedAt          DateTime @updatedAt
+}
+
+// ============================================
+// FEATURED COMPANY (homepage + shop-wide brand spotlight)
+// ============================================
+// Admin-controlled, free (not vendor-paid, unlike ProductSponsorship above):
+// pick one company to spotlight sitewide — homepage banner + highlighted
+// product rail, plus a real ranking-score boost for its products on the
+// shop page (same stacking mechanism as sponsorship, see src/lib/ranking.ts).
+// Single-row config (always id=1), same singleton pattern as
+// RankingSettings/SponsorshipSettings — editable from
+// /dashboard/featured-company. Only one company can be featured at a time.
+model FeaturedCompany {
+  id                     Int      @id @default(1)
+  company                Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyId              Int?
+  isActive               Boolean  @default(false)
+  bannerImageUrl         String?  @db.Text
+  bannerImagePublicId    String?
+  tagline                String?  @db.Text
+  ctaText                String?  @default("Shop Now")
+  rankingBoostMultiplier Float    @default(3.0) // stacks with sponsorship/new-vendor/new-product boosts
+  updatedAt              DateTime @updatedAt
+
+  @@index([companyId])
 }
