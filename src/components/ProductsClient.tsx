@@ -17,8 +17,9 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
-import { Filter, X, Search, Sparkles, ArrowRight } from 'lucide-react'
+import { Filter, X, Search, ArrowRight, PawPrint } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
+import { cn } from '@/lib/utils'
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet"
@@ -136,6 +137,7 @@ export default function ProductsClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { country, currencySymbol } = useCountry()
+  const isUAE = country === 'UAE'
 
   // Initialize state from URL params
   const [products, setProducts] = useState<Product[]>([])
@@ -158,8 +160,9 @@ export default function ProductsClient() {
   const [partnerFilter, setPartnerFilter] = useState<string>(searchParams.get('partnerId') || '')
 
   // Admin-picked homepage/shop-wide spotlight (see /dashboard/featured-company).
-  // Drives both the "Featured Brand" badge on matching product cards and the
-  // product carousel at the top of the page.
+  // Drives both the amber highlight on matching product cards and the rail
+  // below the filters — no visible "featured/sponsored" label anywhere, this
+  // isn't a disclosed placement, just a nicer presentation for one company.
   const [featuredCompany, setFeaturedCompany] = useState<FeaturedCompany | null>(null)
   useEffect(() => {
     fetch('/api/featured-company')
@@ -663,94 +666,6 @@ export default function ProductsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Featured Company rail — see /dashboard/featured-company.
-          Visibility is a function of page state (see featuredRailMode
-          above), not just page identity: hidden during an explicit search
-          or past page 1, "full" (generic top products) on the plain
-          unfiltered view, "scoped" (that company's products *within* the
-          current filters, with a real count) once filters are active — so
-          it narrows instead of just advertising. Never both this container
-          AND the per-card "Featured Brand" badge in the same viewport. */}
-      {featuredRailMode !== 'hidden' && featuredCompany && featuredRailProducts.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border-l-4 border-amber-400 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 sm:p-4 [overscroll-behavior-x:contain]">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div className="min-w-0">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-1">
-                <Sparkles className="w-3 h-3" /> Brand in focus
-              </span>
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                  {featuredCompany.companyName}
-                </h2>
-                <span className="text-xs text-muted-foreground">
-                  {featuredRailMode === 'scoped'
-                    ? `${scopedFeaturedTotal} product${scopedFeaturedTotal === 1 ? '' : 's'} in ${activeFilterLabel}`
-                    : featuredCompany.tagline || 'Spotlighted this week'}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-amber-400 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
-                onClick={() => handleCompanyChange(String(featuredCompany.companyId))}
-              >
-                {featuredRailMode === 'scoped' ? `Show all ${scopedFeaturedTotal}` : `Shop all`}
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Button>
-              <button
-                type="button"
-                aria-label="Dismiss featured brand"
-                onClick={() => dismissFeaturedRail(featuredCompany.companyId)}
-                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <Carousel opts={{ loop: false, align: 'start' }} className="w-full">
-            <CarouselContent>
-              {featuredRailProducts.map((product, i) => (
-                <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/4 md:basis-[15%] lg:basis-[12%]">
-                  <Link
-                    href={toProductUrl(product)}
-                    onClick={() => track('PRODUCT_CLICK', { productId: product.id, metadata: { source: 'products-page-featured-carousel' } })}
-                    className="block rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:shadow-md hover:border-amber-400 transition-all"
-                  >
-                    <div className="relative aspect-square w-full bg-muted">
-                      {product.image ? (
-                        <Image
-                          src={product.image.url.replace(/^http:\/\//, 'https://')}
-                          alt={product.image.alt || product.productName}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 40vw, 12vw"
-                          priority={i < 3}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
-                      )}
-                    </div>
-                    <div className="p-2">
-                      <p className="text-xs font-medium line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</p>
-                      {product.price !== null && (
-                        <p className="text-xs font-bold text-green-600 mt-0.5">
-                          {currencySymbol} {product.price.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden sm:flex -left-3 h-7 w-7" />
-            <CarouselNext className="hidden sm:flex -right-3 h-7 w-7" />
-          </Carousel>
-        </div>
-      )}
-
       {/* Desktop Controls */}
       <div className="hidden lg:flex flex-wrap items-center gap-4">
         <div className="flex gap-1">
@@ -949,6 +864,119 @@ export default function ProductsClient() {
         </div>
       </div>
 
+      {/* Featured Company spotlight — see /dashboard/featured-company.
+          Same hero treatment as the homepage banner on purpose (gradient
+          panel, watermark, logo panel) so it reads as one brand moment
+          sitewide, not a bolted-on widget. Sits below the filters, not
+          above — someone came here to search/filter, not to read a banner
+          first. No "Featured"/"Sponsored"-style label anywhere on it — this
+          isn't disclosing an ad, it's just making a brand look good, so the
+          gradient treatment and logo do the talking instead of a badge.
+          Visibility follows featuredRailMode: hidden on an explicit search,
+          past page 1, or once already filtered to just this company; shows
+          generic top products on the plain unfiltered view, or narrows to
+          match the active filters once some are applied. */}
+      {featuredRailMode !== 'hidden' && featuredCompany && featuredRailProducts.length > 0 && (
+        <div className="space-y-4">
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-3xl shadow-xl",
+              isUAE
+                ? "bg-gradient-to-br from-[#7a0f1a] via-[#a3121f] to-[#EF3340]"
+                : "bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-600"
+            )}
+          >
+            <PawPrint className="absolute -right-10 -bottom-10 w-64 h-64 text-white/5 rotate-12 pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_55%)] pointer-events-none" />
+
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => dismissFeaturedRail(featuredCompany.companyId)}
+              className="absolute top-4 right-4 z-10 h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white/80 hover:text-white transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="relative grid md:grid-cols-5 items-stretch">
+              <div className="md:col-span-3 p-6 md:p-10 flex flex-col justify-center">
+                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 leading-tight">
+                  {featuredCompany.companyName}
+                </h2>
+                <p className="text-white/80 text-sm md:text-base max-w-xl mb-6">
+                  {featuredRailMode === 'scoped'
+                    ? `${scopedFeaturedTotal} pick${scopedFeaturedTotal === 1 ? '' : 's'} in ${activeFilterLabel}, just for you.`
+                    : featuredCompany.tagline || "Handpicked essentials, worth a closer look."}
+                </p>
+                <Button
+                  onClick={() => handleCompanyChange(String(featuredCompany.companyId))}
+                  className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold px-6 py-5 text-sm md:text-base w-fit"
+                >
+                  {featuredRailMode === 'scoped' ? `See all ${scopedFeaturedTotal}` : featuredCompany.ctaText || 'Shop Now'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="md:col-span-2 relative h-40 md:h-auto">
+                {featuredCompany.bannerImageUrl ? (
+                  <Image
+                    src={featuredCompany.bannerImageUrl.replace(/^http:\/\//, 'https://')}
+                    alt={featuredCompany.companyName || 'Spotlight'}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 40vw"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <PawPrint className="w-20 h-20 text-white/20" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/40 md:from-emerald-900/70 md:via-emerald-900/10 to-transparent" />
+              </div>
+            </div>
+          </div>
+
+          <Carousel opts={{ loop: false, align: 'start' }} className="w-full [overscroll-behavior-x:contain]">
+            <CarouselContent>
+              {featuredRailProducts.map((product, i) => (
+                <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/4 md:basis-[15%] lg:basis-[12%]">
+                  <Link
+                    href={toProductUrl(product)}
+                    onClick={() => track('PRODUCT_CLICK', { productId: product.id, metadata: { source: 'products-page-featured-carousel' } })}
+                    className="block rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:shadow-md hover:border-amber-400 transition-all"
+                  >
+                    <div className="relative aspect-square w-full bg-muted">
+                      {product.image ? (
+                        <Image
+                          src={product.image.url.replace(/^http:\/\//, 'https://')}
+                          alt={product.image.alt || product.productName}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 40vw, 12vw"
+                          priority={i < 3}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs font-medium line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</p>
+                      {product.price !== null && (
+                        <p className="text-xs font-bold text-green-600 mt-0.5">
+                          {currencySymbol} {product.price.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex -left-3 h-7 w-7" />
+            <CarouselNext className="hidden sm:flex -right-3 h-7 w-7" />
+          </Carousel>
+        </div>
+      )}
+
       {/* Default view: catalog split into category portions instead of one
           flat list of everything. Any search/filter switches to the classic
           grid below. */}
@@ -974,6 +1002,10 @@ export default function ProductsClient() {
                 const discount = getActiveDiscount(product, v?.id)
                 const originalPrice = v?.customerPrice || 0
                 const discountedPrice = discount ? calculateDiscountedPrice(originalPrice, discount.percentage) : originalPrice
+                // Purely visual — no badge/label, just makes the card read as
+                // a little more special. Suppressed while the rail above is
+                // already carrying that identity (one signal per viewport).
+                const isSpotlighted = featuredRailMode !== 'scoped' && featuredCompanyId !== null && product.companyId === featuredCompanyId
 
                 return (
                   <motion.div
@@ -988,7 +1020,7 @@ export default function ProductsClient() {
                       "bg-[#f0f0f3] dark:bg-zinc-900",
                       "shadow-[8px_8px_16px_#d1d9e6,_-8px_-8px_16px_#ffffff]",
                       "dark:shadow-[8px_8px_16px_rgba(0,0,0,0.6),_-8px_-8px_16px_rgba(255,255,255,0.05)]",
-                      "border border-zinc-100/40 dark:border-zinc-800/60",
+                      isSpotlighted ? "border-2 border-amber-400" : "border border-zinc-100/40 dark:border-zinc-800/60",
                       "transition-all"
                     ].join(' ')}
                   >
@@ -1004,24 +1036,13 @@ export default function ProductsClient() {
                           priority={false}
                           referrerPolicy="no-referrer"
                         />
-                        {/* Discount + Featured Brand badges (stacked, never overlapping).
-                            Card badge is suppressed while the Featured rail is visible above
-                            (featuredRailMode === 'scoped') — one badge system per viewport;
-                            the container above already carries that identity. Still shows in
-                            'hidden' mode (search/page>1/already-filtered-to-them) since then
-                            it's the only signal left. */}
-                        {(discount || (featuredRailMode !== 'scoped' && featuredCompanyId !== null && product.companyId === featuredCompanyId)) && (
-                          <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
-                            {discount && (
-                              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                                {discount.percentage}% OFF
-                              </span>
-                            )}
-                            {featuredRailMode !== 'scoped' && featuredCompanyId !== null && product.companyId === featuredCompanyId && (
-                              <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shadow-lg">
-                                <Sparkles className="w-2.5 h-2.5" /> Featured Brand
-                              </span>
-                            )}
+                        {/* Discount badge — no separate label for a spotlighted product,
+                            that's the amber card border above, silently. */}
+                        {discount && (
+                          <div className="absolute top-3 left-3 z-10">
+                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                              {discount.percentage}% OFF
+                            </span>
                           </div>
                         )}
                         <WishlistButton productId={product.id} />

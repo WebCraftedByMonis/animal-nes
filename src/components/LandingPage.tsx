@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight, CheckCircle2, MessageCircle, Star, Sparkles } from "lucide-react"
+import { ArrowRight, Quote, PawPrint, ShieldCheck, ShoppingCart, Newspaper, Briefcase, Loader2, Send, ChevronDown, ChevronRight, CheckCircle2, MessageCircle, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
@@ -171,11 +171,6 @@ const ProductShowcaseCard = ({ product, isUAE, highlighted }: { product: Showcas
       highlighted ? "border-amber-400 ring-2 ring-amber-400/40" : "border-border"
     )}
   >
-    {highlighted && (
-      <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-amber-500 text-white px-2 py-1 rounded-full shadow">
-        <Sparkles className="w-2.5 h-2.5" /> Featured
-      </span>
-    )}
     <div className="relative h-36 bg-muted flex items-center justify-center overflow-hidden">
       {product.image ? (
         <Image
@@ -581,9 +576,6 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
 
               <div className="relative grid md:grid-cols-5 items-stretch">
                 <div className="md:col-span-3 p-8 md:p-12 flex flex-col justify-center">
-                  <span className="inline-flex items-center gap-1.5 w-fit text-[11px] font-bold uppercase tracking-widest text-amber-300 bg-white/10 backdrop-blur-sm border border-amber-300/30 px-3 py-1.5 rounded-full mb-5">
-                    <Sparkles className="w-3.5 h-3.5" /> Featured Partner
-                  </span>
                   <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
                     {featuredCompany.companyName}
                   </h2>
@@ -605,7 +597,7 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
                   {featuredCompany.bannerImageUrl ? (
                     <Image
                       src={featuredCompany.bannerImageUrl.replace(/^http:\/\//, 'https://')}
-                      alt={featuredCompany.companyName || 'Featured company'}
+                      alt={featuredCompany.companyName || 'Spotlight'}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 40vw"
