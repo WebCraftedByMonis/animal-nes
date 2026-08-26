@@ -12,7 +12,7 @@ export async function GET() {
     const featured = await cached('featured-company:public', 300, async () => {
       const row = await prisma.featuredCompany.findUnique({
         where: { id: 1 },
-        include: { company: { select: { id: true, companyName: true, image: { select: { url: true } } } } },
+        include: { company: { select: { id: true, companyName: true, country: true, image: { select: { url: true } } } } },
       })
       if (!row || !row.isActive || !row.company) return null
 
@@ -32,6 +32,11 @@ export async function GET() {
       return {
         companyId: row.company.id,
         companyName: row.company.companyName,
+        // This endpoint is Redis-cached and identical for every visitor —
+        // the visitor's actual country only exists client-side (useCountry()
+        // has no server-readable signal), so ProductsClient does the match
+        // against this field itself.
+        country: row.company.country,
         tagline: row.tagline,
         ctaText: row.ctaText,
         // No dedicated banner upload — always the company's own logo/image.

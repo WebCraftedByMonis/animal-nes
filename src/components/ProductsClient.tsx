@@ -84,6 +84,7 @@ interface FeaturedCompanyProduct {
 interface FeaturedCompany {
   companyId: number
   companyName: string | null
+  country: string | null
   tagline: string | null
   ctaText: string | null
   bannerImageUrl: string | null
@@ -163,13 +164,22 @@ export default function ProductsClient() {
   // Drives both the amber highlight on matching product cards and the rail
   // below the filters — no visible "featured/sponsored" label anywhere, this
   // isn't a disclosed placement, just a nicer presentation for one company.
-  const [featuredCompany, setFeaturedCompany] = useState<FeaturedCompany | null>(null)
+  const [rawFeaturedCompany, setRawFeaturedCompany] = useState<FeaturedCompany | null>(null)
+  const [featuredCompanyLoading, setFeaturedCompanyLoading] = useState(true)
   useEffect(() => {
     fetch('/api/featured-company')
       .then((res) => res.json())
-      .then((data) => setFeaturedCompany(data.featured ?? null))
+      .then((data) => setRawFeaturedCompany(data.featured ?? null))
       .catch(() => {})
+      .finally(() => setFeaturedCompanyLoading(false))
   }, [])
+  // Country match happens here (unlike the ISR-cached homepage, this is a
+  // client component so useCountry() already knows the real visitor
+  // country) — a company with no country set shows to everyone (fail-open)
+  // rather than disappearing over a blank field. Everything below reads
+  // this derived value, never rawFeaturedCompany directly.
+  const featuredCompany =
+    rawFeaturedCompany && (!rawFeaturedCompany.country || rawFeaturedCompany.country === country) ? rawFeaturedCompany : null
   const featuredCompanyId = featuredCompany?.companyId ?? null
 
   // Dismissible, keyed to companyId — dismissing one company's rail doesn't
@@ -864,6 +874,23 @@ export default function ProductsClient() {
         </div>
       </div>
 
+      {/* Skeleton for the block below, shown only while we don't yet know if
+          there's anything to show — same rounded-3xl hero + card-row shape
+          so there's no layout jump when the real thing (or nothing) lands.
+          Gated on the same top-level page-state rules (no search, page 1)
+          so it never promises a banner on a page state where one could
+          never actually appear. */}
+      {featuredCompanyLoading && !search && page === 1 && (
+        <div className="space-y-4">
+          <Skeleton className="w-full h-56 md:h-72 rounded-3xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square w-full rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Featured Company spotlight — see /dashboard/featured-company.
           Same hero treatment as the homepage banner on purpose (gradient
           panel, watermark, logo panel) so it reads as one brand moment
@@ -939,30 +966,35 @@ export default function ProductsClient() {
           <Carousel opts={{ loop: false, align: 'start' }} className="w-full [overscroll-behavior-x:contain]">
             <CarouselContent>
               {featuredRailProducts.map((product, i) => (
-                <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/4 md:basis-[15%] lg:basis-[12%]">
+                // Same size as the grid below (basis matches its
+                // grid-cols-1/2/3/4 breakpoints) and the same card shell —
+                // bg-card, border, hover:shadow-lg, paw-print fallback —
+                // just without the cart/wishlist buttons, which need
+                // variant data this lighter carousel payload doesn't carry.
+                <CarouselItem key={product.id} className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                   <Link
                     href={toProductUrl(product)}
                     onClick={() => track('PRODUCT_CLICK', { productId: product.id, metadata: { source: 'products-page-featured-carousel' } })}
-                    className="block rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:shadow-md hover:border-amber-400 transition-all"
+                    className="block rounded-2xl overflow-hidden bg-card border border-border hover:shadow-lg transition-shadow duration-200"
                   >
-                    <div className="relative aspect-square w-full bg-muted">
+                    <div className="relative aspect-square w-full bg-muted flex items-center justify-center overflow-hidden">
                       {product.image ? (
                         <Image
                           src={product.image.url.replace(/^http:\/\//, 'https://')}
                           alt={product.image.alt || product.productName}
                           fill
                           className="object-cover"
-                          sizes="(max-width: 640px) 40vw, 12vw"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw"
                           priority={i < 3}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                        <PawPrint className="w-10 h-10 text-muted-foreground/40" />
                       )}
                     </div>
-                    <div className="p-2">
-                      <p className="text-xs font-medium line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</p>
+                    <div className="p-4">
+                      <p className="font-bold text-sm md:text-base line-clamp-2">{product.productName}</p>
                       {product.price !== null && (
-                        <p className="text-xs font-bold text-green-600 mt-0.5">
+                        <p className="text-sm font-bold text-green-600 mt-1">
                           {currencySymbol} {product.price.toLocaleString()}
                         </p>
                       )}
@@ -1014,19 +1046,21 @@ export default function ProductsClient() {
                     whileHover={{ scale: 1.015 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 18 }}
                     onClick={() => navigateToProduct(product)}
-                    className={[
-                      // Neumorphism card
-                      "cursor-pointer rounded-2xl overflow-hidden",
-                      "bg-[#f0f0f3] dark:bg-zinc-900",
-                      "shadow-[8px_8px_16px_#d1d9e6,_-8px_-8px_16px_#ffffff]",
-                      "dark:shadow-[8px_8px_16px_rgba(0,0,0,0.6),_-8px_-8px_16px_rgba(255,255,255,0.05)]",
-                      isSpotlighted ? "border-2 border-amber-400" : "border border-zinc-100/40 dark:border-zinc-800/60",
-                      "transition-all"
-                    ].join(' ')}
+                    className={cn(
+                      // Same shell language as the homepage's product cards
+                      // (ProductShowcaseCard in LandingPage.tsx) — plain
+                      // border + bg-card + a shadow that only appears on
+                      // hover, not the old always-on neumorphism shadow.
+                      "cursor-pointer rounded-2xl overflow-hidden flex flex-col bg-card",
+                      "hover:shadow-lg transition-shadow duration-200",
+                      isSpotlighted ? "border-2 border-amber-400" : "border border-border"
+                    )}
                   >
-                    {/* Full-bleed image area (no padding around image) */}
-                    {product.image && (
-                      <div className="relative aspect-square w-full">
+                    {/* Image area — bg-muted + a PawPrint fallback for no-image
+                        products, same as the homepage cards, instead of the
+                        image block just vanishing and leaving a shorter card. */}
+                    <div className="relative aspect-square w-full bg-muted flex items-center justify-center overflow-hidden">
+                      {product.image ? (
                         <Image
                           src={product.image.url.replace(/^http:\/\//, 'https://')}
                           alt={product.image.alt || product.productName}
@@ -1036,34 +1070,36 @@ export default function ProductsClient() {
                           priority={false}
                           referrerPolicy="no-referrer"
                         />
-                        {/* Discount badge — no separate label for a spotlighted product,
-                            that's the amber card border above, silently. */}
-                        {discount && (
-                          <div className="absolute top-3 left-3 z-10">
-                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                              {discount.percentage}% OFF
-                            </span>
-                          </div>
-                        )}
-                        <WishlistButton productId={product.id} />
-                        <div className="absolute bottom-3 right-3 z-10 flex gap-2">
-                          <QuickAddToCartButton
-                            productId={product.id}
-                            variantId={v?.id}
-                          />
-                          <QuickBuyNowButton
-                            productId={product.id}
-                            variantId={v?.id}
-                          />
+                      ) : (
+                        <PawPrint className="w-10 h-10 text-muted-foreground/40" />
+                      )}
+                      {/* Discount badge — no separate label for a spotlighted product,
+                          that's the amber card border above, silently. */}
+                      {discount && (
+                        <div className="absolute top-3 left-3 z-10">
+                          <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                            {discount.percentage}% OFF
+                          </span>
                         </div>
+                      )}
+                      <WishlistButton productId={product.id} />
+                      <div className="absolute bottom-3 right-3 z-10 flex gap-2">
+                        <QuickAddToCartButton
+                          productId={product.id}
+                          variantId={v?.id}
+                        />
+                        <QuickBuyNowButton
+                          productId={product.id}
+                          variantId={v?.id}
+                        />
                       </div>
-                    )}
+                    </div>
 
                     {/* Card body */}
-                    <div className="p-4 space-y-2">
-                      <h3 className="font-bold text-lg line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</h3>
+                    <div className="p-4 flex flex-col flex-1 gap-2">
+                      <h3 className="font-bold text-sm md:text-base line-clamp-2">{product.productName}</h3>
                       {product.genericName && (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-1">{product.genericName}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{product.genericName}</p>
                       )}
 
                       {/* Single variant (cheapest) with discount */}
@@ -1097,8 +1133,8 @@ export default function ProductsClient() {
                         </div>
                       )}
 
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-1">
-                        <span className="font-medium">By:</span> {product.company?.companyName}
+                      <div className="mt-auto text-xs text-muted-foreground line-clamp-1 pt-1">
+                        {product.company?.companyName}
                       </div>
                     </div>
                   </motion.div>
@@ -1144,14 +1180,7 @@ export default function ProductsClient() {
 
 function ProductCardSkeleton() {
   return (
-    <div className={[
-      "rounded-2xl overflow-hidden",
-      "bg-[#f0f0f3] dark:bg-zinc-900",
-      "shadow-[8px_8px_16px_#d1d9e6,_-8px_-8px_16px_#ffffff]",
-      "dark:shadow-[8px_8px_16px_rgba(0,0,0,0.6),_-8px_-8px_16px_rgba(255,255,255,0.05)]",
-      "border border-zinc-100/40 dark:border-zinc-800/60",
-      "p-0"
-    ].join(' ')}>
+    <div className="rounded-2xl overflow-hidden bg-card border border-border p-0">
       <Skeleton className="aspect-square w-full" />
       <div className="p-4 space-y-2">
         <Skeleton className="h-6 w-full" />

@@ -63,6 +63,7 @@ interface ShowcaseVendor {
 interface FeaturedCompanyData {
   companyId: number
   companyName: string | null
+  country: string | null
   tagline: string | null
   ctaText: string
   bannerImageUrl: string | null
@@ -216,6 +217,14 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
   const { country } = useCountry()
   const isUAE = country === 'UAE'
 
+  // Homepage is ISR-cached and identical for every visitor server-side —
+  // useCountry() only knows the real visitor country client-side (see
+  // tech_reference memory), so the country match has to happen here, not in
+  // getFeaturedCompany(). A company with no country set shows to everyone
+  // (fail-open) rather than disappearing because of a blank field.
+  const featuredCompanyForCountry =
+    featuredCompany && (!featuredCompany.country || featuredCompany.country === country) ? featuredCompany : null
+
   // "Because You Viewed" — personalized, so it can't live in the ISR-cached
   // server render like the sections above. Fetched client-side from the
   // visitor's own anonymous session (aw_sid cookie); stays hidden entirely
@@ -364,7 +373,7 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
   }
 
   const isFromFeaturedCompany = (product: ShowcaseProduct) =>
-    !!featuredCompany && product.companyId === featuredCompany.companyId
+    !!featuredCompanyForCountry && product.companyId === featuredCompanyForCountry.companyId
 
   const waOrderLink = "https://wa.me/923354145431?text=I%20want%20to%20place%20an%20order"
   const waUAELink = "https://wa.me/971547478202?text=I%20want%20to%20place%20an%20order"
@@ -558,7 +567,7 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
       </section>
 
       {/* ─── FEATURED COMPANY SPOTLIGHT (admin-curated, see /dashboard/featured-company) ──────── */}
-      {featuredCompany && (
+      {featuredCompanyForCountry && (
         <section className="py-10 md:py-14 px-4 sm:px-6 lg:px-8 bg-background">
           <div className="max-w-7xl mx-auto">
             <div
@@ -577,27 +586,27 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
               <div className="relative grid md:grid-cols-5 items-stretch">
                 <div className="md:col-span-3 p-8 md:p-12 flex flex-col justify-center">
                   <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                    {featuredCompany.companyName}
+                    {featuredCompanyForCountry.companyName}
                   </h2>
-                  {featuredCompany.tagline && (
-                    <p className="text-white/80 text-base md:text-lg max-w-xl mb-7">{featuredCompany.tagline}</p>
+                  {featuredCompanyForCountry.tagline && (
+                    <p className="text-white/80 text-base md:text-lg max-w-xl mb-7">{featuredCompanyForCountry.tagline}</p>
                   )}
                   <Link
-                    href={`/products?companyId=${featuredCompany.companyId}`}
-                    onClick={() => track('PRODUCT_CLICK', { metadata: { source: 'homepage-featured-company-banner', companyId: featuredCompany.companyId } })}
+                    href={`/products?companyId=${featuredCompanyForCountry.companyId}`}
+                    onClick={() => track('PRODUCT_CLICK', { metadata: { source: 'homepage-featured-company-banner', companyId: featuredCompanyForCountry.companyId } })}
                   >
                     <Button className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold px-7 py-6 text-base w-fit">
-                      {featuredCompany.ctaText}
+                      {featuredCompanyForCountry.ctaText}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                 </div>
 
                 <div className="md:col-span-2 relative h-56 md:h-auto">
-                  {featuredCompany.bannerImageUrl ? (
+                  {featuredCompanyForCountry.bannerImageUrl ? (
                     <Image
-                      src={featuredCompany.bannerImageUrl.replace(/^http:\/\//, 'https://')}
-                      alt={featuredCompany.companyName || 'Spotlight'}
+                      src={featuredCompanyForCountry.bannerImageUrl.replace(/^http:\/\//, 'https://')}
+                      alt={featuredCompanyForCountry.companyName || 'Spotlight'}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 40vw"
@@ -612,13 +621,13 @@ export default function LandingPage({ initialTestimonials, trendingProducts = []
               </div>
             </div>
 
-            {featuredCompany.products.length > 0 && (
+            {featuredCompanyForCountry.products.length > 0 && (
               <div className="mt-8">
                 <p className="text-sm font-semibold text-muted-foreground mb-4">
-                  From {featuredCompany.companyName}
+                  From {featuredCompanyForCountry.companyName}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                  {featuredCompany.products.slice(0, 4).map((product) => (
+                  {featuredCompanyForCountry.products.slice(0, 4).map((product) => (
                     <ProductShowcaseCard key={product.id} product={product} isUAE={isUAE} highlighted />
                   ))}
                 </div>

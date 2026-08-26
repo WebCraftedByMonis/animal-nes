@@ -209,7 +209,7 @@ async function getFeaturedCompany() {
   try {
     const featured = await prisma.featuredCompany.findUnique({
       where: { id: 1 },
-      include: { company: { select: { id: true, companyName: true, image: { select: { url: true } } } } },
+      include: { company: { select: { id: true, companyName: true, country: true, image: { select: { url: true } } } } },
     })
     if (!featured || !featured.isActive || !featured.company) return null
 
@@ -226,6 +226,11 @@ async function getFeaturedCompany() {
     return {
       companyId: featured.company.id,
       companyName: featured.company.companyName,
+      // Homepage is ISR-cached and served identically to every visitor — the
+      // actual visitor-country match happens client-side in LandingPage.tsx
+      // (useCountry() has no server-readable signal, see tech_reference
+      // memory), this is just passed through for that comparison.
+      country: featured.company.country,
       tagline: featured.tagline,
       ctaText: featured.ctaText || 'Shop Now',
       // No dedicated banner upload — always the company's own logo/image.

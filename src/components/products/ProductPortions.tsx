@@ -5,9 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, PawPrint } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 import WishlistButton from '@/components/WishlistButton'
 import QuickAddToCartButton from '@/components/QuickAddToCartButton'
 import QuickBuyNowButton from '@/components/QuickBuyNowButton'
@@ -180,18 +181,18 @@ function PortionProductCard({
   return (
     <div
       onClick={onClick}
-      className={[
+      className={cn(
         className,
-        'cursor-pointer rounded-2xl overflow-hidden',
-        'bg-[#f0f0f3] dark:bg-zinc-900',
-        'shadow-[8px_8px_16px_#d1d9e6,_-8px_-8px_16px_#ffffff]',
-        'dark:shadow-[8px_8px_16px_rgba(0,0,0,0.6),_-8px_-8px_16px_rgba(255,255,255,0.05)]',
-        'border border-zinc-100/40 dark:border-zinc-800/60',
-        'transition-transform hover:scale-[1.02]',
-      ].join(' ')}
+        // Same shell language as the homepage cards and the /products grid
+        // (ProductShowcaseCard / ProductsClient) — plain border + bg-card,
+        // shadow only on hover. This was the last place still running the
+        // old always-on neumorphism shadow.
+        'cursor-pointer rounded-2xl overflow-hidden bg-card border border-border',
+        'hover:shadow-lg transition-shadow duration-200'
+      )}
     >
-      {product.image && (
-        <div className="relative aspect-square w-full">
+      <div className="relative aspect-square w-full bg-muted flex items-center justify-center overflow-hidden">
+        {product.image ? (
           <Image
             src={product.image.url.replace(/^http:\/\//, 'https://')}
             alt={product.image.alt || product.productName}
@@ -200,23 +201,25 @@ function PortionProductCard({
             sizes="220px"
             referrerPolicy="no-referrer"
           />
-          {discount && (
-            <div className="absolute top-2 left-2 z-10">
-              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
-                {discount.percentage}% OFF
-              </span>
-            </div>
-          )}
-          <WishlistButton productId={product.id} />
-          <div className="absolute bottom-2 right-2 z-10 flex gap-1.5">
-            <QuickAddToCartButton productId={product.id} variantId={v?.id} />
-            <QuickBuyNowButton productId={product.id} variantId={v?.id} />
+        ) : (
+          <PawPrint className="w-8 h-8 text-muted-foreground/40" />
+        )}
+        {discount && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
+              {discount.percentage}% OFF
+            </span>
           </div>
+        )}
+        <WishlistButton productId={product.id} />
+        <div className="absolute bottom-2 right-2 z-10 flex gap-1.5">
+          <QuickAddToCartButton productId={product.id} variantId={v?.id} />
+          <QuickBuyNowButton productId={product.id} variantId={v?.id} />
         </div>
-      )}
+      </div>
 
       <div className="p-3 space-y-1.5">
-        <h3 className="font-semibold text-sm line-clamp-2 text-zinc-900 dark:text-zinc-100">{product.productName}</h3>
+        <h3 className="font-semibold text-sm line-clamp-2">{product.productName}</h3>
 
         {v && v.customerPrice && v.customerPrice > 10 ? (
           discount ? (
@@ -224,7 +227,7 @@ function PortionProductCard({
               <span className="text-sm font-bold text-green-600 dark:text-green-400">
                 {currencySymbol} {discountedPrice.toLocaleString()}
               </span>
-              <span className="text-xs text-zinc-500 line-through">
+              <span className="text-xs text-muted-foreground line-through">
                 {currencySymbol} {originalPrice.toLocaleString()}
               </span>
             </div>
@@ -240,7 +243,7 @@ function PortionProductCard({
         )}
 
         {product.company?.companyName && (
-          <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">By: {product.company.companyName}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">{product.company.companyName}</p>
         )}
       </div>
     </div>
@@ -249,7 +252,7 @@ function PortionProductCard({
 
 function PortionCardSkeleton() {
   return (
-    <div className="flex-shrink-0 w-[180px] sm:w-[220px] rounded-2xl overflow-hidden bg-[#f0f0f3] dark:bg-zinc-900 border border-zinc-100/40 dark:border-zinc-800/60">
+    <div className="flex-shrink-0 w-[180px] sm:w-[220px] rounded-2xl overflow-hidden bg-card border border-border">
       <Skeleton className="aspect-square w-full" />
       <div className="p-3 space-y-2">
         <Skeleton className="h-4 w-full" />
