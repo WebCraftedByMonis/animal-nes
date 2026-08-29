@@ -60,9 +60,13 @@ async function saveFile(
   const extension = extFromName || (resourceType === 'image' ? 'jpg' : 'bin')
   // folder prefix keeps filenames readable/traceable (e.g. "products-tylosin-...")
   // without needing real subdirectories, so the flat serve route's
-  // path.basename lookup keeps working unchanged.
+  // path.basename lookup keeps working unchanged. Callers pass Cloudinary-era
+  // paths like "products/images" — flatten any slashes (and other unsafe
+  // chars) to hyphens so path.join doesn't turn them into real subdirectories
+  // that don't exist on disk (ENOENT on writeFile).
+  const folderPrefix = folder.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'file'
   const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`
-  const filename = `${folder}-${base}-${uniqueSuffix}.${extension}`
+  const filename = `${folderPrefix}-${base}-${uniqueSuffix}.${extension}`
 
   await writeFile(path.join(UPLOAD_DIR, filename), buffer)
 

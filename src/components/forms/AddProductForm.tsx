@@ -164,7 +164,46 @@ export default function AddProductForm({
     maxFiles: 1,
   });
 
+  // react-hook-form silently drops the submit when client-side validation
+  // fails. Without this, clicking "Create Product" with (say) an unselected
+  // Company/Partner or a blank price does nothing at all — no toast, no
+  // spinner — and it looks like the button is broken. Surface it instead.
+  const onInvalid = (errors: Record<string, unknown>) => {
+    console.group("[AddProductForm] ❌ client-side validation FAILED — submit blocked");
+    console.log("raw errors object:", errors);
+    Object.entries(errors).forEach(([field, err]) => {
+      const message = (err as { message?: string })?.message ?? JSON.stringify(err);
+      console.log(`  • ${field}:`, message);
+    });
+    console.log("current form values:", form.getValues());
+    console.groupEnd();
+    const labels: Record<string, string> = {
+      productName: "Product Name",
+      category: "Category",
+      subCategory: "Sub-category",
+      subsubCategory: "Sub-sub-category",
+      productType: "Product Type",
+      companyId: "Company (pick one from the dropdown)",
+      partnerId: "Partner (pick one from the dropdown)",
+      variants: "Variant packing volume / price",
+    };
+    const missing = Object.keys(errors)
+      .map((k) => labels[k] ?? k)
+      .filter((v, i, a) => a.indexOf(v) === i);
+    toast.error(
+      missing.length
+        ? `Please fix: ${missing.join(", ")}`
+        : "Some required fields are missing or invalid."
+    );
+    const firstError = document.querySelector('[aria-invalid="true"], .text-destructive');
+    firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const onSubmit = async (data: FormValues) => {
+    console.group("[AddProductForm] ✅ validation passed — submitting");
+    console.log("endpoint:", submitEndpoint, "| mode:", mode);
+    console.log("parsed form data:", data);
+    console.groupEnd();
     setIsSubmitting(true);
     let success = false;
 
@@ -199,11 +238,19 @@ export default function AddProductForm({
         }
       });
 
+      console.group("[AddProductForm] → POST " + submitEndpoint);
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
+      }
+      console.groupEnd();
+
       const response = await axios.post(submitEndpoint, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      console.log("[AddProductForm] ← response", response.status, response.data);
 
       if (response.status === 201) {
         toast.success(isVendorMode ? "Product submitted for admin approval" : "Product created successfully");
@@ -212,12 +259,17 @@ export default function AddProductForm({
       }
 
     } catch (error: unknown) {
-      console.error("Submission error:", error);
+      console.group("[AddProductForm] ❌ submission error");
+      console.error(error);
       if (axios.isAxiosError(error)) {
+        console.log("HTTP status:", error.response?.status);
+        console.log("server response body:", error.response?.data);
         toast.error(error.response?.data?.error || "Failed to create product");
       } else {
+        console.log("non-axios error (network / code bug)");
         toast.error("Network error. Please try again.");
       }
+      console.groupEnd();
     } finally {
       setIsSubmitting(false);
 
@@ -246,7 +298,7 @@ export default function AddProductForm({
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 ">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6 ">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6  pr-2">
               {/* Product Name */}
               <FormField
