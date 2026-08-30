@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       userId,
+      customerName,
       city,
       province,
       address,
@@ -17,13 +18,49 @@ export async function POST(req: NextRequest) {
       items,
     } = body
 
-    if (!userId) return NextResponse.json({ error: 'Customer is required' }, { status: 400 })
+    const typedName = typeof customerName === 'string' ? customerName.trim() : ''
+
+    if (!userId && !typedName)
+      return NextResponse.json({ error: 'Customer is required — pick one or type a name' }, { status: 400 })
     if (!city) return NextResponse.json({ error: 'City is required' }, { status: 400 })
     if (!address) return NextResponse.json({ error: 'Address is required' }, { status: 400 })
     if (!shippingAddress) return NextResponse.json({ error: 'Mobile number is required' }, { status: 400 })
     if (!paymentMethod) return NextResponse.json({ error: 'Payment method is required' }, { status: 400 })
     if (!items || items.length === 0)
       return NextResponse.json({ error: 'At least one item is required' }, { status: 400 })
+
+    // Resolve the customer:
+    //  1. a real selected account (userId) — verify it exists
+    //  2. otherwise a typed name — reuse a prior "guest" row with that exact
+    //     name (email null, no password) or create a fresh guest User. This
+    //     is the failsafe for walk-in / phone orders where the buyer has no
+    //     site account: everything downstream (order list, invoice, vendor
+    //     ledger) only ever reads user.name / user.email, both of which a
+    //     guest row satisfies.
+    let resolvedUserId: string
+    if (userId) {
+      const userExists = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
+      if (!userExists) return NextResponse.json({ error: `Customer ${userId} not found` }, { status: 400 })
+      resolvedUserId = userId
+    } else {
+      const phone = typeof shippingAddress === 'string' ? shippingAddress.trim() : null
+      const existingGuest = await prisma.user.findFirst({
+        where: { name: typedName, email: null, password: null },
+        select: { id: true },
+      })
+      if (existingGuest) {
+        resolvedUserId = existingGuest.id
+        if (phone) {
+          await prisma.user.update({ where: { id: existingGuest.id }, data: { PhoneNumber: phone } }).catch(() => {})
+        }
+      } else {
+        const guest = await prisma.user.create({
+          data: { name: typedName, PhoneNumber: phone, country: province || null },
+          select: { id: true },
+        })
+        resolvedUserId = guest.id
+      }
+    }
 
     const shipCharges = parseFloat(shipmentCharges) || 0
     const itemsTotal = items.reduce(
@@ -34,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     const order = await prisma.checkout.create({
       data: {
-        user: { connect: { id: userId } },
+        user: { connect: { id: resolvedUserId } },
         city,
         province: province || '',
         address,

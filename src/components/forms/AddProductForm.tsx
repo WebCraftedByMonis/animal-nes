@@ -169,14 +169,6 @@ export default function AddProductForm({
   // Company/Partner or a blank price does nothing at all — no toast, no
   // spinner — and it looks like the button is broken. Surface it instead.
   const onInvalid = (errors: Record<string, unknown>) => {
-    console.group("[AddProductForm] ❌ client-side validation FAILED — submit blocked");
-    console.log("raw errors object:", errors);
-    Object.entries(errors).forEach(([field, err]) => {
-      const message = (err as { message?: string })?.message ?? JSON.stringify(err);
-      console.log(`  • ${field}:`, message);
-    });
-    console.log("current form values:", form.getValues());
-    console.groupEnd();
     const labels: Record<string, string> = {
       productName: "Product Name",
       category: "Category",
@@ -200,10 +192,6 @@ export default function AddProductForm({
   };
 
   const onSubmit = async (data: FormValues) => {
-    console.group("[AddProductForm] ✅ validation passed — submitting");
-    console.log("endpoint:", submitEndpoint, "| mode:", mode);
-    console.log("parsed form data:", data);
-    console.groupEnd();
     setIsSubmitting(true);
     let success = false;
 
@@ -238,19 +226,11 @@ export default function AddProductForm({
         }
       });
 
-      console.group("[AddProductForm] → POST " + submitEndpoint);
-      for (const [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
-      }
-      console.groupEnd();
-
       const response = await axios.post(submitEndpoint, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-
-      console.log("[AddProductForm] ← response", response.status, response.data);
 
       if (response.status === 201) {
         toast.success(isVendorMode ? "Product submitted for admin approval" : "Product created successfully");
@@ -259,17 +239,12 @@ export default function AddProductForm({
       }
 
     } catch (error: unknown) {
-      console.group("[AddProductForm] ❌ submission error");
-      console.error(error);
+      console.error("Submission error:", error);
       if (axios.isAxiosError(error)) {
-        console.log("HTTP status:", error.response?.status);
-        console.log("server response body:", error.response?.data);
         toast.error(error.response?.data?.error || "Failed to create product");
       } else {
-        console.log("non-axios error (network / code bug)");
         toast.error("Network error. Please try again.");
       }
-      console.groupEnd();
     } finally {
       setIsSubmitting(false);
 

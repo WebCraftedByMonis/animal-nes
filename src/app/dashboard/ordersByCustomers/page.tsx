@@ -335,7 +335,10 @@ export default function AdminOrdersPage() {
   }
 
   const handleCreateManualOrder = async () => {
-    if (!selectedUser) { toast.error('Please select a customer'); return }
+    const typedCustomerName = userSearch.trim()
+    // Failsafe: allow a name-only order when the buyer has no site account.
+    // Server creates/reuses a lightweight "guest" customer from this name.
+    if (!selectedUser && !typedCustomerName) { toast.error('Select a customer or type their name'); return }
     if (!manualCity) { toast.error('City is required'); return }
     if (!manualAddress) { toast.error('Address is required'); return }
     if (!manualPhone) { toast.error('Mobile number is required'); return }
@@ -345,7 +348,8 @@ export default function AdminOrdersPage() {
     setCreatingOrder(true)
     try {
       await axios.post('/api/orders/manual', {
-        userId: selectedUser.id,
+        userId: selectedUser?.id,
+        customerName: selectedUser ? undefined : typedCustomerName,
         city: manualCity,
         province: manualProvince,
         address: manualAddress,
@@ -822,6 +826,11 @@ export default function AdminOrdersPage() {
                       <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
                     </button>
                   </div>
+                )}
+                {!selectedUser && userSearch.trim() && userResults.length === 0 && !searchingUsers && (
+                  <p className="text-xs text-amber-600">
+                    No account matches “{userSearch.trim()}”. The order will be created for a guest customer with this name.
+                  </p>
                 )}
               </div>
 
