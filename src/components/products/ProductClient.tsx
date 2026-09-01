@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Truck, Banknote, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import AddToCartClientWrapper from '@/components/AddToCartClientWrapper';
 import BuyNowButton from '@/components/BuyNowButton';
@@ -72,6 +73,25 @@ export default function ProductClient({ product, overview }: { product: ProductD
     track('PRODUCT_VIEW', { productId: product.id });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
+
+  // Sticky buy bar: the PDP below this component is very long (overview,
+  // benefits, shipping, FAQ, reviews…) with no way to buy once the main
+  // CTA scrolls off. Watch that CTA row and pin a compact price + buttons
+  // bar to the bottom of the viewport once it's scrolled up out of view.
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  useEffect(() => {
+    const el = actionsRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyBar(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [country]);
 
   const productCountry = resolveProductCountry(product.company, product.partner);
 
@@ -158,6 +178,7 @@ export default function ProductClient({ product, overview }: { product: ProductD
     new Date(activeDiscount.endDate).getTime() - Date.now() < 86400000;
 
   return (
+    <>
     <div className="flex flex-col md:flex-row gap-8">
       {/* ── Product Image ─────────────────────────────────────────── */}
       <div className="md:w-1/2">
@@ -285,7 +306,7 @@ export default function ProductClient({ product, overview }: { product: ProductD
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-2">
+          <div ref={actionsRef} className="flex flex-col sm:flex-row gap-4 pt-2">
             {!isOutOfStock && selectedVariantId && selectedVariant ? (
               <>
                 <AddToCartClientWrapper
@@ -308,6 +329,31 @@ export default function ProductClient({ product, overview }: { product: ProductD
               </button>
             )}
           </div>
+
+          {/* Delivery & trust — hoisted from the Shipping section far below
+              so the reassurance sits at the point of decision, not 2000px
+              down. COD + delivery-day claims are Pakistan terms, so gate
+              them on country; authenticity shows everywhere. */}
+          <ul className="pt-3 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            {country === 'Pakistan' && (
+              <>
+                <li className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+                  Delivery in 2–5 days · 1–2 days in major cities
+                </li>
+                <li className="flex items-center gap-2">
+                  <Banknote className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+                  Cash on delivery available
+                </li>
+              </>
+            )}
+            <li className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-green-600 dark:text-green-400" />
+              {product.company?.companyName
+                ? `Authentic — sourced direct from ${product.company.companyName}`
+                : 'Authentic — sourced direct from the manufacturer'}
+            </li>
+          </ul>
 
           {/* Manufacturer */}
           <div className="pt-4 text-sm">
@@ -346,5 +392,87 @@ export default function ProductClient({ product, overview }: { product: ProductD
         </div>
       </div>
     </div>
+
+    {/* ── Sticky buy bar ───────────────────────────────────────────
+        Appears once the main CTA row above has scrolled out of view.
+        Mirrors the selected variant's price + discount and reuses the
+        same Add to Cart / Buy Now components. */}
+    {showStickyBar && (
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 sm:gap-4">
+          {/* Product identity — tablet/desktop only */}
+          <div className="hidden sm:flex items-center gap-3 min-w-0 flex-1">
+            {product.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={product.image.url.replace(/^http:\/\//, 'https://')}
+                alt={product.image.alt || product.productName}
+                className="w-11 h-11 rounded-md object-contain bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shrink-0"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{product.productName}</p>
+              {selectedVariant?.packingVolume && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedVariant.packingVolume}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Price */}
+          <div className="shrink-0 text-right">
+            {selectedVariant && selectedVariant.customerPrice != null && selectedVariant.customerPrice > 10 ? (
+              <>
+                <p className="text-lg font-bold text-green-600 dark:text-green-400 leading-none">
+                  {currencySymbol} {discountedPrice.toLocaleString()}
+                </p>
+                {activeDiscount && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-through leading-none mt-0.5">
+                    {currencySymbol} {originalPrice.toLocaleString()}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-base font-bold text-orange-600 dark:text-orange-400 leading-none">Get Quote</p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-1 sm:flex-none sm:w-[280px]">
+            {isOutOfStock ? (
+              <button
+                disabled
+                className="flex-1 bg-gray-300 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 py-3 px-4 rounded-md font-medium text-sm cursor-not-allowed"
+              >
+                Out of Stock
+              </button>
+            ) : selectedVariant && selectedVariantId && selectedVariant.customerPrice != null && selectedVariant.customerPrice > 10 ? (
+              <>
+                <AddToCartClientWrapper
+                  productId={product.id}
+                  variantId={selectedVariantId}
+                  isActive={product.isActive && !product.outofstock}
+                />
+                <BuyNowButton
+                  productId={product.id}
+                  variantId={selectedVariantId}
+                  isActive={product.isActive && !product.outofstock}
+                />
+              </>
+            ) : (
+              <a
+                href={`https://wa.me/923008424741?text=${encodeURIComponent(`Hi, I'd like to get a price quote for: ${product.productName}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-md text-sm font-medium transition-colors"
+              >
+                WhatsApp Us
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

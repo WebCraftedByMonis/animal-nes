@@ -64,6 +64,9 @@ export async function GET(req: Request) {
                   company: {
                     select: { id: true, companyName: true },
                   },
+                  variants: {
+                    select: { id: true, packingVolume: true, customerPrice: true },
+                  },
                 },
               },
               variant: true,
@@ -80,10 +83,6 @@ export async function GET(req: Request) {
       }),
       prisma.checkout.count({ where }),
     ]);
-    
-    console.log(JSON.stringify(orders, null, 2));
-    
-
 
   return NextResponse.json({ orders,total })
 }

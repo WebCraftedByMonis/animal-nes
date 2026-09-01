@@ -98,7 +98,6 @@ const FAQ_ITEMS = [
 const SHIPPING_INFO = [
   { label: 'Standard Delivery', value: '2–5 business days' },
   { label: 'Express Delivery', value: '1–2 business days (major cities)' },
-  { label: 'Free Shipping', value: 'Orders over PKR 2,000' },
   { label: 'Cash on Delivery', value: 'Available nationwide' },
   { label: 'Coverage', value: 'Pakistan only' },
 ]

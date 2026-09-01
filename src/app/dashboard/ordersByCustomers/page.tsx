@@ -40,6 +40,7 @@ interface Product {
   genericName: string;
   quantity: number;
   company?: { id: number; companyName: string | null } | null;
+  variants?: { id: number; packingVolume: string; customerPrice: number }[];
 }
 
 interface ProductVariant {
@@ -101,10 +102,16 @@ interface Order {
 }
 
 interface EditedItem {
-  id: number;
+  id: number | null;            // null → newly added line, not yet persisted
+  localId: string;              // stable React key
+  productId: number | null;
+  variantId: number | null;
+  availableVariants: { id: number; packingVolume: string; customerPrice: number }[];
   quantity: number;
   price: number;
   purchasedPrice: number | null;
+  isAnimal: boolean;
+  label: string;                // display label for the line
 }
 
 interface ManualItem {
@@ -134,6 +141,19 @@ export default function AdminOrdersPage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [editedPaymentMethod, setEditedPaymentMethod] = useState('')
   const [editedItems, setEditedItems] = useState<EditedItem[]>([])
+  const [removedItemIds, setRemovedItemIds] = useState<number[]>([])
+  const [editedShipment, setEditedShipment] = useState(0)
+  const [editedCity, setEditedCity] = useState('')
+  const [editedProvince, setEditedProvince] = useState('')
+  const [editedAddress, setEditedAddress] = useState('')
+  const [editedPhone, setEditedPhone] = useState('')
+  const [editedStatus, setEditedStatus] = useState<'pending' | 'delivered'>('pending')
+  const [editCustomerSearch, setEditCustomerSearch] = useState('')
+  const [editCustomerResults, setEditCustomerResults] = useState<User[]>([])
+  const [editSelectedUser, setEditSelectedUser] = useState<User | null>(null)
+  const [editProductSearch, setEditProductSearch] = useState('')
+  const [editProductResults, setEditProductResults] = useState<any[]>([])
+  const [editShowProductDropdown, setEditShowProductDropdown] = useState(false)
   const [updatingOrder, setUpdatingOrder] = useState(false)
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
 
@@ -184,65 +204,116 @@ export default function AdminOrdersPage() {
   const handleEditClick = (order: Order) => {
     setEditingOrder(order)
     setEditedPaymentMethod(order.paymentMethod)
+    setEditedShipment(parseFloat(order.shipmentcharges || '0') || 0)
+    setEditedCity(order.city || '')
+    setEditedProvince(order.province || '')
+    setEditedAddress(order.address || '')
+    setEditedPhone(order.shippingAddress || '')
+    setEditedStatus(order.status === 'delivered' ? 'delivered' : 'pending')
+    setEditSelectedUser(order.user)
+    setEditCustomerSearch(order.user?.name || '')
+    setEditCustomerResults([])
+    setEditProductSearch('')
+    setEditProductResults([])
+    setEditShowProductDropdown(false)
+    setRemovedItemIds([])
     setEditedItems(order.items.map(item => ({
       id: item.id,
+      localId: `existing-${item.id}`,
+      productId: item.productId,
+      variantId: item.variantId,
+      availableVariants: item.product?.variants ?? [],
       quantity: item.quantity,
       price: item.price,
-      purchasedPrice: (item as any).purchasedPrice || null
+      purchasedPrice: item.purchasedPrice ?? null,
+      isAnimal: !!item.animal,
+      label: item.animal
+        ? `${item.animal.specie} - ${item.animal.breed}`
+        : `${item.product?.productName ?? 'Product'}${item.variant?.packingVolume ? ` - ${item.variant.packingVolume}` : ''}`,
     })))
     setEditDialogOpen(true)
   }
+
   const handleUpdateOrder = async () => {
     if (!editingOrder) return
+
+    const typedCustomerName = editCustomerSearch.trim()
+    if (!editSelectedUser && !typedCustomerName) { toast.error('Select a customer or type their name'); return }
+    if (!editedCity) { toast.error('City is required'); return }
+    if (!editedAddress) { toast.error('Address is required'); return }
+    if (!editedPhone) { toast.error('Mobile number is required'); return }
+    if (editedItems.length === 0) { toast.error('An order needs at least one item'); return }
 
     setUpdatingOrder(true)
     try {
       await axios.patch(`/api/orders/${editingOrder.id}/update`, {
+        userId: editSelectedUser?.id,
+        customerName: editSelectedUser ? undefined : typedCustomerName,
+        city: editedCity,
+        province: editedProvince,
+        address: editedAddress,
+        shippingAddress: editedPhone,
+        status: editedStatus,
         paymentMethod: editedPaymentMethod,
-        items: editedItems,
-        shipmentcharges: editingOrder.shipmentcharges,
-        total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')
-      });
-
-      // Update the order in the state
-      setOrders((prev) => prev.map((order) => {
-        if (order.id === editingOrder.id) {
-          return {
-            ...order,
-            paymentMethod: editedPaymentMethod,
-            shipmentcharges: editingOrder.shipmentcharges,
-            items: order.items.map((item) => {
-              const editedItem = editedItems.find((ei) => ei.id === item.id)
-              if (editedItem) {
-                return {
-                  ...item,
-                  quantity: editedItem.quantity,
-                  price: editedItem.price,
-                  purchasedPrice: editedItem.purchasedPrice
-                }
-              }
-              return item
-            }),
-            total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')
-          }
-        }
-        return order
-      }))
+        shipmentcharges: editedShipment,
+        removedItemIds,
+        items: editedItems.map(i => ({
+          id: i.id,
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+          price: i.price,
+          purchasedPrice: i.purchasedPrice,
+        })),
+      })
 
       toast.success('Order updated successfully!')
       setEditDialogOpen(false)
-    } catch (err) {
+      fetchOrders(search, page, limit)
+    } catch (err: any) {
       console.error('Error updating order', err)
-      toast.error('Failed to update order. Please try again.')
+      toast.error(err.response?.data?.error || 'Failed to update order. Please try again.')
     } finally {
       setUpdatingOrder(false)
     }
   }
 
-  const updateItemField = (itemId: number, field: 'quantity' | 'price' | 'purchasedPrice', value: number) => {
+  const updateItemField = (localId: string, field: 'quantity' | 'price' | 'purchasedPrice', value: number | null) => {
     setEditedItems((prev) => prev.map((item) =>
-      item.id === itemId ? { ...item, [field]: value } : item
+      item.localId === localId ? { ...item, [field]: value } : item
     ))
+  }
+
+  const updateEditedItemVariant = (localId: string, variantId: number) => {
+    setEditedItems((prev) => prev.map((item) => {
+      if (item.localId !== localId) return item
+      const variant = item.availableVariants.find(v => v.id === variantId)
+      return { ...item, variantId, price: variant?.customerPrice ?? item.price }
+    }))
+  }
+
+  const removeEditedItem = (item: EditedItem) => {
+    if (item.id != null) setRemovedItemIds(prev => [...prev, item.id as number])
+    setEditedItems(prev => prev.filter(i => i.localId !== item.localId))
+  }
+
+  const addProductToEditedItems = (product: any) => {
+    const firstVariant = product.variants?.[0]
+    setEditedItems(prev => [...prev, {
+      id: null,
+      localId: `new-${Date.now()}`,
+      productId: product.id,
+      variantId: firstVariant?.id ?? null,
+      availableVariants: product.variants || [],
+      quantity: 1,
+      price: firstVariant?.customerPrice || 0,
+      purchasedPrice: null,
+      isAnimal: false,
+      label: `${product.productName}${firstVariant?.packingVolume ? ` - ${firstVariant.packingVolume}` : ''}`,
+    }])
+    setEditProductSearch('')
+    setEditProductResults([])
+    setEditShowProductDropdown(false)
   }
 
   // ── Manual Order Handlers ──────────────────────────────────────
@@ -282,6 +353,35 @@ export default function AdminOrdersPage() {
     const t = setTimeout(() => searchProducts(productSearch), 300)
     return () => clearTimeout(t)
   }, [productSearch, searchProducts])
+
+  // ── Edit-dialog customer + product search (kept separate from the
+  //    manual-order state so both dialogs can hold their own results) ──
+  useEffect(() => {
+    if (!editDialogOpen) return
+    const term = editCustomerSearch.trim()
+    if (!term || term === editSelectedUser?.name) { setEditCustomerResults([]); return }
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await axios.get('/api/users', { params: { search: term, pageSize: 6 } })
+        setEditCustomerResults(data.users || [])
+      } catch { setEditCustomerResults([]) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [editCustomerSearch, editDialogOpen, editSelectedUser])
+
+  useEffect(() => {
+    if (!editDialogOpen) return
+    const term = editProductSearch.trim()
+    if (!term) { setEditProductResults([]); setEditShowProductDropdown(false); return }
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await axios.get('/api/product', { params: { search: term, limit: 8 } })
+        setEditProductResults(data.data || [])
+        setEditShowProductDropdown(true)
+      } catch { setEditProductResults([]) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [editProductSearch, editDialogOpen])
 
   const addProductToItems = (product: any) => {
     const firstVariant = product.variants?.[0]
@@ -1077,92 +1177,235 @@ export default function AdminOrdersPage() {
           </DialogHeader>
 
           {editingOrder && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="payment-method">Payment Method</Label>
-                <Textarea
-                  id="payment-method"
-                  value={editedPaymentMethod}
-                  onChange={(e) => setEditedPaymentMethod(e.target.value)}
-                  placeholder="Enter payment method"
-                  className="min-h-[80px]"
-                />
+            <div className="space-y-6 py-2">
+              {/* ── Customer & Delivery ── */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Customer &amp; Delivery</h3>
+
+                <div className="space-y-1 relative">
+                  <Label>Customer *</Label>
+                  <Input
+                    placeholder="Type name or email..."
+                    value={editCustomerSearch}
+                    onChange={e => { setEditCustomerSearch(e.target.value); setEditSelectedUser(null) }}
+                  />
+                  {editCustomerResults.length > 0 && !editSelectedUser && (
+                    <div className="absolute z-50 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                      {editCustomerResults.map(u => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm border-b last:border-b-0"
+                          onClick={() => {
+                            setEditSelectedUser(u)
+                            setEditCustomerSearch(u.name)
+                            setEditCustomerResults([])
+                          }}
+                        >
+                          <span className="font-medium">{u.name}</span>
+                          <span className="text-gray-400 ml-2">{u.email}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {editSelectedUser ? (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-2 text-sm">
+                      <div>
+                        <span className="font-medium text-green-800">{editSelectedUser.name}</span>
+                        {editSelectedUser.email && <span className="text-green-600 ml-2">{editSelectedUser.email}</span>}
+                      </div>
+                      <button onClick={() => { setEditSelectedUser(null); setEditCustomerSearch('') }}>
+                        <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                  ) : editCustomerSearch.trim() && editCustomerResults.length === 0 ? (
+                    <p className="text-xs text-amber-600">
+                      No account matches “{editCustomerSearch.trim()}”. The order will be assigned to a guest customer with this name.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>City *</Label>
+                    <Input value={editedCity} onChange={e => setEditedCity(e.target.value)} placeholder="e.g. Lahore" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Province</Label>
+                    <Input value={editedProvince} onChange={e => setEditedProvince(e.target.value)} placeholder="e.g. Punjab" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Address *</Label>
+                  <Input value={editedAddress} onChange={e => setEditedAddress(e.target.value)} placeholder="Street, area..." />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Mobile Number *</Label>
+                  <Input value={editedPhone} onChange={e => setEditedPhone(e.target.value)} placeholder="+92300..." />
+                </div>
               </div>
 
-              <div className="space-y-4">
+              {/* ── Items ── */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Order Items</h3>
 
-                <h3 className="font-semibold">Order Items</h3>
-                {editingOrder.items.map((item, index) => {
-                  const editedItem = editedItems.find((ei) => ei.id === item.id)
-                  if (!editedItem) return null
+                <div className="relative">
+                  <Label>Search &amp; Add Product</Label>
+                  <div className="relative mt-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      className="pl-9"
+                      placeholder="Type product name..."
+                      value={editProductSearch}
+                      onChange={e => setEditProductSearch(e.target.value)}
+                    />
+                  </div>
+                  {editShowProductDropdown && editProductResults.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                      {editProductResults.map((p: any) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm border-b last:border-b-0"
+                          onClick={() => addProductToEditedItems(p)}
+                        >
+                          <span className="font-medium">{p.productName}</span>
+                          {p.variants?.length > 0 && (
+                            <span className="text-gray-400 ml-2 text-xs">
+                              {p.variants.length} variant{p.variants.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                  return (
-                    <div key={item.id} className="border rounded p-4 space-y-2">
-                      <div className="font-medium">
-                        Item {index + 1}: {item.animal ? `${item.animal.specie} - ${item.animal.breed}` : `${item.product?.productName} - ${item.variant?.packingVolume}`}
+                {editedItems.length === 0 && (
+                  <p className="text-sm text-gray-400 text-center py-3">No items — add at least one.</p>
+                )}
+
+                {editedItems.map((item, index) => (
+                  <div key={item.localId} className="border rounded p-3 space-y-2 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">
+                        Item {index + 1}: {item.label}{item.id == null && <span className="text-green-600 ml-1">(new)</span>}
+                      </span>
+                      <button onClick={() => removeEditedItem(item)} title="Remove item">
+                        <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {!item.isAnimal && item.availableVariants.length > 0 && (
+                        <div className="space-y-1 col-span-2 sm:col-span-1">
+                          <Label className="text-xs">Variant</Label>
+                          <Select
+                            value={String(item.variantId ?? '')}
+                            onValueChange={val => updateEditedItemVariant(item.localId, Number(val))}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {item.availableVariants.map(v => (
+                                <SelectItem key={v.id} value={String(v.id)}>
+                                  {v.packingVolume} — {currencySymbol} {v.customerPrice}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Qty</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8 text-xs"
+                          value={item.quantity}
+                          onChange={e => updateItemField(item.localId, 'quantity', Number(e.target.value))}
+                        />
                       </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
-                          <Input
-                            id={`quantity-${item.id}`}
-                            type="number"
-                            value={editedItem.quantity}
-                            onChange={(e) => updateItemField(item.id, 'quantity', Number(e.target.value))}
-                            min="1"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`price-${item.id}`}>Selling Price ({currencySymbol})</Label>
-                          <Input
-                            id={`price-${item.id}`}
-                            type="number"
-                            value={editedItem.price}
-                            onChange={(e) => updateItemField(item.id, 'price', Number(e.target.value))}
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`purchased-price-${item.id}`}>Purchased Price ({currencySymbol})</Label>
-                          <Input
-                            id={`purchased-price-${item.id}`}
-                            type="number"
-                            value={editedItem.purchasedPrice || 0}
-                            onChange={(e) => updateItemField(item.id, 'purchasedPrice', Number(e.target.value))}
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Sell Price ({currencySymbol})</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          className="h-8 text-xs"
+                          value={item.price}
+                          onChange={e => updateItemField(item.localId, 'price', Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Purchase Price ({currencySymbol})</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          className="h-8 text-xs"
+                          value={item.purchasedPrice ?? ''}
+                          placeholder="Optional"
+                          onChange={e => updateItemField(item.localId, 'purchasedPrice', e.target.value ? Number(e.target.value) : null)}
+                        />
                       </div>
                     </div>
-                  )
-                })}
+                    <div className="text-right text-xs text-gray-500">
+                      Subtotal: {currencySymbol} {(item.price * item.quantity).toFixed(2)}
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="shipment-charges">Shipment Charges ({currencySymbol})</Label>
-                <Input
-                  id="shipment-charges"
-                  type="number"
-                  value={parseFloat(editingOrder.shipmentcharges || '0')}
-                  onChange={(e) => {
-                    const newShipmentCharges = parseFloat(e.target.value) || 0;
-                    setEditingOrder({
-                      ...editingOrder,
-                      shipmentcharges: newShipmentCharges.toString(),
-                      total: editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + newShipmentCharges
-                    });
-                  }}
-                  min="0"
-                  step="0.01"
-                />
-              </div>
+              {/* ── Payment & Status ── */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">Payment &amp; Status</h3>
 
-              <div className="text-lg font-semibold">
-                New Total: {currencySymbol} {(editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + parseFloat(editingOrder.shipmentcharges || '0')).toFixed(2)}
+                <div className="space-y-1">
+                  <Label htmlFor="payment-method">Payment Method</Label>
+                  <Textarea
+                    id="payment-method"
+                    value={editedPaymentMethod}
+                    onChange={(e) => setEditedPaymentMethod(e.target.value)}
+                    placeholder="Enter payment method"
+                    className="min-h-[60px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="shipment-charges">Shipment Charges ({currencySymbol})</Label>
+                    <Input
+                      id="shipment-charges"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={editedShipment}
+                      onChange={(e) => setEditedShipment(Number(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Order Status</Label>
+                    <Select value={editedStatus} onValueChange={(v) => setEditedStatus(v as 'pending' | 'delivered')}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded px-4 py-2 flex justify-between items-center">
+                  <span className="font-semibold text-green-800">New Total</span>
+                  <span className="text-xl font-bold text-green-700">
+                    {currencySymbol} {(editedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + editedShipment).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
           )}
