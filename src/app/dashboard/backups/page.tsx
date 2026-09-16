@@ -46,6 +46,10 @@ export default function BackupsPage() {
   });
   const [downloadingQuality, setDownloadingQuality] = useState(false);
 
+  // ── Trending coverage state ───────────────────────────────────
+  const [downloadingCoverage, setDownloadingCoverage] = useState(false);
+  const [onlyMissing, setOnlyMissing] = useState(false);
+
   // ── Upload state ──────────────────────────────────────────────
   const [uploading, setUploading]       = useState<BackupType | null>(null);
   const [uploadResult, setUploadResult] = useState<Record<BackupType, UploadResult | null>>({
@@ -73,6 +77,14 @@ export default function BackupsPage() {
     if (noImage)    params.set('noImage',    'true');
     window.open(`/api/admin/backups/quality?${params.toString()}`, '_blank', 'noopener,noreferrer');
     setTimeout(() => setDownloadingQuality(false), 800);
+  };
+
+  const handleCoverageDownload = () => {
+    setDownloadingCoverage(true);
+    const params = new URLSearchParams({ country });
+    if (onlyMissing) params.set('onlyMissing', 'true');
+    window.open(`/api/admin/backups/coverage?${params.toString()}`, '_blank', 'noopener,noreferrer');
+    setTimeout(() => setDownloadingCoverage(false), 800);
   };
 
   const handleDownload = (type: BackupType) => {
@@ -182,6 +194,40 @@ export default function BackupsPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* ── Trending Products Coverage ── */}
+        <div className="bg-white shadow-xl rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900">Trending Products Check</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Checks the top 100 most-searched product names against your catalog for <strong>{country}</strong> and
+              tells you which ones you already carry and which ones you don&apos;t have yet.
+            </p>
+          </div>
+
+          <div className="px-6 py-6 space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={onlyMissing}
+                onChange={(e) => setOnlyMissing(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              <div>
+                <div className="text-sm font-medium text-gray-900">Only show missing products</div>
+                <div className="text-xs text-gray-500">Skip the ones you already have and list just the gaps.</div>
+              </div>
+            </label>
+
+            <button
+              onClick={handleCoverageDownload}
+              disabled={downloadingCoverage}
+              className="inline-flex items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {downloadingCoverage ? 'Preparing…' : '⬇ Download Coverage Report'}
+            </button>
           </div>
         </div>
 
