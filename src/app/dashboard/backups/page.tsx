@@ -199,9 +199,8 @@ export default function BackupsPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">Trending Products Check</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Checks the top 100 most-searched product names against your catalog for <strong>{country}</strong>.
-              The download has two sheets: <strong>Found Products</strong> (full product details — same fields as the
-              Products Backup — for every match) and <strong>Missing</strong> (the ones you don&apos;t carry yet).
+              Checks the top 100 most-searched product names against your catalog for <strong>{country}</strong> and
+              downloads the ones you already carry, with full product details (same fields as the Products Backup).
             </p>
           </div>
 
@@ -211,7 +210,7 @@ export default function BackupsPage() {
               disabled={downloadingCoverage}
               className="inline-flex items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {downloadingCoverage ? 'Preparing…' : '⬇ Download Coverage Report'}
+              {downloadingCoverage ? 'Preparing…' : '⬇ Download Found Products'}
             </button>
           </div>
         </div>

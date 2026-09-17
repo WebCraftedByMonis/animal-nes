@@ -237,14 +237,11 @@ export async function GET(request: NextRequest) {
   // "Mycosorb" both matching a single "Mycosorb Toxin Binder" product), so no
   // rank silently disappears.
   const matchedTerms: { rank: number; name: string; productId: number }[] = [];
-  const missingRows: { Rank: number; SearchedProductName: string; Note: string | null }[] = [];
 
-  for (const { rank, name, hint } of TRENDING_PRODUCTS) {
+  for (const { rank, name } of TRENDING_PRODUCTS) {
     const match = findMatch(name, catalog);
     if (match) {
       matchedTerms.push({ rank, name, productId: match.id });
-    } else {
-      missingRows.push({ Rank: rank, SearchedProductName: name, Note: hint });
     }
   }
 
@@ -311,11 +308,10 @@ export async function GET(request: NextRequest) {
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(foundRows), 'Found Products');
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(missingRows), 'Missing');
 
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   const stamp = new Date().toISOString().slice(0, 10);
-  const filename = `trending-products-coverage-${country}-${stamp}.xlsx`;
+  const filename = `trending-products-found-${country}-${stamp}.xlsx`;
 
   return new NextResponse(buffer, {
     status: 200,
