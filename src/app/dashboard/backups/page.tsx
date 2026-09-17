@@ -48,7 +48,6 @@ export default function BackupsPage() {
 
   // ── Trending coverage state ───────────────────────────────────
   const [downloadingCoverage, setDownloadingCoverage] = useState(false);
-  const [onlyMissing, setOnlyMissing] = useState(false);
 
   // ── Upload state ──────────────────────────────────────────────
   const [uploading, setUploading]       = useState<BackupType | null>(null);
@@ -81,9 +80,7 @@ export default function BackupsPage() {
 
   const handleCoverageDownload = () => {
     setDownloadingCoverage(true);
-    const params = new URLSearchParams({ country });
-    if (onlyMissing) params.set('onlyMissing', 'true');
-    window.open(`/api/admin/backups/coverage?${params.toString()}`, '_blank', 'noopener,noreferrer');
+    window.open(`/api/admin/backups/coverage?country=${country}`, '_blank', 'noopener,noreferrer');
     setTimeout(() => setDownloadingCoverage(false), 800);
   };
 
@@ -202,25 +199,13 @@ export default function BackupsPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">Trending Products Check</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Checks the top 100 most-searched product names against your catalog for <strong>{country}</strong> and
-              tells you which ones you already carry and which ones you don&apos;t have yet.
+              Checks the top 100 most-searched product names against your catalog for <strong>{country}</strong>.
+              The download has two sheets: <strong>Found Products</strong> (full product details — same fields as the
+              Products Backup — for every match) and <strong>Missing</strong> (the ones you don&apos;t carry yet).
             </p>
           </div>
 
           <div className="px-6 py-6 space-y-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={onlyMissing}
-                onChange={(e) => setOnlyMissing(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-              />
-              <div>
-                <div className="text-sm font-medium text-gray-900">Only show missing products</div>
-                <div className="text-xs text-gray-500">Skip the ones you already have and list just the gaps.</div>
-              </div>
-            </label>
-
             <button
               onClick={handleCoverageDownload}
               disabled={downloadingCoverage}

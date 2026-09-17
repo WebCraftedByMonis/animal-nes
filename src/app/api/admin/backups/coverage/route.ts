@@ -164,13 +164,51 @@ function findMatch(termName: string, catalog: CatalogEntry[]): CatalogEntry | nu
   return null;
 }
 
+function toIso(value: Date | null | undefined) {
+  return value ? value.toISOString() : null;
+}
+
+interface FoundRow {
+  Rank: number | null;
+  SearchedProductName: string | null;
+  ProductID: number;
+  ProductName: string;
+  GenericName: string | null;
+  Category: string | null;
+  AdditionalCategories: string;
+  SubCategory: string | null;
+  SubSubCategory: string | null;
+  ProductType: string | null;
+  CompanyID: number | null;
+  CompanyName: string | null;
+  PartnerID: number | null;
+  PartnerName: string | null;
+  Description: string | null;
+  ProductLink: string | null;
+  Dosage: string | null;
+  OutOfStock: boolean;
+  IsFeatured: boolean;
+  IsActive: boolean;
+  ImageID: number | null;
+  ImageURL: string | null;
+  ImageAlt: string | null;
+  ImagePublicId: string | null;
+  CreatedAt: string | null;
+  UpdatedAt: string | null;
+  VariantID: number | null;
+  PackingVolume: string | null;
+  CompanyPrice: number | null;
+  DealerPrice: number | null;
+  'Customer Price': number | null;
+  Inventory: number | null;
+}
+
 export async function GET(request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const country = searchParams.get('country') || 'Pakistan';
-  const onlyMissing = searchParams.get('onlyMissing') === 'true';
 
   const products = await prisma.product.findMany({
     where: {
@@ -194,22 +232,82 @@ export async function GET(request: NextRequest) {
     searchable: normalize(`${p.productName} ${p.genericName ?? ''}`),
   }));
 
-  const rows = TRENDING_PRODUCTS.map(({ rank, name, hint }) => {
+  // Rank/search-term each matched product ID is tied to, so the full-detail
+  // rows below can still show which trending term they satisfy.
+  const matchInfoById = new Map<number, { rank: number; name: string }>();
+  const missingRows: { Rank: number; SearchedProductName: string; Note: string | null }[] = [];
+
+  for (const { rank, name, hint } of TRENDING_PRODUCTS) {
     const match = findMatch(name, catalog);
-    return {
-      Rank: rank,
-      SearchedProductName: name,
-      Note: hint,
-      Status: match ? 'In catalog' : 'Missing',
-      MatchedProductID: match?.id ?? null,
-      MatchedProductName: match?.productName ?? null,
-      MatchedCompany: match?.companyName ?? null,
+    if (match) {
+      if (!matchInfoById.has(match.id)) matchInfoById.set(match.id, { rank, name });
+    } else {
+      missingRows.push({ Rank: rank, SearchedProductName: name, Note: hint });
+    }
+  }
+
+  const matchedIds = [...matchInfoById.keys()];
+
+  const fullProducts = matchedIds.length === 0 ? [] : await prisma.product.findMany({
+    where: { id: { in: matchedIds } },
+    include: {
+      company: { select: { id: true, companyName: true } },
+      partner: { select: { id: true, partnerName: true } },
+      variants: { orderBy: { id: 'asc' } },
+      image: true,
+      categories: true,
+    },
+    orderBy: { id: 'asc' },
+  });
+
+  // Same row shape as the Products Backup, with the trending rank/search term prepended.
+  const foundRows: FoundRow[] = fullProducts.flatMap((product): FoundRow[] => {
+    const info = matchInfoById.get(product.id);
+    const base = {
+      Rank: info?.rank ?? null,
+      SearchedProductName: info?.name ?? null,
+      ProductID: product.id,
+      ProductName: product.productName,
+      GenericName: product.genericName,
+      Category: product.category,
+      AdditionalCategories: product.categories.map((c) => c.category).join(', '),
+      SubCategory: product.subCategory,
+      SubSubCategory: product.subsubCategory,
+      ProductType: product.productType,
+      CompanyID: product.companyId,
+      CompanyName: product.company?.companyName ?? null,
+      PartnerID: product.partnerId,
+      PartnerName: product.partner?.partnerName ?? null,
+      Description: product.description,
+      ProductLink: product.productLink,
+      Dosage: product.dosage,
+      OutOfStock: product.outofstock,
+      IsFeatured: product.isFeatured,
+      IsActive: product.isActive,
+      ImageID: product.image?.id ?? null,
+      ImageURL: product.image?.url ?? null,
+      ImageAlt: product.image?.alt ?? null,
+      ImagePublicId: product.image?.publicId ?? null,
+      CreatedAt: toIso(product.createdAt),
+      UpdatedAt: toIso(product.updatedAt),
     };
-  }).filter((row) => !onlyMissing || row.Status === 'Missing');
+    if (product.variants.length === 0) {
+      return [{ ...base, VariantID: null, PackingVolume: null, CompanyPrice: null, DealerPrice: null, 'Customer Price': null, Inventory: null }];
+    }
+    return product.variants.map((v) => ({
+      ...base,
+      VariantID: v.id,
+      PackingVolume: v.packingVolume,
+      CompanyPrice: v.companyPrice,
+      DealerPrice: v.dealerPrice,
+      'Customer Price': v.customerPrice,
+      Inventory: v.inventory,
+    }));
+  }).sort((a, b) => (a.Rank ?? 0) - (b.Rank ?? 0));
 
   const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Trending Coverage');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(foundRows), 'Found Products');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(missingRows), 'Missing');
 
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   const stamp = new Date().toISOString().slice(0, 10);
