@@ -232,21 +232,23 @@ export async function GET(request: NextRequest) {
     searchable: normalize(`${p.productName} ${p.genericName ?? ''}`),
   }));
 
-  // Rank/search-term each matched product ID is tied to, so the full-detail
-  // rows below can still show which trending term they satisfy.
-  const matchInfoById = new Map<number, { rank: number; name: string }>();
+  // Every rank gets its own entry here — even when two different trending
+  // terms happen to match the same catalog product (e.g. "Toxin Binder" and
+  // "Mycosorb" both matching a single "Mycosorb Toxin Binder" product), so no
+  // rank silently disappears.
+  const matchedTerms: { rank: number; name: string; productId: number }[] = [];
   const missingRows: { Rank: number; SearchedProductName: string; Note: string | null }[] = [];
 
   for (const { rank, name, hint } of TRENDING_PRODUCTS) {
     const match = findMatch(name, catalog);
     if (match) {
-      if (!matchInfoById.has(match.id)) matchInfoById.set(match.id, { rank, name });
+      matchedTerms.push({ rank, name, productId: match.id });
     } else {
       missingRows.push({ Rank: rank, SearchedProductName: name, Note: hint });
     }
   }
 
-  const matchedIds = [...matchInfoById.keys()];
+  const matchedIds = [...new Set(matchedTerms.map((t) => t.productId))];
 
   const fullProducts = matchedIds.length === 0 ? [] : await prisma.product.findMany({
     where: { id: { in: matchedIds } },
@@ -259,13 +261,15 @@ export async function GET(request: NextRequest) {
     },
     orderBy: { id: 'asc' },
   });
+  const productById = new Map(fullProducts.map((p) => [p.id, p]));
 
   // Same row shape as the Products Backup, with the trending rank/search term prepended.
-  const foundRows: FoundRow[] = fullProducts.flatMap((product): FoundRow[] => {
-    const info = matchInfoById.get(product.id);
+  const foundRows: FoundRow[] = matchedTerms.flatMap(({ rank, name, productId }): FoundRow[] => {
+    const product = productById.get(productId);
+    if (!product) return [];
     const base = {
-      Rank: info?.rank ?? null,
-      SearchedProductName: info?.name ?? null,
+      Rank: rank,
+      SearchedProductName: name,
       ProductID: product.id,
       ProductName: product.productName,
       GenericName: product.genericName,
