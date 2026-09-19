@@ -47,10 +47,38 @@ const productSchema = z.object({
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),
   outofstock: z.boolean().optional(),
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
+  focusKeyword: z.string().optional(),
+  schemaBrand: z.string().optional(),
+  sku: z.string().optional(),
+  gtin: z.string().optional(),
+  mpn: z.string().optional(),
 
 })
 
 const updateProductSchema = productSchema.partial()
+
+interface FaqInput {
+  question: string
+  answer: string
+  order: number
+}
+
+// Shared by POST and PUT — reads faqs[i][question]/faqs[i][answer] the same
+// way variants[i][...] is already parsed above.
+function parseFaqs(formData: FormData): FaqInput[] {
+  const faqs: FaqInput[] = []
+  for (let i = 0; ; i++) {
+    const question = formData.get(`faqs[${i}][question]`)
+    const answer = formData.get(`faqs[${i}][answer]`)
+    if (question === null && answer === null) break
+    const q = question?.toString().trim() ?? ''
+    const a = answer?.toString().trim() ?? ''
+    if (q && a) faqs.push({ question: q, answer: a, order: i })
+  }
+  return faqs
+}
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -105,6 +133,13 @@ export async function POST(request: NextRequest) {
       isFeatured: formData.get('isFeatured') === 'true',
       isActive: formData.get('isActive') === 'true',
       outofstock: formData.get('outofstock') === 'true',
+      metaTitle: (formData.get('metaTitle') as string | null) || undefined,
+      metaDescription: (formData.get('metaDescription') as string | null) || undefined,
+      focusKeyword: (formData.get('focusKeyword') as string | null) || undefined,
+      schemaBrand: (formData.get('schemaBrand') as string | null) || undefined,
+      sku: (formData.get('sku') as string | null) || undefined,
+      gtin: (formData.get('gtin') as string | null) || undefined,
+      mpn: (formData.get('mpn') as string | null) || undefined,
     }
 
     console.log('--- Parsed Product Data ---', productData)
@@ -159,6 +194,8 @@ export async function POST(request: NextRequest) {
         .filter((v) => v && v !== validation.data.category)
     )]
 
+    const faqs = parseFaqs(formData)
+
     // Create product with relations
     const product = await prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
@@ -210,13 +247,20 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      if (faqs.length > 0) {
+        await tx.productFaq.createMany({
+          data: faqs.map((f) => ({ ...f, productId: product.id })),
+        })
+      }
+
       return tx.product.findUnique({
         where: { id: product.id },
         include: {
           image: true,
           pdf: true,
           variants: true,
-          categories: true
+          categories: true,
+          faqs: { orderBy: { order: 'asc' } },
         }
       })
     })
@@ -499,6 +543,8 @@ export async function GET(req: NextRequest) {
     orderBy = { createdAt: sortOrder }
   } else if (sortBy === 'productName') {
     orderBy = { productName: sortOrder }
+  } else if (sortBy === 'id') {
+    orderBy = { id: sortOrder }
   }
 
   try {
@@ -531,6 +577,7 @@ export async function GET(req: NextRequest) {
       variants: true,
       discounts: { where: discountInclude },
       categories: true,
+      faqs: { orderBy: { order: 'asc' as const } },
     }
 
     let items: any[]
@@ -679,6 +726,13 @@ export async function PUT(request: NextRequest) {
       isFeatured: formData.get('isFeatured') ? formData.get('isFeatured') === 'true' : undefined,
       isActive: formData.get('isActive') ? formData.get('isActive') === 'true' : undefined,
       outofstock: formData.get('outofstock') ? formData.get('outofstock') === 'true' : undefined,
+      metaTitle: formData.get('metaTitle') as string | null,
+      metaDescription: formData.get('metaDescription') as string | null,
+      focusKeyword: formData.get('focusKeyword') as string | null,
+      schemaBrand: formData.get('schemaBrand') as string | null,
+      sku: formData.get('sku') as string | null,
+      gtin: formData.get('gtin') as string | null,
+      mpn: formData.get('mpn') as string | null,
     }
 
     
@@ -767,6 +821,12 @@ export async function PUT(request: NextRequest) {
         )]
       : null
 
+    // FAQs — same "only touch when explicitly provided" convention as
+    // additionalCategories above, so partial-update callers that don't send
+    // any faqs[] fields leave the product's existing FAQs untouched.
+    const hasFaqs = formData.get('faqsProvided') === 'true'
+    const faqs = hasFaqs ? parseFaqs(formData) : null
+
     // Update product with transactions
     const updatedProduct = await prisma.$transaction(async (tx) => {
       // Update product data
@@ -780,6 +840,15 @@ export async function PUT(request: NextRequest) {
         if (additionalCategories.length > 0) {
           await tx.productCategory.createMany({
             data: additionalCategories.map((category) => ({ productId, category })),
+          })
+        }
+      }
+
+      if (faqs !== null) {
+        await tx.productFaq.deleteMany({ where: { productId } })
+        if (faqs.length > 0) {
+          await tx.productFaq.createMany({
+            data: faqs.map((f) => ({ ...f, productId })),
           })
         }
       }
@@ -895,7 +964,8 @@ export async function PUT(request: NextRequest) {
           variants: true,
           company: true,
           partner: true,
-          categories: true
+          categories: true,
+          faqs: { orderBy: { order: 'asc' } },
         }
       })
     })

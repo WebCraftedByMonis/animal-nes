@@ -6,7 +6,7 @@ import ProductReviewSection from '@/components/ProductReviewSection'
 import RelatedProductsClient from '@/components/products/RelatedProductsClient'
 import { prisma } from '@/lib/prisma'
 import { BLOCKED_CATEGORIES, toSlug as toCategorySlug, getDisplayLabel } from '@/lib/category-utils'
-import { extractIdFromProductSlug, toCategorySlugForUrl, toProductUrl } from '@/lib/slug-utils'
+import { extractIdFromProductSlug, toCategorySlugForUrl, toProductUrl, toSlug } from '@/lib/slug-utils'
 
 export const revalidate = 1800
 export const dynamicParams = true
@@ -24,6 +24,7 @@ const getProduct = cache(async (numId: number) => {
       partner: true,
       variants: true,
       categories: true,
+      faqs: { orderBy: { order: 'asc' } },
       discounts: {
         where: { isActive: true, startDate: { lte: now }, endDate: { gte: now } },
       },
@@ -131,14 +132,20 @@ export async function generateMetadata({
     const priceStr = price ? ` — PKR ${price.toLocaleString()}` : ''
     const rawDesc: string | null = data.description
 
-    const metaDescription = rawDesc
+    const autoDescription = rawDesc
       ? rawDesc.replace(/\s+/g, ' ').trim().slice(0, 130) + (rawDesc.length > 130 ? '…' : '') + priceStr
       : `Buy ${data.productName}${genericPart}${sizePart} in Pakistan${priceStr}. ${normalizedCat}. Fast delivery across Pakistan.`
+    // Manual overrides from the admin SEO fields win when set — see
+    // AddProductForm's "SEO & Schema" section / veiwProducts edit dialog.
+    const metaDescription = data.metaDescription?.trim() || autoDescription
 
     const canonicalUrl = `${BASE_URL}${toProductUrl(data)}`
+    const title = data.metaTitle?.trim()
+      ? `${data.metaTitle.trim()} | Animal Wellness`
+      : `${data.productName}${genericPart}${sizePart} — Price in Pakistan | Animal Wellness`
 
     return {
-      title: `${data.productName}${genericPart}${sizePart} — Price in Pakistan | Animal Wellness`,
+      title,
       description: metaDescription,
       keywords: [
         data.productName, data.genericName, normalizedCat, data.subCategory,
@@ -146,7 +153,7 @@ export async function generateMetadata({
         'veterinary products', 'animal wellness', 'pet care products Pakistan',
       ].filter(Boolean),
       openGraph: {
-        title: `${data.productName} - Buy Online`,
+        title: data.metaTitle?.trim() || `${data.productName} - Buy Online`,
         description: metaDescription,
         images: data.image ? [{ url: data.image.url, width: 800, height: 600, alt: data.image.alt ?? data.productName }] : [],
         type: 'website',
@@ -199,23 +206,54 @@ export default async function ProductPage({
   const canonicalUrl = toProductUrl(data)
   const isCanonical = categorySlug === correctCatSlug
 
+  // Related products: the old query was "4 newest in the same top-level
+  // category", which rendered the *same* 4 items on every product page in a
+  // category. Now: prefer the narrower sub-category, fall back to the
+  // category, then rotate the 4-item window by this product's id so sibling
+  // pages don't all show an identical row.
   const relatedProducts = data.category && !GENERIC_LABELS.has(data.category.toLowerCase().trim())
-    ? await prisma.product.findMany({
-        where: { category: data.category, isActive: true, id: { not: numId } },
-        select: {
+    ? await (async () => {
+        const cat = data.category as string
+        const relSelect = {
           id: true,
           productName: true,
           category: true,
           image: { select: { url: true, alt: true } },
           variants: { take: 1, select: { customerPrice: true } },
-        },
-        take: 4,
-        orderBy: { id: 'desc' },
-      })
+        }
+        const sub =
+          data.subCategory && !GENERIC_LABELS.has(data.subCategory.toLowerCase().trim())
+            ? data.subCategory
+            : null
+        let pool = sub
+          ? await prisma.product.findMany({
+              where: { isActive: true, id: { not: numId }, category: cat, subCategory: sub },
+              select: relSelect,
+              take: 40,
+              orderBy: { id: 'desc' },
+            })
+          : []
+        if (pool.length < 8) {
+          pool = await prisma.product.findMany({
+            where: { isActive: true, id: { not: numId }, category: cat },
+            select: relSelect,
+            take: 40,
+            orderBy: { id: 'desc' },
+          })
+        }
+        if (pool.length <= 4) return pool
+        const start = numId % pool.length
+        return [...pool.slice(start), ...pool.slice(0, start)].slice(0, 4)
+      })()
     : []
 
   const normalizedCategory = normalizeCategory(data.category)
   const sections = parseDescriptionSections(data.description)
+  // Per-product FAQs (admin-managed, see ProductFaq) take over from the
+  // generic site-wide list once at least one is set.
+  const effectiveFaqs = data.faqs.length > 0
+    ? data.faqs.map((f) => ({ q: f.question, a: f.answer }))
+    : FAQ_ITEMS
   const avgRating = reviews.length > 0
     ? reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / reviews.length
     : null
@@ -234,9 +272,12 @@ export default async function ProductPage({
     name: data.productName,
     description: data.description || `${data.productName} - Quality veterinary product`,
     ...(data.image?.url && { image: data.image.url }),
-    brand: { '@type': 'Brand', name: data.company?.companyName || 'Animal Wellness' },
+    brand: { '@type': 'Brand', name: data.schemaBrand?.trim() || data.company?.companyName || 'Animal Wellness' },
     manufacturer: { '@type': 'Organization', name: data.company?.companyName || 'Animal Wellness' },
     category: normalizedCategory,
+    ...(data.sku?.trim() && { sku: data.sku.trim() }),
+    ...(data.gtin?.trim() && { gtin: data.gtin.trim() }),
+    ...(data.mpn?.trim() && { mpn: data.mpn.trim() }),
     ...(reviews.length > 0 && {
       aggregateRating: {
         '@type': 'AggregateRating',
@@ -266,6 +307,16 @@ export default async function ProductPage({
     }),
   }
 
+  const faqPageSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: effectiveFaqs.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  }
+
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -291,6 +342,7 @@ export default async function ProductPage({
       )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }} />
 
       <article className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <nav aria-label="Breadcrumb" className="mb-6">
@@ -404,7 +456,7 @@ export default async function ProductPage({
                   </Link>
                 ))}
               {data.company?.companyName && (
-                <Link href={`/brands/${correctCatSlug}`} className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 transition-colors text-sm">
+                <Link href={`/brands/${toSlug(data.company.companyName)}`} className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 transition-colors text-sm">
                   {data.company.companyName}
                 </Link>
               )}
@@ -448,7 +500,7 @@ export default async function ProductPage({
           <section aria-labelledby="faq-heading">
             <h2 id="faq-heading" className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Frequently Asked Questions</h2>
             <dl className="space-y-4">
-              {FAQ_ITEMS.map(({ q, a }) => (
+              {effectiveFaqs.map(({ q, a }) => (
                 <div key={q} className="bg-white dark:bg-zinc-900 rounded-lg shadow-sm p-5">
                   <dt className="font-semibold text-gray-900 dark:text-white mb-2">{q}</dt>
                   <dd className="text-gray-700 dark:text-gray-300 leading-relaxed">{a}</dd>

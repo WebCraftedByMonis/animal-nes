@@ -43,6 +43,10 @@ type ProductRow = {
   partner: { partnerName: string | null } | null;
   image: { url: string } | null;
   variants: { id: number; packingVolume: string | null; customerPrice: number | null }[];
+  schemaBrand: string | null;
+  sku: string | null;
+  gtin: string | null;
+  mpn: string | null;
 };
 
 interface FeedBuilder {
@@ -75,6 +79,25 @@ function sf(productId: number, field: string, raw: unknown): string {
 
 function ensureHttps(url: string): string {
   return url.replace(/^http:\/\//, "https://");
+}
+
+// Prefers a real admin-set GTIN, then a real MPN, falling back to the old
+// genericName-derived pseudo-MPN so products nobody has filled in yet still
+// submit the same as before. `includeIdentifierExists` is Google-only — see
+// the Meta field-list note above buildMetaItem.
+function renderIdentifiers(p: ProductRow, includeIdentifierExists: boolean): string {
+  const identifierExists = (value: "yes" | "no") =>
+    includeIdentifierExists ? `<g:identifier_exists>${value}</g:identifier_exists>\n      ` : "";
+
+  if (p.gtin?.trim()) {
+    const gtinTag = `<g:gtin>${sf(p.id, "gtin", p.gtin.trim())}</g:gtin>`;
+    const mpnTag = p.mpn?.trim() ? `\n      <g:mpn>${sf(p.id, "mpn", p.mpn.trim())}</g:mpn>` : "";
+    return `${identifierExists("yes")}${gtinTag}${mpnTag}`;
+  }
+  if (p.mpn?.trim()) {
+    return `${identifierExists("yes")}<g:mpn>${sf(p.id, "mpn", p.mpn.trim())}</g:mpn>`;
+  }
+  return `${identifierExists("no")}${p.genericName ? `<g:mpn>${sf(p.id, "mpn", p.genericName)}</g:mpn>` : ""}`;
 }
 
 // Convert ALL-CAPS titles to Title Case to avoid GMC excessive-capitalization flag
@@ -123,7 +146,7 @@ function buildGoogleItem(p: ProductRow, currency: string): string {
   const imageUrl     = xmlEscape(rawImageUrl);
   const availability = p.outofstock ? "out of stock" : "in stock";
   const description  = sf(p.id, "description", buildDescription(p));
-  const brand        = sf(p.id, "brand", p.company?.companyName || p.partner?.partnerName || "Animal Wellness");
+  const brand        = sf(p.id, "brand", p.schemaBrand?.trim() || p.company?.companyName || p.partner?.partnerName || "Animal Wellness");
 
   const productType = [p.category, p.subCategory, p.subsubCategory]
     .filter((s): s is string => s != null && s !== "")
@@ -162,8 +185,7 @@ function buildGoogleItem(p: ProductRow, currency: string): string {
       <g:price>${price}</g:price>
       <g:condition>new</g:condition>
       <g:brand>${brand}</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      ${p.genericName ? `<g:mpn>${sf(p.id, "mpn", p.genericName)}</g:mpn>` : ""}
+      ${renderIdentifiers(p, true)}
       ${productType ? `<g:product_type>${productType}</g:product_type>` : ""}
       <g:google_product_category>${googleCategory}</g:google_product_category>
       ${v.packingVolume ? `<g:size>${sf(p.id, "size", v.packingVolume)}</g:size>` : ""}
@@ -198,7 +220,7 @@ function buildMetaItem(p: ProductRow, currency: string): string {
   const imageUrl     = xmlEscape(rawImageUrl);
   const availability = p.outofstock ? "out of stock" : "in stock";
   const description  = sf(p.id, "description", buildDescription(p));
-  const brand        = sf(p.id, "brand", p.company?.companyName || p.partner?.partnerName || "Animal Wellness");
+  const brand        = sf(p.id, "brand", p.schemaBrand?.trim() || p.company?.companyName || p.partner?.partnerName || "Animal Wellness");
 
   const productType = [p.category, p.subCategory, p.subsubCategory]
     .filter((s): s is string => s != null && s !== "")
@@ -233,7 +255,7 @@ function buildMetaItem(p: ProductRow, currency: string): string {
       <g:price>${price}</g:price>
       <g:condition>new</g:condition>
       <g:brand>${brand}</g:brand>
-      ${p.genericName ? `<g:mpn>${sf(p.id, "mpn", p.genericName)}</g:mpn>` : ""}
+      ${renderIdentifiers(p, false)}
       ${productType ? `<g:product_type>${productType}</g:product_type>` : ""}
       <g:google_product_category>${googleCategory}</g:google_product_category>
       ${v.packingVolume ? `<g:size>${sf(p.id, "size", v.packingVolume)}</g:size>` : ""}
@@ -287,6 +309,10 @@ export async function GET(req: NextRequest) {
       productType: true,
       dosage: true,
       outofstock: true,
+      schemaBrand: true,
+      sku: true,
+      gtin: true,
+      mpn: true,
       company: { select: { companyName: true } },
       partner: { select: { partnerName: true } },
       image: { select: { url: true } },

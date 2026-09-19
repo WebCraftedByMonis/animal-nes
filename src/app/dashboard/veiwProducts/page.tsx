@@ -42,6 +42,12 @@ interface ProductVariant {
   inventory: number
 }
 
+interface ProductFaq {
+  id?: number
+  question: string
+  answer: string
+}
+
 interface Product {
   id: number
   productName: string
@@ -76,6 +82,14 @@ interface Product {
     url: string
     publicId: string | null
   } | null
+  metaTitle: string | null
+  metaDescription: string | null
+  focusKeyword: string | null
+  schemaBrand: string | null
+  sku: string | null
+  gtin: string | null
+  mpn: string | null
+  faqs: ProductFaq[]
 }
 
 export default function ViewProductsPage() {
@@ -113,6 +127,14 @@ export default function ViewProductsPage() {
   const [editImageUrl, setEditImageUrl] = useState('')
   const [editProductPdf, setEditProductPdf] = useState<File | null>(null)
   const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
+  const [editMetaTitle, setEditMetaTitle] = useState('')
+  const [editMetaDescription, setEditMetaDescription] = useState('')
+  const [editFocusKeyword, setEditFocusKeyword] = useState('')
+  const [editSchemaBrand, setEditSchemaBrand] = useState('')
+  const [editSku, setEditSku] = useState('')
+  const [editGtin, setEditGtin] = useState('')
+  const [editMpn, setEditMpn] = useState('')
+  const [editFaqs, setEditFaqs] = useState<ProductFaq[]>([])
   const [open, setOpen] = useState(false)
 
   const [isUpdating, setIsUpdating] = useState(false)
@@ -194,7 +216,24 @@ export default function ViewProductsPage() {
       formData.append('isFeatured', String(editIsFeatured))
       formData.append('isActive', String(editIsActive))
       formData.append('outofstock', String(editOutofstock))
-      
+
+      // SEO & Schema fields
+      if (editMetaTitle) formData.append('metaTitle', editMetaTitle)
+      if (editMetaDescription) formData.append('metaDescription', editMetaDescription)
+      if (editFocusKeyword) formData.append('focusKeyword', editFocusKeyword)
+      if (editSchemaBrand) formData.append('schemaBrand', editSchemaBrand)
+      if (editSku) formData.append('sku', editSku)
+      if (editGtin) formData.append('gtin', editGtin)
+      if (editMpn) formData.append('mpn', editMpn)
+
+      formData.append('faqsProvided', 'true')
+      editFaqs
+        .filter((faq) => faq.question.trim() && faq.answer.trim())
+        .forEach((faq, i) => {
+          formData.append(`faqs[${i}][question]`, faq.question.trim())
+          formData.append(`faqs[${i}][answer]`, faq.answer.trim())
+        })
+
       // Add variants properly
       editVariants.forEach((variant, i) => {
         formData.append(`variants[${i}][packingVolume]`, variant.packingVolume)
@@ -344,6 +383,20 @@ export default function ViewProductsPage() {
     const newVariants = [...editVariants]
     newVariants[index] = { ...newVariants[index], [field]: value }
     setEditVariants(newVariants)
+  }
+
+  const handleAddFaq = () => {
+    setEditFaqs([...editFaqs, { question: '', answer: '' }])
+  }
+
+  const handleRemoveFaq = (index: number) => {
+    setEditFaqs(editFaqs.filter((_, i) => i !== index))
+  }
+
+  const handleFaqChange = (index: number, field: keyof ProductFaq, value: string) => {
+    const newFaqs = [...editFaqs]
+    newFaqs[index] = { ...newFaqs[index], [field]: value }
+    setEditFaqs(newFaqs)
   }
 
   const totalPages = Math.ceil(total / limit)
@@ -627,6 +680,14 @@ export default function ViewProductsPage() {
                           customerPrice: v.customerPrice,
                           inventory: v.inventory
                         })))
+                        setEditMetaTitle(product.metaTitle || '')
+                        setEditMetaDescription(product.metaDescription || '')
+                        setEditFocusKeyword(product.focusKeyword || '')
+                        setEditSchemaBrand(product.schemaBrand || '')
+                        setEditSku(product.sku || '')
+                        setEditGtin(product.gtin || '')
+                        setEditMpn(product.mpn || '')
+                        setEditFaqs((product.faqs || []).map(f => ({ id: f.id, question: f.question, answer: f.answer })))
                         setEditProductImage(null)
                         setEditProductPdf(null)
                         setOpen(true)
@@ -982,6 +1043,77 @@ export default function ViewProductsPage() {
                 </div>
               </div>
               
+              <div className="border rounded-lg p-4 space-y-4">
+                <Label className="text-base font-semibold">SEO &amp; Schema (for Google)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Focus Keyword</Label>
+                    <Input value={editFocusKeyword} onChange={(e) => setEditFocusKeyword(e.target.value)} placeholder="e.g. iodine supplement for cattle" />
+                  </div>
+                  <div>
+                    <Label>SEO Title</Label>
+                    <Input value={editMetaTitle} onChange={(e) => setEditMetaTitle(e.target.value)} placeholder="Leave blank to auto-generate" maxLength={70} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Meta Description</Label>
+                    <Textarea value={editMetaDescription} onChange={(e) => setEditMetaDescription(e.target.value)} rows={2} placeholder="Leave blank to auto-generate from the description" maxLength={200} />
+                  </div>
+                  <div>
+                    <Label>Brand Name <span className="text-muted-foreground font-normal">(for schema)</span></Label>
+                    <Input value={editSchemaBrand} onChange={(e) => setEditSchemaBrand(e.target.value)} placeholder="Leave blank to use the company" />
+                  </div>
+                  <div>
+                    <Label>SKU</Label>
+                    <Input value={editSku} onChange={(e) => setEditSku(e.target.value)} placeholder="e.g. CC-D3K2-001" />
+                  </div>
+                  <div>
+                    <Label>GTIN / Barcode</Label>
+                    <Input value={editGtin} onChange={(e) => setEditGtin(e.target.value)} placeholder="8, 12, 13 or 14-digit barcode" />
+                  </div>
+                  <div>
+                    <Label>MPN <span className="text-muted-foreground font-normal">(alternative to GTIN)</span></Label>
+                    <Input value={editMpn} onChange={(e) => setEditMpn(e.target.value)} placeholder="Manufacturer part number" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Frequently Asked Questions <span className="text-muted-foreground font-normal">(powers FAQ rich results)</span></Label>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddFaq}>
+                      <Plus className="h-4 w-4 mr-1" /> Add FAQ
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {editFaqs.map((faq, index) => (
+                      <div key={index} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-sm font-medium">FAQ {index + 1}</h4>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveFaq(index)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Input
+                          placeholder="Question"
+                          value={faq.question}
+                          onChange={(e) => handleFaqChange(index, 'question', e.target.value)}
+                        />
+                        <Textarea
+                          placeholder="Answer"
+                          rows={2}
+                          value={faq.answer}
+                          onChange={(e) => handleFaqChange(index, 'answer', e.target.value)}
+                        />
+                      </div>
+                    ))}
+                    {editFaqs.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-2">
+                        No FAQs yet — the product page shows the site-wide default FAQ instead.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <Label>Image URL</Label>
                 <Input

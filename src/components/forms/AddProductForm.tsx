@@ -54,6 +54,26 @@ const formSchema = z.object({
   imageAlt: z.string().optional(),
   image: z.any().optional(),
 
+  // --- SEO & Schema ---
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
+  focusKeyword: z.string().optional(),
+  schemaBrand: z.string().optional(),
+  sku: z.string().optional(),
+  gtin: z.string().optional(),
+  mpn: z.string().optional(),
+  // Blank rows are filtered out on submit, not validated here, so an
+  // in-progress FAQ being typed doesn't block the rest of the form.
+  faqs: z
+    .array(
+      z.object({
+        question: z.string(),
+        answer: z.string(),
+      })
+    )
+    .optional()
+    .default([]),
+
   pdf: z
     .any()
     .optional()
@@ -121,6 +141,15 @@ export default function AddProductForm({
     dosage: "",
     productLink: "",
     imageUrl: "",
+    imageAlt: "",
+    metaTitle: "",
+    metaDescription: "",
+    focusKeyword: "",
+    schemaBrand: "",
+    sku: "",
+    gtin: "",
+    mpn: "",
+    faqs: [],
   };
 
   const form = useForm<FormValues>({
@@ -133,6 +162,51 @@ export default function AddProductForm({
     control: form.control,
     name: "variants",
   });
+
+  const { fields: faqFields, append: appendFaq, remove: removeFaq } = useFieldArray({
+    control: form.control,
+    name: "faqs",
+  });
+
+  // Live SEO checklist — mirrors the audit panel from the WP theme the
+  // client referenced, adapted to the fields this form actually has.
+  const watchedForSeo = form.watch([
+    "metaDescription",
+    "focusKeyword",
+    "imageUrl",
+    "image",
+    "imageAlt",
+    "sku",
+    "gtin",
+    "mpn",
+    "schemaBrand",
+    "companyId",
+    "faqs",
+  ]);
+  const [
+    watchMetaDescription,
+    watchFocusKeyword,
+    watchImageUrl,
+    watchImage,
+    watchImageAlt,
+    watchSku,
+    watchGtin,
+    watchMpn,
+    watchSchemaBrand,
+    watchCompanyId,
+    watchFaqs,
+  ] = watchedForSeo;
+  const seoChecks = [
+    { label: "Meta description set", pass: !!watchMetaDescription?.trim() },
+    { label: "Focus keyword set", pass: !!watchFocusKeyword?.trim() },
+    { label: "Product image set", pass: !!watchImage || !!watchImageUrl?.trim() },
+    { label: "Image alt text set", pass: !!watchImageAlt?.trim() },
+    { label: "At least one FAQ added (FAQ schema)", pass: (watchFaqs ?? []).some((f: { question: string; answer: string }) => f.question?.trim() && f.answer?.trim()) },
+    { label: "SKU set", pass: !!watchSku?.trim() },
+    { label: "GTIN or MPN set (Google Shopping identifier)", pass: !!watchGtin?.trim() || !!watchMpn?.trim() },
+    { label: "Brand set (schema override or company selected)", pass: !!watchSchemaBrand?.trim() || !!watchCompanyId },
+  ];
+  const seoScore = seoChecks.filter((c) => c.pass).length;
 
 
 
@@ -199,7 +273,7 @@ export default function AddProductForm({
       const formData = new FormData();
 
       // Append all form data
-      const { variants, additionalCategories, ...otherFields } = data;
+      const { variants, additionalCategories, faqs, ...otherFields } = data;
 
       variants.forEach((variant, i) => {
         formData.append(`variants[${i}][packingVolume]`, variant.packingVolume);
@@ -212,6 +286,13 @@ export default function AddProductForm({
       (additionalCategories ?? []).forEach((cat) => {
         formData.append("additionalCategories", cat);
       });
+
+      (faqs ?? [])
+        .filter((faq) => faq.question.trim() && faq.answer.trim())
+        .forEach((faq, i) => {
+          formData.append(`faqs[${i}][question]`, faq.question.trim());
+          formData.append(`faqs[${i}][answer]`, faq.answer.trim());
+        });
 
       Object.entries(otherFields).forEach(([key, value]) => {
         if (value instanceof File) {
@@ -746,6 +827,186 @@ export default function AddProductForm({
                     </FormItem>
                   )}
                 />
+              </div>
+            </div>
+
+            {/* --- SEO & Schema --- */}
+            <div className="border rounded-lg p-4 space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">SEO &amp; Schema (for Google)</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Optional — improves Google ranking, rich results and Google Shopping. Leave anything blank to fall back to the automatic defaults.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-zinc-900/40 rounded-md p-3">
+                <p className="text-sm font-medium text-gray-700 mb-2">SEO checklist: {seoScore}/{seoChecks.length}</p>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  {seoChecks.map((c) => (
+                    <li key={c.label} className={c.pass ? "text-green-600" : "text-gray-400"}>
+                      {c.pass ? "✓" : "○"} {c.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="focusKeyword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Focus Keyword</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. iodine supplement for cattle" />
+                      </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">The main phrase this product should rank for. Internal reference only — not shown to customers.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="metaTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SEO Title <span className="text-gray-400 font-normal">({field.value?.length ?? 0}/60)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Leave blank to auto-generate" maxLength={70} />
+                      </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">Optimal: 50–60 characters. Leave blank to use the automatic title.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="metaDescription"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Meta Description <span className="text-gray-400 font-normal">({field.value?.length ?? 0}/160)</span></FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={2} placeholder="Leave blank to auto-generate from the description" maxLength={200} />
+                      </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">Optimal: 140–160 characters — shown in Google search results.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="schemaBrand"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Brand Name <span className="text-gray-400 font-normal">(for schema)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Leave blank to use the selected company" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="sku"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SKU</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. CC-D3K2-001" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="gtin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GTIN / Barcode</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="8, 12, 13 or 14-digit barcode" />
+                      </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">Fixes Google&apos;s &quot;no global identifier&quot; warning. Check the product packaging or supplier invoice.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="mpn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>MPN <span className="text-gray-400 font-normal">(alternative to GTIN)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Manufacturer part number" />
+                      </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">No GTIN? Leave blank — the SKU is used as a fallback automatically.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <FormLabel className="block">Frequently Asked Questions <span className="text-gray-400 font-normal">(optional — powers FAQ rich results)</span></FormLabel>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => appendFaq({ question: "", answer: "" })}
+                  >
+                    + Add FAQ
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {faqFields.map((field, index) => (
+                    <div key={field.id} className="border rounded-md p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 space-y-2">
+                          <FormField
+                            control={form.control}
+                            name={`faqs.${index}.question`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input {...field} placeholder="Question" />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`faqs.${index}.answer`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Textarea {...field} rows={2} placeholder="Answer" />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeFaq(index)}>
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {faqFields.length === 0 && (
+                    <p className="text-xs text-gray-500">No FAQs yet — the product page will show the site-wide default FAQ instead.</p>
+                  )}
+                </div>
               </div>
             </div>
 

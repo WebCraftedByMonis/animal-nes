@@ -77,6 +77,19 @@ model Product {
   // product's URL/canonical (no SEO churn) — these are purely extra browse
   // listings. See ProductCategory below.
   categories         ProductCategory[]
+  faqs               ProductFaq[]
+
+  // --- SEO / Schema fields (all optional, admin-editable in the add/edit product forms) ---
+  // Override the auto-generated <title>/meta description on the product page. Blank = auto-generated as before.
+  metaTitle          String?   @db.VarChar(255)
+  metaDescription    String?   @db.Text
+  // Internal on-page SEO reference only — not rendered on the storefront, just guides content writing.
+  focusKeyword       String?   @db.VarChar(255)
+  // Overrides the Product JSON-LD `brand` (falls back to the linked Company's name).
+  schemaBrand        String?   @db.VarChar(255)
+  sku                String?   @db.VarChar(100)
+  gtin               String?   @db.VarChar(20)
+  mpn                String?   @db.VarChar(100)
 
   @@index([companyId])
   @@index([partnerId])
@@ -101,6 +114,21 @@ model ProductCategory {
   @@unique([productId, category])
   @@index([productId])
   @@index([category])
+}
+
+// Per-product FAQ pairs — rendered on the product page and fed into
+// FAQPage JSON-LD for rich-result eligibility. `order` controls display
+// order; admin-managed via the add/edit product forms.
+model ProductFaq {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  question  String   @db.Text
+  answer    String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 enum ProductApprovalStatus {
