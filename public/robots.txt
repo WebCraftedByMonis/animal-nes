@@ -58,4 +58,4 @@ User-agent: Googlebot-Image
 Allow: /
 Allow: /api/admin/media/serve/
 
-Sitemap: https://animalwellness.shop/sitemap.xml
+Sitemap: https://app.animalwellness.shop/sitemap.xml
