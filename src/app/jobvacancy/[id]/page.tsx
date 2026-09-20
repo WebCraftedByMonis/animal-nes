@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import JobFormDetailClient from './JobFormDetailClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800 // 30 minutes
 
@@ -110,7 +111,7 @@ export async function generateMetadata({
         images: data.jobFormImage?.url ? [data.jobFormImage.url] : [],
       },
       alternates: {
-        canonical: `https://animalwellness.shop/jobvacancy/${id}`,
+        canonical: `${getSiteUrl()}/jobvacancy/${id}`,
       }
     }
   } catch (e) {
@@ -152,7 +153,7 @@ export default async function JobVacancyDetailPage({
         validThrough: jobVacancy.deadline,
         totalJobOpenings: jobVacancy.noofpositions || undefined,
         datePosted: jobVacancy.createdAt,
-        url: `https://animalwellness.shop/jobvacancy/${id}`,
+        url: `${getSiteUrl()}/jobvacancy/${id}`,
         applicationContact: {
           '@type': 'ContactPoint',
           telephone: jobVacancy.mobileNumber,

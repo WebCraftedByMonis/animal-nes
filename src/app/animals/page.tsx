@@ -2,10 +2,11 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { ANIMALS } from '@/lib/animal-config'
 import { prisma } from '@/lib/prisma'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 86400
 
-const BASE_URL = 'https://animalwellness.shop'
+const BASE_URL = getSiteUrl()
 
 export const metadata: Metadata = {
   title: 'Shop by Animal — Veterinary Products for Every Animal | Animal Wellness',

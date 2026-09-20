@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import StudentDetailClient from '../StudentDetailClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800
 
@@ -133,7 +134,7 @@ export async function generateMetadata({
         'Animal Wellness',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://animalwellness.shop/Students/${id}`,
+        canonical: `${getSiteUrl()}/Students/${id}`,
       },
     }
   } catch (e) {

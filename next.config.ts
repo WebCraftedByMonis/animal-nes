@@ -45,6 +45,7 @@ eslint: {
     formats: ['image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'animalwellness.shop' },
+      { protocol: 'https', hostname: 'app.animalwellness.shop' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
   },

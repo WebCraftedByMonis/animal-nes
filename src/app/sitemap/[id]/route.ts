@@ -4,10 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { PARTNER_TYPE_GROUPS } from '@/lib/partner-constants';
 import { SellStatus } from '@prisma/client';
 import { toProductUrl } from '@/lib/slug-utils';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = 'https://animalwellness.shop';
+const BASE_URL = getSiteUrl();
 const PRODUCTS_PER_SITEMAP = 5000;
 
 type Entry = {

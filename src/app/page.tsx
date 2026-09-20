@@ -2,6 +2,7 @@
 
 import LandingPage from "@/components/LandingPage";
 import { prisma } from '@/lib/prisma'
+import { getSiteUrl } from '@/lib/site-url'
 
 // ISR Configuration - revalidate every 1800 seconds (30 minutes)
 export const revalidate = 1800
@@ -268,15 +269,15 @@ export default async function Home() {
     "@type": "Organization",
     name: "Animal Wellness",
     description: "Complete veterinary solutions and pet care products marketplace",
-    url: "https://animalwellness.shop",
-    logo: "https://animalwellness.shop/logo.png",
+    url: getSiteUrl(),
+    logo: `${getSiteUrl()}/logo.png`,
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer service",
       availableLanguage: "English"
     },
     sameAs: [
-      "https://animalwellness.shop"
+      getSiteUrl()
     ],
     serviceArea: {
       "@type": "Country",
@@ -289,11 +290,11 @@ export default async function Home() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Animal Wellness",
-    url: "https://animalwellness.shop",
+    url: getSiteUrl(),
     description: "Your trusted partner for comprehensive animal wellness solutions",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://animalwellness.shop/products?search={search_term_string}",
+      target: `${getSiteUrl()}/products?search={search_term_string}`,
       "query-input": "required name=search_term_string"
     }
   };

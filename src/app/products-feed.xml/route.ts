@@ -2,11 +2,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText, xmlEscape } from "@/lib/xml-sanitize";
 import RX_EXCLUDED_IDS from "@/lib/rx-excluded-ids.json";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BASE_URL = "https://animalwellness.shop";
+const BASE_URL = getSiteUrl();
 
 function productUrl(p: { id: number; productName: string; category?: string | null }): string {
   const catSlug = p.category ? p.category.toLowerCase().replace(/&amp;/g, 'and').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general' : 'general'

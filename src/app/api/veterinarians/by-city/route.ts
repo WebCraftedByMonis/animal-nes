@@ -1,6 +1,7 @@
 // app/api/veterinarians/by-city/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSiteUrl } from '@/lib/site-url';
 
 // GET veterinarians by city for appointment matching
 export async function GET(request: NextRequest) {
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare message with appointment details
-    const baseUrl = 'https://animalwellness.shop';
+    const baseUrl = getSiteUrl();
     const historyFormLink = `${baseUrl}/historyform?appointmentId=${appointmentId}`;
     const prescriptionFormLink = appointment.historyForm 
       ? `${baseUrl}/prescriptionform?historyFormId=${appointment.historyForm.id}`

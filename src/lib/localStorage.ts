@@ -2,6 +2,7 @@ import { writeFile, mkdir, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Saves uploads to the VPS's own disk instead of Cloudinary. Reuses the
 // same uploads/media/ folder + /api/admin/media/serve/[filename] route that
@@ -23,7 +24,7 @@ export interface LocalUploadResult {
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'media')
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10MB, same cap the Cloudinary free plan enforced
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://animalwellness.shop'
+const BASE_URL = getSiteUrl()
 
 function sanitizeBaseName(filename: string): string {
   return filename

@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import VeterinariansClient from './VeterinariansClient'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Make this page dynamic - no ISR caching
 export const dynamic = 'force-dynamic'
@@ -11,10 +12,10 @@ export const metadata: Metadata = {
   description: 'Connect with qualified veterinary professionals in your area. Find experienced veterinarians for your animal care needs.',
   keywords: ['veterinary partners', 'veterinarians', 'animal doctors', 'pet care professionals', 'livestock veterinarians'],
   alternates: {
-    canonical: 'https://animalwellness.shop/Veternarians',
+    canonical: `${getSiteUrl()}/Veternarians`,
   },
   openGraph: {
-    url: 'https://animalwellness.shop/Veternarians',
+    url: `${getSiteUrl()}/Veternarians`,
     type: 'website',
     siteName: 'Animal Wellness',
   },

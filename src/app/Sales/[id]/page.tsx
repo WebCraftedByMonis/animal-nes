@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import SalesPartnerDetailClient from '../SalesPartnerDetailClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800
 
@@ -95,7 +96,7 @@ export async function generateMetadata({
         'veterinary distributor',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://animalwellness.shop/Sales/${id}`,
+        canonical: `${getSiteUrl()}/Sales/${id}`,
       },
     }
   } catch (e) {

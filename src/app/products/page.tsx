@@ -5,12 +5,13 @@ import ProductsClient from '@/components/ProductsClient'
 import { prisma } from '@/lib/prisma'
 import { toSlug, isValidCategory, isValidBrand, toProductUrl } from '@/lib/slug-utils'
 import { cached } from '@/lib/cache'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Never pre-render at build time — 60k product rows time out the 60s build
 // worker. Page is rendered on first request and cached by nginx/ISR.
 export const dynamic = "force-dynamic"
 
-const BASE_URL = 'https://animalwellness.shop'
+const BASE_URL = getSiteUrl()
 
 export async function generateMetadata({
   searchParams,

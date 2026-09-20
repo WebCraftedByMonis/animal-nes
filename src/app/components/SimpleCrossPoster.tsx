@@ -3,6 +3,7 @@
 import { useState, ChangeEvent, FormEvent, DragEvent } from "react";
 import { CheckCircle, XCircle, Upload, AlertTriangle, Image as ImageIcon, Video as VideoIcon, Info, Search, Package } from "lucide-react";
 import { toProductUrl } from "@/lib/slug-utils";
+import { getSiteUrl } from "@/lib/site-url";
 
 interface Platform {
   id: string;
@@ -112,7 +113,7 @@ export default function SimpleCrossPoster() {
   };
 
   const buildProductPageUrl = (product: ProductPreview) => {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://animalwellness.shop";
+    const baseUrl = getSiteUrl();
     return `${baseUrl}${toProductUrl(product)}`;
   };
 

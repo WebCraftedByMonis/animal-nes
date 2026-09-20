@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { toSlug, isValidCategory, toProductUrl } from '@/lib/slug-utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 86400
 export const dynamicParams = true
 
-const BASE_URL = 'https://animalwellness.shop'
+const BASE_URL = getSiteUrl()
 const PER_PAGE = 60
 
 type CategoryRow = { category: string; count: bigint }

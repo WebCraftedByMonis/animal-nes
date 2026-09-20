@@ -16,6 +16,7 @@ import { SiThreads } from "react-icons/si";
 import { BsFillHouseDoorFill } from "react-icons/bs";
 import { RiMessage2Line } from "react-icons/ri";
 import { getWhatsAppUrl } from "@/lib/whatsapp-utils";
+import { getSiteUrl } from "@/lib/site-url";
 
 const contactItems = [
   {
@@ -25,7 +26,7 @@ const contactItems = [
   {
     icon: <FaGlobe className="text-green-600" />,
     label: "Website",
-    href: "https://animalwellness.shop/",
+    href: `${getSiteUrl()}/`,
   },
   {
     icon: <FaWhatsapp className="text-green-500" />,

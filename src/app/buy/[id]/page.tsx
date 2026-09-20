@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import AnimalDetailClient from './AnimalDetailClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800
 
@@ -99,7 +100,7 @@ export async function generateMetadata({
         images: data.images.length > 0 ? [data.images[0].url] : [],
       },
       alternates: {
-        canonical: `https://animalwellness.shop/buy/${id}`,
+        canonical: `${getSiteUrl()}/buy/${id}`,
       },
     }
   } catch (error) {

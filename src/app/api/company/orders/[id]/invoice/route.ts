@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { validateCompanySession } from '@/lib/auth/company-auth';
 import fs from 'fs/promises';
 import path from 'path';
+import { getSiteUrl } from '@/lib/site-url';
 
 // Helper to get company from session
 async function getCompanyFromSession() {
@@ -129,7 +130,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     currentY -= 25;
 
     // Website
-    drawCenteredText('www.animalwellness.shop', currentY, 11, font, mediumGray);
+    drawCenteredText(getSiteUrl().replace(/^https?:\/\//, ''), currentY, 11, font, mediumGray);
     currentY -= 35;
 
     // Decorative line

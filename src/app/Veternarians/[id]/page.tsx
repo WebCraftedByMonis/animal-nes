@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import VeterinaryPartnerDetailClient from '../VeterinaryPartnerDetailClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800
 
@@ -47,7 +48,7 @@ export async function generateMetadata({
       return {
         title: 'Veterinary Partner Not Found | Animal Wellness',
         description: 'The veterinary partner profile you are looking for may no longer be available.',
-        alternates: { canonical: `https://animalwellness.shop/Veternarians/${id}` },
+        alternates: { canonical: `${getSiteUrl()}/Veternarians/${id}` },
       }
     }
 
@@ -101,7 +102,7 @@ export async function generateMetadata({
         'Animal Wellness',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://animalwellness.shop/Veternarians/${id}`,
+        canonical: `${getSiteUrl()}/Veternarians/${id}`,
       },
     }
   } catch (e) {
@@ -109,7 +110,7 @@ export async function generateMetadata({
     return {
       title: 'Veterinary Partner | Animal Wellness',
       description: 'View our network of professional veterinary partners at Animal Wellness.',
-      alternates: { canonical: `https://animalwellness.shop/Veternarians/${id}` },
+      alternates: { canonical: `${getSiteUrl()}/Veternarians/${id}` },
     }
   }
 }
@@ -135,7 +136,7 @@ export default async function Page({
         '@context': 'https://schema.org',
         '@type': 'Physician',
         name: data.partnerName,
-        url: `https://animalwellness.shop/Veternarians/${id}`,
+        url: `${getSiteUrl()}/Veternarians/${id}`,
         telephone: data.partnerMobileNumber || undefined,
         email: data.partnerEmail || undefined,
         image: data.partnerImage?.url || undefined,

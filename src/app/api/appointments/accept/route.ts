@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
 import { getAcceptanceConfirmationEmail, getPatientDoctorAssignmentEmail } from '@/lib/email-templates';
+import { getSiteUrl } from '@/lib/site-url';
 
 // Email logging helper
 async function logEmail(params: {
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest) {
       };
       
       // Prepare history form link - prescription form link will be sent after history submission
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
+      const baseUrl = getSiteUrl();
       const historyFormLink = `${baseUrl}/historyform?appointmentId=${appointmentId}`;
 
       // Send full details email with history form link to doctor

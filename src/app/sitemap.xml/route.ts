@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSiteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = 'https://animalwellness.shop';
+const BASE_URL = getSiteUrl();
 const PRODUCTS_PER_SITEMAP = 5000;
 
 export async function GET() {

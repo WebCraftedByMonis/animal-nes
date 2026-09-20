@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import CompanyDetailClient from './CompanyDetailClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800
 
@@ -86,7 +87,7 @@ export async function generateMetadata({
         'veterinary manufacturer',
       ].filter(Boolean),
       alternates: {
-        canonical: `https://animalwellness.shop/Companies/${id}`,
+        canonical: `${getSiteUrl()}/Companies/${id}`,
       },
     }
   } catch (e) {
@@ -119,7 +120,7 @@ export default async function Page({
         '@context': 'https://schema.org',
         '@type': 'Organization',
         name: data.companyName,
-        url: `https://animalwellness.shop/Companies/${id}`,
+        url: `${getSiteUrl()}/Companies/${id}`,
         email: data.email || undefined,
         telephone: data.mobileNumber || undefined,
         address: data.address

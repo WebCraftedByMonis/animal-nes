@@ -1,3 +1,5 @@
+import { getSiteUrl } from '@/lib/site-url';
+
 export function getInitialNotificationEmail(
   vet: any,
   appointment: any,
@@ -240,7 +242,7 @@ export function getPatientDoctorAssignmentEmail(appointment: any, doctor: any) {
     city: doctor.cityName
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://animalwellness.shop';
+  const baseUrl = getSiteUrl();
   const vetProfileLink = `${baseUrl}/Veternarians/${doctor.id}`;
 
   const consultationType =

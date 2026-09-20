@@ -15,9 +15,10 @@ import LoginModal from "@/components/LoginModal";
 import StickyLogo from "@/components/StickyLogo";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import Script from "next/script";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://animalwellness.shop"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     template: "%s | Animal Wellness - Complete Veterinary Solutions",
     default: "Animal Wellness - Complete Veterinary Solutions & Pet Care Products",
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://animalwellness.shop",
+    url: getSiteUrl(),
     title: "Animal Wellness - Complete Veterinary Solutions & Pet Care",
     description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
     images: [
@@ -90,7 +91,7 @@ export default function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
-        <link rel="sitemap" type="application/xml" href="https://animalwellness.shop/sitemap.xml" />
+        <link rel="sitemap" type="application/xml" href={`${getSiteUrl()}/sitemap.xml`} />
       </head>
       {/* Google Analytics */}
       <Script

@@ -7,11 +7,12 @@ import RelatedProductsClient from '@/components/products/RelatedProductsClient'
 import { prisma } from '@/lib/prisma'
 import { BLOCKED_CATEGORIES, toSlug as toCategorySlug, getDisplayLabel } from '@/lib/category-utils'
 import { extractIdFromProductSlug, toCategorySlugForUrl, toProductUrl, toSlug } from '@/lib/slug-utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 1800
 export const dynamicParams = true
 
-const BASE_URL = 'https://animalwellness.shop'
+const BASE_URL = getSiteUrl()
 
 const getProduct = cache(async (numId: number) => {
   const now = new Date()

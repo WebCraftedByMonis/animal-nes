@@ -4,11 +4,12 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { ANIMALS, ANIMAL_MAP } from '@/lib/animal-config'
 import { toProductUrl } from '@/lib/slug-utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 86400
 export const dynamicParams = false
 
-const BASE_URL = 'https://animalwellness.shop'
+const BASE_URL = getSiteUrl()
 const PER_PAGE = 60
 
 export function generateStaticParams() {

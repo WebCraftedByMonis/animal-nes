@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import BuyClient from './BuyClient'
 import { getApiUrl } from '@/lib/utils'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const revalidate = 300 // 5 minutes - animals data changes frequently
 
@@ -14,12 +15,12 @@ export const metadata: Metadata = {
     'animal marketplace Pakistan', 'animal wellness', 'buy farm animals',
   ],
   alternates: {
-    canonical: 'https://animalwellness.shop/buy',
+    canonical: `${getSiteUrl()}/buy`,
   },
   openGraph: {
     title: 'Buy Animals | Animal Wellness',
     description: 'Browse and buy verified livestock and animals from trusted sellers. Cows, buffaloes, goats, poultry, horses and more.',
-    url: 'https://animalwellness.shop/buy',
+    url: `${getSiteUrl()}/buy`,
     siteName: 'Animal Wellness',
     type: 'website',
   },

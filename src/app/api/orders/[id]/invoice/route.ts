@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { prisma } from '@/lib/prisma';
 import fs from 'fs/promises';
 import path from 'path';
+import { getSiteUrl } from '@/lib/site-url';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   // Await the params object first
@@ -795,7 +796,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const urls = [
       'https://wa.me/923354145431',
-      'https://animalwellness.shop/',
+      `${getSiteUrl()}/`,
       'https://www.youtube.com/@AnimalWellNessShop/videos',
       'https://x.com/c9d55c82df9b4da',
       'https://www.linkedin.com/in/muhammad-fiaz-qamar-195208a2/',
