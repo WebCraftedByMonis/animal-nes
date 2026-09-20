@@ -11,7 +11,11 @@ const fs = require('fs')
 const path = require('path')
 
 const prisma = new PrismaClient()
-const BASE_URL = 'https://animalwellness.shop'
+const BASE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  'https://animalwellness.shop'
+).replace(/\/$/, '')
 const PRODUCTS_PER_SITEMAP = 5000
 const OUTPUT_DIR = path.join(__dirname, 'public', 'sitemaps')
 
