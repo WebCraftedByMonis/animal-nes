@@ -259,6 +259,16 @@ export default async function ProductPage({
     ? reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / reviews.length
     : null
 
+  // Only real, positive prices count as an "offer" — Math.min/max over an
+  // empty array (e.g. every variant has a null/0 customerPrice) yields
+  // Infinity/-Infinity, which serializes as `null` in the JSON-LD and makes
+  // Google reject the whole Product as having no valid offers/review/
+  // aggregateRating (the "Either 'offers', 'review' or 'aggregateRating'
+  // should be specified" error in Search Console).
+  const validPrices: number[] = (data.variants ?? [])
+    .map((v: any) => v.customerPrice)
+    .filter((p: unknown): p is number => typeof p === 'number' && p > 0)
+
   const serializedReviews = reviews.map((r: any) => ({
     id: r.id,
     rating: r.rating,
@@ -295,14 +305,15 @@ export default async function ProductPage({
         datePublished: r.createdAt.split('T')[0],
       })),
     }),
-    ...(data.variants?.length > 0 && {
+    ...(validPrices.length > 0 && {
       offers: {
         '@type': 'AggregateOffer',
-        lowPrice: Math.min(...data.variants.map((v: any) => v.customerPrice).filter(Boolean)),
-        highPrice: Math.max(...data.variants.map((v: any) => v.customerPrice).filter(Boolean)),
+        lowPrice: Math.min(...validPrices),
+        highPrice: Math.max(...validPrices),
         priceCurrency: 'PKR',
-        offerCount: data.variants.length,
+        offerCount: validPrices.length,
         availability: data.outofstock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+        url: `${BASE_URL}${canonicalUrl}`,
         seller: { '@type': 'Organization', name: 'Animal Wellness' },
       },
     }),
