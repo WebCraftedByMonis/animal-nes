@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { cache } from 'react'
 import Link from 'next/link'
 import ProductClient from '@/components/products/ProductClient'
@@ -201,11 +201,21 @@ export default async function ProductPage({
     return notFound()
   }
 
-  // Canonical enforcement: if category slug in URL doesn't match product's category,
-  // the page still renders (no redirect) but the canonical tag points to the correct URL.
+  // Canonical enforcement: a product is reachable at /products/{any-real-
+  // category-slug}/{slug}-{id} — Next.js only looks at the id suffix, so
+  // every wrong categorySlug used to render a full 200 OK page (with a
+  // correct-but-ignored canonical tag) instead of redirecting. On a ~45-
+  // category site that's up to ~45 crawlable duplicate URLs per product,
+  // pure crawl-budget waste on a site with a documented history of crawl
+  // saturation. Now it 301s (well, 308 - permanentRedirect - which Google
+  // treats identically to 301 for ranking/link-equity purposes) straight to
+  // the correct URL instead of rendering.
   const correctCatSlug = toCategorySlugForUrl(data.category)
   const canonicalUrl = toProductUrl(data)
   const isCanonical = categorySlug === correctCatSlug
+  if (!isCanonical) {
+    permanentRedirect(canonicalUrl)
+  }
 
   // Related products: the old query was "4 newest in the same top-level
   // category", which rendered the *same* 4 items on every product page in a
@@ -349,9 +359,12 @@ export default async function ProductPage({
 
   return (
     <>
-      {!isCanonical && (
-        <link rel="canonical" href={`${BASE_URL}${canonicalUrl}`} />
-      )}
+      {/* No manual <link rel="canonical"> here — generateMetadata() above
+          already sets it unconditionally, and since the !isCanonical branch
+          now redirects before we ever get here, this was always a same-href
+          duplicate of that tag on top of it (multiple canonicals on one page
+          is something Google documents it may respond to by ignoring all of
+          them). */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }} />

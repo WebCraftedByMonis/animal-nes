@@ -31,37 +31,14 @@ Disallow: /addProduct
 Disallow: /addCompany
 Disallow: /addPartner
 Disallow: /sell
-Disallow: /Privacy
-
-User-agent: Googlebot
-Allow: /
-Allow: /api/admin/media/serve/
-Disallow: /api/
-Disallow: /dashboard
-Disallow: /_next/
-Disallow: /admin
-Disallow: /login
-Disallow: /affiliate/login
-Disallow: /checkout
-Disallow: /cart
-Disallow: /animalCart
-Disallow: /orders
-Disallow: /payment
-Disallow: /profile
-Disallow: /wishlist
-Disallow: /thankyou
-Disallow: /thank-you-*
-Disallow: /master-trainer
-Disallow: /prescriptionform
-Disallow: /historyform
-Disallow: /additional-consultation-fee
-Disallow: /jobApplicantForm
-Disallow: /jobvaccancyform
-Disallow: /quickjobform
-Disallow: /addProduct
-Disallow: /addCompany
-Disallow: /addPartner
-Disallow: /sell
+# /Privacy deliberately NOT blocked (unlike everything above it): a
+# reachable privacy policy is a mild trust signal for both users and
+# Google Merchant Center review of the product feed, and it's a single
+# real page, not a crawl-budget concern.
+#
+# Crawl-delay is ignored by Google entirely (documented) — it's here for
+# Bing/Yandex, which do honor it, given this site's history of falling
+# over under crawl load. Don't mistake it for protection against Googlebot.
 Crawl-delay: 1
 
 User-agent: Googlebot-Image

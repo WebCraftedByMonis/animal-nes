@@ -6,8 +6,7 @@ import { prisma } from '@/lib/prisma'
 // single-row RankingSettings config (admin-editable, never hard-coded —
 // see /dashboard/ranking-settings). Used by the admin "Recalculate Now"
 // button; the nightly cron path (compute-rankings.js at the repo root)
-// mirrors this same math in plain JS since it runs outside the Next build,
-// the same way generate-sitemaps.js already mirrors slug-utils.ts.
+// mirrors this same math in plain JS since it runs outside the Next build.
 //
 // This score powers the DEFAULT sort order everyone sees (products page,
 // homepage) — it is not personalized per visitor. A per-visitor

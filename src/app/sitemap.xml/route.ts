@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSiteUrl } from '@/lib/site-url';
+import { PRODUCTS_PER_SITEMAP, MAX_PRODUCT_URLS, PRODUCT_SITEMAP_QUALITY_GATE } from '../sitemap/[id]/route';
 
 export const dynamic = 'force-dynamic';
 
 const BASE_URL = getSiteUrl();
-const PRODUCTS_PER_SITEMAP = 5000;
 
 export async function GET() {
-  const productCount = await prisma.product.count({ where: { isActive: true } });
+  // Count against the SAME quality gate buildProductSitemap() filters on
+  // (see that file — PRODUCT_SITEMAP_QUALITY_GATE is shared, not copied) so
+  // this index doesn't advertise empty trailing chunks — capped at
+  // MAX_PRODUCT_URLS since that's the real ceiling regardless of how many
+  // products actually pass the gate.
+  const [{ qualifying }] = await prisma.$queryRaw<{ qualifying: bigint }[]>`
+    SELECT COUNT(*) as qualifying
+    FROM Product p
+    WHERE ${PRODUCT_SITEMAP_QUALITY_GATE}
+  `;
+  const productCount = Math.min(Number(qualifying), MAX_PRODUCT_URLS);
   const productChunks = Math.max(1, Math.ceil(productCount / PRODUCTS_PER_SITEMAP));
   const ids = [0, ...Array.from({ length: productChunks }, (_, i) => i + 1)];
 

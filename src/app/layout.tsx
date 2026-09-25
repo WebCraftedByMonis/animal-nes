@@ -66,9 +66,13 @@ export const metadata: Metadata = {
     description: "Your trusted partner for comprehensive animal wellness solutions. Find veterinary products, connect with qualified doctors, and discover quality pet care products.",
     images: ["/logo.png"],
   },
-  alternates: {
-    canonical: "/",
-  },
+  // No site-wide `alternates.canonical` default here on purpose — it used
+  // to be "/" and every page that forgot its own canonical silently
+  // inherited the HOMEPAGE's URL instead of its own (found affecting
+  // Companies/Sales/Students/Farmers/Faculty/VeterinaryAssistants/
+  // affiliate/register live). A page with no canonical tag at all is safe
+  // (Google self-canonicalizes to the page's own URL); a wrong one is not.
+  // The homepage sets its own canonical in src/app/page.tsx.
   // To verify with Google Search Console, replace the value below with your
   // HTML-tag verification code from https://search.google.com/search-console
   // verification: { google: "YOUR_ACTUAL_CODE_HERE" },

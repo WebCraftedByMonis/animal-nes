@@ -5,8 +5,7 @@
 // — never hard-code weights here).
 //
 // Mirrors src/lib/ranking.ts's math — duplicated in plain JS because this
-// runs outside the Next build via cron, the same way generate-sitemaps.js
-// already mirrors slug-utils.ts for the same reason.
+// runs outside the Next build via cron.
 //
 // Run once manually, then set a nightly cron on VPS:
 //   30 2 * * * cd /var/www/animalwellness/animal-nes && node compute-rankings.js >> /var/log/ranking-compute.log 2>&1

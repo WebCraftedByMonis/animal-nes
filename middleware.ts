@@ -1,6 +1,16 @@
 // middleware.ts - This file should be in your project ROOT directory
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { toProductUrl } from '@/lib/slug-utils';
+
+// Legacy product URLs: before commit bc1d718 (Aug 5 2026), product pages
+// lived at /products/{id}. That route was deleted with NO redirect left
+// behind (Next.js won't allow it to coexist with the new
+// /products/[categorySlug]/[productSlug] route as a sibling dynamic
+// segment), so every one of those old, previously-indexed/linked URLs has
+// been hard 404ing ever since. Cheap to detect here and 301 to the current
+// canonical URL instead of leaking all that link/crawl equity.
+const LEGACY_PRODUCT_ID = /^\/products\/(\d+)$/;
 
 // Simple token format verification
 // The session tokens are 32-character hex strings, not JWTs
@@ -20,7 +30,7 @@ function verifyToken(token: string): boolean {
 // read.
 const VISITOR_COOKIE = 'aw_sid';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') || ''
   if (host.startsWith('www.')) {
     const url = request.nextUrl.clone()
@@ -29,6 +39,23 @@ export function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  const legacyMatch = pathname.match(LEGACY_PRODUCT_ID);
+  if (legacyMatch) {
+    try {
+      const res = await fetch(`${request.nextUrl.origin}/api/product/${legacyMatch[1]}`);
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data?.productName) {
+          const target = new URL(toProductUrl(data), request.url);
+          return NextResponse.redirect(target, { status: 301 });
+        }
+      }
+    } catch {
+      // DB/API hiccup — fall through to the normal (404) route rather than
+      // failing the request.
+    }
+  }
 
   let response: NextResponse | null = null;
   let visitorId = request.cookies.get(VISITOR_COOKIE)?.value;
@@ -75,6 +102,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Also skip the sitemap/robots/feed routes — they're crawler-hit-heavy,
+    // already set their own cache headers, and gain nothing from the
+    // visitor-id cookie or the dashboard-auth check.
+    '/((?!_next/static|_next/image|favicon.ico|sitemap\\.xml|sitemap/|robots\\.txt|products-feed\\.xml).*)',
   ],
 };

@@ -1,11 +1,23 @@
 
 
+import type { Metadata } from 'next'
 import LandingPage from "@/components/LandingPage";
 import { prisma } from '@/lib/prisma'
 import { getSiteUrl } from '@/lib/site-url'
 
 // ISR Configuration - revalidate every 1800 seconds (30 minutes)
 export const revalidate = 1800
+
+// The homepage is the ONE page that should canonicalize to "/" — every
+// other page must set its own. This used to live as a site-wide default in
+// the root layout (alternates.canonical: "/"), which meant any page that
+// forgot to set its own canonical silently inherited the homepage's URL
+// instead of its own. Moved here so a missing canonical elsewhere just
+// means no canonical tag (Google safely self-canonicalizes that), not a
+// wrong one.
+export const metadata: Metadata = {
+  alternates: { canonical: getSiteUrl() },
+}
 
 // Generate static params for initial ISR generation
 export async function generateStaticParams() {
