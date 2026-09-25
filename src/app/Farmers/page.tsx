@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import FarmersClient from './FarmersClient'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Make this page dynamic - no ISR caching
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,14 @@ export const metadata: Metadata = {
   title: 'Farmers',
   description: 'Connect with farmers specializing in livestock, dairy, poultry, crop, fish, and mixed farming.',
   keywords: ['farmers', 'livestock farming', 'dairy farming', 'poultry farming', 'crop farming', 'fish farming', 'mixed farming'],
+  alternates: {
+    canonical: `${getSiteUrl()}/Farmers`,
+  },
+  openGraph: {
+    url: `${getSiteUrl()}/Farmers`,
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
 }
 
 function FarmersPageSkeleton() {

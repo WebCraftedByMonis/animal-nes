@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import FacultyClient from './FacultyClient'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Make this page dynamic - no ISR caching
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,14 @@ export const metadata: Metadata = {
   title: 'Faculty',
   description: 'Connect with faculty members specializing in veterinary medical sciences and arts.',
   keywords: ['faculty', 'veterinary medical sciences', 'arts', 'education', 'academics'],
+  alternates: {
+    canonical: `${getSiteUrl()}/Faculty`,
+  },
+  openGraph: {
+    url: `${getSiteUrl()}/Faculty`,
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
 }
 
 function FacultyPageSkeleton() {

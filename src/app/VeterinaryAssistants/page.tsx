@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import VeterinaryAssistantsClient from './VeterinaryAssistantsClient'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Make this page dynamic - no ISR caching
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,14 @@ export const metadata: Metadata = {
   title: 'Veterinary Assistants',
   description: 'Find experienced veterinary assistants specialized in extension services, deworming, vaccination, and artificial insemination.',
   keywords: ['veterinary assistants', 'extension services', 'deworming', 'vaccination', 'artificial insemination', 'animal care'],
+  alternates: {
+    canonical: `${getSiteUrl()}/VeterinaryAssistants`,
+  },
+  openGraph: {
+    url: `${getSiteUrl()}/VeterinaryAssistants`,
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
 }
 
 function VeterinaryAssistantsPageSkeleton() {

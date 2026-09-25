@@ -2,11 +2,20 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import CompaniesClient from './CompaniesClient'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const metadata: Metadata = {
   title: 'Partner Companies',
   description: 'Explore our trusted partner companies providing quality veterinary products and animal wellness solutions',
   keywords: ['partner companies', 'veterinary companies', 'animal wellness partners', 'pharmaceutical companies'],
+  alternates: {
+    canonical: `${getSiteUrl()}/Companies`,
+  },
+  openGraph: {
+    url: `${getSiteUrl()}/Companies`,
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
 }
 
 function CompaniesPageSkeleton() {

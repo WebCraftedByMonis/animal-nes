@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import SalesClient from './SalesClient'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getSiteUrl } from '@/lib/site-url'
 
 // Make this page dynamic - no ISR caching
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,14 @@ export const metadata: Metadata = {
   title: 'Sales Partners',
   description: 'Connect with trusted retailers and distributors in your area. Find sales and marketing partners for animal care products.',
   keywords: ['sales partners', 'distributors', 'retailers', 'animal care', 'marketing partners'],
+  alternates: {
+    canonical: `${getSiteUrl()}/Sales`,
+  },
+  openGraph: {
+    url: `${getSiteUrl()}/Sales`,
+    type: 'website',
+    siteName: 'Animal Wellness',
+  },
 }
 
 function SalesPageSkeleton() {
