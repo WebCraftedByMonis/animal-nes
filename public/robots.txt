@@ -16,11 +16,6 @@ Disallow: /profile
 Disallow: /wishlist
 Disallow: /thankyou
 Disallow: /thank-you-*
-# /master-trainer advertises a one-off event dated Nov 29-Dec 14 2025
-# (already past). Blocked until the page is either updated with a new
-# cohort date + given its own canonical, or retired for good. See the
-# comment in src/app/sitemap/[id]/route.ts.
-Disallow: /master-trainer
 Disallow: /prescriptionform
 Disallow: /historyform
 Disallow: /additional-consultation-fee

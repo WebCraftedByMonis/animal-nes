@@ -150,12 +150,6 @@ async function buildNonProductSitemap(): Promise<Entry[]> {
     { url: `${BASE_URL}/Applicants`, lastModified: now },
     { url: `${BASE_URL}/Faculty`, lastModified: now },
     { url: `${BASE_URL}/Farmers`, lastModified: now },
-    // /master-trainer deliberately omitted: it's a registration form for a
-    // one-off event dated Nov 29-Dec 14 2025 (already past) hardcoded in the
-    // page copy, and it's now blocked in robots.txt — listing a
-    // robots-disallowed URL in the sitemap just earns a fresh "submitted URL
-    // blocked by robots.txt" warning in Search Console for no benefit. See
-    // the operator note left where robots.txt blocks it.
     { url: `${BASE_URL}/forms`, lastModified: now },
   ];
 
