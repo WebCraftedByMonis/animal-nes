@@ -14,6 +14,7 @@ import { CountryProvider } from "@/contexts/CountryContext";
 import LoginModal from "@/components/LoginModal";
 import StickyLogo from "@/components/StickyLogo";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
+import HistatsAnalytics from "@/components/HistatsAnalytics";
 import Script from "next/script";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -138,6 +139,7 @@ export default function RootLayout({
                       <Footer />
                     </div>
                     <CookieConsentBanner />
+                    <HistatsAnalytics />
                   </LoginModalProvider>
                 </WishlistProvider>
               </CartProvider>
