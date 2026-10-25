@@ -89,11 +89,12 @@ async function POST(request: NextRequest) {
   console.log('🚀 POST /api/partner - Request started');
 
   try {
+    // Reachable both from the admin "Add Partner" dashboard page and the
+    // public /addPartner sign-up page. Admin-created partners are approved
+    // immediately; public submissions always land as PENDING and need
+    // approval from dashboard/partner-approvals.
     const adminToken = request.cookies.get('admin-token')?.value;
     const admin = await validateAdminSession(adminToken);
-    if (!admin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     console.log('📥 Reading request body...');
     const body = await request.json();
@@ -189,6 +190,7 @@ async function POST(request: NextRequest) {
       const partnerCreateData = {
         ...partnerData,
         referredById: referrerId,
+        approvalStatus: admin ? 'APPROVED' as const : 'PENDING' as const,
         animalEntries: animalEntries && animalEntries.length > 0 ? animalEntries : undefined,
         partnerImage: {
           create: {
