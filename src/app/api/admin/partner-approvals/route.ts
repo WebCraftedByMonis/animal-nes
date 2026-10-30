@@ -4,6 +4,7 @@
 // creates them with approvalStatus = PENDING.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendPartnerCertificate } from '@/lib/email-service';
 
 // GET - list partners for the approvals queue, filterable by status
 export async function GET(request: NextRequest) {
@@ -63,6 +64,15 @@ export async function PUT(request: NextRequest) {
         rejectionReason: action === 'reject' ? (rejectionReason || null) : null,
       },
     });
+
+    // Send registration certificate when a partner is approved
+    if (action === 'approve' && updated.partnerEmail) {
+      sendPartnerCertificate({
+        id: updated.id,
+        partnerName: updated.partnerName,
+        partnerEmail: updated.partnerEmail,
+      }).catch((err) => console.error('Certificate email failed:', err));
+    }
 
     return NextResponse.json({ success: true, partner: updated });
   } catch (error) {

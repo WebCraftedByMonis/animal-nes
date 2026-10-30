@@ -3,6 +3,9 @@ import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { EmailType, EmailStatus } from '@prisma/client';
 import { getSiteUrl } from '@/lib/site-url';
+import JSZip from 'jszip';
+import fs from 'fs';
+import path from 'path';
 
 // Validate environment variables
 if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
@@ -1199,6 +1202,162 @@ export async function sendReviewRequestToPatient(
       status: 'FAILED',
       errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
       appointmentId: appointmentId,
+    });
+
+    return { success: false, error };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Partner Registration Certificate
+// ---------------------------------------------------------------------------
+
+const CERT_TEMPLATE_PATH = path.join(process.cwd(), 'src', 'lib', 'templates', 'registration-certificate.docx');
+
+async function generateCertificateDocx(partnerName: string, partnerId: number): Promise<Buffer> {
+  const templateBuffer = fs.readFileSync(CERT_TEMPLATE_PATH);
+  const zip = await JSZip.loadAsync(templateBuffer);
+
+  const docXml = await zip.file('word/document.xml')!.async('string');
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const certNumber = `AWS-WEB-${now.getFullYear()}-${String(partnerId).padStart(3, '0')}`;
+
+  const updated = docXml
+    .replace(/>Monis Raza</, `>${partnerName}<`)
+    .replace(/>AWS-WEB-2026-001</, `>${certNumber}<`)
+    .replace(/>25 October 2026</, `>${dateStr}<`);
+
+  zip.file('word/document.xml', updated);
+  return Buffer.from(await zip.generateAsync({ type: 'uint8array' }));
+}
+
+export async function sendPartnerCertificate(partner: {
+  id: number;
+  partnerName: string;
+  partnerEmail?: string | null;
+}) {
+  if (!partner.partnerEmail) {
+    console.warn(`Partner ${partner.id} has no email — skipping certificate`);
+    return { success: false, error: 'No email address' };
+  }
+
+  const emailSubject = 'Welcome to Animal Wellness Shop — Your Registration Certificate';
+
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    console.error(`Gmail rate limit reached. Skipping certificate for partner ${partner.id}`);
+    await logEmail({
+      recipientEmail: partner.partnerEmail,
+      recipientName: partner.partnerName,
+      recipientType: 'PARTNER',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: `Rate limit exceeded: ${GMAIL_DAILY_LIMIT} emails/day limit reached`,
+      partnerId: partner.id,
+    });
+    return { success: false, error: 'Rate limit exceeded' };
+  }
+
+  try {
+    const certBuffer = await generateCertificateDocx(partner.partnerName, partner.id);
+    const baseUrl = getSiteUrl();
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+    .header { background-color: #176B3A; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .info-box { background-color: #f0fdf4; border-left: 4px solid #176B3A; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 28px;">Welcome to Animal Wellness Shop!</h1>
+      <p style="margin: 10px 0 0 0; font-size: 16px;">Your Registration Certificate is Attached</p>
+    </div>
+
+    <div class="content">
+      <p style="font-size: 16px;">Dear <strong>${partner.partnerName}</strong>,</p>
+
+      <p>Congratulations and welcome aboard! Your registration with <strong>Animal Wellness Shop</strong> has been confirmed.</p>
+
+      <div class="info-box">
+        <h3 style="margin: 0 0 10px 0; color: #176B3A;">Your Registration Certificate</h3>
+        <p style="margin: 0; color: #555;">Please find your personalised Certificate of Appreciation attached to this email. You may print or save it for your records.</p>
+      </div>
+
+      <p>You can now log in to your partner dashboard at:</p>
+      <p style="text-align: center;">
+        <a href="${baseUrl}/partner/login" style="display: inline-block; padding: 12px 30px; background: #176B3A; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Partner Dashboard</a>
+      </p>
+
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 5px 0; color: #666; font-size: 14px;"><strong>Contact Us:</strong></p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">📧 Email: animalwellnessshop@gmail.com</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Animal Wellness Shop — UAE | Pakistan</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Animal Wellness Shop" <${process.env.EMAIL_USER}>`,
+      to: partner.partnerEmail,
+      subject: emailSubject,
+      html: emailHtml,
+      text: `Dear ${partner.partnerName}, Welcome to Animal Wellness Shop! Your registration certificate is attached. Log in at ${baseUrl}/partner/login`,
+      attachments: [
+        {
+          filename: `Registration_Certificate_${partner.partnerName.replace(/\s+/g, '_')}.docx`,
+          content: certBuffer,
+          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        },
+      ],
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    incrementEmailCount();
+
+    await logEmail({
+      recipientEmail: partner.partnerEmail,
+      recipientName: partner.partnerName,
+      recipientType: 'PARTNER',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'SENT',
+      partnerId: partner.id,
+      metadata: { certificateSent: true },
+    });
+
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('Error sending partner certificate:', error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
+
+    await logEmail({
+      recipientEmail: partner.partnerEmail,
+      recipientName: partner.partnerName,
+      recipientType: 'PARTNER',
+      subject: emailSubject,
+      emailType: 'OTHER',
+      status: 'FAILED',
+      errorMessage: error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error),
+      partnerId: partner.id,
     });
 
     return { success: false, error };

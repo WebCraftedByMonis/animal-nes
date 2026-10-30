@@ -6,6 +6,7 @@ import { uploadImage, deleteFromCloudinary } from '@/lib/cloudinary';
 import { PARTNER_TYPE_GROUPS, PartnerTypeGroup } from '@/lib/partner-constants';
 import { hashPassword } from '@/lib/auth/partner-auth';
 import { validateAdminSession } from '@/lib/auth/admin-auth';
+import { sendPartnerCertificate } from '@/lib/email-service';
 
 // Configure route to handle larger payloads for image uploads
 export const runtime = 'nodejs'
@@ -244,7 +245,16 @@ async function POST(request: NextRequest) {
 
     console.log('🎉 Transaction completed successfully');
     console.log('📤 Returning partner data...');
-    
+
+    // Send registration certificate email (fire-and-forget)
+    if (newPartner.partnerEmail) {
+      sendPartnerCertificate({
+        id: newPartner.id,
+        partnerName: newPartner.partnerName,
+        partnerEmail: newPartner.partnerEmail,
+      }).catch((err) => console.error('Certificate email failed:', err));
+    }
+
     return NextResponse.json(newPartner, { status: 201 });
     
   } catch (error: unknown) {
