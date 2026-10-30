@@ -29,18 +29,18 @@ const BASE_URL = (
   'https://app.animalwellness.shop'
 ).replace(/\/$/, '')
 
-// Progress file to resume if interrupted
+// Written after every batch so a dropped connection loses at most one
+// batch's work, not the whole run — but note this is NOT used to skip rows
+// on the next invocation (see main()'s comment). It's just this run's log.
 const PROGRESS_FILE = path.join(process.cwd(), 'migrate-images-progress.json')
 
-function loadProgress() {
+function logPriorRunIfAny() {
   try {
     if (fs.existsSync(PROGRESS_FILE)) {
       const data = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf8'))
-      console.log(`Resuming from progress file — ${data.done.length} already done, ${data.failed.length} failed`)
-      return data
+      console.log(`(Previous run: ${data.done?.length ?? 0} done, ${data.failed?.length ?? 0} failed — not reused, this run checks the live DB instead)\n`)
     }
   } catch {}
-  return { done: [], failed: [] }
 }
 
 function saveProgress(progress) {
@@ -83,8 +83,6 @@ function downloadImage(url) {
 async function processBatch(batch, progress) {
   await Promise.allSettled(
     batch.map(async (row) => {
-      if (progress.done.includes(row.id)) return
-
       try {
         const buffer = await downloadImage(row.url)
         if (buffer.length < 500) throw new Error('Image too small — likely a placeholder')
@@ -113,11 +111,23 @@ async function main() {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true })
   }
 
-  const progress = loadProgress()
-  const doneSet = new Set(progress.done)
+  // The WHERE clause below already means "still pointing at an external
+  // host right now" — a row only disappears from it once its url is
+  // actually updated. So a past run's done-id list is NOT a safe skip list:
+  // if scrape-products-*.ts ever re-syncs a product and overwrites its
+  // image url back to the source site (reasonable to assume it does, since
+  // nothing here proves otherwise), a previously-fixed row reverts and
+  // reappears in `rows` with its old id — and the old code's two separate
+  // id-skip checks (one in main, one in processBatch) would silently skip
+  // it forever, because they trusted a FILE instead of the DATABASE. This
+  // is almost certainly why an earlier run's progress file showed ~50K done
+  // yet 19K+ rows were still actually blocked. Always process whatever the
+  // live query returns, full stop — no skip list at all.
+  logPriorRunIfAny()
+  const progress = { done: [], failed: [] }
 
   // Fetch all external images for active products
-  const rows = await prisma.productImage.findMany({
+  const pending = await prisma.productImage.findMany({
     where: {
       product: { isActive: true },
       NOT: [
@@ -128,11 +138,7 @@ async function main() {
     select: { id: true, url: true },
   })
 
-  const pending = rows.filter(r => !doneSet.has(r.id))
-  const total = rows.length
-  console.log(`Total external images: ${total}`)
-  console.log(`Already done: ${progress.done.length}`)
-  console.log(`Remaining: ${pending.length}`)
+  console.log(`Still pointing at an external host: ${pending.length}`)
   console.log(`Batching ${pending.length} images in groups of ${BATCH_SIZE}...\n`)
 
   let processed = 0
