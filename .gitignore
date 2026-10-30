@@ -69,3 +69,7 @@ nul
 # (see src/lib/localStorage.ts) — never commit them to git
 /uploads/media/*
 !/uploads/media/.gitkeep
+
+# migrate-images.js's resume/failure state (generated on the VPS, per-run)
+/migrate-images-progress.json
+/migrate-images-failed.json

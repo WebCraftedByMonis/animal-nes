@@ -1,8 +1,13 @@
 // migrate-images.js
 // Run on the VPS from the project root: node migrate-images.js
-// Downloads all external product images and saves them to uploads/media/
-// then updates the DB URL to the local serve path.
+// Downloads all external product images (scraped from other vendor sites —
+// see scrape-products-*.ts) and saves them to uploads/media/, then updates
+// the DB URL to the local serve path. Fixes the "url parameter is not
+// allowed" error next/image throws for any host not in next.config.ts's
+// remotePatterns — see check-external-images.js for how big the problem is
+// before running this.
 
+require('dotenv').config()
 const { PrismaClient } = require('@prisma/client')
 const https = require('https')
 const http = require('http')
@@ -15,7 +20,14 @@ const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'media')
 const BATCH_SIZE = 30
 const BATCH_DELAY_MS = 1000
 const DOWNLOAD_TIMEOUT_MS = 15000
-const BASE_URL = 'https://animalwellness.shop'
+// Was hardcoded to the OLD root domain — the exact same bug fix-image-domain.js
+// just fixed 60,778 rows of. Read from env like every other script does
+// (see src/lib/site-url.ts) so this can't reintroduce it.
+const BASE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  'https://app.animalwellness.shop'
+).replace(/\/$/, '')
 
 // Progress file to resume if interrupted
 const PROGRESS_FILE = path.join(process.cwd(), 'migrate-images-progress.json')
