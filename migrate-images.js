@@ -17,9 +17,9 @@ const path = require('path')
 const prisma = new PrismaClient()
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'media')
-const BATCH_SIZE = 30
-const BATCH_DELAY_MS = 1000
-const DOWNLOAD_TIMEOUT_MS = 15000
+const BATCH_SIZE = 10
+const BATCH_DELAY_MS = 2000
+const DOWNLOAD_TIMEOUT_MS = 30000
 // Was hardcoded to the OLD root domain — the exact same bug fix-image-domain.js
 // just fixed 60,778 rows of. Read from env like every other script does
 // (see src/lib/site-url.ts) so this can't reintroduce it.
@@ -77,10 +77,13 @@ function downloadImage(url, redirects = 0) {
     const protocol = url.startsWith('https') ? https : http
     const timeout = setTimeout(() => reject(new Error('Timeout')), DOWNLOAD_TIMEOUT_MS)
 
-    protocol.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
+    protocol.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' } }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
         clearTimeout(timeout)
-        return downloadImage(res.headers.location, redirects + 1).then(resolve).catch(reject)
+        const loc = res.headers.location
+        if (!loc) return reject(new Error(`Redirect ${res.statusCode} with no Location`))
+        const next = loc.startsWith('/') ? new URL(loc, url).href : loc
+        return downloadImage(next, redirects + 1).then(resolve).catch(reject)
       }
       if (res.statusCode !== 200) {
         clearTimeout(timeout)
