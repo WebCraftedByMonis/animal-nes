@@ -58,7 +58,21 @@ function sanitizeFilename(url) {
   return `migrated_${base}_${Date.now()}${ext}`
 }
 
-function downloadImage(url) {
+const IMAGE_SIGNATURES = {
+  'ffd8ff':   'image/jpeg',
+  '89504e47': 'image/png',
+  '47494638': 'image/gif',
+  '52494646': 'image/webp',
+}
+
+function isImageBuffer(buf) {
+  if (buf.length < 4) return false
+  const hex = buf.slice(0, 4).toString('hex')
+  return Object.keys(IMAGE_SIGNATURES).some(sig => hex.startsWith(sig))
+}
+
+function downloadImage(url, redirects = 0) {
+  if (redirects > 5) return Promise.reject(new Error('Too many redirects'))
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http
     const timeout = setTimeout(() => reject(new Error('Timeout')), DOWNLOAD_TIMEOUT_MS)
@@ -66,11 +80,16 @@ function downloadImage(url) {
     protocol.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
       if (res.statusCode === 301 || res.statusCode === 302) {
         clearTimeout(timeout)
-        return downloadImage(res.headers.location).then(resolve).catch(reject)
+        return downloadImage(res.headers.location, redirects + 1).then(resolve).catch(reject)
       }
       if (res.statusCode !== 200) {
         clearTimeout(timeout)
         return reject(new Error(`HTTP ${res.statusCode}`))
+      }
+      const ct = (res.headers['content-type'] || '').toLowerCase()
+      if (ct && !ct.startsWith('image/') && !ct.startsWith('application/octet-stream')) {
+        clearTimeout(timeout)
+        return reject(new Error(`Not an image (content-type: ${ct})`))
       }
       const chunks = []
       res.on('data', chunk => chunks.push(chunk))
@@ -86,6 +105,7 @@ async function processBatch(batch, progress) {
       try {
         const buffer = await downloadImage(row.url)
         if (buffer.length < 500) throw new Error('Image too small — likely a placeholder')
+        if (!isImageBuffer(buffer)) throw new Error('Downloaded file is not a valid image (bad magic bytes)')
 
         const filename = sanitizeFilename(row.url)
         const filePath = path.join(UPLOAD_DIR, filename)
