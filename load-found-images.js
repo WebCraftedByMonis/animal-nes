@@ -123,7 +123,7 @@ async function main() {
       const newUrl = `${BASE_URL}/api/admin/media/serve/${encodeURIComponent(filename)}`
 
       await prisma.productImage.create({
-        data: { url: newUrl, productId: row.productId },
+        data: { url: newUrl, productId: row.productId, alt: row.name },
       })
       console.log(`OK (${(buffer.length / 1024).toFixed(0)}KB)`)
       success++
