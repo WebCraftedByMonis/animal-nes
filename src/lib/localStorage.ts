@@ -1,7 +1,8 @@
-import { writeFile, mkdir, unlink } from 'fs/promises'
+import { writeFile, mkdir, unlink, readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
+import sharp from 'sharp'
 import { getSiteUrl } from '@/lib/site-url'
 
 // Saves uploads to the VPS's own disk instead of Cloudinary. Reuses the
@@ -25,6 +26,11 @@ export interface LocalUploadResult {
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'media')
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10MB, same cap the Cloudinary free plan enforced
 const BASE_URL = getSiteUrl()
+const LOGO_PATH = path.join(process.cwd(), 'public', 'logo-removebg-preview.png')
+const WATERMARK_FOLDERS = ['products/images']
+const LOGO_WIDTH_RATIO = 0.15
+const LOGO_OPACITY = 0.4
+const LOGO_MARGIN = 16
 
 function sanitizeBaseName(filename: string): string {
   return filename
@@ -40,6 +46,49 @@ async function ensureUploadDir() {
   if (!existsSync(UPLOAD_DIR)) {
     await mkdir(UPLOAD_DIR, { recursive: true })
   }
+}
+
+let cachedLogo: Buffer | null = null
+async function getLogoBuffer(): Promise<Buffer | null> {
+  if (cachedLogo) return cachedLogo
+  if (!existsSync(LOGO_PATH)) return null
+  cachedLogo = await readFile(LOGO_PATH)
+  return cachedLogo
+}
+
+async function applyWatermark(imageBuffer: Buffer): Promise<Buffer> {
+  const logo = await getLogoBuffer()
+  if (!logo) return imageBuffer
+
+  const image = sharp(imageBuffer)
+  const meta = await image.metadata()
+  const imgW = meta.width || 800
+  const imgH = meta.height || 800
+
+  const logoW = Math.max(Math.round(imgW * LOGO_WIDTH_RATIO), 40)
+
+  const resizedLogo = await sharp(logo)
+    .resize({ width: logoW, withoutEnlargement: false })
+    .ensureAlpha()
+    .composite([{
+      input: Buffer.from(
+        `<svg><rect x="0" y="0" width="${logoW}" height="${logoW}" fill="white" fill-opacity="${LOGO_OPACITY}"/></svg>`
+      ),
+      blend: 'dest-in' as const
+    }])
+    .png()
+    .toBuffer()
+
+  const logoMeta = await sharp(resizedLogo).metadata()
+  const logoH = logoMeta.height || logoW
+
+  return image
+    .composite([{
+      input: resizedLogo,
+      left: Math.max(imgW - logoW - LOGO_MARGIN, 0),
+      top: Math.max(imgH - logoH - LOGO_MARGIN, 0)
+    }])
+    .toBuffer()
 }
 
 async function saveFile(
@@ -69,7 +118,16 @@ async function saveFile(
   const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`
   const filename = `${folderPrefix}-${base}-${uniqueSuffix}.${extension}`
 
-  await writeFile(path.join(UPLOAD_DIR, filename), buffer)
+  let finalBuffer = buffer
+  if (resourceType === 'image' && WATERMARK_FOLDERS.includes(folder)) {
+    try {
+      finalBuffer = await applyWatermark(buffer)
+    } catch (e) {
+      console.error('[localStorage] Watermark failed, saving original:', e)
+    }
+  }
+
+  await writeFile(path.join(UPLOAD_DIR, filename), finalBuffer)
 
   return {
     secure_url: `${BASE_URL}/api/admin/media/serve/${encodeURIComponent(filename)}`,
