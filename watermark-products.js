@@ -135,7 +135,7 @@ async function main() {
   }
 
   const images = await prisma.productImage.findMany({
-    include: { product: { select: { id: true, name: true } } },
+    include: { product: { select: { id: true, productName: true } } },
     orderBy: { id: 'asc' }
   })
 
@@ -149,7 +149,7 @@ async function main() {
     console.log(`--- Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(images.length / BATCH_SIZE)} ---`)
 
     for (const img of batch) {
-      const label = `[${img.id}] ${img.product?.name || 'unknown'}`
+      const label = `[${img.id}] ${img.product?.productName || 'unknown'}`
       try {
         const buf = await getImageBuffer(img.url)
         if (!isImageBuffer(buf)) {
