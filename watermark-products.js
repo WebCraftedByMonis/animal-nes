@@ -4,8 +4,14 @@
 // in the bottom-right corner at ~40 % opacity, saves the result to
 // uploads/media/, and updates the DB URL.
 //
+// Resumable: skips images whose URL already points to a wm- file.
+// Memory-safe: processes one image at a time, clears buffers between images.
+//
 // Usage:  node watermark-products.js          (dry run — preview only)
 //         node watermark-products.js --apply  (actually write)
+//
+// Recommended (exposes GC for explicit cleanup between images):
+//   node --expose-gc --max-old-space-size=512 watermark-products.js --apply
 
 require('dotenv').config()
 const { PrismaClient } = require('@prisma/client')
@@ -21,12 +27,13 @@ const prisma = new PrismaClient()
 const APPLY = process.argv.includes('--apply')
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'media')
 const LOGO_PATH = path.join(process.cwd(), 'public', 'logo-removebg-preview.png')
-const BATCH_SIZE = 5
-const BATCH_DELAY_MS = 1500
+const PROGRESS_FILE = path.join(process.cwd(), 'watermark-progress.json')
 const DOWNLOAD_TIMEOUT_MS = 30000
-const LOGO_WIDTH_RATIO = 0.15 // logo = 15 % of image width
+const LOGO_WIDTH_RATIO = 0.15
 const LOGO_OPACITY = 0.4
-const LOGO_MARGIN = 16 // px from edge
+const LOGO_MARGIN = 16
+const DELAY_BETWEEN_IMAGES_MS = 200
+const PROGRESS_SAVE_EVERY = 50
 
 const BASE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -60,7 +67,6 @@ function downloadImage(url) {
 }
 
 function localPathFromUrl(url) {
-  // /api/admin/media/serve/filename.jpg → uploads/media/filename.jpg
   const match = url.match(/\/api\/admin\/media\/serve\/([^?]+)/)
   if (!match) return null
   const filename = decodeURIComponent(match[1])
@@ -74,9 +80,13 @@ async function getImageBuffer(url) {
   return downloadImage(url)
 }
 
-async function watermark(imageBuffer, logoBuffer) {
-  const image = sharp(imageBuffer)
-  const meta = await image.metadata()
+function isAlreadyWatermarked(url) {
+  const filename = url.split('/').pop().split('?')[0]
+  return decodeURIComponent(filename).startsWith('wm-')
+}
+
+async function watermarkSingle(imageBuffer, logoBuffer) {
+  const meta = await sharp(imageBuffer).metadata()
   const imgW = meta.width || 800
   const imgH = meta.height || 800
 
@@ -97,13 +107,16 @@ async function watermark(imageBuffer, logoBuffer) {
   const logoMeta = await sharp(resizedLogo).metadata()
   const logoH = logoMeta.height || logoW
 
-  const left = imgW - logoW - LOGO_MARGIN
-  const top = imgH - logoH - LOGO_MARGIN
-
-  return image
-    .composite([{ input: resizedLogo, left: Math.max(left, 0), top: Math.max(top, 0) }])
+  const result = await sharp(imageBuffer)
+    .composite([{
+      input: resizedLogo,
+      left: Math.max(imgW - logoW - LOGO_MARGIN, 0),
+      top: Math.max(imgH - logoH - LOGO_MARGIN, 0)
+    }])
     .jpeg({ quality: 90 })
     .toBuffer()
+
+  return result
 }
 
 function makeFilename(origUrl) {
@@ -117,11 +130,22 @@ function makeFilename(origUrl) {
   return `wm-${urlBase}-${uid}.jpg`
 }
 
+function tryGC() {
+  if (global.gc) {
+    global.gc()
+  }
+}
+
+function saveProgress(data) {
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2))
+}
+
 async function main() {
   console.log(`\n=== Product Image Watermarker ===`)
   console.log(`Mode: ${APPLY ? '*** LIVE — will write files & update DB ***' : 'DRY RUN (pass --apply to write)'}`)
   console.log(`Logo: ${LOGO_PATH}`)
-  console.log(`Output: ${UPLOAD_DIR}\n`)
+  console.log(`Output: ${UPLOAD_DIR}`)
+  console.log(`Resume: skips images whose URL already starts with wm-\n`)
 
   if (!fs.existsSync(LOGO_PATH)) {
     console.error('Logo file not found:', LOGO_PATH)
@@ -134,31 +158,55 @@ async function main() {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true })
   }
 
-  const images = await prisma.productImage.findMany({
-    include: { product: { select: { id: true, productName: true } } },
-    orderBy: { id: 'asc' }
-  })
-
-  console.log(`Found ${images.length} product images to watermark.\n`)
-
-  const results = { ok: 0, skipped: 0, failed: 0 }
+  // Paginate through images instead of loading all 78k into memory
+  const PAGE_SIZE = 500
+  let cursor = 0
+  let totalProcessed = 0
+  const results = { ok: 0, skipped: 0, failed: 0, alreadyDone: 0 }
   const failures = []
 
-  for (let i = 0; i < images.length; i += BATCH_SIZE) {
-    const batch = images.slice(i, i + BATCH_SIZE)
-    console.log(`--- Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(images.length / BATCH_SIZE)} ---`)
+  // Count total first
+  const totalCount = await prisma.productImage.count()
+  console.log(`Total product images in DB: ${totalCount}\n`)
 
-    for (const img of batch) {
+  let hasMore = true
+  while (hasMore) {
+    const images = await prisma.productImage.findMany({
+      select: { id: true, url: true, product: { select: { id: true, productName: true } } },
+      orderBy: { id: 'asc' },
+      take: PAGE_SIZE,
+      ...(cursor > 0 ? { cursor: { id: cursor }, skip: 1 } : {})
+    })
+
+    if (images.length === 0) {
+      hasMore = false
+      break
+    }
+
+    cursor = images[images.length - 1].id
+
+    for (const img of images) {
+      totalProcessed++
       const label = `[${img.id}] ${img.product?.productName || 'unknown'}`
+
+      if (isAlreadyWatermarked(img.url)) {
+        results.alreadyDone++
+        if (results.alreadyDone % 500 === 0) {
+          console.log(`  ... ${results.alreadyDone} already watermarked (skipping)`)
+        }
+        continue
+      }
+
       try {
         const buf = await getImageBuffer(img.url)
+
         if (!isImageBuffer(buf)) {
-          console.log(`  SKIP ${label} — not a valid image (HTML error page?)`)
+          console.log(`  SKIP ${label} — not a valid image`)
           results.skipped++
           continue
         }
 
-        const wmBuf = await watermark(buf, logoBuffer)
+        const wmBuf = await watermarkSingle(buf, logoBuffer)
         const filename = makeFilename(img.url)
         const outPath = path.join(UPLOAD_DIR, filename)
         const newUrl = `${BASE_URL}/api/admin/media/serve/${encodeURIComponent(filename)}`
@@ -179,24 +227,46 @@ async function main() {
         results.failed++
         failures.push({ id: img.id, url: img.url, error: err.message })
       }
+
+      // Memory cleanup after every image
+      tryGC()
+
+      // Small delay to let the event loop breathe
+      await new Promise(r => setTimeout(r, DELAY_BETWEEN_IMAGES_MS))
+
+      // Progress checkpoint
+      if (totalProcessed % PROGRESS_SAVE_EVERY === 0) {
+        const pct = ((totalProcessed / totalCount) * 100).toFixed(1)
+        console.log(`\n  >>> Progress: ${totalProcessed}/${totalCount} (${pct}%) — OK: ${results.ok} | Skip: ${results.skipped} | Fail: ${results.failed} | Already done: ${results.alreadyDone}\n`)
+        saveProgress({ totalProcessed, totalCount, ...results, lastId: img.id })
+      }
     }
 
-    if (i + BATCH_SIZE < images.length) {
-      await new Promise(r => setTimeout(r, BATCH_DELAY_MS))
+    // GC between pages
+    tryGC()
+    console.log(`  [page done — cursor at id ${cursor}, processed ${totalProcessed}/${totalCount}]`)
+
+    if (images.length < PAGE_SIZE) {
+      hasMore = false
     }
   }
 
   console.log(`\n=== Done ===`)
-  console.log(`OK: ${results.ok}  |  Skipped: ${results.skipped}  |  Failed: ${results.failed}`)
+  console.log(`OK: ${results.ok}  |  Skipped: ${results.skipped}  |  Failed: ${results.failed}  |  Already done: ${results.alreadyDone}`)
   if (failures.length) {
-    console.log('\nFailed images:')
+    console.log(`\nFailed images (${failures.length}):`)
     failures.forEach(f => console.log(`  [${f.id}] ${f.url} — ${f.error}`))
   }
   if (!APPLY && results.ok > 0) {
     console.log('\nThis was a dry run. Run with --apply to write files and update the DB.')
   }
+
+  saveProgress({ done: true, totalProcessed, ...results })
 }
 
 main()
-  .catch(console.error)
+  .catch(err => {
+    console.error('\n!!! Script crashed:', err)
+    process.exit(1)
+  })
   .finally(() => prisma.$disconnect())
